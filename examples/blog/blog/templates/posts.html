@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="posts">
+  {% for post in posts %}
+    <div><h2>{{ post.title }}</h2>{{ post.text|safe }}</div>
+  {% else %}
+    <div>No posts available</div>
+  {% endfor %}
+  </div>
+  {% if session.logged_in %}
+    <div class="form">
+      <form action="{{ url_for('create') }}" method="post" class="create-post">
+        <p>Title:<input type="text" size="30" name="title">
+        <p>Text:<textarea name="text" rows="5" cols="40"></textarea>
+        <p><input type="submit" value="Post">
+        </dl>
+      </form>
+    </div>
+  {% endif %}
+{% endblock %}

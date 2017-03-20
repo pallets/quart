@@ -1,0 +1,8 @@
+include CHANGELOG.rst
+include LICENSE
+include README.rst
+recursive-include quart *.py
+recursive-include tests *.py
+recursive-exclude examples *
+exclude examples
+exclude .gitlab-ci.yml

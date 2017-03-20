@@ -1,0 +1,7 @@
+image: python:3.6.1
+
+before_script:
+  - pip install tox
+
+tox:
+  script: tox
