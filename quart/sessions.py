@@ -160,7 +160,7 @@ class SecureCookieSessionInterface(SessionInterface):
     serializer = TaggedJSONSerializer()
     session_class = Session
 
-    def get_signing_serializer(self, app: 'Quart') -> URLSafeTimedSerializer:
+    def get_signing_serializer(self, app: 'Quart') -> Optional[URLSafeTimedSerializer]:
         if not app.secret_key:
             return None
 
@@ -172,8 +172,10 @@ class SecureCookieSessionInterface(SessionInterface):
             app.secret_key, salt=self.salt, serializer=self.serializer, signer_kwargs=options,
         )
 
-    def open_session(self, app: 'Quart', request: Request) -> Session:
+    def open_session(self, app: 'Quart', request: Request) -> Optional[Session]:
         signer = self.get_signing_serializer(app)
+        if signer is None:
+            return None
 
         cookie = request.cookies.get(app.session_cookie_name)
         if cookie is None:

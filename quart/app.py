@@ -143,7 +143,7 @@ class Quart(PackageStatic):
     def update_template_context(self, context: dict) -> None:
         processors = self.template_context_processors[None]
         if has_request_context():
-            blueprint = request.blueprint
+            blueprint = _request_ctx_stack.top.request.blueprint
             if blueprint is not None and blueprint in self.template_context_processors:
                 processors.extend(self.template_context_processors[blueprint])
         extra_context: dict = {}
@@ -202,7 +202,7 @@ class Quart(PackageStatic):
 
     def _find_exception_handler(self, error: Exception) -> Optional[Callable]:
         handler = _find_exception_handler(
-            error, self.error_handler_spec.get(request.blueprint, {}),
+            error, self.error_handler_spec.get(_request_ctx_stack.top.request.blueprint, {}),
         )
         if handler is None:
             handler = _find_exception_handler(
@@ -252,8 +252,9 @@ class Quart(PackageStatic):
             return await handler(error)
 
     def log_exception(self, exception_info: Tuple[type, BaseException, TracebackType]) -> None:
+        request_ = _request_ctx_stack.top.request
         self.logger.error(
-            "Exception on {} {}".format(request.method, request.path),
+            "Exception on {} {}".format(request_.method, request_.path),
             exc_info=exception_info,
         )
 
@@ -337,14 +338,15 @@ class Quart(PackageStatic):
         return None
 
     async def dispatch_request(self) -> ResponseReturnValue:
-        if request.routing_exception is not None:
-            raise request.routing_exception
+        request_ = _request_ctx_stack.top.request
+        if request_.routing_exception is not None:
+            raise request_.routing_exception
 
-        if request.method == 'OPTIONS' and request.url_rule.provide_automatic_options:
+        if request_.method == 'OPTIONS' and request_.url_rule.provide_automatic_options:
             return await self.make_default_options_response()
 
-        handler = self.view_functions[request.url_rule.endpoint]
-        return await handler(**request.view_args)
+        handler = self.view_functions[request_.url_rule.endpoint]
+        return await handler(**request_.view_args)
 
     async def full_dispatch_request(self) -> Response:
         await self.try_trigger_before_first_request_functions()
@@ -358,7 +360,7 @@ class Quart(PackageStatic):
 
     async def preprocess_request(self) -> Optional[ResponseReturnValue]:
         functions = self.before_request_funcs[None]
-        blueprint = request.blueprint
+        blueprint = _request_ctx_stack.top.request.blueprint
         if blueprint is not None:
             functions = chain(functions, self.before_request_funcs[blueprint])  # type: ignore
 
@@ -424,15 +426,16 @@ class Quart(PackageStatic):
 
     async def process_response(self, response: Response) -> Response:
         functions = self.after_request_funcs[None]
-        blueprint = request.blueprint
+        blueprint = _request_ctx_stack.top.request.blueprint
         if blueprint is not None:
             functions = chain(functions, self.after_request_funcs[blueprint])  # type: ignore
 
         for function in functions:
             response = await function(response)
 
-        if not self.session_interface.is_null_session(session):
-            response = self.save_session(session, response)  # type: ignore
+        session_ = _request_ctx_stack.top.session
+        if not self.session_interface.is_null_session(session_):
+            response = self.save_session(session_, response)  # type: ignore
         return response
 
     async def handle_request(self, request: Request) -> Response:
