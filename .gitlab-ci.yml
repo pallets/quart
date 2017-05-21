@@ -1,7 +1,19 @@
 image: python:3.6.1
 
 before_script:
-  - pip install tox
+  - pip install tox sphinx
 
 tox:
   script: tox
+
+pages:
+  script:
+  - python setup.py install
+  - rm -rf docs/source && sphinx-apidoc -e -f -o docs/source/ quart/
+  - cd docs/ && make html && cd ../
+  - mv docs/_build/html/ public/
+  artifacts:
+    paths:
+    - public
+  only:
+  - master
