@@ -8,11 +8,6 @@ if sys.version_info < (3,6):
 
 PROJECT_ROOT = os.path.dirname(__file__)
 
-with open(os.path.join(PROJECT_ROOT, 'quart', '__about__.py')) as file_:
-    version_line = [line for line in file_ if line.startswith('__version__')][0]
-
-__version__ = version_line.split('=')[1].strip().strip("'").strip('"')
-
 with open(os.path.join(PROJECT_ROOT, 'README.rst')) as file_:
     long_description = file_.read()
 
@@ -28,7 +23,7 @@ INSTALL_REQUIRES = [
 
 setup(
     name='Quart',
-    version=__version__,
+    version='0.1.0',
     description="An asyncio web microframework with Flask's API",
     long_description=long_description,
     url='https://github.com/pgjones/quart/',
