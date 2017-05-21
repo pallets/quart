@@ -1,10 +1,14 @@
 import uuid
 from typing import Any, Dict, Tuple
 
+import hypothesis.strategies as strategies
 import pytest
+from hypothesis import given
 
 from quart.exceptions import MethodNotAllowed, NotFound, RedirectRequired
-from quart.routing import Map, Rule
+from quart.routing import (
+    FloatConverter, IntegerConverter, Map, Rule, StringConverter, UUIDConverter,
+)
 
 
 @pytest.fixture()
@@ -134,7 +138,13 @@ def test_path_converter() -> None:
     )
 
 
-def test_uuid_converter() -> None:
+@given(value=strategies.uuids())
+def test_uuid_converter(value: uuid.UUID) -> None:
+    converter = UUIDConverter()
+    assert converter.to_python(converter.to_url(value)) == value
+
+
+def test_uuid_converter_match() -> None:
     map_ = Map()
     map_.add(Rule('/<uuid:uuid>', ['GET'], 'uuid'))
     _test_match(
@@ -143,7 +153,13 @@ def test_uuid_converter() -> None:
     )
 
 
-def test_int_converter() -> None:
+@given(value=strategies.integers())
+def test_integer_converter(value: int) -> None:
+    converter = IntegerConverter()
+    assert converter.to_python(converter.to_url(value)) == value
+
+
+def test_int_converter_match() -> None:
     map_ = Map()
     map_.add(Rule('/<int(min=5):value>', ['GET'], 'min'))
     map_.add(Rule('/<int:value>', ['GET'], 'any'))
@@ -151,7 +167,13 @@ def test_int_converter() -> None:
     _test_match(map_, '/6', 'GET', (map_.endpoints['min'][0], {'value': 6}))
 
 
-def test_float_converter() -> None:
+@given(value=strategies.floats(allow_nan=False, allow_infinity=False))
+def test_float_converter(value: float) -> None:
+    converter = FloatConverter()
+    assert converter.to_python(converter.to_url(value)) == value
+
+
+def test_float_converter_match() -> None:
     map_ = Map()
     map_.add(Rule('/<float(max=1000.0):value>', ['GET'], 'max'))
     map_.add(Rule('/<float:value>', ['GET'], 'any'))
@@ -159,7 +181,13 @@ def test_float_converter() -> None:
     _test_match(map_, '/999.0', 'GET', (map_.endpoints['max'][0], {'value': 999.0}))
 
 
-def test_string_converter() -> None:
+@given(value=strategies.characters(blacklist_characters=['/']))
+def test_string_converter(value: str) -> None:
+    converter = StringConverter()
+    assert converter.to_python(converter.to_url(value)) == value
+
+
+def test_string_converter_match() -> None:
     map_ = Map()
     map_.add(Rule('/<string(length=2):value>', ['GET'], 'string'))
     _test_match(map_, '/uk', 'GET', (map_.endpoints['string'][0], {'value': 'uk'}))
