@@ -337,43 +337,6 @@ class Quart(PackageStatic):
             )
         return None
 
-    async def dispatch_request(self) -> ResponseReturnValue:
-        request_ = _request_ctx_stack.top.request
-        if request_.routing_exception is not None:
-            raise request_.routing_exception
-
-        if request_.method == 'OPTIONS' and request_.url_rule.provide_automatic_options:
-            return await self.make_default_options_response()
-
-        handler = self.view_functions[request_.url_rule.endpoint]
-        return await handler(**request_.view_args)
-
-    async def full_dispatch_request(self) -> Response:
-        await self.try_trigger_before_first_request_functions()
-        try:
-            result = await self.preprocess_request()
-            if result is None:
-                result = await self.dispatch_request()
-        except Exception as error:
-            result = await self.handle_user_exception(error)
-        return await self.finalize_request(result)
-
-    async def preprocess_request(self) -> Optional[ResponseReturnValue]:
-        functions = self.before_request_funcs[None]
-        blueprint = _request_ctx_stack.top.request.blueprint
-        if blueprint is not None:
-            functions = chain(functions, self.before_request_funcs[blueprint])  # type: ignore
-
-        for function in functions:
-            result = await function()
-            if result is not None:
-                return result
-        return None
-
-    async def finalize_request(self, result: ResponseReturnValue) -> Response:
-        response = await self.make_response(result)
-        return await self.process_response(response)
-
     async def try_trigger_before_first_request_functions(self) -> None:
         if self._got_first_request:
             return
@@ -387,6 +350,74 @@ class Quart(PackageStatic):
     async def make_default_options_response(self) -> Response:
         methods = _request_ctx_stack.top.url_adapter.allowed_methods()
         return Response('', headers={'Allow': ', '.join(methods)})
+
+    async def full_dispatch_request(self, request: Optional[Request]=None) -> Response:
+        """Adds pre and post processing to the request dispatching.
+
+        Arguments:
+            request: The request itself, optional as Flask omits this
+                argument.
+        """
+        await self.try_trigger_before_first_request_functions()
+        try:
+            result = await self.preprocess_request(request)
+            if result is None:
+                result = await self.dispatch_request(request)
+        except Exception as error:
+            result = await self.handle_user_exception(error)
+        return await self.finalize_request(result, request)
+
+    async def preprocess_request(
+        self, request: Optional[Request]=None,
+    ) -> Optional[ResponseReturnValue]:
+        """Preprocess the request i.e. call before_request functions.
+
+        Arguments:
+            request: The request itself, optional as Flask omits this
+                argument.
+        """
+        request_ = request or _request_ctx_stack.top.request  # Required for Flask compatibility
+        functions = self.before_request_funcs[None]
+        blueprint = request_.blueprint
+        if blueprint is not None:
+            functions = chain(functions, self.before_request_funcs[blueprint])  # type: ignore
+
+        for function in functions:
+            result = await function()
+            if result is not None:
+                return result
+        return None
+
+    async def dispatch_request(self, request: Optional[Request]=None) -> ResponseReturnValue:
+        """Dispatch the request to the view function.
+
+        Arguments:
+            request: The request itself, optional as Flask omits this
+            argument.
+        """
+        request_ = request or _request_ctx_stack.top.request  # Required for Flask compatibility
+        if request_.routing_exception is not None:
+            raise request_.routing_exception
+
+        if request_.method == 'OPTIONS' and request_.url_rule.provide_automatic_options:
+            return await self.make_default_options_response()
+
+        handler = self.view_functions[request_.url_rule.endpoint]
+        return await handler(**request_.view_args)
+
+    async def finalize_request(
+        self,
+        result: ResponseReturnValue,
+        request: Optional[Request]=None,
+    ) -> Response:
+        """Turns the view response return value into a response.
+
+        Arguments:
+            request: The request itself, optional as Flask omits this
+                argument.
+        """
+        response = await self.make_response(result)
+        return await self.process_response(response, request)
 
     async def make_response(self, result: ResponseReturnValue) -> Response:
         """Make a Response from the result of the route handler.
@@ -424,9 +455,21 @@ class Quart(PackageStatic):
 
         return response
 
-    async def process_response(self, response: Response) -> Response:
+    async def process_response(
+        self,
+        response: Response,
+        request: Optional[Request]=None,
+    ) -> Response:
+        """Postprocess the request acting on the response.
+
+        Arguments:
+            response: The response after the request is finalized.
+            request: The request itself, optional as Flask omits this
+                argument.
+        """
+        request_ = request or _request_ctx_stack.top.request  # Required for Flask compatibility
         functions = self.after_request_funcs[None]
-        blueprint = _request_ctx_stack.top.request.blueprint
+        blueprint = request_.blueprint
         if blueprint is not None:
             functions = chain(functions, self.after_request_funcs[blueprint])  # type: ignore
 
@@ -441,7 +484,7 @@ class Quart(PackageStatic):
     async def handle_request(self, request: Request) -> Response:
         with self.request_context(request):
             try:
-                return await self.full_dispatch_request()
+                return await self.full_dispatch_request(request)
             except Exception as error:
                 return await self.handle_exception(error)
 
