@@ -26,7 +26,7 @@ setup(
     version='0.1.0',
     description="An asyncio web microframework with Flask's API",
     long_description=long_description,
-    url='https://github.com/pgjones/quart/',
+    url='https://gitlab.com/pgjones/quart/',
     author='P G Jones',
     author_email='philip.graham.jones@googlemail.com',
     license='MIT',
