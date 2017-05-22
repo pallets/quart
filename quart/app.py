@@ -323,7 +323,7 @@ class Quart(PackageStatic):
     def test_request_context(self, method: str, path: str) -> RequestContext:
         body: asyncio.Future = asyncio.Future()
         body.set_result(b'')
-        return RequestContext(self, Request(method, path, CIMultiDict(), body))
+        return RequestContext(self, self.request_class(method, path, CIMultiDict(), body))
 
     def create_url_adapter(self, request: Optional[Request]) -> Optional[MapAdapter]:
         if request is not None:
@@ -349,7 +349,7 @@ class Quart(PackageStatic):
 
     async def make_default_options_response(self) -> Response:
         methods = _request_ctx_stack.top.url_adapter.allowed_methods()
-        return Response('', headers={'Allow': ', '.join(methods)})
+        return self.response_class('', headers={'Allow': ', '.join(methods)})
 
     async def full_dispatch_request(self, request: Optional[Request]=None) -> Response:
         """Adds pre and post processing to the request dispatching.
@@ -443,7 +443,7 @@ class Quart(PackageStatic):
             status = status_or_headers
 
         if not isinstance(value, Response):
-            response = Response(value, content_type='text/html')
+            response = self.response_class(value, content_type='text/html')
         else:
             response = value
 

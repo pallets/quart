@@ -11,8 +11,6 @@ import h2.events
 import h2.exceptions
 from multidict import CIMultiDict
 
-from .wrappers import Request
-
 if TYPE_CHECKING:
     from .app import Quart  # noqa
 
@@ -80,7 +78,7 @@ class HTTPProtocol:
             path: str,
             headers: CIMultiDict,
     ) -> None:
-        request = Request(method, path, headers, self.streams[stream_id].future)
+        request = self.app.request_class(method, path, headers, self.streams[stream_id].future)
         # It is important that the app handles the request in a unique
         # task as the globals are task locals
         task = asyncio.ensure_future(self.app.handle_request(request))
