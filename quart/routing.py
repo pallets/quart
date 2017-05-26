@@ -70,7 +70,7 @@ class StringConverter(BaseConverter):
         else:
             maxlength = '' if maxlength is None else int(maxlength)  # type: ignore
             re_length = '{%d,%s}' % (minlength, maxlength)
-        self.regex = "[^/]{}".format(re_length)
+        self.regex = f"[^/]{re_length}"
 
 
 class AnyConverter(BaseConverter):
@@ -108,7 +108,7 @@ class IntegerConverter(BaseConverter):
 
     def to_url(self, value: int) -> str:
         if self.fixed_digits is not None:
-            return "{:0{fixed}d}".format(value, fixed=self.fixed_digits)
+            return f"{value:0{self.fixed_digits}d}"  # type: ignore
         else:
             return str(value)
 
@@ -208,7 +208,8 @@ class MapAdapter:
             if rule.buildable(values, method=method):
                 path = rule.build(**values)
                 if external:
-                    return "{}://{}{}".format(scheme or self.scheme, self.server_name, path)
+                    scheme = scheme or self.scheme
+                    return f"{scheme}://{self.server_name}{path}"
                 else:
                     return path
         raise BuildError()
@@ -247,7 +248,7 @@ class Rule:
             *, provide_automatic_options: bool=True
     ) -> None:
         if not rule.startswith('/'):
-            raise ValueError("Rule '{}' does not start with a slash".format(rule))
+            raise ValueError(f"Rule '{rule}' does not start with a slash")
         self.rule = rule
         self.is_leaf = not rule.endswith('/')
         if 'GET' in methods and 'HEAD' not in methods:
@@ -263,9 +264,7 @@ class Rule:
         self.provide_automatic_options = provide_automatic_options
 
     def __repr__(self) -> str:
-        return "Rule({}, {}, {}, {})".format(
-            self.rule, self.methods, self.endpoint, self.strict_slashes,
-        )
+        return f"Rule({self.rule}, {self.methods}, {self.endpoint}, {self.strict_slashes})"
 
     def match(self, path: str) -> Tuple[Optional[Dict[str, Any]], bool]:
         """Check if the path matches this Rule.
@@ -309,7 +308,7 @@ class Rule:
     def bind(self, map: Map) -> None:
         """Bind the Rule to a Map and compile it."""
         if self.map is not None:
-            raise RuntimeError("{} is already bound to {}".format(self, self.map))
+            raise RuntimeError(f"{self!r} is already bound to {self.map!r}")
 
         self.map = map
 
@@ -320,7 +319,7 @@ class Rule:
                 converter = self.map.converters[part.converter](
                     *part.arguments[0], **part.arguments[1],
                 )
-                pattern += "(?P<{}>{})".format(part.name, converter.regex)
+                pattern += f"(?P<{part.name}>{converter.regex})"
                 self._converters[part.name] = converter
                 builder += '{' + part.name + '}'
                 self._weights.append(WeightedPart(True, converter.weight))
@@ -330,9 +329,9 @@ class Rule:
                 self._weights.append(WeightedPart(False, -len(part)))
         if not self.is_leaf and self.strict_slashes:
             # Pattern should match with or without a trailing slash
-            pattern = "{}{}$".format(pattern.rstrip('/'), r'(?<!/)(?P<__slash__>/?)')
+            pattern = f"{pattern.rstrip('/')}(?<!/)(?P<__slash__>/?)$"
         else:
-            pattern = "{}$".format(pattern)
+            pattern = f"{pattern}$"
         self._pattern = re.compile(pattern)
         self._builder = builder
 
@@ -351,7 +350,7 @@ class Rule:
            sub keyed by converter first then weight second.
         """
         if self.map is None:
-            raise RuntimeError("{} is not bound to a Map".format(self))
+            raise RuntimeError(f"{self!r} is not bound to a Map")
         complex_rule = any(weight.converter for weight in self._weights)
         return (complex_rule, -len(self._weights), self._weights)
 
@@ -362,7 +361,7 @@ class Rule:
         The more complex routes (most converted parts) should be first.
         """
         if self.map is None:
-            raise RuntimeError("{} is not bound to a Map".format(self))
+            raise RuntimeError(f"{self!r} is not bound to a Map")
         return (-sum(1 for weight in self._weights if weight.converter))
 
 
@@ -375,7 +374,7 @@ def _parse_rule(rule: str) -> Generator[Union[str, VariablePart], None, None]:
             yield named_groups['static']
         variable = named_groups['variable']
         if variable in variable_names:
-            raise ValueError("Variable name {} used more than once".format(variable))
+            raise ValueError(f"Variable name {variable} used more than once")
         else:
             variable_names.add(variable)
         arguments = _parse_converter_args(named_groups['args'] or '')

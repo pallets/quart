@@ -20,12 +20,12 @@ class HTTPException(Exception):
 
     def get_body(self) -> str:
         """Get the HTML body."""
-        return """
+        return f"""
 <!doctype html>
-<title>{status_code} {name}</title>
-<h1>{name}</h1>
-{description}
-        """.format(status_code=self.status_code, name=self.name, description=self.description)
+<title>{self.status_code} {self.name}</title>
+<h1>{self.name}</h1>
+{self.description}
+        """
 
     def get_response(self) -> Response:
         return Response(
@@ -44,7 +44,7 @@ class HTTPStatusException(HTTPException):
         super().__init__(self.status.value, self.status.description, self.status.phrase)
 
     def __str__(self) -> str:
-        return "{}({})".format(self.__class__.__name__, self.status)
+        return f"{self.__class__.__name__}({self.status})"
 
 
 class BadRequest(HTTPStatusException):
@@ -94,7 +94,7 @@ def abort(status_code: int) -> None:
 
 
 all_http_exceptions = {
-    status.value: type("{}Error".format(status.name), (HTTPStatusException,), {'status': status})
+    status.value: type(f"{status.name}Error", (HTTPStatusException,), {'status': status})
     for status in HTTPStatus  # type: ignore
 }
 

@@ -63,5 +63,6 @@ def url_for(
 
     url = url_adapter.build(endpoint, values, method=_method, scheme=_scheme)
     if _anchor is not None:
-        url = "{}#{}".format(url, quote(_anchor))
+        quoted_anchor = quote(_anchor)
+        url = f"{url}#{quoted_anchor}"
     return url

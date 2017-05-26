@@ -157,8 +157,8 @@ class BlueprintSetupState:
             provide_automatic_options: bool=True
     ) -> None:
         if self.url_prefix is not None:
-            path = "{}{}".format(self.url_prefix, path)
-        endpoint = "{}.{}".format(self.blueprint.name, endpoint)
+            path = f"{self.url_prefix}{path}"
+        endpoint = f"{self.blueprint.name}.{endpoint}"
         self.app.add_url_rule(
             path, func, methods, endpoint, provide_automatic_options=provide_automatic_options,
         )

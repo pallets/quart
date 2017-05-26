@@ -320,7 +320,7 @@ class Response:
         cookie[key]['httponly'] = httponly  # type: ignore
         cookie[key]['secure'] = secure  # type: ignore
         if isinstance(max_age, timedelta):
-            cookie[key]['max-age'] = "{:d}".format(max_age.total_seconds())
+            cookie[key]['max-age'] = f"{max_age.total_seconds():d}"  # type: ignore
         if isinstance(max_age, int):
             cookie[key]['max-age'] = str(max_age)
         if expires is not None:

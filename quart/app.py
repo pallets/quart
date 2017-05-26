@@ -91,7 +91,7 @@ class Quart(PackageStatic):
 
         if self.has_static_folder:
             self.add_url_rule(
-                "{}/<path:filename>".format(self.static_url_path), self.send_static_file,
+                f"{self.static_url_path}/<path:filename>", self.send_static_file,
                 endpoint='static',
             )
 
@@ -254,7 +254,7 @@ class Quart(PackageStatic):
     def log_exception(self, exception_info: Tuple[type, BaseException, TracebackType]) -> None:
         request_ = _request_ctx_stack.top.request
         self.logger.error(
-            "Exception on {} {}".format(request_.method, request_.path),
+            f"Exception on {request_.method} {request_.path}",
             exc_info=exception_info,
         )
 
@@ -281,10 +281,9 @@ class Quart(PackageStatic):
         first_registration = False
         if blueprint.name in self.blueprints and self.blueprints[blueprint.name] is not blueprint:
             raise RuntimeError(
-                "Blueprint name '{}' is already registered by {}. "
-                "Blueprints must have unique names".format(
-                    blueprint.name, self.blueprints[blueprint.name],
-                ),
+                f"Blueprint name '{blueprint.name}' "
+                f"is already registered by {self.blueprints[blueprint.name]}. "
+                "Blueprints must have unique names",
             )
         else:
             self.blueprints[blueprint.name] = blueprint
