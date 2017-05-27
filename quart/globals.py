@@ -18,27 +18,8 @@ def _app_ctx_lookup(name: str) -> Any:
     return getattr(top, name)
 
 
-class _AppStack:
-
-    def __init__(self) -> None:
-        self._stack: List[Any] = []
-
-    def push(self, value: Any) -> None:
-        self._stack.append(value)
-
-    def pop(self) -> Any:
-        return self._stack.pop()
-
-    @property
-    def top(self) -> Any:
-        try:
-            return self._stack[-1]
-        except (AttributeError, IndexError):
-            return None
-
-
 _request_ctx_stack = LocalStack()
-_app_ctx_stack = _AppStack()
+_app_ctx_stack = LocalStack()
 
 current_app = LocalProxy(partial(_app_ctx_lookup, 'app'))  # type: ignore
 g = LocalProxy(partial(_app_ctx_lookup, 'g'))  # type: ignore
