@@ -3,8 +3,8 @@
 Installation
 ============
 
-Quart is only compatible with Python 3.6 or higher and is best
-installed using pip.
+Quart is only compatible with Python 3.6 or higher and is installed
+using pip.
 
 .. code-block:: sh
 
@@ -18,3 +18,9 @@ Virtualenv
 
 A virtual environment is recommended, see `venv module
 <https://docs.python.org/3/library/venv.html>`_.
+
+.. code-block:: sh
+
+    python -m venv venv
+    source venv/bin/activate
+    pip install quart

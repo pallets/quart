@@ -185,6 +185,14 @@ class Quart(PackageStatic):
         )
         self.view_functions[endpoint] = handler
 
+    def endpoint(self, endpoint: str) -> Callable:
+
+        def decorator(func: Callable) -> Callable:
+            handler = _ensure_coroutine(func)
+            self.view_functions[endpoint] = handler
+            return func
+        return decorator
+
     def errorhandler(self, error: Union[Exception, int]) -> Callable:
 
         def decorator(func: Callable) -> Callable:
@@ -199,6 +207,36 @@ class Quart(PackageStatic):
         if isinstance(error, int):
             error = all_http_exceptions[error]  # type: ignore
         self.error_handler_spec[name][error] = handler  # type: ignore
+
+    def template_filter(self, name: Optional[str]=None) -> Callable:
+
+        def decorator(func: Callable) -> Callable:
+            self.add_template_filter(func, name=name)
+            return func
+        return decorator
+
+    def add_template_filter(self, func: Callable, name: Optional[str]=None) -> None:
+        self.jinja_env.filters[name or func.__name__] = func
+
+    def template_test(self, name: Optional[str]=None) -> Callable:
+
+        def decorator(func: Callable) -> Callable:
+            self.add_template_test(func, name=name)
+            return func
+        return decorator
+
+    def add_template_test(self, func: Callable, name: Optional[str]=None) -> None:
+        self.jinja_env.tests[name or func.__name__] = func
+
+    def template_global(self, name: Optional[str]=None) -> Callable:
+
+        def decorator(func: Callable) -> Callable:
+            self.add_template_global(func, name=name)
+            return func
+        return decorator
+
+    def add_template_global(self, func: Callable, name: Optional[str]=None) -> None:
+        self.jinja_env.globals[name or func.__name__] = func
 
     def _find_exception_handler(self, error: Exception) -> Optional[Callable]:
         handler = _find_exception_handler(
