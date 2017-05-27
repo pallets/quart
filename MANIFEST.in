@@ -3,6 +3,8 @@ include LICENSE
 include README.rst
 recursive-include quart *.py
 recursive-include tests *.py
+recursive-include tests *.cfg
+recursive-include tests *.json
 recursive-exclude examples *
 recursive-exclude docs *
 exclude examples
