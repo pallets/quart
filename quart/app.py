@@ -350,32 +350,34 @@ class Quart(PackageStatic):
         methods = _request_ctx_stack.top.url_adapter.allowed_methods()
         return self.response_class('', headers={'Allow': ', '.join(methods)})
 
-    async def full_dispatch_request(self, request: Optional[Request]=None) -> Response:
+    async def full_dispatch_request(
+        self, request_context: Optional[RequestContext]=None,
+    ) -> Response:
         """Adds pre and post processing to the request dispatching.
 
         Arguments:
-            request: The request itself, optional as Flask omits this
-                argument.
+            request_context: The request context, optional as Flask
+                omits this argument.
         """
         await self.try_trigger_before_first_request_functions()
         try:
-            result = await self.preprocess_request(request)
+            result = await self.preprocess_request(request_context)
             if result is None:
-                result = await self.dispatch_request(request)
+                result = await self.dispatch_request(request_context)
         except Exception as error:
             result = await self.handle_user_exception(error)
-        return await self.finalize_request(result, request)
+        return await self.finalize_request(result, request_context)
 
     async def preprocess_request(
-        self, request: Optional[Request]=None,
+        self, request_context: Optional[RequestContext]=None,
     ) -> Optional[ResponseReturnValue]:
         """Preprocess the request i.e. call before_request functions.
 
         Arguments:
-            request: The request itself, optional as Flask omits this
-                argument.
+            request_context: The request context, optional as Flask
+                omits this argument.
         """
-        request_ = request or _request_ctx_stack.top.request  # Required for Flask compatibility
+        request_ = (request_context or _request_ctx_stack.top).request
         functions = self.before_request_funcs[None]
         blueprint = request_.blueprint
         if blueprint is not None:
@@ -387,14 +389,16 @@ class Quart(PackageStatic):
                 return result
         return None
 
-    async def dispatch_request(self, request: Optional[Request]=None) -> ResponseReturnValue:
+    async def dispatch_request(
+        self, request_context: Optional[RequestContext]=None,
+    ) -> ResponseReturnValue:
         """Dispatch the request to the view function.
 
         Arguments:
-            request: The request itself, optional as Flask omits this
-            argument.
+            request_context: The request context, optional as Flask
+                omits this argument.
         """
-        request_ = request or _request_ctx_stack.top.request  # Required for Flask compatibility
+        request_ = (request_context or _request_ctx_stack.top).request
         if request_.routing_exception is not None:
             raise request_.routing_exception
 
@@ -407,16 +411,17 @@ class Quart(PackageStatic):
     async def finalize_request(
         self,
         result: ResponseReturnValue,
-        request: Optional[Request]=None,
+        request_context: Optional[RequestContext]=None,
     ) -> Response:
         """Turns the view response return value into a response.
 
         Arguments:
-            request: The request itself, optional as Flask omits this
-                argument.
+            result: The result of the request to finalize into a response.
+            request_context: The request context, optional as Flask
+                omits this argument.
         """
         response = await self.make_response(result)
-        return await self.process_response(response, request)
+        return await self.process_response(response, request_context)
 
     async def make_response(self, result: ResponseReturnValue) -> Response:
         """Make a Response from the result of the route handler.
@@ -457,16 +462,16 @@ class Quart(PackageStatic):
     async def process_response(
         self,
         response: Response,
-        request: Optional[Request]=None,
+        request_context: Optional[RequestContext]=None,
     ) -> Response:
         """Postprocess the request acting on the response.
 
         Arguments:
             response: The response after the request is finalized.
-            request: The request itself, optional as Flask omits this
-                argument.
+            request_context: The request context, optional as Flask
+                omits this argument.
         """
-        request_ = request or _request_ctx_stack.top.request  # Required for Flask compatibility
+        request_ = (request_context or _request_ctx_stack.top).request
         functions = self.after_request_funcs[None]
         blueprint = request_.blueprint
         if blueprint is not None:
@@ -475,15 +480,15 @@ class Quart(PackageStatic):
         for function in functions:
             response = await function(response)
 
-        session_ = _request_ctx_stack.top.session
+        session_ = (request_context or _request_ctx_stack.top).session
         if not self.session_interface.is_null_session(session_):
             response = self.save_session(session_, response)  # type: ignore
         return response
 
     async def handle_request(self, request: Request) -> Response:
-        with self.request_context(request):
+        with self.request_context(request) as request_context:
             try:
-                return await self.full_dispatch_request(request)
+                return await self.full_dispatch_request(request_context)
             except Exception as error:
                 return await self.handle_exception(error)
 
