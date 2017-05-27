@@ -5,7 +5,8 @@ from multidict import CIMultiDict
 
 from quart.app import Quart
 from quart.ctx import (
-    _AppCtxGlobals, AppContext, has_app_context, has_request_context, RequestContext,
+    _AppCtxGlobals, after_this_request, AppContext, has_app_context, has_request_context,
+    RequestContext,
 )
 from quart.exceptions import MethodNotAllowed, NotFound, RedirectRequired
 from quart.wrappers import Request
@@ -40,6 +41,12 @@ def test_request_context_matching_error(
     request = Request('GET', '/', CIMultiDict(), None)
     RequestContext(app, request)
     assert isinstance(request.routing_exception, exception_type)  # type: ignore
+
+
+def test_after_this_request() -> None:
+    with RequestContext(Quart(__name__), Request('GET', '/', CIMultiDict(), None)) as context:
+        after_this_request(lambda: 'hello')
+        assert context._after_request_functions[0]() == 'hello'
 
 
 def test_has_request_context() -> None:

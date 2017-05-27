@@ -472,7 +472,8 @@ class Quart(PackageStatic):
                 omits this argument.
         """
         request_ = (request_context or _request_ctx_stack.top).request
-        functions = self.after_request_funcs[None]
+        functions = (request_context or _request_ctx_stack.top)._after_request_functions
+        functions = chain(functions, self.after_request_funcs[None])
         blueprint = request_.blueprint
         if blueprint is not None:
             functions = chain(functions, self.after_request_funcs[blueprint])  # type: ignore

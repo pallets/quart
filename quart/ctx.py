@@ -1,5 +1,5 @@
 from types import TracebackType
-from typing import Any, Iterator, Optional, TYPE_CHECKING
+from typing import Any, Callable, Iterator, List, Optional, TYPE_CHECKING  # noqa: F401
 
 from .exceptions import MethodNotAllowed, NotFound, RedirectRequired
 from .globals import _app_ctx_stack, _request_ctx_stack
@@ -22,6 +22,8 @@ class RequestContext:
         request: The request itself.
         url_adapter: An adapter bound to this request.
         session: The session information relating to this request.
+        _after_request_functions: List of functions to execute after the curret
+            request, see :func:`after_this_request`.
     """
 
     def __init__(self, app: 'Quart', request: Request) -> None:
@@ -30,6 +32,8 @@ class RequestContext:
         self.url_adapter = app.create_url_adapter(self.request)
         self.request.routing_exception = None
         self.session: Optional[Session] = None
+
+        self._after_request_functions: List[Callable] = []
 
         self.match_request()
 
@@ -45,7 +49,7 @@ class RequestContext:
         except (NotFound, MethodNotAllowed, RedirectRequired) as error:
             self.request.routing_exception = error
 
-    def __enter__(self) -> None:
+    def __enter__(self) -> 'RequestContext':
         if _app_ctx_stack.top is None:
             app_ctx = self.app.app_context()
             app_ctx.push()
@@ -54,6 +58,7 @@ class RequestContext:
         self.session = self.app.open_session(self.request)
         if self.session is None:
             self.session = self.app.make_null_session()
+        return self
 
     def __exit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
         _request_ctx_stack.pop()
@@ -91,6 +96,26 @@ class AppContext:
 
     def __exit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
         self.pop()
+
+
+def after_this_request(func: Callable) -> Callable:
+    """Schedule the func to be called after the current request.
+
+    This is useful in situations whereby you want an after request
+    function for a specific route or circumstance only, for example,
+
+    .. code-block:: python
+
+        def index():
+            @after_this_request
+            def set_cookie(response):
+                response.set_cookie('special', 'value')
+                return response
+
+            ...
+    """
+    _request_ctx_stack.top._after_request_functions.append(func)
+    return func
 
 
 def has_app_context() -> bool:
