@@ -19,6 +19,7 @@ from .ctx import (
 from .exceptions import all_http_exceptions, HTTPException
 from .globals import g, request, session
 from .helpers import get_flashed_messages, url_for
+from .json import JSONDecoder, JSONEncoder
 from .logging import create_logger
 from .routing import Map, MapAdapter, Rule
 from .serving import run_app
@@ -50,6 +51,8 @@ class Quart(PackageStatic):
         'autoescape': True,
         'extensions': ['jinja2.ext.autoescape', 'jinja2.ext.with_'],
     }
+    json_decoder = JSONDecoder
+    json_encoder = JSONEncoder
     logger_name = ConfigAttribute('LOGGER_NAME')
     permanent_session_lifetime = ConfigAttribute(
         'PERMANENT_SESSION_LIFETIME', converter=_convert_timedelta,

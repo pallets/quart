@@ -1,11 +1,43 @@
 import json
-from typing import Any
+from datetime import date
+from email.utils import formatdate
+from time import mktime
+from typing import Any, TYPE_CHECKING
+from uuid import UUID
 
-from .globals import current_app
-from .wrappers import Response
+from .globals import _app_ctx_stack, _request_ctx_stack, current_app, request
+
+if TYPE_CHECKING:
+    from .wrappers import Response  # noqa: F401
 
 
-def jsonify(*args: Any, **kwargs: Any) -> Response:
+def dumps(object_: Any, **kwargs: Any) -> str:
+    json_encoder = JSONEncoder
+    if _app_ctx_stack.top is not None:  # has_app_context requires a circular import
+        json_encoder = current_app.json_encoder
+        if _request_ctx_stack.top is not None:  # has_request_context requires a circular import
+            blueprint = current_app.blueprints.get(request.blueprint)
+            if blueprint is not None and blueprint.json_encoder is not None:
+                json_encoder = blueprint.json_encoder
+    kwargs.setdefault('cls', json_encoder)
+
+    return json.dumps(object_, **kwargs)
+
+
+def loads(object_: Any, **kwargs: Any) -> str:
+    json_decoder = JSONDecoder
+    if _app_ctx_stack.top is not None:  # has_app_context requires a circular import
+        json_decoder = current_app.json_decoder
+        if _request_ctx_stack.top is not None:  # has_request_context requires a circular import
+            blueprint = current_app.blueprints.get(request.blueprint)
+            if blueprint is not None and blueprint.json_decoder is not None:
+                json_decoder = blueprint.json_decoder
+    kwargs.setdefault('cls', json_decoder)
+
+    return json.loads(object_, **kwargs)
+
+
+def jsonify(*args: Any, **kwargs: Any) -> 'Response':
     if args and kwargs:
         raise TypeError('jsonify() behavior undefined when passed both args and kwargs')
     elif len(args) == 1:
@@ -19,5 +51,21 @@ def jsonify(*args: Any, **kwargs: Any) -> Response:
         indent = 2
         separators = (', ', ': ')
 
-    body = json.dumps(data, indent=indent, separators=separators)
-    return Response(body, content_type=current_app.config['JSONIFY_MIMETYPE'])
+    body = dumps(data, indent=indent, separators=separators)
+    return current_app.response_class(body, content_type=current_app.config['JSONIFY_MIMETYPE'])
+
+
+class JSONEncoder(json.JSONEncoder):
+
+    def default(self, object_: Any) -> Any:
+        if isinstance(object_, date):
+            return formatdate(timeval=mktime((object_.timetuple())), localtime=False, usegmt=True)  # type: ignore  # noqa
+        if isinstance(object_, UUID):
+            return str(object_)
+        if hasattr(object_, '__html__'):
+            return str(object_.__html__())
+        return super().default(object_)
+
+
+class JSONDecoder(json.JSONDecoder):
+    pass

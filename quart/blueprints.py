@@ -1,4 +1,5 @@
 from functools import update_wrapper
+from json import JSONDecoder, JSONEncoder
 from typing import Callable, List, Optional, TYPE_CHECKING, Union
 
 from .static import PackageStatic
@@ -19,9 +20,18 @@ class Blueprint(PackageStatic):
     app.
 
     Attributes:
+        json_decoder: The decoder to use for routes in this blueprint,
+            the default, None, indicates that the app encoder should be
+            used.
+        json_encoder: The encoder to use for routes in this blueprint,
+            the default, None, indicates that the app encoder should be
+            used.
         url_prefix: An additional prefix to every route rule in the
             blueprint.
     """
+
+    json_decoder: Optional[JSONDecoder] = None
+    json_encoder: Optional[JSONEncoder] = None
 
     def __init__(
             self,

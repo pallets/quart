@@ -26,6 +26,7 @@ How-To Guides
    configuration.rst
    factory_pattern.rst
    flask_migration.rst
+   json_encoding.rst
 
 Discussion Points
 -----------------

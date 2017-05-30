@@ -1,5 +1,4 @@
 import io
-import json
 from asyncio import Future
 from cgi import FieldStorage, parse_header
 from datetime import datetime, timedelta, timezone
@@ -8,6 +7,8 @@ from typing import Any, AnyStr, Callable, Dict, Iterable, Optional, TYPE_CHECKIN
 from urllib.parse import parse_qs, unquote, urlparse
 
 from multidict import CIMultiDict, MultiDict
+
+from .json import loads
 
 if TYPE_CHECKING:
     from .routing import Rule  # noqa
@@ -138,7 +139,7 @@ class Request:
 
         try:
             data = await self.data
-            result = json.loads(data)
+            result = loads(data)
         except ValueError as error:
             if silent:
                 result = None
