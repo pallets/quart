@@ -341,7 +341,7 @@ class Quart(PackageStatic):
         return self.session_interface.make_null_session(self)
 
     def save_session(self, session: Session, response: Response) -> Response:
-        return self.session_interface.save_session(self, session, response)
+        return self.session_interface.save_session(self, session, response)  # type: ignore
 
     def app_context(self) -> AppContext:
         return AppContext(self)
