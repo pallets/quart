@@ -25,6 +25,7 @@ How-To Guides
    blueprints.rst
    configuration.rst
    factory_pattern.rst
+   flask_extensions.rst
    flask_migration.rst
    json_encoding.rst
 
