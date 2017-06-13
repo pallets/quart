@@ -24,6 +24,10 @@ from .logging import create_logger
 from .routing import Map, MapAdapter, Rule
 from .serving import run_app
 from .sessions import SecureCookieSessionInterface, Session
+from .signals import (
+    appcontext_tearing_down, got_request_exception, request_finished, request_started,
+    request_tearing_down,
+)
 from .static import PackageStatic
 from .templating import _default_template_context_processor, DispatchingJinjaLoader, Environment
 from .testing import TestClient
@@ -83,6 +87,8 @@ class Quart(PackageStatic):
         self.error_handler_spec: Dict[AppOrBlueprintKey, Dict[Exception, Callable]] = defaultdict(dict)  # noqa: E501
         self.static_folder = static_folder
         self.static_url_path = static_url_path
+        self.teardown_appcontext_funcs: List[Callable] = []
+        self.teardown_request_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)  # noqa: E501
         self.template_context_processors: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)  # noqa: E501
         self.url_map = Map()
         self.view_functions: Dict[str, Callable] = {}
@@ -283,6 +289,7 @@ class Quart(PackageStatic):
         By default this switches the error response to a 500 internal
         server error.
         """
+        got_request_exception.send(self, exception=error)
         internal_server_error = all_http_exceptions[500]()
         handler = self._find_exception_handler(internal_server_error)
 
@@ -314,6 +321,14 @@ class Quart(PackageStatic):
         self.after_request_funcs[name].append(handler)
         return func
 
+    def teardown_request(self, func: Callable, name: AppOrBlueprintKey=None) -> Callable:
+        self.teardown_request_funcs[name].append(func)
+        return func
+
+    def teardown_appcontext(self, func: Callable) -> Callable:
+        self.teardown_appcontext_funcs.append(func)
+        return func
+
     def context_processor(self, func: Callable, name: AppOrBlueprintKey=None) -> Callable:
         self.template_context_processors[name].append(func)
         return func
@@ -342,6 +357,30 @@ class Quart(PackageStatic):
 
     def save_session(self, session: Session, response: Response) -> Response:
         return self.session_interface.save_session(self, session, response)  # type: ignore
+
+    def do_teardown_request(
+            self, request_context: Optional[RequestContext]=None,
+    ) -> None:
+        """Teardown the request, calling the teardown functions.
+
+        Arguments:
+            request_context: The request context, optional as Flask
+                omits this argument.
+        """
+        request_ = (request_context or _request_ctx_stack.top).request
+        functions = self.teardown_request_funcs[None]
+        blueprint = request_.blueprint
+        if blueprint is not None:
+            functions = chain(functions, self.teardown_request_funcs[blueprint])  # type: ignore
+
+        for function in functions:
+            function(exc=None)
+        request_tearing_down.send(self, exc=None)
+
+    def do_teardown_appcontext(self) -> None:
+        for function in self.teardown_appcontext_funcs:
+            function(exc=None)
+        appcontext_tearing_down.send(self, exc=None)
 
     def app_context(self) -> AppContext:
         return AppContext(self)
@@ -380,6 +419,12 @@ class Quart(PackageStatic):
     async def try_trigger_before_first_request_functions(self) -> None:
         if self._got_first_request:
             return
+
+        # Reverse the teardown functions, so as to match the expected usage
+        self.teardown_appcontext_funcs = list(reversed(self.teardown_appcontext_funcs))
+        for key, value in self.teardown_request_funcs.items():
+            self.teardown_request_funcs[key] = list(reversed(value))
+
         with await self._first_request_lock:
             if self._got_first_request:
                 return
@@ -401,6 +446,7 @@ class Quart(PackageStatic):
                 omits this argument.
         """
         await self.try_trigger_before_first_request_functions()
+        request_started.send(self)
         try:
             result = await self.preprocess_request(request_context)
             if result is None:
@@ -462,7 +508,9 @@ class Quart(PackageStatic):
                 omits this argument.
         """
         response = await self.make_response(result)
-        return await self.process_response(response, request_context)
+        response = await self.process_response(response, request_context)
+        request_finished.send(self, response=response)
+        return response
 
     async def make_response(self, result: ResponseReturnValue) -> Response:
         """Make a Response from the result of the route handler.

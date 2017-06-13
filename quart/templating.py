@@ -1,9 +1,10 @@
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, TYPE_CHECKING, Union
 
-from jinja2 import BaseLoader, Environment as BaseEnvironment, TemplateNotFound
+from jinja2 import BaseLoader, Environment as BaseEnvironment, Template, TemplateNotFound
 
 from .ctx import has_app_context, has_request_context
 from .globals import _app_ctx_stack, _request_ctx_stack, current_app
+from .signals import before_render_template, template_rendered
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa
@@ -74,7 +75,7 @@ async def render_template(template_name_or_list: Union[str, List[str]], **contex
     """
     current_app.update_template_context(context)
     template = current_app.jinja_env.get_or_select_template(template_name_or_list)
-    return await template.render_async(context)
+    return await _render(template, context)
 
 
 async def render_template_string(source: str, **context: Any) -> str:
@@ -85,7 +86,16 @@ async def render_template_string(source: str, **context: Any) -> str:
         context: The variables to pass to the template.
     """
     current_app.update_template_context(context)
-    return await current_app.jinja_env.from_string(source).render_async(context)
+    template = current_app.jinja_env.from_string(source)
+    return await _render(template, context)
+
+
+async def _render(template: Template, context: dict) -> str:
+    app = current_app._get_current_object()
+    before_render_template.send(app, template=template, context=context)
+    rendered_template = await template.render_async(context)  # type: ignore
+    template_rendered.send(app, template=template, context=context)
+    return rendered_template
 
 
 def _default_template_context_processor() -> Dict[str, Any]:

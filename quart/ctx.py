@@ -4,6 +4,7 @@ from typing import Any, Callable, Iterator, List, Optional, TYPE_CHECKING  # noq
 from .exceptions import MethodNotAllowed, NotFound, RedirectRequired
 from .globals import _app_ctx_stack, _request_ctx_stack
 from .sessions import Session  # noqa
+from .signals import appcontext_popped, appcontext_pushed
 from .wrappers import Request
 
 if TYPE_CHECKING:
@@ -61,6 +62,7 @@ class RequestContext:
         return self
 
     def __exit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+        self.app.do_teardown_request(self)
         _request_ctx_stack.pop()
         self.app.app_context().pop()
 
@@ -83,12 +85,21 @@ class AppContext:
         self.app = app
         self.url_adapter = app.create_url_adapter(None)
         self.g = app.app_ctx_globals_class()
+        self._app_reference_count = 0
 
     def push(self) -> None:
+        self._app_reference_count += 1
         _app_ctx_stack.push(self)
+        appcontext_pushed.send(self.app)
 
     def pop(self) -> None:
-        _app_ctx_stack.pop()
+        self._app_reference_count -= 1
+        try:
+            if self._app_reference_count <= 0:
+                self.app.do_teardown_appcontext()
+        finally:
+            _app_ctx_stack.pop()
+        appcontext_popped.send(self.app)
 
     def __enter__(self) -> 'AppContext':
         self.push()

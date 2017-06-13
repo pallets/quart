@@ -13,6 +13,7 @@ with open(os.path.join(PROJECT_ROOT, 'README.rst')) as file_:
 
 INSTALL_REQUIRES = [
     'aiofiles',
+    'blinker',
     'h11',
     'h2',
     'itsdangerous',

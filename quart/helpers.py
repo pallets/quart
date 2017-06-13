@@ -3,6 +3,7 @@ from urllib.parse import quote
 
 from .ctx import _app_ctx_stack, _request_ctx_stack
 from .globals import current_app, request, session
+from .signals import message_flashed
 from .wrappers import Response
 
 
@@ -19,6 +20,7 @@ def flash(message: str, category: str='message') -> None:
     flashes = session.get('_flashes', [])
     flashes.append((category, message))
     session['_flashes'] = flashes
+    message_flashed.send(current_app._get_current_object(), message=message, category=category)
 
 
 def get_flashed_messages(
