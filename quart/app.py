@@ -51,6 +51,7 @@ class Quart(PackageStatic):
     config_class = Config
 
     debug = ConfigAttribute('DEBUG')
+    jinja_environment = Environment
     jinja_options = {
         'autoescape': True,
         'extensions': ['jinja2.ext.autoescape', 'jinja2.ext.with_'],
@@ -107,6 +108,13 @@ class Quart(PackageStatic):
         self.template_context_processors[None] = [_default_template_context_processor]
 
     @property
+    def name(self) -> str:
+        if self.import_name == '__main__':
+            path = Path(getattr(sys.modules['__main__'], '__file__', '__main__.py'))
+            return path.stem
+        return self.import_name
+
+    @property
     def logger(self) -> Logger:
         if self._logger is not None:
             return self._logger
@@ -129,7 +137,7 @@ class Quart(PackageStatic):
             options['autoescape'] = self.select_jinja_autoescape
         if 'auto_reload' not in options:
             options['auto_reload'] = self.config['TEMPLATES_AUTO_RELOAD'] or self.debug
-        jinja_env = Environment(self, **options)
+        jinja_env = self.jinja_environment(self, **options)
         jinja_env.globals.update({
             'config': self.config,
             'g': g,
@@ -154,7 +162,7 @@ class Quart(PackageStatic):
         if has_request_context():
             blueprint = _request_ctx_stack.top.request.blueprint
             if blueprint is not None and blueprint in self.template_context_processors:
-                processors.extend(self.template_context_processors[blueprint])
+                processors = chain(processors, self.template_context_processors[blueprint])  # type: ignore # noqa
         extra_context: dict = {}
         for processor in processors:
             extra_context.update(processor())
