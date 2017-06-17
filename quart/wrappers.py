@@ -113,6 +113,11 @@ class Request:
         return parse_header(self.headers.get('Content-Type'))[1]
 
     @property
+    def remote_addr(self) -> str:
+        """Returns the remote address of the request, faked into the headers."""
+        return self.headers['Remote-Addr']
+
+    @property
     async def data(self) -> str:
         """Awaitable body data as decoded from bytes."""
         if self._data is None:

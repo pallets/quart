@@ -78,6 +78,7 @@ class HTTPProtocol:
             path: str,
             headers: CIMultiDict,
     ) -> None:
+        headers['Remote-Addr'] = self.transport.get_extra_info('peername')[0]
         request = self.app.request_class(method, path, headers, self.streams[stream_id].future)
         # It is important that the app handles the request in a unique
         # task as the globals are task locals
