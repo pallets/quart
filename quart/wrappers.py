@@ -142,8 +142,8 @@ class Request:
         if not (force or self.is_json):
             return None
 
+        data = await self.data
         try:
-            data = await self.data
             result = loads(data)
         except ValueError as error:
             if silent:
@@ -196,7 +196,10 @@ class Request:
         data = await self._body
         self._form = MultiDict()
         self._files = MultiDict()
-        content_type, parameters = parse_header(self.headers.get('Content-Type'))
+        content_header = self.headers.get('Content-Type')
+        if content_header is None:
+            return
+        content_type, parameters = parse_header(content_header)
         if content_type == 'application/x-www-form-urlencoded':
             for key, values in parse_qs(data.decode()).items():
                 for value in values:

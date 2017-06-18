@@ -25,9 +25,11 @@ by the extension. For example,
 Caveats
 -------
 
-Flask extensions that try to access any part of the request body will
-fail, as these methods are asynchronous (this can be fixed if it looks
-like it would be useful).
+Flask extensions that try to access some parts of the request body
+will fail, as these methods are asynchronous - only the form and file
+properties are available in a synchronous form. To enable this the
+request body must be fully received before any part of the request is
+handled, which is a limitation not present in vanilla flask.
 
 Trying to use Flask alongside Quart in the same runtime will likely not
 work, and lead to surprising errors.
