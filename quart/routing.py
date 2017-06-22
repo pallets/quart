@@ -175,7 +175,7 @@ class Map:
     ) -> 'MapAdapter':
         return MapAdapter(self, scheme, server_name, method, path)
 
-    def bind(self, server_name: str,  scheme: str) -> 'MapAdapter':
+    def bind(self, scheme: str, server_name: str) -> 'MapAdapter':
         return MapAdapter(self, scheme, server_name)
 
 

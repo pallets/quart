@@ -74,7 +74,7 @@ class SecureCookieSession(SessionMixin, dict, Session):
 def _wrap_no_modification(method: Callable) -> Callable:
     @wraps(method)
     def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
-        raise RuntimeError('Cannot create session.')
+        raise RuntimeError('Cannot create session, ensure there is a app secret key.')
     return wrapper
 
 
