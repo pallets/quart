@@ -28,6 +28,7 @@ How-To Guides
    flask_extensions.rst
    flask_migration.rst
    json_encoding.rst
+   logging.rst
    session_storage.rst
 
 Discussion Points

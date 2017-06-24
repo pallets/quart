@@ -11,6 +11,11 @@ DEBUG_LOG_FORMAT = "{0}\n{1}\n{2}\n{0}".format(
 
 
 def create_logger(app: 'Quart') -> Logger:
+    """Create a logger based on the app settings.
+
+    Notably this will alter the formating and log level based on the
+    app configuration.
+    """
     logger = getLogger(app.logger_name)
     if app.debug and app.config['LOGGER_HANDLER_POLICY'] in {'always', 'debug'}:
         debug_handler = StreamHandler()

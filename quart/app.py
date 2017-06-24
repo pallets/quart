@@ -116,6 +116,17 @@ class Quart(PackageStatic):
 
     @property
     def logger(self) -> Logger:
+        """A :class:`logging.Logger` logger for the app.
+
+        This can be used to log messages in a format as defined in the
+        app configuration, for example,
+
+        .. code-block:: python
+
+            app.logger.debug("Request method %s", request.method)
+            app.logger.error("Error, of some kind")
+
+        """
         if self._logger is not None:
             return self._logger
         else:
@@ -152,6 +163,7 @@ class Quart(PackageStatic):
         return DispatchingJinjaLoader(self)
 
     def select_jinja_autoescape(self, filename: str) -> bool:
+
         """Returns True if the filename indicates that it should be escaped."""
         if filename is None:
             return True
