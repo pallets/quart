@@ -21,11 +21,14 @@ class SessionMixin:
     The attributes add standard and expected Session modification flags.
 
     Attributes:
+        accessed: Indicates if the Session has been accessed during
+            the request, thereby allowing the Vary: Cookie header.
         modified: Indicates if the Session has been modified during
             the request handling.
         new: Indicates if the Session is new.
     """
 
+    accessed = True
     modified = True
     new = False
 
@@ -41,7 +44,16 @@ class SessionMixin:
 def _wrap_modified(method: Callable) -> Callable:
     @wraps(method)
     def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+        self.accessed = True
         self.modified = True
+        return method(self, *args, **kwargs)
+    return wrapper
+
+
+def _wrap_accessed(method: Callable) -> Callable:
+    @wraps(method)
+    def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+        self.accessed = True
         return method(self, *args, **kwargs)
     return wrapper
 
@@ -55,16 +67,19 @@ class SecureCookieSession(SessionMixin, dict, Session):
     """A session implementation using cookies.
 
     Note that the intention is for this session to use cookies, this
-    class does not implement anything bar modification flags.
+    class does not implement anything bar modification and accessed
+    flags.
     """
-
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
+        self.accessed = False
         self.modified = False
 
     __delitem__ = _wrap_modified(dict.__delitem__)
+    __getitem__ = _wrap_accessed(dict.__getitem__)
     __setitem__ = _wrap_modified(dict.__setitem__)
     clear = _wrap_modified(dict.clear)
+    get = _wrap_accessed(dict.get)
     pop = _wrap_modified(dict.pop)
     popitem = _wrap_modified(dict.popitem)
     setdefault = _wrap_modified(dict.setdefault)
@@ -162,12 +177,19 @@ class SessionInterface:
     pickle_based = False
 
     def make_null_session(self, app: 'Quart') -> NullSession:
+        """Create a Null session object.
+
+        This is used in replacement of an actual session if sessions
+        are not configured or active.
+        """
         return self.null_session_class()
 
     def is_null_session(self, instance: object) -> bool:
+        """Returns True is the instance is a null session."""
         return isinstance(instance, self.null_session_class)
 
     def get_cookie_domain(self, app: 'Quart') -> Optional[str]:
+        """Helper method to return the Cookie Domain for the App."""
         if app.config['SESSION_COOKIE_DOMAIN'] is not None:
             return app.config['SESSION_COOKIE_DOMAIN']
         elif app.config['SERVER_NAME'] is not None:
@@ -176,21 +198,34 @@ class SessionInterface:
             return None
 
     def get_cookie_path(self, app: 'Quart') -> str:
+        """Helper method to return the Cookie path for the App."""
         return app.config['SESSION_COOKIE_PATH'] or app.config['APPLICATION_ROOT'] or '/'
 
     def get_cookie_httponly(self, app: 'Quart') -> bool:
+        """Helper method to return if the Cookie should be HTTPOnly for the App."""
         return app.config['SESSION_COOKIE_HTTPONLY']
 
     def get_cookie_secure(self, app: 'Quart') -> bool:
+        """Helper method to return if the Cookie should be Secure for the App."""
         return app.config['SESSION_COOKIE_SECURE']
 
     def get_expiration_time(self, app: 'Quart', session: SessionMixin) -> Optional[datetime]:
+        """Helper method to return the Session expiration time.
+
+        If the session is not 'permanent' it will expire as and when
+        the browser stops accessing the app.
+        """
         if session.permanent:
             return datetime.utcnow() + app.permanent_session_lifetime
         else:
             return None
 
     def should_set_cookie(self, app: 'Quart', session: SessionMixin) -> bool:
+        """Helper method to return if the Set Cookie header should be present.
+
+        This triggers if the session is marked as modified or the app
+        is configured to always refresh the cookie.
+        """
         if session.modified:
             return True
         save_each = app.config['SESSION_REFRESH_EACH_REQUEST']
@@ -216,6 +251,11 @@ class SessionInterface:
 
 
 class SecureCookieSessionInterface(SessionInterface):
+    """A Session interface that uses cookies as storage.
+
+    This will store the data on the cookie in plain text, but with a
+    signature to prevent modification.
+    """
 
     digest_method = staticmethod(hashlib.sha1)  # type: ignore
     key_derivation = 'hmac'
@@ -224,6 +264,10 @@ class SecureCookieSessionInterface(SessionInterface):
     session_class = SecureCookieSession
 
     def get_signing_serializer(self, app: 'Quart') -> Optional[URLSafeTimedSerializer]:
+        """Return a serializer for the session that also signs data.
+
+        This will return None if the app is not configured for secrets.
+        """
         if not app.secret_key:
             return None
 
@@ -266,6 +310,9 @@ class SecureCookieSessionInterface(SessionInterface):
             if session.modified:
                 response.delete_cookie(app.session_cookie_name, domain=domain, path=path)
             return response
+
+        if session.accessed:
+            response.headers['Vary'] = 'Cookie'
 
         if not self.should_set_cookie(app, session):
             return response
