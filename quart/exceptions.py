@@ -1,7 +1,6 @@
 from http import HTTPStatus
 from typing import Iterable, Optional
 
-from .utils import redirect
 from .wrappers import Response
 
 # The set of HTTP status errors exposed by Werkzeug by default
@@ -76,13 +75,25 @@ class UnavailableForLegalReasons(HTTPException):
         )
 
 
-class RedirectRequired(HTTPException):
+class RedirectRequired(HTTPStatusException):
 
     def __init__(self, redirect_path: str) -> None:
+        super().__init__(HTTPStatus.MOVED_PERMANENTLY)
         self.redirect_path = redirect_path
 
-    def get_response(self) -> Response:
-        return redirect(self.redirect_path)
+    def get_body(self) -> str:
+        return f"""
+<!doctype html>
+<title>Redirect</title>
+<h1>Redirect</h1>
+You should be redirected to <a href="{self.redirect_path}">{self.redirect_path}</a>,
+it not please click the link
+    """
+
+    def get_headers(self) -> dict:
+        headers = super().get_headers()
+        headers.update({'Location': self.redirect_path})
+        return headers
 
 
 def abort(status_code: int) -> None:

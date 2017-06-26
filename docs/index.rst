@@ -30,6 +30,7 @@ How-To Guides
    json_encoding.rst
    logging.rst
    session_storage.rst
+   testing.rst
 
 Discussion Points
 -----------------

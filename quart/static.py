@@ -79,6 +79,8 @@ class PackageStatic:
 
         Use as
 
+        .. code-block:: python
+
             with app.open_resouce(path) as file_:
                 file_.read()
         """

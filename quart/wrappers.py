@@ -1,14 +1,14 @@
 import io
-from asyncio import Future
 from cgi import FieldStorage, parse_header
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
-from typing import Any, AnyStr, Callable, Dict, Iterable, Optional, TYPE_CHECKING, Union  # noqa
+from typing import Any, AnyStr, Awaitable, Callable, Dict, Iterable, Optional, TYPE_CHECKING, Union  # noqa
 from urllib.parse import parse_qs, unquote, urlparse
 
 from multidict import CIMultiDict, MultiDict
 
 from .json import loads
+from .utils import create_cookie
 
 if TYPE_CHECKING:
     from .routing import Rule  # noqa
@@ -16,7 +16,100 @@ if TYPE_CHECKING:
 sentinel = object()
 
 
-class Request:
+class JSONMixin:
+    """Mixin to provide get_json methods from objects.
+
+    The class must support _load_data_json and have a mimetype
+    attribute.
+    """
+    _cached_json = sentinel
+
+    @property
+    def mimetype(self) -> str:
+        """Return the mimetype of the associated data."""
+        raise NotImplemented()
+
+    async def _load_json_data(self) -> str:
+        """Return the data after decoding."""
+        raise NotImplemented()
+
+    @property
+    def is_json(self) -> bool:
+        """Returns True if the content_type is json like."""
+        content_type = self.mimetype
+        if content_type == 'application/json' or (
+                content_type.startswith('application/') and content_type.endswith('+json')
+        ):
+            return True
+        else:
+            return False
+
+    async def get_json(
+        self, force: bool=False, silent: bool=False, cache: bool=True,
+    ) -> Any:
+        """Parses the body data as JSON and returns it.
+
+        Arguments:
+            force: Force JSON parsing even if the mimetype is not JSON.
+            silent: Do not trigger error handling if parsing fails, without
+                this the :meth:`on_json_loading_failed` will be called on
+                error.
+            cache: Cache the parsed JSON on this request object.
+        """
+        if cache and self._cached_json is not sentinel:
+            return self._cached_json
+
+        if not (force or self.is_json):
+            return None
+
+        data = await self._load_json_data()
+        try:
+            result = loads(data)
+        except ValueError as error:
+            if silent:
+                result = None
+            else:
+                self.on_json_loading_failed(error)
+        if cache:
+            self._cached_json = result
+        return result
+
+    def on_json_loading_failed(self, error: Exception) -> None:
+        """Handle a JSON parsing error.
+
+        Arguments:
+            error: The exception raised during parsing.
+        """
+        from .exceptions import BadRequest  # noqa Avoiding circular import
+        raise BadRequest()
+
+
+class _BaseRequestResponse:
+    """This is the base class for Request or Response.
+
+    It implements a number of properties for header handling.
+    """
+    def __init__(self, headers: Optional[Union[dict, CIMultiDict]]) -> None:
+        self.headers: CIMultiDict
+        if headers is None:
+            self.headers = CIMultiDict()
+        elif isinstance(headers, CIMultiDict):
+            self.headers = headers
+        elif headers is not None:
+            self.headers = CIMultiDict(headers)
+
+    @property
+    def mimetype(self) -> str:
+        """Returns the mimetype parsed from the Content-Type header."""
+        return parse_header(self.headers.get('Content-Type'))[0]
+
+    @property
+    def mimetype_params(self) -> Dict[str, str]:
+        """Returns the params parsed from the Content-Type header."""
+        return parse_header(self.headers.get('Content-Type'))[1]
+
+
+class Request(_BaseRequestResponse, JSONMixin):
     """This class represents a request.
 
     It can be subclassed and the subclassed used in preference by
@@ -35,7 +128,7 @@ class Request:
     view_args: Optional[Dict[str, Any]] = None
 
     def __init__(
-            self, method: str, path: str, headers: CIMultiDict, body: Future,
+            self, method: str, path: str, headers: CIMultiDict, body: Awaitable[bytes],
     ) -> None:
         """Create a request object.
 
@@ -50,6 +143,7 @@ class Request:
             args: The query string arguments.
             scheme: The URL scheme, http or https.
         """
+        super().__init__(headers)
         self.full_path = path
         parsed_url = urlparse(path)
         self.args = MultiDict()
@@ -60,10 +154,8 @@ class Request:
         self.scheme = parsed_url.scheme
         self.server_name = parsed_url.netloc
         self.method = method
-        self.headers = headers
         self._body = body
         self._cached_json: Any = sentinel
-        self._data: Optional[str] = None
         self._form: Optional[MultiDict] = None
         self._files: Optional[MultiDict] = None
 
@@ -92,76 +184,13 @@ class Request:
             return None
 
     @property
-    def is_json(self) -> bool:
-        """Returns True if the content_type is json like."""
-        content_type = self.mimetype
-        if content_type == 'application/json' or (
-                content_type.startswith('application/') and content_type.endswith('+json')
-        ):
-            return True
-        else:
-            return False
-
-    @property
-    def mimetype(self) -> str:
-        """Returns the mimetype parsed from the Content-Type header."""
-        return parse_header(self.headers.get('Content-Type'))[0]
-
-    @property
-    def mimetype_params(self) -> Dict[str, str]:
-        """Returns the params parsed from the Content-Type header."""
-        return parse_header(self.headers.get('Content-Type'))[1]
-
-    @property
     def remote_addr(self) -> str:
         """Returns the remote address of the request, faked into the headers."""
         return self.headers['Remote-Addr']
 
-    @property
-    async def data(self) -> str:
-        """Awaitable body data as decoded from bytes."""
-        if self._data is None:
-            self._data = (await self._body).decode()
-        return self._data
-
-    async def get_json(
-        self, force: bool=False, silent: bool=False, cache: bool=True,
-    ) -> Any:
-        """Parses the body data as JSON and returns it.
-
-        Arguments:
-            force: Force JSON parsing even if the mimetype is not JSON.
-            silent: Do not trigger error handling if parsing fails, without
-                this the :meth:`on_json_loading_failed` will be called on
-                error.
-            cache: Cache the parsed JSON on this request object.
-        """
-        if cache and self._cached_json is not sentinel:
-            return self._cached_json
-
-        if not (force or self.is_json):
-            return None
-
-        data = await self.data
-        try:
-            result = loads(data)
-        except ValueError as error:
-            if silent:
-                result = None
-            else:
-                self.on_json_loading_failed(error)
-        if cache:
-            self._cached_json = result
-        return result
-
-    def on_json_loading_failed(self, error: Exception) -> None:
-        """Handle a JSON parsing error.
-
-        Arguments:
-            error: The exception raised during parsing.
-        """
-        from .exceptions import BadRequest  # noqa Avoiding circular import
-        raise BadRequest()
+    async def get_data(self) -> bytes:
+        """The raw request body data."""
+        return await self._body
 
     @property
     def cookies(self) -> SimpleCookie:
@@ -204,7 +233,7 @@ class Request:
             for key, values in parse_qs(data.decode()).items():
                 for value in values:
                     self._form[key] = value
-        else:
+        elif content_type == 'multipart/form-data':
             field_storage = FieldStorage(
                 io.BytesIO(data), headers=self.headers, environ={'REQUEST_METHOD': 'POST'},
             )
@@ -214,8 +243,12 @@ class Request:
                 else:
                     self._files[key] = field_storage[key].value
 
+    async def _load_json_data(self) -> str:
+        data = await self.get_data()
+        return data.decode()
 
-class Response:
+
+class Response(_BaseRequestResponse, JSONMixin):
     """This class represents a response.
 
     It can be subclassed and the subclassed used in preference by
@@ -262,14 +295,8 @@ class Response:
         Attributes:
             response: An iterable of the response bytes-data.
         """
+        super().__init__(headers)
         self.status_code: int = status_code or self.default_status
-        self.headers: CIMultiDict
-        if headers is None:
-            self.headers = CIMultiDict()
-        elif isinstance(headers, CIMultiDict):
-            self.headers = headers
-        elif headers is not None:
-            self.headers = CIMultiDict(headers)
 
         if content_type is None:
             if mimetype is None and 'content-type' not in self.headers:
@@ -323,21 +350,13 @@ class Response:
         The arguments are the standard cookie morsels and this is a
         wrapper around the stdlib SimpleCookie code.
         """
-        cookie = SimpleCookie()  # type: ignore
-        cookie[key] = value
-        cookie[key]['path'] = path
-        cookie[key]['httponly'] = httponly  # type: ignore
-        cookie[key]['secure'] = secure  # type: ignore
-        if isinstance(max_age, timedelta):
-            cookie[key]['max-age'] = f"{max_age.total_seconds():d}"  # type: ignore
-        if isinstance(max_age, int):
-            cookie[key]['max-age'] = str(max_age)
-        if expires is not None:
-            cookie[key]['expires'] = expires.astimezone(timezone.utc).strftime("%a, %d-%b-%Y %T")
-        if domain is not None:
-            cookie[key]['domain'] = domain
+        cookie = create_cookie(key, value, max_age, expires, path, domain, secure, httponly)
         self.headers.add('Set-Cookie', cookie.output(header=''))
 
     def delete_cookie(self, key: str, path: str='/', domain: Optional[str]=None) -> None:
         """Delete a cookie (set to expire immediately)."""
         self.set_cookie(key, expires=datetime.utcnow(), max_age=0, path=path, domain=domain)
+
+    async def _load_json_data(self) -> str:
+        data = self.get_data()
+        return data.decode()

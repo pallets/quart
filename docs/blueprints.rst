@@ -8,7 +8,7 @@ routes start to span multiple modules. Blueprints, like the app can have
 template and static files, therefore a typical folder structure for a
 blueprint termed ``store`` would be,
 
-.. code-block::
+::
 
     blueprints/
     blueprints/store/__init__.py
