@@ -3,6 +3,7 @@ from urllib.parse import quote
 
 from .ctx import _app_ctx_stack, _request_ctx_stack
 from .globals import current_app, request, session
+from .routing import BuildError
 from .signals import message_flashed
 from .wrappers import Response
 
@@ -127,7 +128,14 @@ def url_for(
     if _scheme is not None and not _external:
         raise ValueError('External must be True for scheme usage')
 
-    url = url_adapter.build(endpoint, values, method=_method, scheme=_scheme, external=_external)
+    app_context.app.inject_url_defaults(endpoint, values)
+    try:
+        url = url_adapter.build(
+            endpoint, values, method=_method, scheme=_scheme, external=_external,
+        )
+    except BuildError as error:
+        return app_context.app.handle_url_build_error(error, endpoint, values)
+
     if _anchor is not None:
         quoted_anchor = quote(_anchor)
         url = f"{url}#{quoted_anchor}"

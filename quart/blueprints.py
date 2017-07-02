@@ -443,6 +443,79 @@ class Blueprint(PackageStatic):
         self.record_once(lambda state: state.app.context_processor(func))
         return func
 
+    def url_value_preprocessor(self, func: Callable) -> Callable:
+        """Add a url value preprocessor.
+
+        This is designed to be used as a decorator, and has the same
+        arguments as :meth:`~quart.Quart.url_value_preprocessor`. This
+        will apply to urls in this blueprint. An example usage,
+
+        .. code-block:: python
+
+            blueprint = Blueprint(__name__)
+            @blueprint.url_value_preprocessor
+            def processor(endpoint, view_args):
+                ...
+
+        """
+        self.record_once(lambda state: state.app.url_value_preprocessor(func, self.name))
+        return func
+
+    def app_url_value_preprocessor(self, func: Callable) -> Callable:
+        """Add a url value preprocessor.
+
+        This is designed to be used as a decorator, and has the same
+        arguments as
+        :meth:`~quart.Quart.app_url_value_preprocessor`. This will
+        apply to all URLs. An example usage,
+
+        .. code-block:: python
+
+            blueprint = Blueprint(__name__)
+            @blueprint.app_url_value_preprocessor
+            def processor(endpoint, view_args):
+                ...
+
+        """
+        self.record_once(lambda state: state.app.url_value_preprocessor(func))
+        return func
+
+    def url_defaults(self, func: Callable) -> Callable:
+        """Add a url default preprocessor.
+
+        This is designed to be used as a decorator, and has the same
+        arguments as :meth:`~quart.Quart.url_defaults`. This will
+        apply to urls in this blueprint. An example usage,
+
+        .. code-block:: python
+
+            blueprint = Blueprint(__name__)
+            @blueprint.url_defaults
+            def default(endpoint, values):
+                ...
+
+        """
+        self.record_once(lambda state: state.app.url_defaults(func, self.name))
+        return func
+
+    def app_url_defaults(self, func: Callable) -> Callable:
+        """Add a url default preprocessor.
+
+        This is designed to be used as a decorator, and has the same
+        arguments as :meth:`~quart.Quart.url_defaults`. This will
+        apply to all urls. An example usage,
+
+        .. code-block:: python
+
+            blueprint = Blueprint(__name__)
+            @blueprint.app_url_defaults
+            def default(endpoint, values):
+                ...
+
+        """
+        self.record_once(lambda state: state.app.url_defaults(func))
+        return func
+
     def record(self, func: DeferedSetupFunction) -> None:
         """Used to register a deferred action."""
         self.deferred_functions.append(func)
