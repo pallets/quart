@@ -55,7 +55,7 @@ async def login():
 
     username = (await request.form)['username']
     password = (await request.form)['password']
-    if compare_digest(password, users[username]['password']):
+    if username in users and compare_digest(password, users[username]['password']):
         user = User()
         user.id = username
         flask_login.login_user(user)

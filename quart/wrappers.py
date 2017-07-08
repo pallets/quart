@@ -88,7 +88,12 @@ class _BaseRequestResponse:
     """This is the base class for Request or Response.
 
     It implements a number of properties for header handling.
+
+    Attributes:
+        charset: The default charset for encoding/decoding.
     """
+    charset = 'utf-8'
+
     def __init__(self, headers: Optional[Union[dict, CIMultiDict]]) -> None:
         self.headers: CIMultiDict
         if headers is None:
@@ -107,6 +112,9 @@ class _BaseRequestResponse:
     def mimetype_params(self) -> Dict[str, str]:
         """Returns the params parsed from the Content-Type header."""
         return parse_header(self.headers.get('Content-Type'))[1]
+
+    async def get_data(self, raw: bool=True) -> AnyStr:
+        raise NotImplemented()
 
 
 class Request(_BaseRequestResponse, JSONMixin):
@@ -188,9 +196,12 @@ class Request(_BaseRequestResponse, JSONMixin):
         """Returns the remote address of the request, faked into the headers."""
         return self.headers['Remote-Addr']
 
-    async def get_data(self) -> bytes:
-        """The raw request body data."""
-        return await self._body
+    async def get_data(self, raw: bool=True) -> AnyStr:
+        """The request body data."""
+        if raw:
+            return await self._body  # type: ignore
+        else:
+            return (await self._body).decode(self.charset)  # type: ignore
 
     @property
     def cookies(self) -> SimpleCookie:
@@ -244,8 +255,8 @@ class Request(_BaseRequestResponse, JSONMixin):
                     self._files[key] = field_storage[key].value
 
     async def _load_json_data(self) -> str:
-        data = await self.get_data()
-        return data.decode()
+        """Return the data after decoding."""
+        return await self.get_data(raw=False)
 
 
 class Response(_BaseRequestResponse, JSONMixin):
@@ -258,13 +269,11 @@ class Response(_BaseRequestResponse, JSONMixin):
     Attributes:
         automatically_set_content_length: If False the content length
             header must be provided.
-        charset: The charset the response should be encoded in.
         default_status: The status code to use if not provided.
         default_mimetype: The mimetype to use if not provided.
     """
 
     automatically_set_content_length = True
-    charset = 'utf-8'
     default_status = 200
     default_mimetype = 'text/html'
 
@@ -312,14 +321,15 @@ class Response(_BaseRequestResponse, JSONMixin):
         else:
             self.response = response  # type: ignore
 
-    def get_data(self) -> bytes:
-        result = b''
+    async def get_data(self, raw: bool=True) -> AnyStr:
+        """Return the body data."""
+        result = b'' if raw else ''
         for data in self.response:
-            if isinstance(data, str):
-                result += data.encode(self.charset)
+            if raw:
+                result += data  # type: ignore
             else:
-                result += data
-        return result
+                result += data.decode(self.charset)  # type: ignore
+        return result  # type: ignore
 
     def set_data(self, data: AnyStr) -> None:
         """Set the response data.
@@ -358,5 +368,5 @@ class Response(_BaseRequestResponse, JSONMixin):
         self.set_cookie(key, expires=datetime.utcnow(), max_age=0, path=path, domain=domain)
 
     async def _load_json_data(self) -> str:
-        data = self.get_data()
-        return data.decode()
+        """Return the data after decoding."""
+        return await self.get_data(raw=False)

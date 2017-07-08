@@ -19,7 +19,7 @@ async def test_methods() -> None:
     for method in methods:
         func = getattr(client, method.lower())
         response = await func('/')
-        assert method in response.get_data().decode()
+        assert method in (await response.get_data(raw=False))
 
 
 @pytest.mark.asyncio

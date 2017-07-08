@@ -10,11 +10,12 @@ def test_abort() -> None:
         abort(400)
 
 
-def test_http_exception() -> None:
+@pytest.mark.asyncio
+async def test_http_exception() -> None:
     error = HTTPException(205, 'Description', 'Name')
     assert error.get_response().status_code == 205
-    assert b'Name' in error.get_response().get_data()
-    assert b'Description' in error.get_response().get_data()
+    assert b'Name' in (await error.get_response().get_data())
+    assert b'Description' in (await error.get_response().get_data())
 
 
 def test_method_not_allowed() -> None:
