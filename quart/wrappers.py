@@ -44,6 +44,10 @@ class JSONMixin:
         else:
             return False
 
+    @property
+    async def json(self) -> Any:
+        return await self.get_json()
+
     async def get_json(
         self, force: bool=False, silent: bool=False, cache: bool=True,
     ) -> Any:

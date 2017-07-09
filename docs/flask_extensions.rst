@@ -25,11 +25,16 @@ by the extension. For example,
 Caveats
 -------
 
-Flask extensions that try to access some parts of the request body
-will fail, as these methods are asynchronous - only the form and file
-properties are available in a synchronous form. To enable this the
-request body must be fully received before any part of the request is
-handled, which is a limitation not present in vanilla flask.
+Flask extensions must use the global request proxy variable to access
+the request, any other access e.g. via
+:meth:`~quart.local.LocalProxy._get_current_object` will require
+asynchronous access. To enable this the request body must be fully
+received before any part of the request is handled, which is a
+limitation not present in vanilla flask.
 
 Trying to use Flask alongside Quart in the same runtime will likely not
 work, and lead to surprising errors.
+
+Note that the flask extension must be limited to creating routes,
+using the request and rendering templates. Any other more advanced
+functionality may not work.

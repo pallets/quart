@@ -31,6 +31,7 @@ def user_loader(username):
 
 @login_manager.request_loader
 def request_loader(request):
+    from flask import render_template_string
     username = request.form.get('username')
     password = request.form.get('password', '')
     if username not in users:

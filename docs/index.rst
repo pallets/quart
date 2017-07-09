@@ -39,6 +39,7 @@ Discussion Points
 .. toctree::
    :maxdepth: 1
 
+   async_compatibility.rst
    contexts.rst
    globals.rst
 

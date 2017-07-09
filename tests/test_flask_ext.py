@@ -15,4 +15,4 @@ async def test_flask_app() -> None:
     test_client = app.test_client()
     response = await test_client.get('/')
     assert response.status_code == 200
-    assert b'Hello' in response.get_data()
+    assert b'Hello' in (await response.get_data())
