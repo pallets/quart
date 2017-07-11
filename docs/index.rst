@@ -14,6 +14,7 @@ Tutorials
 
    installation.rst
    quickstart.rst
+   deployment.rst
    large_application.rst
 
 How-To Guides
