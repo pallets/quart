@@ -63,8 +63,8 @@ It is for this reason that a proxy object,
 created for the Flask extensions. The former adding synchronous
 request methods and the other providing synchronous functions.
 
-Note that the :func:`~quart.flask_ext.templating.render_template` is a
-complete redefinition, rather than say,
+Quart monkey patches a ``sync_wait`` method onto the base event loop
+allowing for definitions such as,
 
 .. code-block:: python
 
@@ -72,5 +72,3 @@ complete redefinition, rather than say,
 
     def render_template(*args):
         return asyncio.sync_wait(quart_render_template(*args))
-
-which sadly doesn't work unless there is no existing event loop.
