@@ -42,6 +42,7 @@ Discussion Points
 
    async_compatibility.rst
    contexts.rst
+   design_choices.rst
    globals.rst
 
 Reference

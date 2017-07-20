@@ -1,14 +1,21 @@
 Quart
 =====
 
-|Build Status|
+|Build Status| |docs|
 
-Quart is a microframework for Python based on Flask and asyncio.
+Quart is a Python asyncio web microframework with the same API as
+`Flask <https://github.com/pallets/flask>`_. Quart should provide a
+very minimal step to use `Asyncio
+<https://docs.python.org/3/library/asyncio.html>`_ in a Flask app.
 
 Quickstart
 ----------
 
-.. code-block::
+Quart can be installed via `pip
+<https://docs.python.org/3/installing/index.html>`_ ``pip install
+quart`` and requires Python 3.6+. A minimal Quart example would be
+
+.. code-block:: python
 
     from quart import Quart
 
@@ -20,44 +27,32 @@ Quickstart
 
     app.run()
 
+if the above is in a file called ``app.py`` can be run via ``python
+app.py``. To deploy in a production setting see the `docs
+<https://pgjones.gitlab.io/quart/deployment.html>`_.
+
 API Compatibility with Flask
 ----------------------------
 
 The Flask API can be described as consisting of the Flask public and
-private API and Werkzeug upon which Flask is based. Quart is designed
+private APIs and Werkzeug upon which Flask is based. Quart is designed
 to be fully compatible with the Flask public API (aside from async and
-await keywords). Thereafter the aims is to be mostly compatible with
-the Flask private API and without guarantees with the Werkzeug API.
+await keywords). Thereafter the aim is to be mostly compatible with
+the Flask private API and to provide no guarantees about the Werkzeug
+API.
 
 Migrating from Flask
 ~~~~~~~~~~~~~~~~~~~~
 
 It should be possible to migrate to Quart from Flask by a find and
 replace of ``flask`` to ``quart`` and then adding ``async`` and
-``await`` keywords.
-
-Known differences
-~~~~~~~~~~~~~~~~~
-
-* There is no ``getlist`` method on the ``request.args`` object,
-  rather ``getall`` should be used instead.
-
-
-Design decisions
-----------------
-
-The asyncio callback ``create_server`` approach is faster than the
-streaming ``start_server`` approach, and hence is used. This is based
-on benchmarking and the `uvloop <https://github.com/MagicStack/uvloop>`_
-research.
-
-Deploying
----------
-
-This isn't ready for production. To deploy use gunicorn as follows
-``gunicorn --worker-class quart.worker.GunicornWorker ...`` or
-``gunicorn --worker-class quart.worker.GunicornUVLoopWorker ...``.
+``await`` keywords. See the `docs
+<https://pgjones.gitlab.io/quart/flask_migration.html>`_ for full
+details.
 
 
 .. |Build Status| image:: https://gitlab.com/pgjones/quart/badges/master/build.svg
    :target: https://gitlab.com/pgjones/quart/commits/master
+
+.. |docs| image:: https://readthedocs.org/projects/docs/badge/?version=latest
+   :target: https://pgjones.gitlab.io/quart/

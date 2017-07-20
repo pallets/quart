@@ -85,3 +85,9 @@ mostly to await test requests i.e.
     await test_client.get('/')
     await test_client.post('/')
     await test_client.open('/', 'PUT')
+
+Known differences
+-----------------
+
+* There is no ``getlist`` method on the ``request.args`` object,
+  rather ``getall`` should be used instead.
