@@ -34,9 +34,7 @@ from .testing import TestClient
 from .typing import ResponseReturnValue
 from .wrappers import Request, Response
 
-# There seems to be a mypy bug, this should be Optional[str] but that
-# is an invalid type.
-AppOrBlueprintKey = str  # The App key is None, whereas blueprints are named
+AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
 
 
 def _convert_timedelta(value: Union[float, timedelta]) -> timedelta:
