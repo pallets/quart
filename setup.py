@@ -24,8 +24,8 @@ INSTALL_REQUIRES = [
 
 setup(
     name='Quart',
-    version='0.1.0',
-    description="An asyncio web microframework with Flask's API",
+    version='0.2.0',
+    description="A Python asyncio web microframework with the same API as Flask",
     long_description=long_description,
     url='https://gitlab.com/pgjones/quart/',
     author='P G Jones',
