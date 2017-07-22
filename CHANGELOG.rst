@@ -2,6 +2,7 @@
 ----------------
 
 This is still an alpha version of Quart, some notable changes are,
+
 * Support for Flask extensions via the flask_ext module (if imported).
 * Initial documentation setup and actual documentation including API
   docstrings.
