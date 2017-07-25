@@ -1,5 +1,6 @@
 import asyncio
 import sys
+import warnings
 from collections import defaultdict, OrderedDict
 from datetime import timedelta
 from itertools import chain
@@ -843,6 +844,8 @@ class Quart(PackageStatic):
             host: str='127.0.0.1',
             port: int=5000,
             ssl: Optional[SSLContext]=None,
+            debug: Optional[bool]=None,
+            **kwargs: Any,
     ) -> None:
         """Run this application.
 
@@ -855,6 +858,14 @@ class Quart(PackageStatic):
             port: Port number to listen on.
             ssl: Optional SSL context (required for HTTP2).
         """
+        if kwargs:
+            warnings.warn(
+                "Additional arguments, {}, are not yet supported".format(','.join(kwargs.keys())),
+            )
+
+        if debug is not None:
+            self.debug = debug
+
         try:
             run_app(self, host=host, port=port, ssl=ssl)
         finally:
