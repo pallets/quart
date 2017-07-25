@@ -1,3 +1,5 @@
+from jinja2 import escape, Markup
+
 from .app import Quart
 from .blueprints import Blueprint
 from .config import Config
@@ -19,9 +21,9 @@ from .wrappers import Response
 __all__ = (
     '_app_ctx_stack', '_request_ctx_stack', 'abort', 'appcontext_popped', 'appcontext_pushed',
     'appcontext_tearing_down', 'before_render_template', 'Blueprint', 'Config', 'current_app',
-    'flash', 'g', 'get_flashed_messages', 'got_request_exception', 'has_app_context',
-    'has_request_context', 'jsonify', 'message_flashed', 'Quart', 'redirect', 'render_template',
-    'render_template_string', 'request', 'request_finished', 'request_started',
+    'escape', 'flash', 'g', 'get_flashed_messages', 'got_request_exception', 'has_app_context',
+    'has_request_context', 'jsonify', 'Markup', 'message_flashed', 'Quart', 'redirect',
+    'render_template', 'render_template_string', 'request', 'request_finished', 'request_started',
     'request_tearing_down', 'Response', 'ResponseReturnValue', 'session', 'template_rendered',
     'url_for',
 )
