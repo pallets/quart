@@ -307,8 +307,8 @@ class Quart(PackageStatic):
     def add_url_rule(
             self,
             path: str,
-            func: Callable,
-            methods: List[str]=['GET'],
+            view_func: Callable,
+            methods: Optional[List[str]]=None,
             endpoint: Optional[str]=None,
             *,
             provide_automatic_options: bool=True
@@ -334,9 +334,15 @@ class Quart(PackageStatic):
             provide_automatic_options: Optionally False to prevent
                 OPTION handling.
         """
-        endpoint = endpoint or func.__name__
-        handler = _ensure_coroutine(func)
-        automatic_options = 'OPTIONS' not in methods and provide_automatic_options
+        endpoint = endpoint or view_func.__name__
+        handler = _ensure_coroutine(view_func)
+        if methods is None:
+            methods = getattr(view_func, 'methods', None) or ['GET']
+
+        automatic_options = getattr(
+            view_func, 'provide_automatic_options',
+            'OPTIONS' not in methods and provide_automatic_options,
+        )
         self.url_map.add(
             self.url_rule_class(
                 path, methods, endpoint, provide_automatic_options=automatic_options,

@@ -77,7 +77,7 @@ class Blueprint(PackageStatic):
     def add_url_rule(
             self,
             path: str,
-            func: Callable,
+            view_func: Callable,
             methods: List[str]=['GET'],
             endpoint: Optional[str]=None,
             *,
@@ -97,12 +97,13 @@ class Blueprint(PackageStatic):
             blueprint = Blueprint(__name__)
             blueprint.add_url_rule('/', route)
         """
-        endpoint = endpoint or func.__name__
+        endpoint = endpoint or view_func.__name__
         if '.' in endpoint:
             raise ValueError('Blueprint endpoints should not contain periods')
         self.record(
             lambda state: state.add_url_rule(
-                path, func, methods, endpoint, provide_automatic_options=provide_automatic_options,
+                path, view_func, methods, endpoint,
+                provide_automatic_options=provide_automatic_options,
             ),
         )
 
@@ -584,7 +585,7 @@ class BlueprintSetupState:
     def add_url_rule(
             self,
             path: str,
-            func: Callable,
+            view_func: Callable,
             methods: List[str]=['GET'],
             endpoint: Optional[str]=None,
             *,
@@ -594,7 +595,7 @@ class BlueprintSetupState:
             path = f"{self.url_prefix}{path}"
         endpoint = f"{self.blueprint.name}.{endpoint}"
         self.app.add_url_rule(
-            path, func, methods, endpoint, provide_automatic_options=provide_automatic_options,
+            path, view_func, methods, endpoint, provide_automatic_options=provide_automatic_options,
         )
 
     def register_endpoint(self, endpoint: str, func: Callable) -> None:
