@@ -58,8 +58,8 @@ way to insert the ``await`` before the ``request.form`` and
 ``render_template`` calls.
 
 It is for this reason that a proxy object,
-:class:`~quart.flask_ext.globals.FlaskRequestProxy`, and render,
-:func:`~quart.flask_ext.templating.render_template` functions are
+:class:`~quart.flask_patch.globals.FlaskRequestProxy`, and render,
+:func:`~quart.flask_patch.templating.render_template` functions are
 created for the Flask extensions. The former adding synchronous
 request methods and the other providing synchronous functions.
 

@@ -37,20 +37,20 @@ from quart import (
     request_started, request_tearing_down, Response, ResponseReturnValue, template_rendered,
     url_for,
 )  # noqa: E402
-from quart.flask_ext.globals import (
+from quart.flask_patch.globals import (
     _app_ctx_stack, _request_ctx_stack, current_app, g, request, session,
 )  # noqa: E402
-from quart.flask_ext.templating import render_template, render_template_string  # noqa: E402
+from quart.flask_patch.templating import render_template, render_template_string  # noqa: E402
 
 if 'flask' in sys.modules:
     raise ImportError('Cannot mock flask, already imported')
 
 # Create a set of Flask modules, prioritising those within the
-# flask_ext namespace over simple references to the Quart versions.
+# flask_patch namespace over simple references to the Quart versions.
 flask_modules = {}
 for name, module in sys.modules.items():
-    if name.startswith('quart.flask_ext'):
-        flask_modules[name.replace('quart.flask_ext', 'flask')] = module
+    if name.startswith('quart.flask_patch'):
+        flask_modules[name.replace('quart.flask_patch', 'flask')] = module
     if name.startswith('quart.'):
         flask_name = name.replace('quart.', 'flask.')
         if flask_name not in flask_modules:

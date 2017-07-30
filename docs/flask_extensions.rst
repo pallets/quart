@@ -4,13 +4,13 @@ Using Flask Extensions
 ======================
 
 Flask extensions can be used with Quart, with some caveats. To do so
-the very first import in your code must be ``import quart.flask_ext``
+the very first import in your code must be ``import quart.flask_patch``
 as this will add modules proporting to be Flask modules for later use
 by the extension. For example,
 
 .. code-block:: python
 
-    import quart.flask_ext
+    import quart.flask_patch
 
     from quart import Quart
     import flask_login

@@ -1,4 +1,4 @@
-import quart.flask_ext
+import quart.flask_patch
 
 from secrets import compare_digest
 

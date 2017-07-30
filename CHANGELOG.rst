@@ -1,3 +1,10 @@
+0.3.0
+-----
+
+* Change flask_ext name to flask_patch to clarify that it is not the
+  pre-existing flask_ext system and that it patches Quart to provide
+  Flask imports.
+
 0.2.0 2017-07-22
 ----------------
 

@@ -1,4 +1,4 @@
-import quart.flask_ext  # noqa
+import quart.flask_patch  # noqa
 
 import pytest
 from flask import Flask
