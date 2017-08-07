@@ -19,7 +19,7 @@ def app() -> Quart:
     async def index_post() -> str:
         return ''
 
-    app.add_url_rule('/post', index_post, methods=['POST'], endpoint='index')
+    app.add_url_rule('/post', index_post, methods=['POST'], endpoint='index_post')
 
     @app.route('/resource/<int:id>')
     async def resource(id: int) -> str:
@@ -62,7 +62,7 @@ def test_flash_category_filter(app: Quart) -> None:
 def test_url_for(app: Quart) -> None:
     with app.app_context():
         assert url_for('index') == '/'
-        assert url_for('index', _method='POST') == '/post'
+        assert url_for('index_post', _method='POST') == '/post'
         assert url_for('resource', id=5) == '/resource/5'
 
 

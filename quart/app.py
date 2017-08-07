@@ -348,6 +348,11 @@ class Quart(PackageStatic):
                 path, methods, endpoint, provide_automatic_options=automatic_options,
             ),
         )
+        if handler is not None:
+            old_handler = self.view_functions.get(endpoint)
+            if old_handler is not None and old_handler != handler:
+                raise AssertionError(f"Handler is overwriting existing for endpoint {endpoint}")
+
         self.view_functions[endpoint] = handler
 
     def endpoint(self, endpoint: str) -> Callable:
