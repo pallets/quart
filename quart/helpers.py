@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Callable, List, Optional, Tuple, Union
 from urllib.parse import quote
 
 from .ctx import _app_ctx_stack, _request_ctx_stack
@@ -140,3 +140,7 @@ def url_for(
         quoted_anchor = quote(_anchor)
         url = f"{url}#{quoted_anchor}"
     return url
+
+
+def _endpoint_from_view_func(view_func: Callable) -> str:
+    return view_func.__name__

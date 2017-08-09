@@ -19,7 +19,7 @@ from .ctx import (
 )
 from .exceptions import all_http_exceptions, HTTPException
 from .globals import g, request, session
-from .helpers import get_flashed_messages, url_for
+from .helpers import _endpoint_from_view_func, get_flashed_messages, url_for
 from .json import JSONDecoder, JSONEncoder
 from .logging import create_logger
 from .routing import Map, MapAdapter, Rule
@@ -334,7 +334,7 @@ class Quart(PackageStatic):
             provide_automatic_options: Optionally False to prevent
                 OPTION handling.
         """
-        endpoint = endpoint or view_func.__name__
+        endpoint = endpoint or _endpoint_from_view_func(view_func)
         handler = _ensure_coroutine(view_func)
         if methods is None:
             methods = getattr(view_func, 'methods', None) or ['GET']
