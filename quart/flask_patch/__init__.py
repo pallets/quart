@@ -32,14 +32,15 @@ import sys  # noqa: E402
 
 from quart import (
     abort, appcontext_popped, appcontext_pushed, appcontext_tearing_down, before_render_template,
-    Blueprint, Config, flash, get_flashed_messages, got_request_exception, has_app_context,
-    has_request_context, jsonify, message_flashed, Quart, redirect, request_finished,
-    request_started, request_tearing_down, Response, ResponseReturnValue, template_rendered,
-    url_for,
+    Blueprint, Config, got_request_exception, has_app_context, has_request_context, jsonify,
+    message_flashed, Quart, redirect, request_finished, request_started, request_tearing_down,
+    Response, ResponseReturnValue, template_rendered,
 )  # noqa: E402
 from quart.flask_patch.globals import (
     _app_ctx_stack, _request_ctx_stack, current_app, g, request, session,
 )  # noqa: E402
+from quart.flask_patch.helpers import make_response  # noqa: E402
+from quart.helpers import flash, get_flashed_messages, url_for  # noqa: E402
 from quart.flask_patch.templating import render_template, render_template_string  # noqa: E402
 
 if 'flask' in sys.modules:
@@ -64,8 +65,8 @@ __all__ = (
     '_app_ctx_stack', '_request_ctx_stack', 'abort', 'appcontext_popped', 'appcontext_pushed',
     'appcontext_tearing_down', 'before_render_template', 'Blueprint', 'Config', 'current_app',
     'flash', 'g', 'get_flashed_messages', 'got_request_exception', 'has_app_context',
-    'has_request_context', 'jsonify', 'message_flashed', 'Quart', 'redirect', 'render_template',
-    'render_template_string', 'request', 'request_finished', 'request_started',
+    'has_request_context', 'jsonify', 'make_response', 'message_flashed', 'Quart', 'redirect',
+    'render_template', 'render_template_string', 'request', 'request_finished', 'request_started',
     'request_tearing_down', 'Response', 'ResponseReturnValue', 'session', 'template_rendered',
     'url_for',
 )
