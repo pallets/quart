@@ -89,5 +89,4 @@ mostly to await test requests i.e.
 Known differences
 -----------------
 
-* There is no ``getlist`` method on the ``request.args`` object,
-  rather ``getall`` should be used instead.
+* The Request and Response objects have limited header properties.

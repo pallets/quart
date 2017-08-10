@@ -9,7 +9,8 @@ import h2.config
 import h2.connection
 import h2.events
 import h2.exceptions
-from multidict import CIMultiDict
+
+from .datastructures import CIMultiDict
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa

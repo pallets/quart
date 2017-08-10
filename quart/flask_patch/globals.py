@@ -1,8 +1,7 @@
 import asyncio
 from typing import Any, AnyStr
 
-from multidict import MultiDict
-
+from quart.datastructures import MultiDict
 from quart.globals import (
     _app_ctx_stack, _request_ctx_stack, current_app, g, request as quart_request, session,
 )

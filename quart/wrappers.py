@@ -5,8 +5,7 @@ from http.cookies import SimpleCookie
 from typing import Any, AnyStr, Awaitable, Callable, Dict, Iterable, Optional, TYPE_CHECKING, Union  # noqa
 from urllib.parse import parse_qs, unquote, urlparse
 
-from multidict import CIMultiDict, MultiDict
-
+from .datastructures import CIMultiDict, MultiDict
 from .json import loads
 from .utils import create_cookie
 

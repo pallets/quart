@@ -5,8 +5,7 @@ from json import dumps
 from typing import Any, Optional, TYPE_CHECKING, Union
 from urllib.parse import urlencode
 
-from multidict import CIMultiDict
-
+from .datastructures import CIMultiDict
 from .utils import create_cookie
 from .wrappers import Request, Response
 
@@ -76,7 +75,7 @@ class TestClient:
             path = f"{path}?{urlencode(query_string)}"
         if self.cookie_jar is not None:
             headers.add('Cookie', self.cookie_jar.output(header=''))  # type: ignore
-        request = Request(method, path, headers, body)
+        request = Request(method, path, headers, body)  # type: ignore
         response = await asyncio.ensure_future(self.app.handle_request(request))
         if self.cookie_jar is not None and 'Set-Cookie' in response.headers:
             self.cookie_jar.load(";".join(response.headers.getall('Set-Cookie')))

@@ -10,13 +10,12 @@ from ssl import SSLContext
 from types import TracebackType
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union, ValuesView  # noqa
 
-from multidict import CIMultiDict
-
 from .blueprints import Blueprint
 from .config import Config, ConfigAttribute, DEFAULT_CONFIG
 from .ctx import (
     _AppCtxGlobals, _request_ctx_stack, AppContext, has_request_context, RequestContext,
 )
+from .datastructures import CIMultiDict
 from .exceptions import all_http_exceptions, HTTPException
 from .globals import g, request, session
 from .helpers import _endpoint_from_view_func, get_flashed_messages, url_for

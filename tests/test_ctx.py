@@ -1,13 +1,13 @@
 from unittest.mock import Mock
 
 import pytest
-from multidict import CIMultiDict
 
 from quart.app import Quart
 from quart.ctx import (
     _AppCtxGlobals, after_this_request, AppContext, has_app_context, has_request_context,
     RequestContext,
 )
+from quart.datastructures import CIMultiDict
 from quart.exceptions import MethodNotAllowed, NotFound, RedirectRequired
 from quart.wrappers import Request
 
