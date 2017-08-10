@@ -29,7 +29,9 @@ def _sync_wait(self, future):  # type: ignore
 asyncio.BaseEventLoop.sync_wait = _sync_wait  # type: ignore
 
 import sys  # noqa: E402
+from builtins import globals as builtin_globals  # noqa: E402
 
+from jinja2 import escape, Markup  # noqa: E402
 from quart import (
     abort, appcontext_popped, appcontext_pushed, appcontext_tearing_down, before_render_template,
     Blueprint, Config, got_request_exception, has_app_context, has_request_context, jsonify,
@@ -42,6 +44,7 @@ from quart.flask_patch.globals import (
 from quart.flask_patch.helpers import make_response  # noqa: E402
 from quart.helpers import flash, get_flashed_messages, url_for  # noqa: E402
 from quart.flask_patch.templating import render_template, render_template_string  # noqa: E402
+import quart.views  # noqa: E402,F401
 
 if 'flask' in sys.modules:
     raise ImportError('Cannot mock flask, already imported')
@@ -52,21 +55,66 @@ flask_modules = {}
 for name, module in sys.modules.items():
     if name.startswith('quart.flask_patch'):
         flask_modules[name.replace('quart.flask_patch', 'flask')] = module
-    if name.startswith('quart.'):
+    elif name.startswith('quart.'):
         flask_name = name.replace('quart.', 'flask.')
         if flask_name not in flask_modules:
             flask_modules[flask_name] = module
+        # This ensures that the sub modules e.g. json are importable
+        # from flask i.e. from flask import json works (as it puts
+        # the json module in this module called json).
+        builtin_globals()[name.rsplit('.', 1)[1]] = module
 
 sys.modules.update(flask_modules)
+
+
+# Now replace the exception handling defaults to allow for Werkzeug
+# HTTPExceptions to be considered in a special way (like the quart
+# HTTPException).
+try:
+    from werkzeug.exceptions import HTTPException
+except ImportError:
+    HTTPException = object  # type: ignore
+
+
+old_handle_user_exception = Quart.handle_user_exception
+
+
+async def new_handle_user_exception(self, error: Exception) -> Response:  # type: ignore
+    if isinstance(error, HTTPException):
+        return await self.handle_http_exception(error)
+    else:
+        return await old_handle_user_exception(self, error)
+
+
+Quart.handle_user_exception = new_handle_user_exception  # type: ignore
+old_handle_http_exception = Quart.handle_http_exception
+
+
+async def new_handle_http_exception(self, error: Exception) -> Response:  # type: ignore
+    if isinstance(error, HTTPException):
+        handler = self._find_exception_handler(error)
+        if handler is None:
+            werkzeug_response = error.get_response()
+            return await self.make_response((
+                werkzeug_response.get_data(), werkzeug_response.status_code,
+                werkzeug_response.headers,
+            ))
+        else:
+            return await handler(error)
+    else:
+        return await old_handle_http_exception(self, error)
+
+
+Quart.handle_http_exception = new_handle_http_exception  # type: ignore
 
 Flask = Quart
 
 __all__ = (
     '_app_ctx_stack', '_request_ctx_stack', 'abort', 'appcontext_popped', 'appcontext_pushed',
     'appcontext_tearing_down', 'before_render_template', 'Blueprint', 'Config', 'current_app',
-    'flash', 'g', 'get_flashed_messages', 'got_request_exception', 'has_app_context',
-    'has_request_context', 'jsonify', 'make_response', 'message_flashed', 'Quart', 'redirect',
-    'render_template', 'render_template_string', 'request', 'request_finished', 'request_started',
-    'request_tearing_down', 'Response', 'ResponseReturnValue', 'session', 'template_rendered',
-    'url_for',
+    'escape', 'flash', 'g', 'get_flashed_messages', 'got_request_exception', 'has_app_context',
+    'has_request_context', 'jsonify', 'Markup', 'make_response', 'message_flashed', 'Quart',
+    'redirect', 'render_template', 'render_template_string', 'request', 'request_finished',
+    'request_started', 'request_tearing_down', 'Response', 'ResponseReturnValue', 'session',
+    'template_rendered', 'url_for',
 )
