@@ -59,6 +59,9 @@ class TestClient:
             headers = headers
         elif headers is not None:
             headers = CIMultiDict(headers)
+        headers['Remote-Addr'] = '127.0.0.1'
+        headers['User-Agent'] = 'Quart'
+
         body: asyncio.Future = asyncio.Future()
         if json is not sentinel and form is not None:
             raise ValueError('Cannot send JSON and form data in the body')
