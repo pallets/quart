@@ -109,6 +109,10 @@ Quart.handle_http_exception = new_handle_http_exception  # type: ignore
 
 Flask = Quart
 
+from quart.local import LocalStack, TaskLocal  # noqa: E402
+
+LocalStack.__ident_func__ = lambda _: TaskLocal._task_identity()  # type: ignore
+
 __all__ = (
     '_app_ctx_stack', '_request_ctx_stack', 'abort', 'appcontext_popped', 'appcontext_pushed',
     'appcontext_tearing_down', 'before_render_template', 'Blueprint', 'Config', 'current_app',

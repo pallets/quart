@@ -817,9 +817,10 @@ class Quart(PackageStatic):
 
     def do_teardown_appcontext(self) -> None:
         """Teardown the app (context), calling the teardown functions."""
+        exc = None
         for function in self.teardown_appcontext_funcs:
-            function(exc=None)
-        appcontext_tearing_down.send(self, exc=None)
+            function(exc)
+        appcontext_tearing_down.send(self, exc=exc)
 
     def app_context(self) -> AppContext:
         """Create and return an app context.

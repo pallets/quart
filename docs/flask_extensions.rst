@@ -55,6 +55,7 @@ and known to work with quart,
 - `Flask-Login <http://github.com/maxcountryman/flask-login/>`_
 - `Flask-Mako <http://github.com/benselme/flask-mako/>`_
 - `Flask-Seasurf <https://github.com/maxcountryman/flask-seasurf/>`_
+- `Flask-SQLAlchemy <https://github.com/mitsuhiko/flask-sqlalchemy/>`_
 - `Flask-WTF <https://github.com/lepture/flask-wtf>`_
 
 Broken extensions
