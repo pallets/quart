@@ -5,7 +5,7 @@ from http.cookies import SimpleCookie
 from typing import Any, AnyStr, Awaitable, Callable, Dict, Iterable, Optional, TYPE_CHECKING, Union  # noqa
 from urllib.parse import parse_qs, unquote, urlparse
 
-from .datastructures import CIMultiDict, MultiDict
+from .datastructures import CIMultiDict, FileStorage, MultiDict
 from .json import loads
 from .utils import create_cookie
 
@@ -252,10 +252,14 @@ class Request(_BaseRequestResponse, JSONMixin):
                 io.BytesIO(data), headers=self.headers, environ={'REQUEST_METHOD': 'POST'},
             )
             for key in field_storage:  # type: ignore
-                if field_storage[key].type == 'text/plain':
-                    self._form[key] = field_storage[key].value
+                field_storage_key = field_storage[key]
+                if field_storage_key.filename is None:
+                    self._form[key] = field_storage_key.value
                 else:
-                    self._files[key] = field_storage[key].value
+                    self._files[key] = FileStorage(
+                        io.BytesIO(field_storage_key.file.read()), field_storage_key.filename,
+                        field_storage_key.name, field_storage_key.type, field_storage_key.headers,
+                    )
 
     async def _load_json_data(self) -> str:
         """Return the data after decoding."""
