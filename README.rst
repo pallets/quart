@@ -7,13 +7,14 @@ Quart is a Python asyncio web microframework with the same API as
 `Flask <https://github.com/pallets/flask>`_. Quart should provide a
 very minimal step to use `Asyncio
 <https://docs.python.org/3/library/asyncio.html>`_ in a Flask app.
+See the `docs <https://pgjones.gitlab.io/quart/>`_.
 
 Quickstart
 ----------
 
 Quart can be installed via `pip
-<https://docs.python.org/3/installing/index.html>`_ ``pip install
-quart`` and requires Python 3.6+. A minimal Quart example would be
+<https://docs.python.org/3/installing/index.html>`_ ``pip install quart``
+and requires Python 3.6+. A minimal Quart example would be
 
 .. code-block:: python
 
