@@ -1,8 +1,8 @@
 import io
 from cgi import parse_header
 from shutil import copyfileobj
-
 from typing import Any, BinaryIO, Dict, Iterable, List, Optional
+
 from multidict import CIMultiDict as AIOCIMultiDict, MultiDict as AIOMultiDict
 
 
@@ -93,3 +93,30 @@ class FileStorage(object):
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: {self.filename} ({self.content_type}))>"
+
+
+class Authorization:
+
+    def __init__(
+            self,
+            cnonce: Optional[str]=None,
+            nc: Optional[str]=None,
+            nonce: Optional[str]=None,
+            opaque: Optional[str]=None,
+            password: Optional[str]=None,
+            qop: Optional[str]=None,
+            realm: Optional[str]=None,
+            response: Optional[str]=None,
+            uri: Optional[str]=None,
+            username: Optional[str]=None,
+    ) -> None:
+        self.cnonce = cnonce
+        self.nc = nc
+        self.nonce = nonce
+        self.opaque = opaque
+        self.password = password
+        self.qop = qop
+        self.realm = realm
+        self.response = response
+        self.uri = uri
+        self.username = username

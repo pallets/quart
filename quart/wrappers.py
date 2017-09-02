@@ -1,11 +1,13 @@
 import io
+from base64 import b64decode
 from cgi import FieldStorage, parse_header
 from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
 from typing import Any, AnyStr, Awaitable, Callable, Dict, Iterable, Optional, TYPE_CHECKING, Union  # noqa
 from urllib.parse import parse_qs, unquote, urlparse
+from urllib.request import parse_http_list, parse_keqv_list
 
-from .datastructures import CIMultiDict, FileStorage, MultiDict
+from .datastructures import Authorization, CIMultiDict, FileStorage, MultiDict
 from .json import loads
 from .utils import create_cookie
 
@@ -193,6 +195,33 @@ class Request(_BaseRequestResponse, JSONMixin):
             return self.endpoint.rsplit('.', 1)[0]
         else:
             return None
+
+    @property
+    def authorization(self) -> Optional[Authorization]:
+        header = self.headers.get('Authorization', '')
+        try:
+            type_, value = header.split(None, 1)
+            type_ = type_.lower()
+        except ValueError:
+            return None
+        else:
+            if type_ == 'basic':
+                try:
+                    username, password = b64decode(value.encode()).decode().split(':', 1)
+                except ValueError:
+                    return None
+                else:
+                    return Authorization(username=username, password=password)
+            elif type_ == 'digest':
+                items = parse_http_list(value)
+                params = parse_keqv_list(items)
+                for key in 'username', 'realm', 'nonce', 'uri', 'response':
+                    if key not in params:
+                        return None
+                if ('cnonce' in params or 'nc' in params) and 'qop' not in params:
+                    return None
+                return Authorization(**params)
+        return None
 
     @property
     def remote_addr(self) -> str:
