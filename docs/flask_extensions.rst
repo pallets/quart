@@ -53,6 +53,7 @@ and known to work with quart,
 - `Flask-Caching <https://flask-caching.readthedocs.io/en/latest/>`_
 - `Flask-Limiter <http://github.com/alisaifee/flask-limiter/>`_
 - `Flask-Login <http://github.com/maxcountryman/flask-login/>`_
+- `Flask-Mail <https://github.com/mattupstate/flask-mail>`_
 - `Flask-Mako <http://github.com/benselme/flask-mako/>`_
 - `Flask-Seasurf <https://github.com/maxcountryman/flask-seasurf/>`_
 - `Flask-SQLAlchemy <https://github.com/mitsuhiko/flask-sqlalchemy/>`_
