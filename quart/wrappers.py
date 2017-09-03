@@ -7,7 +7,10 @@ from typing import Any, AnyStr, Awaitable, Callable, Dict, Iterable, Optional, T
 from urllib.parse import parse_qs, unquote, urlparse
 from urllib.request import parse_http_list, parse_keqv_list
 
-from .datastructures import Authorization, CIMultiDict, FileStorage, MultiDict
+from .datastructures import (
+    Accept, Authorization, CharsetAccept, CIMultiDict, FileStorage, LanguageAccept, MIMEAccept,
+    MultiDict,
+)
 from .json import loads
 from .utils import create_cookie
 
@@ -195,6 +198,22 @@ class Request(_BaseRequestResponse, JSONMixin):
             return self.endpoint.rsplit('.', 1)[0]
         else:
             return None
+
+    @property
+    def accept_charsets(self) -> CharsetAccept:
+        return CharsetAccept(self.headers.get('Accept-Charset', ''))
+
+    @property
+    def accept_encodings(self) -> Accept:
+        return Accept(self.headers.get('Accept-Encoding', ''))
+
+    @property
+    def accept_languages(self) -> LanguageAccept:
+        return LanguageAccept(self.headers.get('Accept-Language', ''))
+
+    @property
+    def accept_mimetypes(self) -> MIMEAccept:
+        return MIMEAccept(self.headers.get('Accept', ''))
 
     @property
     def authorization(self) -> Optional[Authorization]:

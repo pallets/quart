@@ -67,5 +67,5 @@ with quart,
 - `Flask-CORS <https://github.com/corydolphin/flask-cors>`_, as it
   uses ``app.make_response`` which must be awaited.
 - `Flask-Restful <https://github.com/flask-restful/flask-restful/>`_
-  as it requires an Accept header datastructure present in Werkzeug
-  and missing in Quart.
+  as it subclasses the Quart (app) class with synchronous methods
+  overidding asynchronous methods.
