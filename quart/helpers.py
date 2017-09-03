@@ -82,6 +82,19 @@ def get_flashed_messages(
     return flashes
 
 
+def get_template_attribute(template_name: str, attribute: str) -> Any:
+    """Load a attribute from a template.
+
+    This is useful in Python code in order to use attributes in
+    templates.
+
+    Arguments:
+        template_name: To load the attribute from.
+        attribute: The attribute name to load
+    """
+    return getattr(current_app.jinja_env.get_template(template_name).module, attribute)
+
+
 def url_for(
         endpoint: str,
         *,
