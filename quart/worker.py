@@ -1,7 +1,8 @@
 import asyncio
 import os
-import ssl
-from typing import Any, Optional  # noqa: F401
+from asyncio.base_events import Server as AIOServer  # noqa: F401
+from ssl import SSLContext
+from typing import Any, List, Optional  # noqa: F401
 
 from gunicorn.workers.base import Worker
 
@@ -13,16 +14,7 @@ class GunicornWorker(Worker):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.loop: Optional[asyncio.AbstractEventLoop] = None
-        if self.cfg.is_ssl:
-            self.ssl_context = ssl.SSLContext(self.cfg.ssl_version)
-            self.ssl_context.load_cert_chain(self.cfg.certfile, self.cfg.keyfile)
-            if self.cfg.ca_certs:
-                self.ssl_context.load_verify_locations(self.cfg.ca_certs)
-            if self.cfg.ciphers:
-                self.ssl_context.set_ciphers(self.cfg.ciphers)
-            self.ssl_context.set_alpn_protocols(['h2', 'http/1.1'])
-        else:
-            self.ssl_context = None
+        self.servers: List[AIOServer] = []
 
     def init_process(self) -> None:
         asyncio.get_event_loop().close()
@@ -39,13 +31,16 @@ class GunicornWorker(Worker):
 
             self.loop.run_until_complete(self._check_alive())
         finally:
+            self.loop.run_until_complete(self.loop.shutdown_asyncgens())
             self.loop.close()
 
     async def _run(self) -> None:
+        ssl_context = self._create_ssl_context()
         for sock in self.sockets:
-            await self.loop.create_server(
-                lambda: Server(self.wsgi, self.loop), sock=sock, ssl=self.ssl_context,
+            server = await self.loop.create_server(
+                lambda: Server(self.wsgi, self.loop), sock=sock.sock, ssl=ssl_context,
             )
+            self.servers.append(server)
 
     async def _check_alive(self) -> None:
         # If our parent changed then we shut down.
@@ -61,6 +56,25 @@ class GunicornWorker(Worker):
                     await asyncio.sleep(1.0, loop=self.loop)
         except (Exception, BaseException, GeneratorExit, KeyboardInterrupt):
             pass
+
+        await self.close()
+
+    def _create_ssl_context(self) -> Optional[SSLContext]:
+        ssl_context = None
+        if self.cfg.is_ssl:
+            ssl_context = SSLContext(self.cfg.ssl_version)
+            ssl_context.load_cert_chain(self.cfg.certfile, self.cfg.keyfile)
+            if self.cfg.ca_certs:
+                ssl_context.load_verify_locations(self.cfg.ca_certs)
+            if self.cfg.ciphers:
+                ssl_context.set_ciphers(self.cfg.ciphers)
+            ssl_context.set_alpn_protocols(['h2', 'http/1.1'])
+        return ssl_context
+
+    async def close(self) -> None:
+        for server in self.servers:
+            server.close()
+            await server.wait_closed()
 
 
 class GunicornUVLoopWorker(GunicornWorker):

@@ -245,4 +245,5 @@ def run_app(
     finally:
         server.close()
         loop.run_until_complete(server.wait_closed())
+        loop.run_until_complete(loop.shutdown_asyncgens())
         loop.close()
