@@ -11,6 +11,7 @@ import h2.events
 import h2.exceptions
 
 from .datastructures import CIMultiDict
+from .wrappers import Response
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa
@@ -162,6 +163,23 @@ class H11Server(HTTPProtocol):
         self.transport.write(self.connection.send(event))  # type: ignore
 
 
+class H2Stream(Stream):
+    __slots__ = ('event')
+
+    def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
+        super().__init__(loop)
+        self.event: Optional[asyncio.Event] = None
+
+    def unblock(self) -> None:
+        if self.event is not None:
+            self.event.set()
+            self.event = None
+
+    async def block(self) -> None:
+        self.event = asyncio.Event()
+        await self.event.wait()
+
+
 class H2Server(HTTPProtocol):
 
     def __init__(
@@ -192,7 +210,7 @@ class H2Server(HTTPProtocol):
                 headers = CIMultiDict()
                 for name, value in event.headers:
                     headers.add(name.title(), value)
-                self.streams[event.stream_id] = Stream(self.loop)
+                self.streams[event.stream_id] = H2Stream(self.loop)
                 self.handle_request(
                     event.stream_id, headers[':method'].upper(), headers[':path'], headers,
                 )
@@ -200,6 +218,8 @@ class H2Server(HTTPProtocol):
                 self.streams[event.stream_id].append(event.data)
             elif isinstance(event, h2.events.StreamEnded):
                 self.streams[event.stream_id].complete()
+            elif isinstance(event, h2.events.WindowUpdated):
+                self._window_updated(event.stream_id)
             elif isinstance(event, h2.events.ConnectionTerminated):
                 del self.streams[event.stream_id]
                 self.transport.close()
@@ -212,10 +232,33 @@ class H2Server(HTTPProtocol):
         headers.extend([(key, value) for key, value in response.headers.items()])
         headers.extend(self.response_headers())
         self.connection.send_headers(stream_id, headers)
+        asyncio.ensure_future(self._send_response_data(stream_id, response))
+
+    async def _send_response_data(self, stream_id: int, response: Response) -> None:
         for data in response.response:
-            self.connection.send_data(stream_id, data)
+            await self._send_data(stream_id, data)
         self.connection.end_stream(stream_id)
         self.transport.write(self.connection.data_to_send())  # type: ignore
+
+    async def _send_data(self, stream_id: int, data: bytes) -> None:
+        while True:
+            while not self.connection.local_flow_control_window(stream_id):
+                await self.streams[stream_id].block()  # type: ignore
+
+            chunk_size = min(len(data), self.connection.local_flow_control_window(stream_id))
+            self.connection.send_data(stream_id, data[:chunk_size])
+            self.transport.write(self.connection.data_to_send())  # type: ignore
+            data = data[chunk_size:]
+            if not data:
+                break
+
+    def _window_updated(self, stream_id: Optional[int]) -> None:
+        if stream_id is not None:
+            self.streams[stream_id].unblock()  # type: ignore
+        elif stream_id is None:
+            # Unblock all streams
+            for stream in self.streams.values():
+                stream.unblock()  # type: ignore
 
 
 def run_app(
