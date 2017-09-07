@@ -3,8 +3,6 @@ import sys
 
 from setuptools import setup, find_packages
 
-from quart import __version__
-
 if sys.version_info < (3,6):
     sys.exit('Python 3.6 is the minimum required version')
 
@@ -26,7 +24,7 @@ INSTALL_REQUIRES = [
 
 setup(
     name='Quart',
-    version=__version__,
+    version='0.2.0',
     description="A Python asyncio web microframework with the same API as Flask",
     long_description=long_description,
     url='https://gitlab.com/pgjones/quart/',

@@ -19,12 +19,10 @@ from .typing import ResponseReturnValue
 from .utils import redirect
 from .wrappers import Request, Response
 
-__version__ = '0.2.0'
-
 __all__ = (
-    '__version__', '_app_ctx_stack', '_request_ctx_stack', 'abort', 'after_this_request',
-    'appcontext_popped', 'appcontext_pushed', 'appcontext_tearing_down', 'before_render_template',
-    'Blueprint', 'Config', 'current_app', 'escape', 'flash', 'g', 'get_flashed_messages',
+    '_app_ctx_stack', '_request_ctx_stack', 'abort', 'after_this_request', 'appcontext_popped',
+    'appcontext_pushed', 'appcontext_tearing_down', 'before_render_template', 'Blueprint',
+    'Config', 'current_app', 'escape', 'flash', 'g', 'get_flashed_messages',
     'get_template_attribute', 'got_request_exception', 'has_app_context', 'has_request_context',
     'jsonify', 'make_response', 'Markup', 'message_flashed', 'Quart', 'redirect',
     'render_template', 'render_template_string', 'request', 'Request', 'request_finished',
