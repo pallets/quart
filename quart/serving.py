@@ -134,6 +134,8 @@ class H11Server(HTTPProtocol):
                     self.streams[0].append(event.data)
                 elif event is h11.NEED_DATA:
                     break
+                elif isinstance(event, h11.ConnectionClosed):
+                    break
         if self.connection.our_state is h11.MUST_CLOSE:
             self.transport.close()
         elif self.connection.our_state is h11.DONE:
