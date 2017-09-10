@@ -31,3 +31,16 @@ you can deploy via,
     gunicorn --worker-class quart.worker.GunicornWorker example:app
 
 All the standard Gunicorn settings apply and can be used.
+
+HTTP/2 deployment
+-----------------
+
+Quart will only serve HTTP/2 over a TLS connection (upgrading from
+http/1.1 is not supported), additionally HTTP/2 is only supported with
+TLSv1.2 or better and a certain set of ciphers [ `RFC 7540
+<https://tools.ietf.org/html/rfc7540>`_ ]. With TLSv1.2 the cipher
+ECDHE+AESGCM must be supported, therefore a recommendation is
+
+.. code-block:: bash
+
+    gunicorn --worker-class quart.worker.GunicornWorker example:app --keyfile key.pem --certfile cert.pem --ciphers 'ECDHE+AESGCM'

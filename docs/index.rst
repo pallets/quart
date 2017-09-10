@@ -28,6 +28,7 @@ How-To Guides
    factory_pattern.rst
    flask_extensions.rst
    flask_migration.rst
+   http2.rst
    json_encoding.rst
    logging.rst
    session_storage.rst
