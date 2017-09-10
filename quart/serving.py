@@ -188,7 +188,7 @@ class H2Server(HTTPProtocol):
             loop: asyncio.AbstractEventLoop,
             transport: asyncio.BaseTransport,
     ) -> None:
-        super().__init__(app, loop, transport, 'quart-h11')
+        super().__init__(app, loop, transport, 'quart-h2')
         self.connection = h2.connection.H2Connection(
             h2.config.H2Configuration(client_side=False, header_encoding='utf-8'),
         )
