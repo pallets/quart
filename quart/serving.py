@@ -253,7 +253,7 @@ class H2Server(HTTPProtocol):
                 break
 
     def _window_updated(self, stream_id: Optional[int]) -> None:
-        if stream_id is not None:
+        if stream_id:
             self.streams[stream_id].unblock()  # type: ignore
         elif stream_id is None:
             # Unblock all streams
