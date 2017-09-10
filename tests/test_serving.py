@@ -13,6 +13,7 @@ BASIC_H2_HEADERS = [
     (':authority', 'quart'), (':path', '/'), (':scheme', 'https'), (':method', 'GET'),
 ]
 BASIC_DATA = 'index'
+FLOW_WINDOW_SIZE = 1
 
 
 class MockTransport:
@@ -108,6 +109,33 @@ async def test_h2server(serving_app: Quart, event_loop: asyncio.AbstractEventLoo
                 assert (b'x-test', b'Test') in event.headers
             elif isinstance(event, h2.events.DataReceived):
                 response_data += event.data
+            elif isinstance(event, (h2.events.StreamEnded, h2.events.ConnectionTerminated)):
+                connection_open = False
+    assert response_data.decode() == BASIC_DATA
+
+
+@pytest.mark.asyncio
+async def test_h2_flow_control(serving_app: Quart, event_loop: asyncio.AbstractEventLoop) -> None:
+    transport = MockTransport()
+    server = H2Server(serving_app, event_loop, transport)  # type: ignore
+    connection = h2.connection.H2Connection()
+    connection.initiate_connection()
+    connection.update_settings({h2.settings.SettingCodes.INITIAL_WINDOW_SIZE: FLOW_WINDOW_SIZE})
+    server.data_received(connection.data_to_send())
+    connection.send_headers(1, BASIC_H2_HEADERS, end_stream=True)
+    server.data_received(connection.data_to_send())
+    response_data = b''
+    connection_open = True
+    while connection_open:
+        await transport.updated.wait()
+        events = connection.receive_data(transport.data)
+        transport.clear()
+        for event in events:
+            if isinstance(event, h2.events.DataReceived):
+                assert len(event.data) <= FLOW_WINDOW_SIZE
+                response_data += event.data
+                connection.acknowledge_received_data(event.flow_controlled_length, 1)
+                server.data_received(connection.data_to_send())
             elif isinstance(event, (h2.events.StreamEnded, h2.events.ConnectionTerminated)):
                 connection_open = False
     assert response_data.decode() == BASIC_DATA
