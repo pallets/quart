@@ -221,8 +221,8 @@ class H2Server(HTTPProtocol):
             elif isinstance(event, h2.events.WindowUpdated):
                 self._window_updated(event.stream_id)
             elif isinstance(event, h2.events.ConnectionTerminated):
-                del self.streams[event.stream_id]
                 self.transport.close()
+                return
 
             self.transport.write(self.connection.data_to_send())  # type: ignore
 
@@ -239,6 +239,7 @@ class H2Server(HTTPProtocol):
             await self._send_data(stream_id, data)
         self.connection.end_stream(stream_id)
         self.transport.write(self.connection.data_to_send())  # type: ignore
+        del self.streams[stream_id]
 
     async def _send_data(self, stream_id: int, data: bytes) -> None:
         while True:
