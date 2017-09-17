@@ -247,6 +247,7 @@ class H2Server(HTTPProtocol):
                 await self.streams[stream_id].block()  # type: ignore
 
             chunk_size = min(len(data), self.connection.local_flow_control_window(stream_id))
+            chunk_size = min(chunk_size, self.connection.max_outbound_frame_size)
             self.connection.send_data(stream_id, data[:chunk_size])
             self.transport.write(self.connection.data_to_send())  # type: ignore
             data = data[chunk_size:]
