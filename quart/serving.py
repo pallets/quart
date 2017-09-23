@@ -1,6 +1,7 @@
 import asyncio
 from functools import partial
 from itertools import chain
+from logging import Logger
 from ssl import SSLContext
 from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union  # noqa: F401
 
@@ -11,7 +12,7 @@ import h2.events
 import h2.exceptions
 
 from .datastructures import CIMultiDict
-from .wrappers import Response
+from .wrappers import Request, Response  # noqa: F401
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa
@@ -32,12 +33,18 @@ class Stream:
 
 
 class Server(asyncio.Protocol):
-    __slots__ = ('app', 'loop', '_http_server')
+    __slots__ = ('app', 'logger', 'loop', '_http_server')
 
-    def __init__(self, app: 'Quart', loop: asyncio.AbstractEventLoop) -> None:
+    def __init__(
+            self,
+            app: 'Quart',
+            loop: asyncio.AbstractEventLoop,
+            logger: Optional[Logger],
+    ) -> None:
         self.app = app
         self.loop = loop
         self._http_server: Optional[HTTPProtocol] = None
+        self.logger = logger
 
     def connection_made(self, transport: asyncio.BaseTransport) -> None:
         ssl_object = transport.get_extra_info('ssl_object')
@@ -47,9 +54,9 @@ class Server(asyncio.Protocol):
             protocol = 'http/1.1'
 
         if protocol == 'h2':
-            self._http_server = H2Server(self.app, self.loop, transport)
+            self._http_server = H2Server(self.app, self.loop, transport, self.logger)
         else:
-            self._http_server = H11Server(self.app, self.loop, transport)
+            self._http_server = H11Server(self.app, self.loop, transport, self.logger)
 
     def data_received(self, data: bytes) -> None:
         self._http_server.data_received(data)
@@ -64,11 +71,14 @@ class HTTPProtocol:
             app: 'Quart',
             loop: asyncio.AbstractEventLoop,
             transport: asyncio.BaseTransport,
+            logger: Optional[Logger],
             server_header: str,
     ) -> None:
         self.app = app
         self.transport = transport
         self.loop = loop
+        self.logger = logger
+        self.requests: Dict[int, Request] = {}
         self.streams: Dict[int, Stream] = {}
         self.server_header = server_header
 
@@ -84,16 +94,24 @@ class HTTPProtocol:
     ) -> None:
         self.streams[stream_id] = self.stream_class(self.loop)
         headers['Remote-Addr'] = self.transport.get_extra_info('peername')[0]
-        request = self.app.request_class(method, path, headers, self.streams[stream_id].future)
+        self.requests[stream_id] = self.app.request_class(
+            method, path, headers, self.streams[stream_id].future,
+        )
         # It is important that the app handles the request in a unique
         # task as the globals are task locals
-        task = asyncio.ensure_future(self.app.handle_request(request))
+        task = asyncio.ensure_future(self.app.handle_request(self.requests[stream_id]))
         task.add_done_callback(partial(self.handle_response, stream_id))  # type: ignore
 
     def handle_response(self, stream_id: int, future: asyncio.Future) -> None:
         raise NotImplemented()
 
     def end_response(self, stream_id: int, response: Response) -> None:
+        request = self.requests.pop(stream_id)
+        if self.logger is not None:
+            self.logger.info(
+                "%s %s %s %s %s", request.remote_addr, request.method, request.path,
+                response.status_code, response.headers['Content-Length'],
+            )
         del self.streams[stream_id]
 
     def response_headers(self) -> List[Tuple[str, str]]:
@@ -107,8 +125,9 @@ class H11Server(HTTPProtocol):
             app: 'Quart',
             loop: asyncio.AbstractEventLoop,
             transport: asyncio.BaseTransport,
+            logger: Optional[Logger],
     ) -> None:
-        super().__init__(app, loop, transport, 'quart-h11')
+        super().__init__(app, loop, transport, logger, 'quart-h11')
         self.connection = h11.Connection(h11.SERVER)
 
     def data_received(self, data: bytes) -> None:
@@ -195,8 +214,9 @@ class H2Server(HTTPProtocol):
             app: 'Quart',
             loop: asyncio.AbstractEventLoop,
             transport: asyncio.BaseTransport,
+            logger: Optional[Logger],
     ) -> None:
-        super().__init__(app, loop, transport, 'quart-h2')
+        super().__init__(app, loop, transport, logger, 'quart-h2')
         self.connection = h2.connection.H2Connection(
             h2.config.H2Configuration(client_side=False, header_encoding='utf-8'),
         )
@@ -275,7 +295,8 @@ def run_app(
         *,
         host: str='127.0.0.1',
         port: int=5000,
-        ssl: Optional[SSLContext]=None
+        ssl: Optional[SSLContext]=None,
+        logger: Optional[Logger]=None,
 ) -> None:
     """Create a server to run the app on given the options.
 
@@ -283,10 +304,11 @@ def run_app(
         app: The Quart app to run.
         host: Hostname e.g. localhost
         port: The port to listen on.
-        ssl: SSLContext to use.
+        ssl: Optional SSLContext to use.
+        logger: Optional logger for serving (access) logs.
     """
     loop = asyncio.get_event_loop()
-    create_server = loop.create_server(lambda: Server(app, loop), host, port, ssl=ssl)
+    create_server = loop.create_server(lambda: Server(app, loop, logger), host, port, ssl=ssl)
     server = loop.run_until_complete(create_server)
 
     scheme = 'http' if ssl is None else 'https'

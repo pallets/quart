@@ -36,9 +36,11 @@ class GunicornWorker(Worker):
 
     async def _run(self) -> None:
         ssl_context = self._create_ssl_context()
+        access_logger = self.log.access_log if self.cfg.accesslog else None
         for sock in self.sockets:
             server = await self.loop.create_server(
-                lambda: Server(self.wsgi, self.loop), sock=sock.sock, ssl=ssl_context,
+                lambda: Server(self.wsgi, self.loop, access_logger),
+                sock=sock.sock, ssl=ssl_context,
             )
             self.servers.append(server)
 

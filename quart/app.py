@@ -20,7 +20,7 @@ from .exceptions import all_http_exceptions, HTTPException
 from .globals import g, request, session
 from .helpers import _endpoint_from_view_func, get_flashed_messages, url_for
 from .json import JSONDecoder, JSONEncoder
-from .logging import create_logger
+from .logging import create_logger, create_serving_logger
 from .routing import Map, MapAdapter, Rule
 from .serving import run_app
 from .sessions import SecureCookieSessionInterface, Session
@@ -873,7 +873,7 @@ class Quart(PackageStatic):
             self.debug = debug
 
         try:
-            run_app(self, host=host, port=port, ssl=ssl)
+            run_app(self, host=host, port=port, ssl=ssl, logger=create_serving_logger())
         finally:
             # Reset the first request, so as to enable reuse.
             self._got_first_request = False
