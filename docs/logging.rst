@@ -1,41 +1,55 @@
-.. _logging:
+.. _how_to_log:
 
 Logging
 =======
 
-The standard Python logging machinery can be safely used with
-Quart. Additionally Quart provides a pre configured logger that
-standardises the format and log level under the ``quart`` logger
-namespace.
-
-To use the Quart logger simply use the :attr:`~quart.app.Quart.logger`
-as you would a standard Python logger (it is a standard Python
-logger), and is named ``quart.app``, e.g.
+By default Quart has two loggers, named ``quart.app`` and
+``quart.serving``, both are standar Python Loggers. The former is
+usually kept for app logging whilst the latter serving. To use the
+former, simply make use of :attr:`~quart.app.Quart.logger`, for
+example:
 
 .. code-block:: python
 
-    app.logger.warning("Easy now")
-    app.logger.info("Interesting")
+    app.logger.info('Interesting')
+    app.logger.warning('Easy Now')
 
-The Quart ``quart.app`` logger is created and configured on first
-usage (potentially during app creation), so it is best to `pre
-configure
-<https://docs.python.org/3/howto/logging-cookbook.html#logging-cookbook>`_
-the logging for your app before creating an instance of
-:class:`~quart.app.Quart`. Note that by default (unless the app debug
-is True) this logger will not have a set logging level.
+The serving logger is typically reserved for the serving code, but can
+be used if required via :func:`logging.getLogger` i.e.
+``getLogger('quart.serving')``.
 
-The default handler used in the ``quart.app`` logger is
-:attr:`~quart.logging.default_handler` and can be removed via
-
-.. code-block:: python
-
-    from quart.logging import default_handler
-    app.logger.removeHandler(default_handler)
-
-Output Format
+Configuration
 -------------
 
-The Quart Logger outputs in ``[%(asctime)s] %(levelname)s in
-%(module)s: %(message)s`` format as defined in
-:mod:`~quart.logging`.
+The Quart loggers are not created until their first usage, which may
+occur as the app is created. These loggers on creation respect any
+existing configuration. This allows the loggers to be configured like
+any other python logger, for example
+
+.. code-block:: python
+
+    from logging.config import dictConfig
+
+    dictConfig({
+        'version': 1,
+        'loggers': {
+            'quart.app': {
+                'level': 'ERROR',
+            },
+        },
+    })
+
+Disabling/removing handlers
+---------------------------
+
+The handlers attached to the quart loggers can be removed, the
+handlers are :attr:`~quart.logging.default_handler` and
+:attr:`~quart.logging.default_serving_handler` and can be removed like
+so,
+
+.. code-block:: python
+
+    from logging import getLogger
+    from quart.logging import default_handler
+
+    getLogger('quart.app').removeHandler(default_handler)
