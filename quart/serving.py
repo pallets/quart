@@ -57,6 +57,8 @@ class Server(asyncio.Protocol):
 
 class HTTPProtocol:
 
+    stream_class = Stream
+
     def __init__(
             self,
             app: 'Quart',
@@ -80,6 +82,7 @@ class HTTPProtocol:
             path: str,
             headers: CIMultiDict,
     ) -> None:
+        self.streams[stream_id] = self.stream_class(self.loop)
         headers['Remote-Addr'] = self.transport.get_extra_info('peername')[0]
         request = self.app.request_class(method, path, headers, self.streams[stream_id].future)
         # It is important that the app handles the request in a unique
@@ -89,6 +92,9 @@ class HTTPProtocol:
 
     def handle_response(self, stream_id: int, future: asyncio.Future) -> None:
         raise NotImplemented()
+
+    def end_response(self, stream_id: int, response: Response) -> None:
+        del self.streams[stream_id]
 
     def response_headers(self) -> List[Tuple[str, str]]:
         return [('server', self.server_header)]
@@ -125,7 +131,6 @@ class H11Server(HTTPProtocol):
                     headers = CIMultiDict()
                     for name, value in event.headers:
                         headers.add(name.decode().title(), value.decode())
-                    self.streams[0] = Stream(self.loop)
                     self.handle_request(
                         0, event.method.decode().upper(), event.target.decode(), headers,
                     )
@@ -152,6 +157,7 @@ class H11Server(HTTPProtocol):
             self._send(h11.Data(data=data))
         self._send(h11.EndOfMessage())
         self._handle_events()
+        self.end_response(stream_id, response)
 
     def _handle_error(self) -> None:
         self._send(h11.Response(status_code=400, headers=tuple()))
@@ -182,6 +188,8 @@ class H2Stream(Stream):
 
 class H2Server(HTTPProtocol):
 
+    stream_class = H2Stream
+
     def __init__(
             self,
             app: 'Quart',
@@ -210,7 +218,6 @@ class H2Server(HTTPProtocol):
                 headers = CIMultiDict()
                 for name, value in event.headers:
                     headers.add(name.title(), value)
-                self.streams[event.stream_id] = H2Stream(self.loop)
                 self.handle_request(
                     event.stream_id, headers[':method'].upper(), headers[':path'], headers,
                 )
@@ -239,7 +246,7 @@ class H2Server(HTTPProtocol):
             await self._send_data(stream_id, data)
         self.connection.end_stream(stream_id)
         self.transport.write(self.connection.data_to_send())  # type: ignore
-        del self.streams[stream_id]
+        self.end_response(stream_id, response)
 
     async def _send_data(self, stream_id: int, data: bytes) -> None:
         while True:
