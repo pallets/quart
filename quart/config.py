@@ -11,8 +11,6 @@ DEFAULT_CONFIG = {
     'DEBUG': False,
     'JSONIFY_MIMETYPE': 'application/json',
     'JSONIFY_PRETTYPRINT_REGULAR': False,
-    'LOGGER_NAME': None,
-    'LOGGER_HANDLER_POLICY': 'always',
     'PERMANENT_SESSION_LIFETIME': timedelta(days=31),
     'PREFERRED_URL_SCHEME': 'http',
     'SECRET_KEY': None,

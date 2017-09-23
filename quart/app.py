@@ -64,8 +64,6 @@ class Quart(PackageStatic):
             environment.
         json_decoder: The decoder for JSON data.
         json_encoder: The encoder for JSON data.
-        logger_name: Wrapper around configuration LOGGER_NAME value, use
-            to specify a specific logger to use.
         permanent_session_lifetime: Wrapper around configuration
             PERMANENT_SESSION_LIFETIME value. Specifies how long the session
             data should survive.
@@ -89,7 +87,6 @@ class Quart(PackageStatic):
     }
     json_decoder = JSONDecoder
     json_encoder = JSONEncoder
-    logger_name = ConfigAttribute('LOGGER_NAME')
     permanent_session_lifetime = ConfigAttribute(
         'PERMANENT_SESSION_LIFETIME', converter=_convert_timedelta,
     )
@@ -185,11 +182,9 @@ class Quart(PackageStatic):
             app.logger.error("Error, of some kind")
 
         """
-        if self._logger is not None:
-            return self._logger
-        else:
+        if self._logger is None:
             self._logger = create_logger(self)
-            return self._logger
+        return self._logger
 
     @property
     def jinja_env(self) -> Environment:
