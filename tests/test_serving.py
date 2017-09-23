@@ -79,6 +79,7 @@ async def test_h11server(serving_app: Quart, event_loop: asyncio.AbstractEventLo
         if isinstance(event, h11.Response):
             assert event.status_code == 202
             assert (b'server', b'quart-h11') in event.headers
+            assert b'date' in (header[0] for header in event.headers)
             assert (b'x-test', b'Test') in event.headers
         elif isinstance(event, h11.Data):
             response_data += event.data
@@ -106,6 +107,7 @@ async def test_h2server(serving_app: Quart, event_loop: asyncio.AbstractEventLoo
             if isinstance(event, h2.events.ResponseReceived):
                 assert (b':status', b'202') in event.headers
                 assert (b'server', b'quart-h2') in event.headers
+                assert b'date' in (header[0] for header in event.headers)
                 assert (b'x-test', b'Test') in event.headers
             elif isinstance(event, h2.events.DataReceived):
                 response_data += event.data

@@ -1,4 +1,6 @@
 import asyncio
+import time
+from email.utils import formatdate
 from functools import partial
 from itertools import chain
 from logging import Logger
@@ -64,6 +66,7 @@ class Server(asyncio.Protocol):
 
 class HTTPProtocol:
 
+    protocol = ''
     stream_class = Stream
 
     def __init__(
@@ -72,7 +75,6 @@ class HTTPProtocol:
             loop: asyncio.AbstractEventLoop,
             transport: asyncio.BaseTransport,
             logger: Optional[Logger],
-            server_header: str,
     ) -> None:
         self.app = app
         self.transport = transport
@@ -80,7 +82,6 @@ class HTTPProtocol:
         self.logger = logger
         self.requests: Dict[int, Request] = {}
         self.streams: Dict[int, Stream] = {}
-        self.server_header = server_header
 
     def data_received(self, data: bytes) -> None:
         raise NotImplemented()
@@ -115,10 +116,14 @@ class HTTPProtocol:
         del self.streams[stream_id]
 
     def response_headers(self) -> List[Tuple[str, str]]:
-        return [('server', self.server_header)]
+        return [
+            ('date', formatdate(time.time(), usegmt=True)), ('server', f"quart-{self.protocol}"),
+        ]
 
 
 class H11Server(HTTPProtocol):
+
+    protocol = 'h11'
 
     def __init__(
             self,
@@ -127,7 +132,7 @@ class H11Server(HTTPProtocol):
             transport: asyncio.BaseTransport,
             logger: Optional[Logger],
     ) -> None:
-        super().__init__(app, loop, transport, logger, 'quart-h11')
+        super().__init__(app, loop, transport, logger)
         self.connection = h11.Connection(h11.SERVER)
 
     def data_received(self, data: bytes) -> None:
@@ -137,7 +142,7 @@ class H11Server(HTTPProtocol):
     def _handle_events(self) -> None:
         if self.connection.they_are_waiting_for_100_continue:
             self._send(
-                h11.InformationalResponse(status_code=100, headers=(('Date', ''), ('Server', ''))),
+                h11.InformationalResponse(status_code=100, headers=self.response_headers),
             )
         while True:
             try:
@@ -207,6 +212,7 @@ class H2Stream(Stream):
 
 class H2Server(HTTPProtocol):
 
+    protocol = 'h2'
     stream_class = H2Stream
 
     def __init__(
@@ -216,7 +222,7 @@ class H2Server(HTTPProtocol):
             transport: asyncio.BaseTransport,
             logger: Optional[Logger],
     ) -> None:
-        super().__init__(app, loop, transport, logger, 'quart-h2')
+        super().__init__(app, loop, transport, logger)
         self.connection = h2.connection.H2Connection(
             h2.config.H2Configuration(client_side=False, header_encoding='utf-8'),
         )
