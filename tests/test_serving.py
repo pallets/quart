@@ -54,7 +54,7 @@ def test_server() -> None:
     h2_ssl_mock.selected_alpn_protocol.return_value = 'h2'
     transport = Mock()
     transport.get_extra_info.return_value = h2_ssl_mock
-    server = Server(Mock(), Mock(), Mock())
+    server = Server(Mock(), Mock(), Mock(), '')
     server.connection_made(transport)
     assert isinstance(server._http_server, H2Server)
     transport.get_extra_info.return_value = None
@@ -65,7 +65,7 @@ def test_server() -> None:
 @pytest.mark.asyncio
 async def test_h11server(serving_app: Quart, event_loop: asyncio.AbstractEventLoop) -> None:
     transport = MockTransport()
-    server = H11Server(serving_app, event_loop, transport, None)  # type: ignore
+    server = H11Server(serving_app, event_loop, transport, None, '')  # type: ignore
     connection = h11.Connection(h11.CLIENT)
     server.data_received(
         connection.send(h11.Request(method='GET', target='/', headers=BASIC_H11_HEADERS)),
@@ -91,7 +91,7 @@ async def test_h11server(serving_app: Quart, event_loop: asyncio.AbstractEventLo
 @pytest.mark.asyncio
 async def test_h2server(serving_app: Quart, event_loop: asyncio.AbstractEventLoop) -> None:
     transport = MockTransport()
-    server = H2Server(serving_app, event_loop, transport, None)  # type: ignore
+    server = H2Server(serving_app, event_loop, transport, None, '')  # type: ignore
     connection = h2.connection.H2Connection()
     connection.initiate_connection()
     server.data_received(connection.data_to_send())
@@ -119,7 +119,7 @@ async def test_h2server(serving_app: Quart, event_loop: asyncio.AbstractEventLoo
 @pytest.mark.asyncio
 async def test_h2_flow_control(serving_app: Quart, event_loop: asyncio.AbstractEventLoop) -> None:
     transport = MockTransport()
-    server = H2Server(serving_app, event_loop, transport, None)  # type: ignore
+    server = H2Server(serving_app, event_loop, transport, None, '')  # type: ignore
     connection = h2.connection.H2Connection()
     connection.initiate_connection()
     connection.update_settings({h2.settings.SettingCodes.INITIAL_WINDOW_SIZE: FLOW_WINDOW_SIZE})

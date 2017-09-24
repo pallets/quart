@@ -1,7 +1,11 @@
+import os
 import sys
-
+import time
 from logging import DEBUG, Formatter, getLogger, INFO, Logger, NOTSET, StreamHandler
 from typing import TYPE_CHECKING
+from urllib.parse import urlparse
+
+from .wrappers import Request, Response
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa
@@ -40,3 +44,43 @@ def create_serving_logger() -> Logger:
 
     logger.addHandler(serving_handler)
     return logger
+
+
+class AccessLogAtoms(dict):
+
+    def __init__(self, request: Request, response: Response, protocol: str) -> None:
+        parsed_url = urlparse(request.full_path)
+        self.update({
+            'h': request.remote_addr,
+            'l': '-',
+            't': time.strftime('[%d/%b/%Y:%H:%M:%S %z]'),
+            'r': f"{request.method} {request.path} {protocol}",
+            's': response.status_code,
+            'm': request.method,
+            'U': request.path,
+            'q': parsed_url.query,
+            'H': protocol,
+            'b': response.headers.get('Content-Length', '-'),
+            'B': response.headers.get('Content-Length'),
+            'f': request.headers.get('Referer', '-'),
+            'a': request.headers.get('User-Agent', '-'),
+            'T': '-',  # request_time.seconds,
+            'D': '-',  # (request_time.seconds*1000000) + request_time.microseconds,
+            'L': '-',  # "%d.%06d" % (request_time.seconds, request_time.microseconds),
+            'p': f"<{os.getpid()}>",
+        })
+        for name, value in request.headers.items():
+            self[f"{{{name.lower()}}}i"] = value
+        for name, value in response.headers.items():
+            self[f"{{{name.lower()}}}o"] = value
+        for name, value in os.environ.items():
+            self[f"{{{name.lower()}}}e"] = value
+
+    def __getitem__(self, key: str) -> str:
+        try:
+            if key.startswith('{'):
+                return super().__getitem__(key.lower())
+            else:
+                return super().__getitem__(key)
+        except KeyError:
+            return '-'

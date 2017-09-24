@@ -14,6 +14,7 @@ import h2.events
 import h2.exceptions
 
 from .datastructures import CIMultiDict
+from .logging import AccessLogAtoms
 from .wrappers import Request, Response  # noqa: F401
 
 if TYPE_CHECKING:
@@ -35,18 +36,20 @@ class Stream:
 
 
 class Server(asyncio.Protocol):
-    __slots__ = ('app', 'logger', 'loop', '_http_server')
+    __slots__ = ('access_log_format', 'app', 'logger', 'loop', '_http_server')
 
     def __init__(
             self,
             app: 'Quart',
             loop: asyncio.AbstractEventLoop,
             logger: Optional[Logger],
+            access_log_format: str,
     ) -> None:
         self.app = app
         self.loop = loop
         self._http_server: Optional[HTTPProtocol] = None
         self.logger = logger
+        self.access_log_format = access_log_format
 
     def connection_made(self, transport: asyncio.BaseTransport) -> None:
         ssl_object = transport.get_extra_info('ssl_object')
@@ -56,9 +59,13 @@ class Server(asyncio.Protocol):
             protocol = 'http/1.1'
 
         if protocol == 'h2':
-            self._http_server = H2Server(self.app, self.loop, transport, self.logger)
+            self._http_server = H2Server(
+                self.app, self.loop, transport, self.logger, self.access_log_format,
+            )
         else:
-            self._http_server = H11Server(self.app, self.loop, transport, self.logger)
+            self._http_server = H11Server(
+                self.app, self.loop, transport, self.logger, self.access_log_format,
+            )
 
     def data_received(self, data: bytes) -> None:
         self._http_server.data_received(data)
@@ -75,6 +82,7 @@ class HTTPProtocol:
             loop: asyncio.AbstractEventLoop,
             transport: asyncio.BaseTransport,
             logger: Optional[Logger],
+            access_log_format: str,
     ) -> None:
         self.app = app
         self.transport = transport
@@ -82,6 +90,7 @@ class HTTPProtocol:
         self.logger = logger
         self.requests: Dict[int, Request] = {}
         self.streams: Dict[int, Stream] = {}
+        self.access_log_format = "%(h)s %(r)s %(s)s %(b)s"
 
     def data_received(self, data: bytes) -> None:
         raise NotImplemented()
@@ -110,8 +119,7 @@ class HTTPProtocol:
         request = self.requests.pop(stream_id)
         if self.logger is not None:
             self.logger.info(
-                "%s %s %s %s %s", request.remote_addr, request.method, request.path,
-                response.status_code, response.headers['Content-Length'],
+                self.access_log_format, AccessLogAtoms(request, response, self.protocol),
             )
         del self.streams[stream_id]
 
@@ -131,8 +139,9 @@ class H11Server(HTTPProtocol):
             loop: asyncio.AbstractEventLoop,
             transport: asyncio.BaseTransport,
             logger: Optional[Logger],
+            access_log_format: str,
     ) -> None:
-        super().__init__(app, loop, transport, logger)
+        super().__init__(app, loop, transport, logger, access_log_format)
         self.connection = h11.Connection(h11.SERVER)
 
     def data_received(self, data: bytes) -> None:
@@ -221,8 +230,9 @@ class H2Server(HTTPProtocol):
             loop: asyncio.AbstractEventLoop,
             transport: asyncio.BaseTransport,
             logger: Optional[Logger],
+            access_log_format: str,
     ) -> None:
-        super().__init__(app, loop, transport, logger)
+        super().__init__(app, loop, transport, logger, access_log_format)
         self.connection = h2.connection.H2Connection(
             h2.config.H2Configuration(client_side=False, header_encoding='utf-8'),
         )
@@ -301,6 +311,7 @@ def run_app(
         *,
         host: str='127.0.0.1',
         port: int=5000,
+        access_log_format: str,
         ssl: Optional[SSLContext]=None,
         logger: Optional[Logger]=None,
 ) -> None:
@@ -314,7 +325,10 @@ def run_app(
         logger: Optional logger for serving (access) logs.
     """
     loop = asyncio.get_event_loop()
-    create_server = loop.create_server(lambda: Server(app, loop, logger), host, port, ssl=ssl)
+    create_server = loop.create_server(
+        lambda: Server(app, loop, logger, access_log_format),
+        host, port, ssl=ssl,
+    )
     server = loop.run_until_complete(create_server)
 
     scheme = 'http' if ssl is None else 'https'

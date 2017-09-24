@@ -30,7 +30,8 @@ you can deploy via,
 
     gunicorn --worker-class quart.worker.GunicornWorker example:app
 
-All the standard Gunicorn settings apply and can be used.
+All the standard Gunicorn settings apply and can be used, including
+access log formatting.
 
 HTTP/2 deployment
 -----------------
