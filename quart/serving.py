@@ -90,7 +90,7 @@ class HTTPProtocol:
         self.logger = logger
         self.requests: Dict[int, Request] = {}
         self.streams: Dict[int, Stream] = {}
-        self.access_log_format = "%(h)s %(r)s %(s)s %(b)s"
+        self.access_log_format = access_log_format
 
     def data_received(self, data: bytes) -> None:
         raise NotImplemented()
