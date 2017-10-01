@@ -28,7 +28,7 @@ class HTTPException(Exception):
 
     def get_response(self) -> Response:
         return Response(
-            self.get_body(), status_code=self.status_code, headers=self.get_headers(),
+            self.get_body(), status=self.status_code, headers=self.get_headers(),
         )
 
     def get_headers(self) -> dict:

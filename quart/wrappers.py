@@ -335,7 +335,7 @@ class Response(_BaseRequestResponse, JSONMixin):
     def __init__(
             self,
             response: Union[AnyStr, Iterable],
-            status_code: Optional[int]=None,
+            status: Optional[int]=None,
             headers: Optional[Union[dict, CIMultiDict]]=None,
             mimetype: Optional[str]=None,
             content_type: Optional[str]=None,
@@ -360,7 +360,9 @@ class Response(_BaseRequestResponse, JSONMixin):
             response: An iterable of the response bytes-data.
         """
         super().__init__(headers)
-        self.status_code: int = status_code or self.default_status
+        if status is not None and not isinstance(status, int):
+            raise ValueError('Quart does not support non-integer status values')
+        self.status_code: int = status or self.default_status
 
         if content_type is None:
             if mimetype is None and 'content-type' not in self.headers:

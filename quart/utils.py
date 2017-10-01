@@ -17,7 +17,7 @@ You should be redirected to <a href="{location}">{location}</a>, it not please c
     """
 
     return current_app.response_class(
-        body, status_code=status_code, headers={'Location': location},
+        body, status=status_code, headers={'Location': location},
     )
 
 
