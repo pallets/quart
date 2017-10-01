@@ -35,10 +35,13 @@ limitation not present in vanilla flask.
 Trying to use Flask alongside Quart in the same runtime will likely not
 work, and lead to surprising errors.
 
-Note that the flask extension must be limited to creating routes,
-using the request and rendering templates. Any other more advanced
-functionality may not work.
+The flask extension must be limited to creating routes, using the
+request and rendering templates. Any other more advanced functionality
+may not work.
 
+Finally the flask_patching system also relies on patching asyncio, and
+hence other implementations or event loop policies are unlikely to
+work.
 
 Supported extensions
 --------------------
