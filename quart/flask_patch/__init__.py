@@ -33,16 +33,17 @@ from builtins import globals as builtin_globals  # noqa: E402
 
 from jinja2 import escape, Markup  # noqa: E402
 from quart import (
-    abort, appcontext_popped, appcontext_pushed, appcontext_tearing_down, before_render_template,
-    Blueprint, Config, got_request_exception, has_app_context, has_request_context, jsonify,
-    message_flashed, Quart, redirect, request_finished, request_started, request_tearing_down,
-    Response, ResponseReturnValue, template_rendered,
+    abort, after_this_request, appcontext_popped, appcontext_pushed, appcontext_tearing_down,
+    before_render_template, Blueprint, Config, got_request_exception, has_app_context,
+    has_request_context, jsonify, message_flashed, Quart, redirect, Request, request_finished,
+    request_started, request_tearing_down, Response, ResponseReturnValue, safe_join, send_file,
+    send_from_directory, template_rendered,
 )  # noqa: E402
 from quart.flask_patch.globals import (
     _app_ctx_stack, _request_ctx_stack, current_app, g, request, session,
 )  # noqa: E402
 from quart.flask_patch.helpers import make_response  # noqa: E402
-from quart.helpers import flash, get_flashed_messages, url_for  # noqa: E402
+from quart.helpers import flash, get_flashed_messages, get_template_attribute, url_for  # noqa: E402
 from quart.flask_patch.templating import render_template, render_template_string  # noqa: E402
 import quart.views  # noqa: E402,F401
 
@@ -114,11 +115,12 @@ from quart.local import LocalStack, TaskLocal  # noqa: E402
 LocalStack.__ident_func__ = lambda _: TaskLocal._task_identity()  # type: ignore
 
 __all__ = (
-    '_app_ctx_stack', '_request_ctx_stack', 'abort', 'appcontext_popped', 'appcontext_pushed',
-    'appcontext_tearing_down', 'before_render_template', 'Blueprint', 'Config', 'current_app',
-    'escape', 'flash', 'g', 'get_flashed_messages', 'got_request_exception', 'has_app_context',
-    'has_request_context', 'jsonify', 'Markup', 'make_response', 'message_flashed', 'Quart',
-    'redirect', 'render_template', 'render_template_string', 'request', 'request_finished',
-    'request_started', 'request_tearing_down', 'Response', 'ResponseReturnValue', 'session',
-    'template_rendered', 'url_for',
+    '_app_ctx_stack', '_request_ctx_stack', 'abort', 'after_this_request', 'appcontext_popped',
+    'appcontext_pushed', 'appcontext_tearing_down', 'before_render_template', 'Blueprint',
+    'Config', 'current_app', 'escape', 'flash', 'g', 'get_flashed_messages',
+    'got_request_exception', 'get_template_attribute', 'has_app_context', 'has_request_context',
+    'jsonify', 'Markup', 'make_response', 'message_flashed', 'Quart', 'redirect',
+    'render_template', 'render_template_string', 'request', 'request_finished', 'request_started',
+    'request_tearing_down', 'Request', 'Response', 'ResponseReturnValue', 'safe_join',
+    'send_file', 'send_from_directory', 'session', 'template_rendered', 'url_for',
 )
