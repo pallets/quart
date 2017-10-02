@@ -39,7 +39,10 @@ class GunicornWorker(Worker):
         access_logger = self.log.access_log if self.cfg.accesslog else None
         for sock in self.sockets:
             server = await self.loop.create_server(
-                lambda: Server(self.wsgi, self.loop, access_logger, self.cfg.access_log_format),
+                lambda: Server(
+                    self.wsgi, self.loop, access_logger, self.cfg.access_log_format,
+                    self.cfg.bind[0],
+                ),
                 sock=sock.sock, ssl=ssl_context,
             )
             self.servers.append(server)

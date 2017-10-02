@@ -36,7 +36,7 @@ class Stream:
 
 
 class Server(asyncio.Protocol):
-    __slots__ = ('access_log_format', 'app', 'logger', 'loop', '_http_server')
+    __slots__ = ('access_log_format', 'app', 'authority', 'logger', 'loop', '_http_server')
 
     def __init__(
             self,
@@ -44,12 +44,14 @@ class Server(asyncio.Protocol):
             loop: asyncio.AbstractEventLoop,
             logger: Optional[Logger],
             access_log_format: str,
+            authority: str,
     ) -> None:
         self.app = app
         self.loop = loop
         self._http_server: Optional[HTTPProtocol] = None
         self.logger = logger
         self.access_log_format = access_log_format
+        self.authority = authority
 
     def connection_made(self, transport: asyncio.BaseTransport) -> None:
         ssl_object = transport.get_extra_info('ssl_object')
@@ -61,10 +63,12 @@ class Server(asyncio.Protocol):
         if protocol == 'h2':
             self._http_server = H2Server(
                 self.app, self.loop, transport, self.logger, self.access_log_format,
+                self.authority,
             )
         else:
             self._http_server = H11Server(
                 self.app, self.loop, transport, self.logger, self.access_log_format,
+                self.authority,
             )
 
     def connection_lost(self, _: Exception) -> None:
@@ -86,8 +90,10 @@ class HTTPProtocol:
             transport: asyncio.BaseTransport,
             logger: Optional[Logger],
             access_log_format: str,
+            authority: str,
     ) -> None:
         self.app = app
+        self.authority = authority
         self.transport = transport
         self.loop = loop
         self.logger = logger
@@ -113,13 +119,18 @@ class HTTPProtocol:
 
     async def _handle_request(self, stream_id: int) -> None:
         request = self.streams[stream_id].request
-        response = await self.app.handle_request(request)
-        await self.send_response(stream_id, response)
-        if self.logger is not None:
-            self.logger.info(
-                self.access_log_format, AccessLogAtoms(request, response, self.protocol),
-            )
-        del self.streams[stream_id]
+        try:
+            response = await self.app.handle_request(request)
+            await self.send_response(stream_id, response)
+        except asyncio.CancelledError:
+            pass
+        else:
+            if self.logger is not None:
+                self.logger.info(
+                    self.access_log_format, AccessLogAtoms(request, response, self.protocol),
+                )
+        finally:
+            del self.streams[stream_id]
 
     async def send_response(self, stream_id: int, response: Response) -> None:
         raise NotImplemented()
@@ -146,8 +157,9 @@ class H11Server(HTTPProtocol):
             transport: asyncio.BaseTransport,
             logger: Optional[Logger],
             access_log_format: str,
+            authority: str,
     ) -> None:
-        super().__init__(app, loop, transport, logger, access_log_format)
+        super().__init__(app, loop, transport, logger, access_log_format, authority)
         self.connection = h11.Connection(h11.SERVER)
 
     def data_received(self, data: bytes) -> None:
@@ -235,8 +247,9 @@ class H2Server(HTTPProtocol):
             transport: asyncio.BaseTransport,
             logger: Optional[Logger],
             access_log_format: str,
+            authority: str,
     ) -> None:
-        super().__init__(app, loop, transport, logger, access_log_format)
+        super().__init__(app, loop, transport, logger, access_log_format, authority)
         self.connection = h2.connection.H2Connection(
             h2.config.H2Configuration(client_side=False, header_encoding='utf-8'),
         )
@@ -246,7 +259,7 @@ class H2Server(HTTPProtocol):
     def data_received(self, data: bytes) -> None:
         try:
             events = self.connection.receive_data(data)
-        except h2.ProtocolError:
+        except h2.exceptions.ProtocolError:
             self.transport.write(self.connection.data_to_send())  # type: ignore
             self.transport.close()
         else:
@@ -263,6 +276,8 @@ class H2Server(HTTPProtocol):
                 )
             elif isinstance(event, h2.events.DataReceived):
                 self.streams[event.stream_id].append(event.data)
+            elif isinstance(event, h2.events.StreamReset):
+                self.streams.pop(event.stream_id).task.cancel()
             elif isinstance(event, h2.events.StreamEnded):
                 self.streams[event.stream_id].complete()
             elif isinstance(event, h2.events.WindowUpdated):
@@ -278,10 +293,30 @@ class H2Server(HTTPProtocol):
         headers.extend([(key, value) for key, value in response.headers.items()])
         headers.extend(self.response_headers())
         self.connection.send_headers(stream_id, headers)
+        for push_promise in response.push_promises:
+            self._server_push(stream_id, push_promise)
+        self.transport.write(self.connection.data_to_send())  # type: ignore
         for data in response.response:
             await self._send_data(stream_id, data)
         self.connection.end_stream(stream_id)
         self.transport.write(self.connection.data_to_send())  # type: ignore
+
+    def _server_push(self, stream_id: int, path: str) -> None:
+        push_stream_id = self.connection.get_next_available_stream_id()
+        request_headers = [
+            (':method', 'GET'), (':path', path),
+            (':scheme', 'https'),  # quart only supports HTTPS HTTP2 so can assume this
+            (':authority', self.authority),
+        ]
+        try:
+            self.connection.push_stream(
+                stream_id=stream_id, promised_stream_id=push_stream_id,
+                request_headers=request_headers,
+            )
+        except h2.exceptions.ProtocolError:
+            pass  # Client does not accept push promises
+        else:
+            self.handle_request(push_stream_id, 'GET', path, CIMultiDict(request_headers))
 
     async def _send_data(self, stream_id: int, data: bytes) -> None:
         while True:
@@ -325,7 +360,7 @@ def run_app(
     """
     loop = asyncio.get_event_loop()
     create_server = loop.create_server(
-        lambda: Server(app, loop, logger, access_log_format),
+        lambda: Server(app, loop, logger, access_log_format, f"{host}:{port}"),
         host, port, ssl=ssl,
     )
     server = loop.run_until_complete(create_server)

@@ -4,7 +4,7 @@ from base64 import b64decode
 from cgi import FieldStorage, parse_header
 from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
-from typing import Any, AnyStr, Callable, Dict, Iterable, Optional, TYPE_CHECKING, Union  # noqa
+from typing import Any, AnyStr, Dict, Iterable, Optional, Set, TYPE_CHECKING, Union  # noqa
 from urllib.parse import parse_qs, unquote, urlparse
 from urllib.request import parse_http_list, parse_keqv_list
 
@@ -359,6 +359,8 @@ class Response(_BaseRequestResponse, JSONMixin):
 
         Attributes:
             response: An iterable of the response bytes-data.
+            push_promises: A set of paths that should be pushed to the
+                client if the protocol is HTTP/2.
         """
         super().__init__(headers)
         if status is not None and not isinstance(status, int):
@@ -378,6 +380,7 @@ class Response(_BaseRequestResponse, JSONMixin):
             self.set_data(response)  # type: ignore
         else:
             self.response = response  # type: ignore
+        self.push_promises: Set[str] = set()
 
     async def get_data(self, raw: bool=True) -> AnyStr:
         """Return the body data."""
