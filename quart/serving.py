@@ -1,7 +1,6 @@
 import asyncio
 import time
 from email.utils import formatdate
-from functools import partial
 from itertools import chain
 from logging import Logger
 from ssl import SSLContext
@@ -22,17 +21,18 @@ if TYPE_CHECKING:
 
 
 class Stream:
-    __slots__ = ('buffer', 'future')
+    __slots__ = ('buffer', 'request', 'task')
 
-    def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
+    def __init__(self, loop: asyncio.AbstractEventLoop, request: Request) -> None:
         self.buffer = bytearray()
-        self.future = loop.create_future()
+        self.request = request
+        self.task: Optional[asyncio.Future] = None
 
     def append(self, data: bytes) -> None:
         self.buffer.extend(data)
 
     def complete(self) -> None:
-        self.future.set_result(self.buffer)
+        self.request._body.set_result(self.buffer)
 
 
 class Server(asyncio.Protocol):
@@ -67,6 +67,9 @@ class Server(asyncio.Protocol):
                 self.app, self.loop, transport, self.logger, self.access_log_format,
             )
 
+    def connection_lost(self, _: Exception) -> None:
+        self._http_server.close()
+
     def data_received(self, data: bytes) -> None:
         self._http_server.data_received(data)
 
@@ -88,7 +91,6 @@ class HTTPProtocol:
         self.transport = transport
         self.loop = loop
         self.logger = logger
-        self.requests: Dict[int, Request] = {}
         self.streams: Dict[int, Stream] = {}
         self.access_log_format = access_log_format
 
@@ -102,26 +104,30 @@ class HTTPProtocol:
             path: str,
             headers: CIMultiDict,
     ) -> None:
-        self.streams[stream_id] = self.stream_class(self.loop)
         headers['Remote-Addr'] = self.transport.get_extra_info('peername')[0]
-        self.requests[stream_id] = self.app.request_class(
-            method, path, headers, self.streams[stream_id].future,
-        )
+        request = self.app.request_class(method, path, headers, self.loop.create_future())
+        self.streams[stream_id] = self.stream_class(self.loop, request)
         # It is important that the app handles the request in a unique
         # task as the globals are task locals
-        task = asyncio.ensure_future(self.app.handle_request(self.requests[stream_id]))
-        task.add_done_callback(partial(self.handle_response, stream_id))  # type: ignore
+        self.streams[stream_id].task = asyncio.ensure_future(self._handle_request(stream_id))
 
-    def handle_response(self, stream_id: int, future: asyncio.Future) -> None:
-        raise NotImplemented()
-
-    def end_response(self, stream_id: int, response: Response) -> None:
-        request = self.requests.pop(stream_id)
+    async def _handle_request(self, stream_id: int) -> None:
+        request = self.streams[stream_id].request
+        response = await self.app.handle_request(request)
+        await self.send_response(stream_id, response)
         if self.logger is not None:
             self.logger.info(
                 self.access_log_format, AccessLogAtoms(request, response, self.protocol),
             )
         del self.streams[stream_id]
+
+    async def send_response(self, stream_id: int, response: Response) -> None:
+        raise NotImplemented()
+
+    def close(self) -> None:
+        for stream in self.streams.values():
+            stream.task.cancel()
+        self.transport.close()
 
     def response_headers(self) -> List[Tuple[str, str]]:
         return [
@@ -176,12 +182,11 @@ class H11Server(HTTPProtocol):
                 elif isinstance(event, h11.ConnectionClosed):
                     break
         if self.connection.our_state is h11.MUST_CLOSE:
-            self.transport.close()
+            self.close()
         elif self.connection.our_state is h11.DONE:
             self.connection.start_next_cycle()
 
-    def handle_response(self, stream_id: int, future: asyncio.Future) -> None:
-        response = future.result()
+    async def send_response(self, stream_id: int, response: Response) -> None:
         headers = chain(
             ((key, value) for key, value in response.headers.items()), self.response_headers(),
         )
@@ -190,7 +195,6 @@ class H11Server(HTTPProtocol):
             self._send(h11.Data(data=data))
         self._send(h11.EndOfMessage())
         self._handle_events()
-        self.end_response(stream_id, response)
 
     def _handle_error(self) -> None:
         self._send(h11.Response(status_code=400, headers=tuple()))
@@ -205,8 +209,8 @@ class H11Server(HTTPProtocol):
 class H2Stream(Stream):
     __slots__ = ('event')
 
-    def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
-        super().__init__(loop)
+    def __init__(self, loop: asyncio.AbstractEventLoop, request: Request) -> None:
+        super().__init__(loop, request)
         self.event: Optional[asyncio.Event] = None
 
     def unblock(self) -> None:
@@ -264,25 +268,20 @@ class H2Server(HTTPProtocol):
             elif isinstance(event, h2.events.WindowUpdated):
                 self._window_updated(event.stream_id)
             elif isinstance(event, h2.events.ConnectionTerminated):
-                self.transport.close()
+                self.close()
                 return
 
             self.transport.write(self.connection.data_to_send())  # type: ignore
 
-    def handle_response(self, stream_id: int, future: asyncio.Future) -> None:
-        response = future.result()
+    async def send_response(self, stream_id: int, response: Response) -> None:
         headers = [(':status', str(response.status_code))]
         headers.extend([(key, value) for key, value in response.headers.items()])
         headers.extend(self.response_headers())
         self.connection.send_headers(stream_id, headers)
-        asyncio.ensure_future(self._send_response_data(stream_id, response))
-
-    async def _send_response_data(self, stream_id: int, response: Response) -> None:
         for data in response.response:
             await self._send_data(stream_id, data)
         self.connection.end_stream(stream_id)
         self.transport.write(self.connection.data_to_send())  # type: ignore
-        self.end_response(stream_id, response)
 
     async def _send_data(self, stream_id: int, data: bytes) -> None:
         while True:

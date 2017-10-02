@@ -1,9 +1,10 @@
+import asyncio
 import io
 from base64 import b64decode
 from cgi import FieldStorage, parse_header
 from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
-from typing import Any, AnyStr, Awaitable, Callable, Dict, Iterable, Optional, TYPE_CHECKING, Union  # noqa
+from typing import Any, AnyStr, Callable, Dict, Iterable, Optional, TYPE_CHECKING, Union  # noqa
 from urllib.parse import parse_qs, unquote, urlparse
 from urllib.request import parse_http_list, parse_keqv_list
 
@@ -144,7 +145,7 @@ class Request(_BaseRequestResponse, JSONMixin):
     view_args: Optional[Dict[str, Any]] = None
 
     def __init__(
-            self, method: str, path: str, headers: CIMultiDict, body: Awaitable[bytes],
+            self, method: str, path: str, headers: CIMultiDict, body: asyncio.Future,
     ) -> None:
         """Create a request object.
 
