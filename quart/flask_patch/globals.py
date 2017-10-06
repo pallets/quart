@@ -22,14 +22,14 @@ class FlaskRequestProxy(LocalProxy):
     def json(self) -> Any:
         return asyncio.get_event_loop().sync_wait(self._get_current_object().json)  # type: ignore
 
-    def get_json(self, force: bool=False, silent: bool=False, cache: bool=True) -> Any:
+    def get_json(self, *args: Any, **kwargs: Any) -> Any:
         return asyncio.get_event_loop().sync_wait(  # type: ignore
-            self._get_current_object().get_json(force, silent, cache),
+            self._get_current_object().get_json(*args, **kwargs),
         )
 
-    def get_data(self, raw: bool=True) -> AnyStr:
+    def get_data(self, *args: Any, **kwargs: Any) -> AnyStr:
         return asyncio.get_event_loop().sync_wait(  # type: ignore
-            self._get_current_object().get_data(raw),
+            self._get_current_object().get_data(*args, **kwargs),
         )
 
 
