@@ -59,7 +59,7 @@ async def test_timeout(event_loop: asyncio.AbstractEventLoop) -> None:
     protocol._transport.close.assert_called_once()  # type: ignore
 
 
-class TestTransport:
+class MockTransport:
 
     def __init__(self) -> None:
         self.data = bytearray()
@@ -83,7 +83,7 @@ class TestTransport:
 
 @pytest.mark.asyncio
 async def test_h11server(serving_app: Quart, event_loop: asyncio.AbstractEventLoop) -> None:
-    transport = TestTransport()
+    transport = MockTransport()
     server = H11Server(serving_app, event_loop, transport, None, '', '', 5)  # type: ignore
     connection = h11.Connection(h11.CLIENT)
     server.data_received(
@@ -107,10 +107,10 @@ async def test_h11server(serving_app: Quart, event_loop: asyncio.AbstractEventLo
     assert response_data.decode() == BASIC_DATA
 
 
-class TestH2Connection:
+class MockH2Connection:
 
     def __init__(self, serving_app: Quart, event_loop: asyncio.AbstractEventLoop) -> None:
-        self.transport = TestTransport()
+        self.transport = MockTransport()
         self.server = H2Server(  # type: ignore
             serving_app, event_loop, self.transport, None, '', 'authority', 5,
         )
@@ -145,7 +145,7 @@ class TestH2Connection:
 
 @pytest.mark.asyncio
 async def test_h2server(serving_app: Quart, event_loop: asyncio.AbstractEventLoop) -> None:
-    connection = TestH2Connection(serving_app, event_loop)
+    connection = MockH2Connection(serving_app, event_loop)
     connection.send_request(BASIC_H2_HEADERS, {})
     response_data = b''
     async for event in connection.get_events():
@@ -161,7 +161,7 @@ async def test_h2server(serving_app: Quart, event_loop: asyncio.AbstractEventLoo
 
 @pytest.mark.asyncio
 async def test_h2_flow_control(serving_app: Quart, event_loop: asyncio.AbstractEventLoop) -> None:
-    connection = TestH2Connection(serving_app, event_loop)
+    connection = MockH2Connection(serving_app, event_loop)
     connection.send_request(
         BASIC_H2_HEADERS, {h2.settings.SettingCodes.INITIAL_WINDOW_SIZE: FLOW_WINDOW_SIZE},
     )
@@ -175,7 +175,7 @@ async def test_h2_flow_control(serving_app: Quart, event_loop: asyncio.AbstractE
 
 @pytest.mark.asyncio
 async def test_h2_push(serving_app: Quart, event_loop: asyncio.AbstractEventLoop) -> None:
-    connection = TestH2Connection(serving_app, event_loop)
+    connection = MockH2Connection(serving_app, event_loop)
     connection.send_request(BASIC_H2_PUSH_HEADERS, {})
     push_received = False
     async for event in connection.get_events():
