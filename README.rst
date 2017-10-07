@@ -1,13 +1,17 @@
 Quart
 =====
 
-|Build Status| |docs|
+|Build Status| |docs| |pypi|
 
 Quart is a Python asyncio web microframework with the same API as
 `Flask <https://github.com/pallets/flask>`_. Quart should provide a
 very minimal step to use `Asyncio
 <https://docs.python.org/3/library/asyncio.html>`_ in a Flask app.
 See the `docs <https://pgjones.gitlab.io/quart/>`_.
+
+Quart serves respondes to and serves requests send via HTTP/1.1 or
+HTTP/2. The HTTP/2 support includes the ability to server push.
+
 
 Quickstart
 ----------
@@ -28,8 +32,8 @@ and requires Python 3.6+. A minimal Quart example would be
 
     app.run()
 
-if the above is in a file called ``app.py`` can be run via ``python
-app.py``. To deploy in a production setting see the `docs
+if the above is in a file called ``app.py`` can be run via ``python app.py``.
+To deploy in a production setting see the `docs
 <https://pgjones.gitlab.io/quart/deployment.html>`_.
 
 API Compatibility with Flask
@@ -57,3 +61,6 @@ details.
 
 .. |docs| image:: https://readthedocs.org/projects/docs/badge/?version=latest
    :target: https://pgjones.gitlab.io/quart/
+
+.. |pypi| image:: https://badge.fury.io/py/quart.svg
+   :target: https://badge.fury.io/py/quart
