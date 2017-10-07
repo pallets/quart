@@ -9,7 +9,7 @@ very minimal step to use `Asyncio
 <https://docs.python.org/3/library/asyncio.html>`_ in a Flask app.
 See the `docs <https://pgjones.gitlab.io/quart/>`_.
 
-Quart serves respondes to and serves requests send via HTTP/1.1 or
+Quart accepts requests and serves responses via HTTP/1.1 or
 HTTP/2. The HTTP/2 support includes the ability to server push.
 
 
