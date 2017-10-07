@@ -6,7 +6,7 @@ import h2
 import pytest
 
 from quart import make_response, Quart, ResponseReturnValue
-from quart.serving import H11Server, H2Server, Server
+from quart.serving import H11Server, H2Server, HTTPProtocol, Server
 
 BASIC_H11_HEADERS = [('Host', 'quart')]
 BASIC_H2_HEADERS = [
@@ -17,28 +17,6 @@ BASIC_H2_PUSH_HEADERS = [
 ]
 BASIC_DATA = 'index'
 FLOW_WINDOW_SIZE = 1
-
-
-class TestTransport:
-
-    def __init__(self) -> None:
-        self.data = bytearray()
-        self.closed = asyncio.Event()
-        self.updated = asyncio.Event()
-
-    def get_extra_info(self, _: str) -> tuple:
-        return ('127.0.0.1',)
-
-    def write(self, data: bytes) -> None:
-        self.data.extend(data)
-        self.updated.set()
-
-    def close(self) -> None:
-        self.closed.set()
-
-    def clear(self) -> None:
-        self.data = bytearray()
-        self.updated.clear()
 
 
 @pytest.fixture()
@@ -63,7 +41,7 @@ def test_server() -> None:
     h2_ssl_mock.selected_alpn_protocol.return_value = 'h2'
     transport = Mock()
     transport.get_extra_info.return_value = h2_ssl_mock
-    server = Server(Mock(), Mock(), Mock(), '', '')
+    server = Server(Mock(), Mock(), Mock(), '', '', 5)
     server.connection_made(transport)
     assert isinstance(server._http_server, H2Server)
     transport.get_extra_info.return_value = None
@@ -72,9 +50,41 @@ def test_server() -> None:
 
 
 @pytest.mark.asyncio
+async def test_timeout(event_loop: asyncio.AbstractEventLoop) -> None:
+    timeout = 0.1
+    protocol = HTTPProtocol(Mock(), event_loop, Mock(), None, '', '', timeout)  # type: ignore
+    await asyncio.sleep(0.5 * timeout)
+    protocol._transport.close.assert_not_called()  # type: ignore
+    await asyncio.sleep(2 * timeout)
+    protocol._transport.close.assert_called_once()  # type: ignore
+
+
+class TestTransport:
+
+    def __init__(self) -> None:
+        self.data = bytearray()
+        self.closed = asyncio.Event()
+        self.updated = asyncio.Event()
+
+    def get_extra_info(self, _: str) -> tuple:
+        return ('127.0.0.1',)
+
+    def write(self, data: bytes) -> None:
+        self.data.extend(data)
+        self.updated.set()
+
+    def close(self) -> None:
+        self.closed.set()
+
+    def clear(self) -> None:
+        self.data = bytearray()
+        self.updated.clear()
+
+
+@pytest.mark.asyncio
 async def test_h11server(serving_app: Quart, event_loop: asyncio.AbstractEventLoop) -> None:
     transport = TestTransport()
-    server = H11Server(serving_app, event_loop, transport, None, '', '')  # type: ignore
+    server = H11Server(serving_app, event_loop, transport, None, '', '', 5)  # type: ignore
     connection = h11.Connection(h11.CLIENT)
     server.data_received(
         connection.send(h11.Request(method='GET', target='/', headers=BASIC_H11_HEADERS)),
@@ -102,7 +112,7 @@ class TestH2Connection:
     def __init__(self, serving_app: Quart, event_loop: asyncio.AbstractEventLoop) -> None:
         self.transport = TestTransport()
         self.server = H2Server(  # type: ignore
-            serving_app, event_loop, self.transport, None, '', 'authority',
+            serving_app, event_loop, self.transport, None, '', 'authority', 5,
         )
         self.connection = h2.connection.H2Connection()
 

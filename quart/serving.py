@@ -1,9 +1,9 @@
 import asyncio
-import time
 from email.utils import formatdate
 from itertools import chain
 from logging import Logger
 from ssl import SSLContext
+from time import time
 from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union  # noqa: F401
 
 import h11
@@ -36,7 +36,9 @@ class Stream:
 
 
 class Server(asyncio.Protocol):
-    __slots__ = ('access_log_format', 'app', 'authority', 'logger', 'loop', '_http_server')
+    __slots__ = (
+        'access_log_format', 'app', 'authority', 'logger', 'loop', 'timeout', '_http_server',
+    )
 
     def __init__(
             self,
@@ -45,6 +47,7 @@ class Server(asyncio.Protocol):
             logger: Optional[Logger],
             access_log_format: str,
             authority: str,
+            timeout: int,
     ) -> None:
         self.app = app
         self.loop = loop
@@ -52,6 +55,7 @@ class Server(asyncio.Protocol):
         self.logger = logger
         self.access_log_format = access_log_format
         self.authority = authority
+        self.timeout = timeout
 
     def connection_made(self, transport: asyncio.BaseTransport) -> None:
         ssl_object = transport.get_extra_info('ssl_object')
@@ -63,12 +67,12 @@ class Server(asyncio.Protocol):
         if protocol == 'h2':
             self._http_server = H2Server(
                 self.app, self.loop, transport, self.logger, self.access_log_format,
-                self.authority,
+                self.authority, self.timeout,
             )
         else:
             self._http_server = H11Server(
                 self.app, self.loop, transport, self.logger, self.access_log_format,
-                self.authority,
+                self.authority, self.timeout,
             )
 
     def connection_lost(self, _: Exception) -> None:
@@ -91,17 +95,21 @@ class HTTPProtocol:
             logger: Optional[Logger],
             access_log_format: str,
             authority: str,
+            timeout: int,
     ) -> None:
         self.app = app
         self.authority = authority
-        self.transport = transport
         self.loop = loop
         self.logger = logger
         self.streams: Dict[int, Stream] = {}
         self.access_log_format = access_log_format
+        self._timeout = timeout
+        self._last_activity = time()
+        self._timeout_handle = self.loop.call_later(self._timeout, self._handle_timeout)
+        self._transport = transport
 
     def data_received(self, data: bytes) -> None:
-        raise NotImplemented()
+        self._last_activity = time()
 
     def handle_request(
             self,
@@ -110,7 +118,7 @@ class HTTPProtocol:
             path: str,
             headers: CIMultiDict,
     ) -> None:
-        headers['Remote-Addr'] = self.transport.get_extra_info('peername')[0]
+        headers['Remote-Addr'] = self._transport.get_extra_info('peername')[0]
         request = self.app.request_class(method, path, headers, self.loop.create_future())
         self.streams[stream_id] = self.stream_class(self.loop, request)
         # It is important that the app handles the request in a unique
@@ -118,6 +126,7 @@ class HTTPProtocol:
         self.streams[stream_id].task = asyncio.ensure_future(self._handle_request(stream_id))
 
     async def _handle_request(self, stream_id: int) -> None:
+        self._timeout_handle.cancel()
         request = self.streams[stream_id].request
         try:
             response = await self.app.handle_request(request)
@@ -131,19 +140,29 @@ class HTTPProtocol:
                 )
         finally:
             del self.streams[stream_id]
+            self._timeout_handle = self.loop.call_later(self._timeout, self._handle_timeout)
 
     async def send_response(self, stream_id: int, response: Response) -> None:
         raise NotImplemented()
 
+    def send(self, data: bytes) -> None:
+        self._last_activity = time()
+        self._transport.write(data)  # type: ignore
+
     def close(self) -> None:
         for stream in self.streams.values():
             stream.task.cancel()
-        self.transport.close()
+        self._transport.close()
+        self._timeout_handle.cancel()
 
     def response_headers(self) -> List[Tuple[str, str]]:
         return [
-            ('date', formatdate(time.time(), usegmt=True)), ('server', f"quart-{self.protocol}"),
+            ('date', formatdate(time(), usegmt=True)), ('server', f"quart-{self.protocol}"),
         ]
+
+    def _handle_timeout(self) -> None:
+        if time() - self._last_activity > self._timeout:
+            self.close()
 
 
 class H11Server(HTTPProtocol):
@@ -158,11 +177,13 @@ class H11Server(HTTPProtocol):
             logger: Optional[Logger],
             access_log_format: str,
             authority: str,
+            timeout: int,
     ) -> None:
-        super().__init__(app, loop, transport, logger, access_log_format, authority)
+        super().__init__(app, loop, transport, logger, access_log_format, authority, timeout)
         self.connection = h11.Connection(h11.SERVER)
 
     def data_received(self, data: bytes) -> None:
+        super().data_received(data)
         self.connection.receive_data(data)
         self._handle_events()
 
@@ -176,7 +197,7 @@ class H11Server(HTTPProtocol):
                 event = self.connection.next_event()
             except h11.ProtocolError:
                 self._handle_error()
-                self.transport.close()
+                self.close()
             else:
                 if isinstance(event, h11.Request):
                     headers = CIMultiDict()
@@ -215,7 +236,7 @@ class H11Server(HTTPProtocol):
     def _send(
             self, event: Union[h11.Data, h11.EndOfMessage, h11.InformationalResponse, h11.Response],
     ) -> None:
-        self.transport.write(self.connection.send(event))  # type: ignore
+        self.send(self.connection.send(event))  # type: ignore
 
 
 class H2Stream(Stream):
@@ -248,20 +269,22 @@ class H2Server(HTTPProtocol):
             logger: Optional[Logger],
             access_log_format: str,
             authority: str,
+            timeout: int,
     ) -> None:
-        super().__init__(app, loop, transport, logger, access_log_format, authority)
+        super().__init__(app, loop, transport, logger, access_log_format, authority, timeout)
         self.connection = h2.connection.H2Connection(
             h2.config.H2Configuration(client_side=False, header_encoding='utf-8'),
         )
         self.connection.initiate_connection()
-        self.transport.write(self.connection.data_to_send())  # type: ignore
+        self.send(self.connection.data_to_send())  # type: ignore
 
     def data_received(self, data: bytes) -> None:
+        super().data_received(data)
         try:
             events = self.connection.receive_data(data)
         except h2.exceptions.ProtocolError:
-            self.transport.write(self.connection.data_to_send())  # type: ignore
-            self.transport.close()
+            self.send(self.connection.data_to_send())  # type: ignore
+            self.close()
         else:
             self._handle_events(events)
 
@@ -286,7 +309,7 @@ class H2Server(HTTPProtocol):
                 self.close()
                 return
 
-            self.transport.write(self.connection.data_to_send())  # type: ignore
+            self.send(self.connection.data_to_send())  # type: ignore
 
     async def send_response(self, stream_id: int, response: Response) -> None:
         headers = [(':status', str(response.status_code))]
@@ -295,11 +318,11 @@ class H2Server(HTTPProtocol):
         self.connection.send_headers(stream_id, headers)
         for push_promise in response.push_promises:
             self._server_push(stream_id, push_promise)
-        self.transport.write(self.connection.data_to_send())  # type: ignore
+        self.send(self.connection.data_to_send())  # type: ignore
         for data in response.response:
             await self._send_data(stream_id, data)
         self.connection.end_stream(stream_id)
-        self.transport.write(self.connection.data_to_send())  # type: ignore
+        self.send(self.connection.data_to_send())  # type: ignore
 
     def _server_push(self, stream_id: int, path: str) -> None:
         push_stream_id = self.connection.get_next_available_stream_id()
@@ -326,7 +349,7 @@ class H2Server(HTTPProtocol):
             chunk_size = min(len(data), self.connection.local_flow_control_window(stream_id))
             chunk_size = min(chunk_size, self.connection.max_outbound_frame_size)
             self.connection.send_data(stream_id, data[:chunk_size])
-            self.transport.write(self.connection.data_to_send())  # type: ignore
+            self.send(self.connection.data_to_send())  # type: ignore
             data = data[chunk_size:]
             if not data:
                 break
@@ -348,6 +371,7 @@ def run_app(
         access_log_format: str,
         ssl: Optional[SSLContext]=None,
         logger: Optional[Logger]=None,
+        timeout: int,
 ) -> None:
     """Create a server to run the app on given the options.
 
@@ -360,7 +384,7 @@ def run_app(
     """
     loop = asyncio.get_event_loop()
     create_server = loop.create_server(
-        lambda: Server(app, loop, logger, access_log_format, f"{host}:{port}"),
+        lambda: Server(app, loop, logger, access_log_format, f"{host}:{port}", timeout),
         host, port, ssl=ssl,
     )
     server = loop.run_until_complete(create_server)

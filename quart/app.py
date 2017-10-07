@@ -852,6 +852,7 @@ class Quart(PackageStatic):
             ssl: Optional[SSLContext]=None,
             debug: Optional[bool]=None,
             access_log_format: str="%(h)s %(r)s %(s)s %(b)s",
+            timeout: int=5,
             **kwargs: Any,
     ) -> None:
         """Run this application.
@@ -864,6 +865,10 @@ class Quart(PackageStatic):
                 only, use 0.0.0.0 to have the server listen externally.
             port: Port number to listen on.
             ssl: Optional SSL context (required for HTTP2).
+            access_log_format: The format to use for the access log,
+                by default this is %(h)s %(r)s %(s)s %(b)s.
+            timeout: The keep alive equivalent timeout in seconds by
+                default this is 5 seconds.
         """
         if kwargs:
             warnings.warn(
@@ -876,7 +881,7 @@ class Quart(PackageStatic):
         try:
             run_app(
                 self, host=host, port=port, ssl=ssl, logger=create_serving_logger(),
-                access_log_format=access_log_format,
+                access_log_format=access_log_format, timeout=timeout,
             )
         finally:
             # Reset the first request, so as to enable reuse.

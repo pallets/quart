@@ -41,7 +41,7 @@ class GunicornWorker(Worker):
             server = await self.loop.create_server(
                 lambda: Server(
                     self.wsgi, self.loop, access_logger, self.cfg.access_log_format,
-                    self.cfg.bind[0],
+                    self.cfg.bind[0], self.cfg.keepalive,
                 ),
                 sock=sock.sock, ssl=ssl_context,
             )

@@ -45,6 +45,7 @@ Discussion Points
    contexts.rst
    design_choices.rst
    globals.rst
+   timeout.rst
 
 Reference
 ---------
