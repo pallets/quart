@@ -119,10 +119,10 @@ def safe_join(directory: str, *paths: str) -> Path:
 
 
 async def send_from_directory(directory: str, file_name: str) -> Response:
-    file_path = os.path.join(directory, file_name)
-    if not os.path.isabs(file_path):
-        file_path = os.path.join(current_app.root_path, file_name)
-    return await send_file(file_path)
+    file_path = safe_join(directory, file_name)
+    if not os.path.isfile(file_path):
+        raise NotFound()
+    return await send_file(file_path)  # type: ignore
 
 
 async def send_file(filename: str) -> Response:
