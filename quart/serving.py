@@ -140,7 +140,8 @@ class HTTPProtocol:
                 )
         finally:
             del self.streams[stream_id]
-            self._timeout_handle = self.loop.call_later(self._timeout, self._handle_timeout)
+            if not self.streams:
+                self._timeout_handle = self.loop.call_later(self._timeout, self._handle_timeout)
 
     async def send_response(self, stream_id: int, response: Response) -> None:
         raise NotImplemented()
