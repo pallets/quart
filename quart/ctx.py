@@ -62,9 +62,9 @@ class RequestContext:
         return self
 
     def __exit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
-        self.app.do_teardown_request(self)
+        self.app.do_teardown_request(exc_value, self)
         _request_ctx_stack.pop()
-        self.app.app_context().pop()
+        self.app.app_context().pop(exc_value)
 
 
 class AppContext:
@@ -92,11 +92,11 @@ class AppContext:
         _app_ctx_stack.push(self)
         appcontext_pushed.send(self.app)
 
-    def pop(self) -> None:
+    def pop(self, exc: Optional[BaseException]) -> None:
         self._app_reference_count -= 1
         try:
             if self._app_reference_count <= 0:
-                self.app.do_teardown_appcontext()
+                self.app.do_teardown_appcontext(exc)
         finally:
             _app_ctx_stack.pop()
         appcontext_popped.send(self.app)
@@ -106,7 +106,7 @@ class AppContext:
         return self
 
     def __exit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
-        self.pop()
+        self.pop(exc_value)
 
 
 def after_this_request(func: Callable) -> Callable:

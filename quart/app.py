@@ -792,11 +792,15 @@ class Quart(PackageStatic):
         return self.session_interface.save_session(self, session, response)  # type: ignore
 
     def do_teardown_request(
-            self, request_context: Optional[RequestContext]=None,
+            self,
+            exc: Optional[BaseException],
+            request_context: Optional[RequestContext]=None,
     ) -> None:
         """Teardown the request, calling the teardown functions.
 
         Arguments:
+            exc: Any exception not handled that has caused the request
+                to teardown.
             request_context: The request context, optional as Flask
                 omits this argument.
         """
@@ -807,12 +811,11 @@ class Quart(PackageStatic):
             functions = chain(functions, self.teardown_request_funcs[blueprint])  # type: ignore
 
         for function in functions:
-            function(exc=None)
-        request_tearing_down.send(self, exc=None)
+            function(exc=exc)
+        request_tearing_down.send(self, exc=exc)
 
-    def do_teardown_appcontext(self) -> None:
+    def do_teardown_appcontext(self, exc: Optional[BaseException]) -> None:
         """Teardown the app (context), calling the teardown functions."""
-        exc = None
         for function in self.teardown_appcontext_funcs:
             function(exc)
         appcontext_tearing_down.send(self, exc=exc)
