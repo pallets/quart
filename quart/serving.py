@@ -373,6 +373,7 @@ def run_app(
         ssl: Optional[SSLContext]=None,
         logger: Optional[Logger]=None,
         timeout: int,
+        debug: bool=False,
 ) -> None:
     """Create a server to run the app on given the options.
 
@@ -384,6 +385,7 @@ def run_app(
         logger: Optional logger for serving (access) logs.
     """
     loop = asyncio.get_event_loop()
+    loop.set_debug(debug)
     create_server = loop.create_server(
         lambda: Server(app, loop, logger, access_log_format, f"{host}:{port}", timeout),
         host, port, ssl=ssl,

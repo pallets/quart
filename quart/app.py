@@ -884,7 +884,7 @@ class Quart(PackageStatic):
         try:
             run_app(
                 self, host=host, port=port, ssl=ssl, logger=create_serving_logger(),
-                access_log_format=access_log_format, timeout=timeout,
+                access_log_format=access_log_format, timeout=timeout, debug=debug,
             )
         finally:
             # Reset the first request, so as to enable reuse.
