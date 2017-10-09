@@ -41,7 +41,7 @@ def test_server() -> None:
     h2_ssl_mock.selected_alpn_protocol.return_value = 'h2'
     transport = Mock()
     transport.get_extra_info.return_value = h2_ssl_mock
-    server = Server(Mock(), Mock(), Mock(), '', '', 5)
+    server = Server(Mock(), Mock(), Mock(), '', 5)
     server.connection_made(transport)
     assert isinstance(server._http_server, H2Server)
     transport.get_extra_info.return_value = None
@@ -52,7 +52,7 @@ def test_server() -> None:
 @pytest.mark.asyncio
 async def test_timeout(event_loop: asyncio.AbstractEventLoop) -> None:
     timeout = 0.1
-    protocol = HTTPProtocol(Mock(), event_loop, Mock(), None, '', '', timeout)  # type: ignore
+    protocol = HTTPProtocol(Mock(), event_loop, Mock(), None, '', timeout)  # type: ignore
     await asyncio.sleep(0.5 * timeout)
     protocol._transport.close.assert_not_called()  # type: ignore
     await asyncio.sleep(2 * timeout)
@@ -84,7 +84,7 @@ class MockTransport:
 @pytest.mark.asyncio
 async def test_h11server(serving_app: Quart, event_loop: asyncio.AbstractEventLoop) -> None:
     transport = MockTransport()
-    server = H11Server(serving_app, event_loop, transport, None, '', '', 5)  # type: ignore
+    server = H11Server(serving_app, event_loop, transport, None, '', 5)  # type: ignore
     connection = h11.Connection(h11.CLIENT)
     server.data_received(
         connection.send(h11.Request(method='GET', target='/', headers=BASIC_H11_HEADERS)),
@@ -112,7 +112,7 @@ class MockH2Connection:
     def __init__(self, serving_app: Quart, event_loop: asyncio.AbstractEventLoop) -> None:
         self.transport = MockTransport()
         self.server = H2Server(  # type: ignore
-            serving_app, event_loop, self.transport, None, '', 'authority', 5,
+            serving_app, event_loop, self.transport, None, '', 5,
         )
         self.connection = h2.connection.H2Connection()
 
@@ -183,6 +183,6 @@ async def test_h2_push(serving_app: Quart, event_loop: asyncio.AbstractEventLoop
             assert (b':path', b'/') in event.headers
             assert (b':method', b'GET') in event.headers
             assert (b':scheme', b'https') in event.headers
-            assert (b':authority', b'authority') in event.headers
+            assert (b':authority', b'quart') in event.headers
             push_received = True
     assert push_received

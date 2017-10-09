@@ -37,7 +37,7 @@ class Stream:
 
 class Server(asyncio.Protocol):
     __slots__ = (
-        'access_log_format', 'app', 'authority', 'logger', 'loop', 'timeout', '_http_server',
+        'access_log_format', 'app', 'logger', 'loop', 'timeout', '_http_server',
     )
 
     def __init__(
@@ -46,7 +46,6 @@ class Server(asyncio.Protocol):
             loop: asyncio.AbstractEventLoop,
             logger: Optional[Logger],
             access_log_format: str,
-            authority: str,
             timeout: int,
     ) -> None:
         self.app = app
@@ -54,7 +53,6 @@ class Server(asyncio.Protocol):
         self._http_server: Optional[HTTPProtocol] = None
         self.logger = logger
         self.access_log_format = access_log_format
-        self.authority = authority
         self.timeout = timeout
 
     def connection_made(self, transport: asyncio.BaseTransport) -> None:
@@ -67,12 +65,12 @@ class Server(asyncio.Protocol):
         if protocol == 'h2':
             self._http_server = H2Server(
                 self.app, self.loop, transport, self.logger, self.access_log_format,
-                self.authority, self.timeout,
+                self.timeout,
             )
         else:
             self._http_server = H11Server(
                 self.app, self.loop, transport, self.logger, self.access_log_format,
-                self.authority, self.timeout,
+                self.timeout,
             )
 
     def connection_lost(self, _: Exception) -> None:
@@ -94,11 +92,9 @@ class HTTPProtocol:
             transport: asyncio.BaseTransport,
             logger: Optional[Logger],
             access_log_format: str,
-            authority: str,
             timeout: int,
     ) -> None:
         self.app = app
-        self.authority = authority
         self.loop = loop
         self.logger = logger
         self.streams: Dict[int, Stream] = {}
@@ -177,10 +173,9 @@ class H11Server(HTTPProtocol):
             transport: asyncio.BaseTransport,
             logger: Optional[Logger],
             access_log_format: str,
-            authority: str,
             timeout: int,
     ) -> None:
-        super().__init__(app, loop, transport, logger, access_log_format, authority, timeout)
+        super().__init__(app, loop, transport, logger, access_log_format, timeout)
         self.connection = h11.Connection(h11.SERVER)
 
     def data_received(self, data: bytes) -> None:
@@ -269,10 +264,9 @@ class H2Server(HTTPProtocol):
             transport: asyncio.BaseTransport,
             logger: Optional[Logger],
             access_log_format: str,
-            authority: str,
             timeout: int,
     ) -> None:
-        super().__init__(app, loop, transport, logger, access_log_format, authority, timeout)
+        super().__init__(app, loop, transport, logger, access_log_format, timeout)
         self.connection = h2.connection.H2Connection(
             h2.config.H2Configuration(client_side=False, header_encoding='utf-8'),
         )
@@ -330,7 +324,7 @@ class H2Server(HTTPProtocol):
         request_headers = [
             (':method', 'GET'), (':path', path),
             (':scheme', 'https'),  # quart only supports HTTPS HTTP2 so can assume this
-            (':authority', self.authority),
+            (':authority', self.streams[stream_id].request.headers[':authority']),
         ]
         try:
             self.connection.push_stream(
@@ -387,7 +381,7 @@ def run_app(
     loop = asyncio.get_event_loop()
     loop.set_debug(debug)
     create_server = loop.create_server(
-        lambda: Server(app, loop, logger, access_log_format, f"{host}:{port}", timeout),
+        lambda: Server(app, loop, logger, access_log_format, timeout),
         host, port, ssl=ssl,
     )
     server = loop.run_until_complete(create_server)
