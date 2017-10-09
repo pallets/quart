@@ -117,6 +117,18 @@ class _BaseRequestResponse:
         """Returns the mimetype parsed from the Content-Type header."""
         return parse_header(self.headers.get('Content-Type'))[0]
 
+    @mimetype.setter
+    def mimetype(self, value: str) -> None:
+        """Set the mimetype to the value."""
+        if (
+                value.startswith('text/') or value == 'application/xml' or
+                (value.startswith('application/') and value.endswith('+xml'))
+        ):
+            mimetype = f"{value}; charset={self.charset}"
+        else:
+            mimetype = value
+        self.headers['Content-Type'] = mimetype
+
     @property
     def mimetype_params(self) -> Dict[str, str]:
         """Returns the params parsed from the Content-Type header."""
@@ -370,7 +382,8 @@ class Response(_BaseRequestResponse, JSONMixin):
         if content_type is None:
             if mimetype is None and 'content-type' not in self.headers:
                 mimetype = self.default_mimetype
-            content_type = mimetype
+            if mimetype is not None:
+                self.mimetype = mimetype
 
         if content_type is not None:
             self.headers['Content-Type'] = content_type

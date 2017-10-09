@@ -2,7 +2,7 @@ from asyncio import Future
 from base64 import b64encode
 
 from quart.datastructures import CIMultiDict
-from quart.wrappers import Request
+from quart.wrappers import _BaseRequestResponse, Request
 
 
 def test_basic_authorization() -> None:
@@ -33,3 +33,17 @@ def test_digest_authorization() -> None:
     assert auth.uri == '/path'
     assert auth.response == 'abcd1235'
     assert auth.opaque == 'abcd1236'
+
+
+def test_mimetype_get_property() -> None:
+    base_request_response = _BaseRequestResponse({'Content-Type': 'text/html; charset=utf-8'})
+    assert base_request_response.mimetype == 'text/html'
+    assert base_request_response.mimetype_params == {'charset': 'utf-8'}
+
+
+def test_mimetype_set_property() -> None:
+    base_request_response = _BaseRequestResponse(None)
+    base_request_response.mimetype = 'text/html'
+    assert base_request_response.headers['Content-Type'] == 'text/html; charset=utf-8'
+    base_request_response.mimetype = 'application/json'
+    assert base_request_response.headers['Content-Type'] == 'application/json'
