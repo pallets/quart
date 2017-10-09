@@ -62,7 +62,7 @@ class TestClient:
         headers['Remote-Addr'] = '127.0.0.1'
         headers['User-Agent'] = 'Quart'
 
-        body: asyncio.Future = asyncio.Future()
+        body: asyncio.Future = asyncio.get_event_loop().create_future()
         if json is not sentinel and form is not None:
             raise ValueError('Cannot send JSON and form data in the body')
         elif json is not sentinel:

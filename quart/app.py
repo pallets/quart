@@ -910,7 +910,7 @@ class Quart(PackageStatic):
             method: HTTP verb
             path: Request path.
         """
-        body: asyncio.Future = asyncio.Future()
+        body: asyncio.Future = asyncio.get_event_loop().create_future()
         body.set_result(b'')
         return self.request_context(self.request_class(method, path, CIMultiDict(), body))
 
