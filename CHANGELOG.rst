@@ -1,9 +1,16 @@
-0.3.0
------
+0.3.0 2017-10-10
+----------------
 
 * Change flask_ext name to flask_patch to clarify that it is not the
   pre-existing flask_ext system and that it patches Quart to provide
   Flask imports.
+* Added support for views.
+* Match Werkzeug API for FileStorage.
+* Support HTTP/2 pipelining.
+* Add access logging.
+* Add HTTP/2 Server push, see the ``push_promises`` Set on a Response
+  object.
+* Add idle timeouts.
 
 0.2.0 2017-07-22
 ----------------
