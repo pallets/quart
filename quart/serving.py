@@ -193,9 +193,10 @@ class H11Server(HTTPProtocol):
         while True:
             try:
                 event = self.connection.next_event()
-            except h11.ProtocolError:
+            except h11.RemoteProtocolError:
                 self._handle_error()
                 self.close()
+                break
             else:
                 if isinstance(event, h11.Request):
                     headers = CIMultiDict()
@@ -228,7 +229,7 @@ class H11Server(HTTPProtocol):
         self._handle_events()
 
     def _handle_error(self) -> None:
-        self._send(h11.Response(status_code=400, headers=tuple()))
+        self._send(h11.Response(status_code=400, headers=[]))
         self._send(h11.EndOfMessage())
 
     def _send(

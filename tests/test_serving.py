@@ -1,4 +1,5 @@
 import asyncio
+from typing import AsyncGenerator
 from unittest.mock import Mock
 
 import h11
@@ -70,6 +71,7 @@ class MockTransport:
         return ('127.0.0.1',)
 
     def write(self, data: bytes) -> None:
+        assert not self.closed.is_set()
         self.data.extend(data)
         self.updated.set()
 
@@ -81,20 +83,41 @@ class MockTransport:
         self.updated.clear()
 
 
+class MockH11Connection:
+
+    def __init__(self, serving_app: Quart, event_loop: asyncio.AbstractEventLoop) -> None:
+        self.transport = MockTransport()
+        self.server = H11Server(  # type: ignore
+            serving_app, event_loop, self.transport, None, '', 5,
+        )
+        self.connection = h11.Connection(h11.CLIENT)
+
+    def send_request(self, method: str, target: str, headers: list) -> None:
+        self.server.data_received(
+            self.connection.send(h11.Request(method=method, target=target, headers=headers)),
+        )
+        self.server.data_received(self.connection.send(h11.EndOfMessage()))
+
+    async def get_events(self) -> AsyncGenerator:
+        while True:
+            await self.transport.updated.wait()
+            self.connection.receive_data(self.transport.data)
+            self.transport.clear()
+            while True:
+                event = self.connection.next_event()
+                yield event
+                if event is h11.NEED_DATA or isinstance(event, h11.ConnectionClosed):
+                    break
+            if self.transport.closed.is_set():
+                break
+
+
 @pytest.mark.asyncio
 async def test_h11server(serving_app: Quart, event_loop: asyncio.AbstractEventLoop) -> None:
-    transport = MockTransport()
-    server = H11Server(serving_app, event_loop, transport, None, '', 5)  # type: ignore
-    connection = h11.Connection(h11.CLIENT)
-    server.data_received(
-        connection.send(h11.Request(method='GET', target='/', headers=BASIC_H11_HEADERS)),
-    )
-    server.data_received(connection.send(h11.EndOfMessage()))
-    await transport.closed.wait()
-    connection.receive_data(transport.data)
+    connection = MockH11Connection(serving_app, event_loop)
+    connection.send_request('GET', '/', BASIC_H11_HEADERS)
     response_data = b''
-    while True:
-        event = connection.next_event()
+    async for event in connection.get_events():
         if isinstance(event, h11.Response):
             assert event.status_code == 202
             assert (b'server', b'quart-h11') in event.headers
@@ -102,9 +125,22 @@ async def test_h11server(serving_app: Quart, event_loop: asyncio.AbstractEventLo
             assert (b'x-test', b'Test') in event.headers
         elif isinstance(event, h11.Data):
             response_data += event.data
-        else:
-            break
     assert response_data.decode() == BASIC_DATA
+
+
+@pytest.mark.asyncio
+async def test_h11_protocol_error(
+        serving_app: Quart, event_loop: asyncio.AbstractEventLoop,
+) -> None:
+    connection = MockH11Connection(serving_app, event_loop)
+    connection.server.data_received(b'broken nonsense\r\n\r\n')
+    received_400_response = False
+    async for event in connection.get_events():
+        if isinstance(event, h11.Response):
+            received_400_response = True
+            assert event.status_code == 400
+            assert (b'connection', b'close') in event.headers
+    assert received_400_response
 
 
 class MockH2Connection:
@@ -125,7 +161,7 @@ class MockH2Connection:
         self.server.data_received(self.connection.data_to_send())
         return stream_id
 
-    async def get_events(self) -> h2.events.Event:
+    async def get_events(self) -> AsyncGenerator[h2.events.Event, None]:
         connection_open = True
         while connection_open:
             await self.transport.updated.wait()
@@ -139,7 +175,6 @@ class MockH2Connection:
                         event.flow_controlled_length, event.stream_id,
                     )
                     self.server.data_received(self.connection.data_to_send())
-                print(event)
                 yield event
 
 
