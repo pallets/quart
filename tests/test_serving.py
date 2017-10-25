@@ -9,7 +9,7 @@ import pytest
 from quart import make_response, Quart, ResponseReturnValue
 from quart.serving import H11Server, H2Server, HTTPProtocol, Server
 
-BASIC_H11_HEADERS = [('Host', 'quart')]
+BASIC_H11_HEADERS = [('Host', 'quart'), ('Connection', 'close')]
 BASIC_H2_HEADERS = [
     (':authority', 'quart'), (':path', '/'), (':scheme', 'https'), (':method', 'GET'),
 ]
@@ -76,6 +76,7 @@ class MockTransport:
         self.updated.set()
 
     def close(self) -> None:
+        self.updated.set()
         self.closed.set()
 
     def clear(self) -> None:
@@ -141,6 +142,20 @@ async def test_h11_protocol_error(
             assert event.status_code == 400
             assert (b'connection', b'close') in event.headers
     assert received_400_response
+
+
+@pytest.mark.asyncio
+async def test_h11_pipelining(
+        serving_app: Quart, event_loop: asyncio.AbstractEventLoop,
+) -> None:
+    connection = MockH11Connection(serving_app, event_loop)
+    # Note H11 does not support client pipelining
+    connection.server.data_received(
+        b'GET / HTTP/1.1\r\nHost: quart\r\nConnection: keep-alive\r\n\r\n'
+        b'GET / HTTP/1.1\r\nHost: quart\r\nConnection: close\r\n\r\n',
+    )
+    await connection.transport.closed.wait()
+    assert connection.transport.data.decode().count('HTTP/1.1') == 2
 
 
 class MockH2Connection:

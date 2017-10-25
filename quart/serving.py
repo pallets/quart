@@ -209,14 +209,18 @@ class H11Server(HTTPProtocol):
                     self.streams[0].complete()
                 elif isinstance(event, h11.Data):
                     self.streams[0].append(event.data)
-                elif event is h11.NEED_DATA:
+                elif event is h11.NEED_DATA or event is h11.PAUSED:
                     break
                 elif isinstance(event, h11.ConnectionClosed):
                     break
         if self.connection.our_state is h11.MUST_CLOSE:
             self.close()
-        elif self.connection.our_state is h11.DONE:
+
+    def _after_request(self, stream_id: int, future: asyncio.Future) -> None:
+        super()._after_request(stream_id, future)
+        if self.connection.our_state is h11.DONE:
             self.connection.start_next_cycle()
+        self._handle_events()
 
     async def send_response(self, stream_id: int, response: Response) -> None:
         headers = chain(
@@ -226,7 +230,6 @@ class H11Server(HTTPProtocol):
         for data in response.response:
             self._send(h11.Data(data=data))
         self._send(h11.EndOfMessage())
-        self._handle_events()
 
     def _handle_error(self) -> None:
         self._send(h11.Response(status_code=400, headers=[]))
