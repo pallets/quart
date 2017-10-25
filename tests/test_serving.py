@@ -162,20 +162,21 @@ class MockH2Connection:
         return stream_id
 
     async def get_events(self) -> AsyncGenerator[h2.events.Event, None]:
-        connection_open = True
-        while connection_open:
+        while True:
             await self.transport.updated.wait()
             events = self.connection.receive_data(self.transport.data)
             self.transport.clear()
             for event in events:
                 if isinstance(event, (h2.events.StreamEnded, h2.events.ConnectionTerminated)):
-                    connection_open = False
+                    self.transport.close()
                 elif isinstance(event, h2.events.DataReceived):
                     self.connection.acknowledge_received_data(
                         event.flow_controlled_length, event.stream_id,
                     )
                     self.server.data_received(self.connection.data_to_send())
                 yield event
+            if self.transport.closed.is_set():
+                break
 
 
 @pytest.mark.asyncio
@@ -192,6 +193,15 @@ async def test_h2server(serving_app: Quart, event_loop: asyncio.AbstractEventLoo
         elif isinstance(event, h2.events.DataReceived):
             response_data += event.data
     assert response_data.decode() == BASIC_DATA
+
+
+@pytest.mark.asyncio
+async def test_h2_protocol_error(
+        serving_app: Quart, event_loop: asyncio.AbstractEventLoop,
+) -> None:
+    connection = MockH2Connection(serving_app, event_loop)
+    connection.server.data_received(b'broken nonsense\r\n\r\n')
+    assert connection.transport.closed.is_set()  # H2 just closes on error
 
 
 @pytest.mark.asyncio
