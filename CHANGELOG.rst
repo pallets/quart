@@ -1,3 +1,9 @@
+0.3.1 2017-10-25
+----------------
+
+* Fix incorrect error message for HTTP/1.1 requests.
+* Fix HTTP/1.1 pipelining support and error handling.
+
 0.3.0 2017-10-10
 ----------------
 
