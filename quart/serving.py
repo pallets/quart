@@ -151,7 +151,10 @@ class HTTPProtocol:
         if not self.streams:
             self._timeout_handle = self.loop.call_later(self._timeout, self._handle_timeout)
         exception = future.exception()
-        if exception is not None and not isinstance(exception, asyncio.CancelledError):
+        if (
+                exception is not None and not isinstance(exception, asyncio.CancelledError) and
+                self.logger is not None
+        ):
             self.logger.error('Request handling exception', exc_info=exception)
 
     def response_headers(self) -> List[Tuple[str, str]]:
