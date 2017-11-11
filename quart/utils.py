@@ -1,6 +1,7 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 from http.cookies import SimpleCookie
-from typing import Optional, TYPE_CHECKING, Union
+from typing import Callable, Optional, TYPE_CHECKING, Union
 
 from .globals import current_app
 
@@ -50,3 +51,7 @@ def create_cookie(
     if domain is not None:
         cookie[key]['domain'] = domain
     return cookie
+
+
+def ensure_coroutine(func: Callable) -> Callable:
+    return func if asyncio.iscoroutinefunction(func) else asyncio.coroutine(func)

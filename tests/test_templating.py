@@ -24,18 +24,18 @@ def blueprint() -> Blueprint:
 
 @pytest.mark.asyncio
 async def test_template_render(app: Quart) -> None:
-    with app.app_context():
+    async with app.app_context():
         rendered = await render_template_string("{{ foo }}", foo='bar')
     assert rendered == 'bar'
 
 
 @pytest.mark.asyncio
 async def test_default_template_context(app: Quart) -> None:
-    with app.app_context():
+    async with app.app_context():
         g.foo = 'bar'  # type: ignore
         rendered = await render_template_string("{{ g.foo }}")
     assert rendered == 'bar'
-    with app.test_request_context('GET', '/'):
+    async with app.test_request_context('GET', '/'):
         session['foo'] = 'bar'
         rendered = await render_template_string(
             "{{ request.method }} {{ request.path }} {{ session.foo }}",
@@ -60,15 +60,15 @@ async def test_template_context_processors(app: Quart, blueprint: Blueprint) -> 
 
     app.register_blueprint(blueprint)
 
-    with app.app_context():
+    async with app.app_context():
         rendered = await render_template_string("{{ context }}")
     assert rendered == 'bar'
 
-    with app.test_request_context('GET', '/'):
+    async with app.test_request_context('GET', '/'):
         rendered = await render_template_string("{{ context }} {{ global_context }}")
     assert rendered == 'foo boo'
 
-    with app.test_request_context('GET', '/other'):
+    async with app.test_request_context('GET', '/other'):
         rendered = await render_template_string("{{ context }} {{ global_context }}")
     assert rendered == 'bar boo'
 
@@ -86,7 +86,7 @@ async def test_template_globals(app: Quart, blueprint: Blueprint) -> None:
 
     app.register_blueprint(blueprint)
 
-    with app.app_context():
+    async with app.app_context():
         rendered = await render_template_string(
             "{{ app_global('BAR') }} {{ blueprint_global('foo') }}",
         )
@@ -106,11 +106,11 @@ async def test_template_filters(app: Quart, blueprint: Blueprint) -> None:
 
     app.register_blueprint(blueprint)
 
-    with app.app_context():
+    async with app.app_context():
         rendered = await render_template_string("{{ 'App' | app_filter }}")
     assert rendered == 'app'
 
-    with app.test_request_context('GET', '/'):
+    async with app.test_request_context('GET', '/'):
         rendered = await render_template_string("{{ 'App' | blueprint_filter }}")
     assert rendered == 'APP'
 
@@ -128,10 +128,10 @@ async def test_template_tests(app: Quart, blueprint: Blueprint) -> None:
 
     app.register_blueprint(blueprint)
 
-    with app.app_context():
+    async with app.app_context():
         rendered = await render_template_string("{% if 3 is app_test %}foo{% endif %}")
     assert rendered == 'foo'
 
-    with app.test_request_context('GET', '/'):
+    async with app.test_request_context('GET', '/'):
         rendered = await render_template_string("{% if 5 is blueprint_test %}bar{% endif %}")
     assert rendered == 'bar'

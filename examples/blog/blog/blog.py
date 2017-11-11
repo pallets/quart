@@ -33,7 +33,7 @@ async def create():
         [form['title'], form['text']],
     )
     db.commit()
-    flash('New entry was successfully posted')
+    await flash('New entry was successfully posted')
     return redirect(url_for('posts'))
 
 
@@ -48,7 +48,7 @@ async def login():
             error = 'Invalid password'
         else:
             session['logged_in'] = True
-            flash('You were logged in')
+            await flash('You were logged in')
             return redirect(url_for('posts'))
     return await render_template('login.html', error=error)
 
@@ -56,7 +56,7 @@ async def login():
 @app.route('/logout/')
 async def logout():
     session.pop('logged_in', None)
-    flash('You were logged out')
+    await flash('You were logged out')
     return redirect(url_for('posts'))
 
 

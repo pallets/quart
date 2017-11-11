@@ -1,6 +1,37 @@
-from blinker import Namespace
+from typing import Any, Callable, List, Optional, Tuple
 
-_signals = Namespace()
+from blinker import NamedSignal, Namespace
+
+from .utils import ensure_coroutine
+
+
+class AsyncNamedSignal(NamedSignal):
+
+    def __init__(self, name: str, doc: Optional[str]=None) -> None:
+        super().__init__(name, doc)
+
+    async def send(self, *sender: Any, **kwargs: Any) -> List[Tuple[Callable, Any]]:
+        coroutines = super().send(*sender, **kwargs)
+        result: List[Tuple[Callable, Any]] = []
+        for handler, coroutine in coroutines:
+            result.append((handler, await coroutine))
+        return result
+
+    def connect(self, receiver: Callable, *args: Any, **kwargs: Any) -> Callable:
+        handler = ensure_coroutine(receiver)
+        return super().connect(handler, *args, **kwargs)
+
+
+class AsyncNamespace(Namespace):
+
+    def signal(self, name: str, doc: Optional[str]=None) -> AsyncNamedSignal:
+        try:
+            return self[name]
+        except KeyError:
+            return self.setdefault(name, AsyncNamedSignal(name, doc))
+
+
+_signals = AsyncNamespace()
 
 #: Called before a template is rendered, connection functions
 # should have a signature of Callable[[Quart, Template, dict], None]

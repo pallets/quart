@@ -50,10 +50,10 @@ class RequestContext:
         except (NotFound, MethodNotAllowed, RedirectRequired) as error:
             self.request.routing_exception = error
 
-    def __enter__(self) -> 'RequestContext':
+    async def __aenter__(self) -> 'RequestContext':
         if _app_ctx_stack.top is None:
             app_ctx = self.app.app_context()
-            app_ctx.push()
+            await app_ctx.push()
         _request_ctx_stack.push(self)
 
         self.session = self.app.open_session(self.request)
@@ -61,10 +61,10 @@ class RequestContext:
             self.session = self.app.make_null_session()
         return self
 
-    def __exit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
-        self.app.do_teardown_request(exc_value, self)
+    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+        await self.app.do_teardown_request(exc_value, self)
         _request_ctx_stack.pop()
-        self.app.app_context().pop(exc_value)
+        await self.app.app_context().pop(exc_value)
 
 
 class AppContext:
@@ -87,26 +87,26 @@ class AppContext:
         self.g = app.app_ctx_globals_class()
         self._app_reference_count = 0
 
-    def push(self) -> None:
+    async def push(self) -> None:
         self._app_reference_count += 1
         _app_ctx_stack.push(self)
-        appcontext_pushed.send(self.app)
+        await appcontext_pushed.send(self.app)
 
-    def pop(self, exc: Optional[BaseException]) -> None:
+    async def pop(self, exc: Optional[BaseException]) -> None:
         self._app_reference_count -= 1
         try:
             if self._app_reference_count <= 0:
-                self.app.do_teardown_appcontext(exc)
+                await self.app.do_teardown_appcontext(exc)
         finally:
             _app_ctx_stack.pop()
-        appcontext_popped.send(self.app)
+        await appcontext_popped.send(self.app)
 
-    def __enter__(self) -> 'AppContext':
-        self.push()
+    async def __aenter__(self) -> 'AppContext':
+        await self.push()
         return self
 
-    def __exit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
-        self.pop(exc_value)
+    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+        await self.pop(exc_value)
 
 
 def after_this_request(func: Callable) -> Callable:

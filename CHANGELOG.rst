@@ -1,3 +1,10 @@
+0.4.0
+-----
+
+* Change to async signals and context management. This allows the
+  signal recievers to be async (which is much more useful) but
+  requires changes to any current usage (notably test contexts).
+
 0.3.1 2017-10-25
 ----------------
 

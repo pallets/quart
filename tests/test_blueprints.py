@@ -3,7 +3,8 @@ import pytest
 from quart import abort, Blueprint, Quart, render_template_string, request, ResponseReturnValue
 
 
-def test_blueprint_route() -> None:
+@pytest.mark.asyncio
+async def test_blueprint_route() -> None:
     app = Quart(__name__)
     blueprint = Blueprint('blueprint', __name__)
 
@@ -13,11 +14,12 @@ def test_blueprint_route() -> None:
 
     app.register_blueprint(blueprint)
 
-    with app.test_request_context('GET', '/page/'):
+    async with app.test_request_context('GET', '/page/'):
         assert request.blueprint == 'blueprint'
 
 
-def test_blueprint_url_prefix() -> None:
+@pytest.mark.asyncio
+async def test_blueprint_url_prefix() -> None:
     app = Quart(__name__)
     blueprint = Blueprint('blueprint', __name__)
     prefix = Blueprint('prefix', __name__, url_prefix='/prefix')
@@ -31,13 +33,13 @@ def test_blueprint_url_prefix() -> None:
     app.register_blueprint(blueprint, url_prefix='/blueprint')
     app.register_blueprint(prefix)
 
-    with app.test_request_context('GET', '/page/'):
+    async with app.test_request_context('GET', '/page/'):
         assert request.blueprint is None
 
-    with app.test_request_context('GET', '/prefix/page/'):
+    async with app.test_request_context('GET', '/prefix/page/'):
         assert request.blueprint == 'prefix'
 
-    with app.test_request_context('GET', '/blueprint/page/'):
+    async with app.test_request_context('GET', '/blueprint/page/'):
         assert request.blueprint == 'blueprint'
 
 

@@ -32,6 +32,7 @@ from .static import PackageStatic
 from .templating import _default_template_context_processor, DispatchingJinjaLoader, Environment
 from .testing import TestClient
 from .typing import ResponseReturnValue
+from .utils import ensure_coroutine
 from .wrappers import Request, Response
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
@@ -329,7 +330,7 @@ class Quart(PackageStatic):
                 OPTION handling.
         """
         endpoint = endpoint or _endpoint_from_view_func(view_func)
-        handler = _ensure_coroutine(view_func)
+        handler = ensure_coroutine(view_func)
         if methods is None:
             methods = getattr(view_func, 'methods', None) or ['GET']
 
@@ -364,7 +365,7 @@ class Quart(PackageStatic):
             endpoint: The endpoint name to use.
         """
         def decorator(func: Callable) -> Callable:
-            handler = _ensure_coroutine(func)
+            handler = ensure_coroutine(func)
             self.view_functions[endpoint] = handler
             return func
         return decorator
@@ -408,7 +409,7 @@ class Quart(PackageStatic):
             func: The function to handle the error.
             name: Optional blueprint key name.
         """
-        handler = _ensure_coroutine(func)
+        handler = ensure_coroutine(func)
         if isinstance(error, int):
             error = all_http_exceptions[error]  # type: ignore
         self.error_handler_spec[name][error] = handler  # type: ignore
@@ -639,7 +640,7 @@ class Quart(PackageStatic):
         By default this switches the error response to a 500 internal
         server error.
         """
-        got_request_exception.send(self, exception=error)
+        await got_request_exception.send(self, exception=error)
         internal_server_error = all_http_exceptions[500]()
         handler = self._find_exception_handler(internal_server_error)
 
@@ -675,7 +676,7 @@ class Quart(PackageStatic):
             func: The before request function itself.
             name: Optional blueprint key name.
         """
-        handler = _ensure_coroutine(func)
+        handler = ensure_coroutine(func)
         self.before_request_funcs[name].append(handler)
         return func
 
@@ -694,7 +695,7 @@ class Quart(PackageStatic):
             func: The before first request function itself.
             name: Optional blueprint key name.
         """
-        handler = _ensure_coroutine(func)
+        handler = ensure_coroutine(func)
         self.before_first_request_funcs.append(handler)
         return func
 
@@ -713,7 +714,7 @@ class Quart(PackageStatic):
             func: The after request function itself.
             name: Optional blueprint key name.
         """
-        handler = _ensure_coroutine(func)
+        handler = ensure_coroutine(func)
         self.after_request_funcs[name].append(handler)
         return func
 
@@ -791,7 +792,7 @@ class Quart(PackageStatic):
         """Saves the session to the response."""
         return self.session_interface.save_session(self, session, response)  # type: ignore
 
-    def do_teardown_request(
+    async def do_teardown_request(
             self,
             exc: Optional[BaseException],
             request_context: Optional[RequestContext]=None,
@@ -812,13 +813,13 @@ class Quart(PackageStatic):
 
         for function in functions:
             function(exc=exc)
-        request_tearing_down.send(self, exc=exc)
+        await request_tearing_down.send(self, exc=exc)
 
-    def do_teardown_appcontext(self, exc: Optional[BaseException]) -> None:
+    async def do_teardown_appcontext(self, exc: Optional[BaseException]) -> None:
         """Teardown the app (context), calling the teardown functions."""
         for function in self.teardown_appcontext_funcs:
             function(exc)
-        appcontext_tearing_down.send(self, exc=exc)
+        await appcontext_tearing_down.send(self, exc=exc)
 
     def app_context(self) -> AppContext:
         """Create and return an app context.
@@ -827,7 +828,7 @@ class Quart(PackageStatic):
 
         .. code-block:: python
 
-            with app.app_context():
+            async with app.app_context():
                 ...
         """
         return AppContext(self)
@@ -840,7 +841,7 @@ class Quart(PackageStatic):
 
         .. code-block:: python
 
-            with app.request_context(request):
+            async with app.request_context(request):
                 ...
 
         Arguments:
@@ -903,7 +904,7 @@ class Quart(PackageStatic):
 
         .. code-block:: python
 
-            with app.test_request_context('GET', '/'):
+            async with app.test_request_context('GET', '/'):
                 ...
 
         Arguments:
@@ -946,7 +947,7 @@ class Quart(PackageStatic):
                 omits this argument.
         """
         await self.try_trigger_before_first_request_functions()
-        request_started.send(self)
+        await request_started.send(self)
         try:
             result = await self.preprocess_request(request_context)
             if result is None:
@@ -1014,7 +1015,7 @@ class Quart(PackageStatic):
         """
         response = await self.make_response(result)
         response = await self.process_response(response, request_context)
-        request_finished.send(self, response=response)
+        await request_finished.send(self, response=response)
         return response
 
     async def make_response(self, result: ResponseReturnValue) -> Response:
@@ -1081,7 +1082,7 @@ class Quart(PackageStatic):
         return response
 
     async def handle_request(self, request: Request) -> Response:
-        with self.request_context(request) as request_context:
+        async with self.request_context(request) as request_context:
             try:
                 return await self.full_dispatch_request(request_context)
             except Exception as error:
@@ -1090,10 +1091,6 @@ class Quart(PackageStatic):
     def __call__(self) -> 'Quart':
         # Required for Gunicorn compatibility.
         return self
-
-
-def _ensure_coroutine(func: Callable) -> Callable:
-    return func if asyncio.iscoroutinefunction(func) else asyncio.coroutine(func)
 
 
 def _find_exception_handler(

@@ -74,7 +74,7 @@ context_. This is simple enough for the app context,
 
     @pytest.mark.asyncio
     async def test_app_context(app):
-        with app.app_context():
+        async with app.app_context():
             current_app.[use]
 
 for the request context however the request context has to be faked,
@@ -84,5 +84,5 @@ at a minimum this means the method and path must be supplied, e.g.
 
     @pytest.mark.asyncio
     async def test_app_context(app):
-        with app.test_request_context('GET', '/'):
+        async with app.test_request_context('GET', '/'):
             request.[use]

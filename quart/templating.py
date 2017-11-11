@@ -92,9 +92,9 @@ async def render_template_string(source: str, **context: Any) -> str:
 
 async def _render(template: Template, context: dict) -> str:
     app = current_app._get_current_object()
-    before_render_template.send(app, template=template, context=context)
+    await before_render_template.send(app, template=template, context=context)
     rendered_template = await template.render_async(context)  # type: ignore
-    template_rendered.send(app, template=template, context=context)
+    await template_rendered.send(app, template=template, context=context)
     return rendered_template
 
 

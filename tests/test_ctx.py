@@ -43,22 +43,25 @@ def test_request_context_matching_error(
     assert isinstance(request.routing_exception, exception_type)  # type: ignore
 
 
-def test_after_this_request() -> None:
-    with RequestContext(Quart(__name__), Request('GET', '/', CIMultiDict(), None)) as context:
+@pytest.mark.asyncio
+async def test_after_this_request() -> None:
+    async with RequestContext(Quart(__name__), Request('GET', '/', CIMultiDict(), None)) as context:
         after_this_request(lambda: 'hello')
         assert context._after_request_functions[0]() == 'hello'
 
 
-def test_has_request_context() -> None:
-    with RequestContext(Quart(__name__), Request('GET', '/', CIMultiDict(), None)):
+@pytest.mark.asyncio
+async def test_has_request_context() -> None:
+    async with RequestContext(Quart(__name__), Request('GET', '/', CIMultiDict(), None)):
         assert has_request_context() is True
         assert has_app_context() is True
     assert has_request_context() is False
     assert has_app_context() is False
 
 
-def test_has_app_context() -> None:
-    with AppContext(Quart(__name__)):
+@pytest.mark.asyncio
+async def test_has_app_context() -> None:
+    async with AppContext(Quart(__name__)):
         assert has_app_context() is True
     assert has_app_context() is False
 

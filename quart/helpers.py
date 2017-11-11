@@ -28,7 +28,7 @@ async def make_response(*args: Any) -> Response:
     return await current_app.make_response(args)
 
 
-def flash(message: str, category: str='message') -> None:
+async def flash(message: str, category: str='message') -> None:
     """Add a message (with optional category) to the session store.
 
     This is typically used to flash a message to a user that will be
@@ -40,7 +40,7 @@ def flash(message: str, category: str='message') -> None:
         @app.route('/login', methods=['POST'])
         async def login():
             ...
-            flash('Login successful')
+            await flash('Login successful')
             return redirect(url_for('index'))
 
     allows the index route to show the flashed messsages, without
@@ -50,7 +50,9 @@ def flash(message: str, category: str='message') -> None:
     flashes = session.get('_flashes', [])
     flashes.append((category, message))
     session['_flashes'] = flashes
-    message_flashed.send(current_app._get_current_object(), message=message, category=category)
+    await message_flashed.send(
+        current_app._get_current_object(), message=message, category=category,
+    )
 
 
 def get_flashed_messages(
