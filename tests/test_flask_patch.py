@@ -1,6 +1,6 @@
-import quart.flask_patch  # noqa
+import quart.flask_patch
 
-import flask
+import flask  # noqa: I100
 import pytest
 
 import quart

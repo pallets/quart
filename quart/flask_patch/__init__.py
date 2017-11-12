@@ -28,11 +28,11 @@ def _sync_wait(self, future):  # type: ignore
 
 asyncio.BaseEventLoop.sync_wait = _sync_wait  # type: ignore
 
-import sys  # noqa: E402
+import sys  # noqa: E402, I202
 from builtins import globals as builtin_globals  # noqa: E402
 
 from jinja2 import escape, Markup  # noqa: E402
-from quart import (
+from quart import (  # noqa: I201
     abort, after_this_request, appcontext_popped, appcontext_pushed, appcontext_tearing_down,
     before_render_template, Blueprint, Config, got_request_exception, has_app_context,
     has_request_context, jsonify, message_flashed, Quart, redirect, Request, request_finished,
@@ -44,8 +44,8 @@ from quart.flask_patch.globals import (
 )  # noqa: E402
 from quart.flask_patch.helpers import make_response  # noqa: E402
 from quart.helpers import flash, get_flashed_messages, get_template_attribute, url_for  # noqa: E402
-from quart.flask_patch.templating import render_template, render_template_string  # noqa: E402
-import quart.views  # noqa: E402,F401
+from quart.flask_patch.templating import render_template, render_template_string  # noqa: E402, I100
+import quart.views  # noqa: E402, F401, I100
 
 if 'flask' in sys.modules:
     raise ImportError('Cannot mock flask, already imported')
@@ -110,7 +110,7 @@ Quart.handle_http_exception = new_handle_http_exception  # type: ignore
 
 Flask = Quart
 
-from quart.local import LocalStack, TaskLocal  # noqa: E402
+from quart.local import LocalStack, TaskLocal  # noqa: E402, I202
 
 LocalStack.__ident_func__ = lambda _: TaskLocal._task_identity()  # type: ignore
 
