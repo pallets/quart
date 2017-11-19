@@ -59,8 +59,8 @@ details.
 .. |Build Status| image:: https://gitlab.com/pgjones/quart/badges/master/build.svg
    :target: https://gitlab.com/pgjones/quart/commits/master
 
-.. |docs| image:: https://readthedocs.org/projects/docs/badge/?version=latest
+.. |docs| image:: https://img.shields.io/badge/docs-passing-brightgreen.svg
    :target: https://pgjones.gitlab.io/quart/
 
-.. |pypi| image:: https://badge.fury.io/py/quart.svg
-   :target: https://badge.fury.io/py/quart
+.. |pypi| image:: https://img.shields.io/pypi/v/quart.svg
+   :target: https://pypi.python.org/pypi/Quart/
