@@ -640,6 +640,10 @@ class Quart(PackageStatic):
         By default this switches the error response to a 500 internal
         server error.
         """
+        # If task is cancelled error should propogate to serving code.
+        if isinstance(error, asyncio.CancelledError):
+            raise error
+
         await got_request_exception.send(self, exception=error)
         internal_server_error = all_http_exceptions[500]()
         handler = self._find_exception_handler(internal_server_error)
