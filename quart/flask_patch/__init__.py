@@ -56,7 +56,7 @@ flask_modules = {}
 for name, module in sys.modules.items():
     if name.startswith('quart.flask_patch'):
         flask_modules[name.replace('quart.flask_patch', 'flask')] = module
-    elif name.startswith('quart.'):
+    elif name.startswith('quart.') and not name.startswith('quart.serving'):
         flask_name = name.replace('quart.', 'flask.')
         if flask_name not in flask_modules:
             flask_modules[flask_name] = module

@@ -1,15 +1,12 @@
 import asyncio
 from typing import AsyncGenerator
-from unittest.mock import Mock
 
-import h11
 import h2
 import pytest
 
 from quart import make_response, Quart, ResponseReturnValue
-from quart.serving import H11Server, H2Server, HTTPProtocol, Server
+from quart.serving.h2 import H2Server
 
-BASIC_H11_HEADERS = [('Host', 'quart'), ('Connection', 'close')]
 BASIC_H2_HEADERS = [
     (':authority', 'quart'), (':path', '/'), (':scheme', 'https'), (':method', 'GET'),
 ]
@@ -37,29 +34,6 @@ def serving_app() -> Quart:
     return app
 
 
-def test_server() -> None:
-    h2_ssl_mock = Mock()
-    h2_ssl_mock.selected_alpn_protocol.return_value = 'h2'
-    transport = Mock()
-    transport.get_extra_info.return_value = h2_ssl_mock
-    server = Server(Mock(), Mock(), Mock(), '', 5)
-    server.connection_made(transport)
-    assert isinstance(server._http_server, H2Server)
-    transport.get_extra_info.return_value = None
-    server.connection_made(transport)
-    assert isinstance(server._http_server, H11Server)
-
-
-@pytest.mark.asyncio
-async def test_timeout(event_loop: asyncio.AbstractEventLoop) -> None:
-    timeout = 0.1
-    protocol = HTTPProtocol(Mock(), event_loop, Mock(), None, '', timeout)  # type: ignore
-    await asyncio.sleep(0.5 * timeout)
-    protocol._transport.close.assert_not_called()  # type: ignore
-    await asyncio.sleep(2 * timeout)
-    protocol._transport.close.assert_called_once()  # type: ignore
-
-
 class MockTransport:
 
     def __init__(self) -> None:
@@ -82,80 +56,6 @@ class MockTransport:
     def clear(self) -> None:
         self.data = bytearray()
         self.updated.clear()
-
-
-class MockH11Connection:
-
-    def __init__(self, serving_app: Quart, event_loop: asyncio.AbstractEventLoop) -> None:
-        self.transport = MockTransport()
-        self.server = H11Server(  # type: ignore
-            serving_app, event_loop, self.transport, None, '', 5,
-        )
-        self.connection = h11.Connection(h11.CLIENT)
-
-    def send_request(self, method: str, target: str, headers: list) -> None:
-        self.server.data_received(
-            self.connection.send(h11.Request(method=method, target=target, headers=headers)),
-        )
-        self.server.data_received(self.connection.send(h11.EndOfMessage()))
-
-    async def get_events(self) -> AsyncGenerator:
-        while True:
-            await self.transport.updated.wait()
-            self.connection.receive_data(self.transport.data)
-            self.transport.clear()
-            while True:
-                event = self.connection.next_event()
-                yield event
-                if event is h11.NEED_DATA or isinstance(event, h11.ConnectionClosed):
-                    break
-            if self.transport.closed.is_set():
-                break
-
-
-@pytest.mark.asyncio
-async def test_h11server(serving_app: Quart, event_loop: asyncio.AbstractEventLoop) -> None:
-    connection = MockH11Connection(serving_app, event_loop)
-    connection.send_request('GET', '/', BASIC_H11_HEADERS)
-    response_data = b''
-    async for event in connection.get_events():
-        if isinstance(event, h11.Response):
-            assert event.status_code == 202
-            assert (b'server', b'quart-h11') in event.headers
-            assert b'date' in (header[0] for header in event.headers)
-            assert (b'x-test', b'Test') in event.headers
-        elif isinstance(event, h11.Data):
-            response_data += event.data
-    assert response_data.decode() == BASIC_DATA
-
-
-@pytest.mark.asyncio
-async def test_h11_protocol_error(
-        serving_app: Quart, event_loop: asyncio.AbstractEventLoop,
-) -> None:
-    connection = MockH11Connection(serving_app, event_loop)
-    connection.server.data_received(b'broken nonsense\r\n\r\n')
-    received_400_response = False
-    async for event in connection.get_events():
-        if isinstance(event, h11.Response):
-            received_400_response = True
-            assert event.status_code == 400
-            assert (b'connection', b'close') in event.headers
-    assert received_400_response
-
-
-@pytest.mark.asyncio
-async def test_h11_pipelining(
-        serving_app: Quart, event_loop: asyncio.AbstractEventLoop,
-) -> None:
-    connection = MockH11Connection(serving_app, event_loop)
-    # Note H11 does not support client pipelining
-    connection.server.data_received(
-        b'GET / HTTP/1.1\r\nHost: quart\r\nConnection: keep-alive\r\n\r\n'
-        b'GET / HTTP/1.1\r\nHost: quart\r\nConnection: close\r\n\r\n',
-    )
-    await connection.transport.closed.wait()
-    assert connection.transport.data.decode().count('HTTP/1.1') == 2
 
 
 class MockH2Connection:
