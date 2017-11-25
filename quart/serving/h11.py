@@ -35,11 +35,11 @@ class H11Server(HTTPProtocol):
         self._handle_events()
 
     def _handle_events(self) -> None:
-        if self.connection.they_are_waiting_for_100_continue:
-            self._send(
-                h11.InformationalResponse(status_code=100, headers=self.response_headers),
-            )
         while True:
+            if self.connection.they_are_waiting_for_100_continue:
+                self._send(
+                    h11.InformationalResponse(status_code=100, headers=self.response_headers()),
+                )
             try:
                 event = self.connection.next_event()
             except h11.RemoteProtocolError:
