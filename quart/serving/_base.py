@@ -52,8 +52,14 @@ class HTTPProtocol:
         self._timeout_handle = self.loop.call_later(self._timeout, self._handle_timeout)
         self._transport = transport
 
+    def connection_lost(self, _: Exception) -> None:
+        self.close()
+
     def data_received(self, data: bytes) -> None:
         self._last_activity = time()
+
+    def eof_received(self) -> bool:
+        return True
 
     def handle_request(
             self,

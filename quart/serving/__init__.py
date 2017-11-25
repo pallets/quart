@@ -50,11 +50,14 @@ class Server(asyncio.Protocol):
                 self.timeout,
             )
 
-    def connection_lost(self, _: Exception) -> None:
-        self._http_server.close()
+    def connection_lost(self, exception: Exception) -> None:
+        self._http_server.connection_lost(exception)
 
     def data_received(self, data: bytes) -> None:
         self._http_server.data_received(data)
+
+    def eof_received(self) -> bool:
+        return self._http_server.eof_received()
 
 
 def run_app(

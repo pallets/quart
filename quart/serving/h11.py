@@ -34,6 +34,10 @@ class H11Server(HTTPProtocol):
         self.connection.receive_data(data)
         self._handle_events()
 
+    def eof_received(self) -> bool:
+        self.connection.receive_data(b'')
+        return True
+
     def _handle_events(self) -> None:
         while True:
             if self.connection.they_are_waiting_for_100_continue:
