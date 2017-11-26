@@ -1,7 +1,7 @@
 Quart
 =====
 
-|Build Status| |docs| |pypi|
+|Build Status| |docs| |pypi| |http|
 
 Quart is a Python asyncio web microframework with the same API as
 `Flask <https://github.com/pallets/flask>`_. Quart should provide a
@@ -9,8 +9,12 @@ very minimal step to use `Asyncio
 <https://docs.python.org/3/library/asyncio.html>`_ in a Flask app.
 See the `docs <https://pgjones.gitlab.io/quart/>`_.
 
-Quart accepts requests and serves responses via HTTP/1.1 or
-HTTP/2. The HTTP/2 support includes the ability to server push.
+Quart extends the Flask-API by adding support for
+
+- HTTP/1.1, including chunked transfer-encoded requests and
+  pipelining.
+- Websockets.
+- HTTP/2, including the ability to server push.
 
 
 Quickstart
@@ -22,13 +26,18 @@ and requires Python 3.6+. A minimal Quart example would be
 
 .. code-block:: python
 
-    from quart import Quart
+    from quart import Quart, websocket
 
     app = Quart(__name__)
 
     @app.route('/')
     async def hello():
         return 'hello'
+
+    @app.websocket('/ws')
+    async def ws():
+        while True:
+            await websocket.send('hello')
 
     app.run()
 
@@ -64,3 +73,6 @@ details.
 
 .. |pypi| image:: https://img.shields.io/pypi/v/quart.svg
    :target: https://pypi.python.org/pypi/Quart/
+
+.. |http| image:: https://img.shields.io/badge/http-1.0,1.1,2-orange.svg
+   :target: https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol
