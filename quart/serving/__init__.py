@@ -3,8 +3,9 @@ from logging import Logger
 from ssl import SSLContext
 from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union  # noqa: F401
 
-from .h11 import H11Server
+from .h11 import H11Server, WebsocketProtocolRequired
 from .h2 import H2Server
+from .websocket import WebsocketServer
 from ..wrappers import Request, Response  # noqa: F401
 
 if TYPE_CHECKING:
@@ -27,7 +28,7 @@ class Server(asyncio.Protocol):
     ) -> None:
         self.app = app
         self.loop = loop
-        self._http_server: Optional['HTTPProtocol'] = None
+        self._server: Optional[Union['HTTPProtocol', WebsocketServer]] = None
         self.logger = logger
         self.access_log_format = access_log_format
         self.timeout = timeout
@@ -40,24 +41,29 @@ class Server(asyncio.Protocol):
             protocol = 'http/1.1'
 
         if protocol == 'h2':
-            self._http_server = H2Server(
+            self._server = H2Server(
                 self.app, self.loop, transport, self.logger, self.access_log_format,
                 self.timeout,
             )
         else:
-            self._http_server = H11Server(
+            self._server = H11Server(
                 self.app, self.loop, transport, self.logger, self.access_log_format,
                 self.timeout,
             )
 
     def connection_lost(self, exception: Exception) -> None:
-        self._http_server.connection_lost(exception)
+        self._server.connection_lost(exception)
 
     def data_received(self, data: bytes) -> None:
-        self._http_server.data_received(data)
+        try:
+            self._server.data_received(data)
+        except WebsocketProtocolRequired as error:
+            self._server = WebsocketServer(
+                self.app, self.loop, self._server._transport, error.request,
+            )
 
     def eof_received(self) -> bool:
-        return self._http_server.eof_received()
+        return self._server.eof_received()
 
 
 def run_app(

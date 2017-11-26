@@ -113,6 +113,10 @@ class LocalProxy:
     def __delitem__(self, key: Any) -> Any:
         del self._get_current_object()[key]
 
+    async def __aiter__(self) -> Any:
+        async for x in self._get_current_object():
+            yield x
+
     __setattr__ = lambda x, n, v: setattr(x._get_current_object(), n, v)  # type: ignore # noqa
     __delattr__ = lambda x, n: delattr(x._get_current_object(), n)  # type: ignore # noqa
     __str__ = lambda x: str(x._get_current_object())  # type: ignore # noqa

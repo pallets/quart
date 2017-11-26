@@ -9,7 +9,7 @@ from typing import Any, Callable, Optional, TYPE_CHECKING
 
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 
-from .wrappers import Request, Response
+from .wrappers import BaseRequestWebsocket, Response
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa
@@ -231,7 +231,7 @@ class SessionInterface:
         save_each = app.config['SESSION_REFRESH_EACH_REQUEST']
         return save_each and session.permanent
 
-    def open_session(self, app: 'Quart', request: Request) -> Optional[Session]:
+    def open_session(self, app: 'Quart', request: BaseRequestWebsocket) -> Optional[Session]:
         """Open an existing session from the request or create one.
 
         Returns:
@@ -279,7 +279,11 @@ class SecureCookieSessionInterface(SessionInterface):
             app.secret_key, salt=self.salt, serializer=self.serializer, signer_kwargs=options,
         )
 
-    def open_session(self, app: 'Quart', request: Request) -> Optional[SecureCookieSession]:
+    def open_session(
+            self,
+            app: 'Quart',
+            request: BaseRequestWebsocket,
+    ) -> Optional[SecureCookieSession]:
         """Open a secure cookie based session.
 
         This will return None if a signing serializer is not availabe,

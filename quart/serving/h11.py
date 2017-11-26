@@ -13,6 +13,12 @@ if TYPE_CHECKING:
     from ..app import Quart  # noqa
 
 
+class WebsocketProtocolRequired(Exception):
+
+    def __init__(self, request: h11.Request) -> None:
+        self.request = request
+
+
 class H11Server(HTTPProtocol):
 
     protocol = 'h11'
@@ -55,6 +61,12 @@ class H11Server(HTTPProtocol):
                     headers = CIMultiDict()
                     for name, value in event.headers:
                         headers.add(name.decode().title(), value.decode())
+                    if (
+                            headers.get('connection') == 'Upgrade' and
+                            headers.get('upgrade') == 'websocket'
+                    ):
+                        self._timeout_handle.cancel()
+                        raise WebsocketProtocolRequired(event)
                     self.handle_request(
                         0, event.method.decode().upper(), event.target.decode(), headers,
                     )

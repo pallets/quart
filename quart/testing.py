@@ -1,18 +1,33 @@
 import asyncio
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
 from json import dumps
-from typing import Any, Optional, TYPE_CHECKING, Union
+from typing import Any, Generator, Optional, TYPE_CHECKING, Union
 from urllib.parse import urlencode
 
 from .datastructures import CIMultiDict
 from .utils import create_cookie
-from .wrappers import Request, Response
+from .wrappers import Request, Response, Websocket
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa
 
 sentinel = object()
+
+
+class _TestingWebsocket:
+
+    def __init__(self, remote_queue: asyncio.Queue) -> None:
+        self.remote_queue = remote_queue
+        self.local_queue: asyncio.Queue = asyncio.Queue()
+
+    async def receive(self) -> bytes:
+        return await self.local_queue.get()
+
+    async def send(self, data: bytes) -> None:
+        await self.remote_queue.put(data)
+        await asyncio.sleep(0)
 
 
 class TestClient:
@@ -59,8 +74,8 @@ class TestClient:
             headers = headers
         elif headers is not None:
             headers = CIMultiDict(headers)
-        headers['Remote-Addr'] = '127.0.0.1'
-        headers['User-Agent'] = 'Quart'
+        headers.setdefault('Remote-Addr', '127.0.0.1')
+        headers.setdefault('User-Agent', 'Quart')
 
         body: asyncio.Future = asyncio.get_event_loop().create_future()
         if json is not sentinel and form is not None:
@@ -170,3 +185,32 @@ class TestClient:
     def delete_cookie(self, key: str, path: str='/', domain: Optional[str]=None) -> None:
         """Delete a cookie (set to expire immediately)."""
         self.set_cookie(key, expires=datetime.utcnow(), max_age=0, path=path, domain=domain)
+
+    @contextmanager
+    def websocket(
+            self,
+            path: str,
+            *,
+            headers: Optional[Union[dict, CIMultiDict]]=None,
+            query_string: Optional[dict]=None,
+    ) -> Generator[_TestingWebsocket, None, None]:
+        if headers is None:
+            headers = CIMultiDict()
+        elif isinstance(headers, CIMultiDict):
+            headers = headers
+        elif headers is not None:
+            headers = CIMultiDict(headers)
+        headers.setdefault('Remote-Addr', '127.0.0.1')
+        headers.setdefault('User-Agent', 'Quart')
+        if query_string is not None:
+            path = f"{path}?{urlencode(query_string)}"
+
+        queue: asyncio.Queue = asyncio.Queue()
+        websocket_client = _TestingWebsocket(queue)
+        websocket = Websocket(path, headers, queue, websocket_client.local_queue.put_nowait)  # type: ignore # noqa
+        task = asyncio.ensure_future(self.app.handle_websocket(websocket))
+
+        try:
+            yield websocket_client
+        finally:
+            task.cancel()

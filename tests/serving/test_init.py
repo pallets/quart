@@ -12,7 +12,7 @@ def test_server() -> None:
     transport.get_extra_info.return_value = h2_ssl_mock
     server = Server(Mock(), Mock(), Mock(), '', 5)
     server.connection_made(transport)
-    assert isinstance(server._http_server, H2Server)
+    assert isinstance(server._server, H2Server)
     transport.get_extra_info.return_value = None
     server.connection_made(transport)
-    assert isinstance(server._http_server, H11Server)
+    assert isinstance(server._server, H11Server)

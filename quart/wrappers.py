@@ -4,7 +4,7 @@ from base64 import b64decode
 from cgi import FieldStorage, parse_header
 from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
-from typing import Any, AnyStr, Dict, Iterable, Optional, Set, TYPE_CHECKING, Union  # noqa
+from typing import Any, AnyStr, Callable, Dict, Iterable, Optional, Set, TYPE_CHECKING, Union
 from urllib.parse import parse_qs, unquote, urlparse
 from urllib.request import parse_http_list, parse_keqv_list
 
@@ -138,12 +138,8 @@ class _BaseRequestResponse:
         raise NotImplemented()
 
 
-class Request(_BaseRequestResponse, JSONMixin):
-    """This class represents a request.
-
-    It can be subclassed and the subclassed used in preference by
-    replacing the :attr:`~quart.Quart.request_class` with your
-    subclass.
+class BaseRequestWebsocket(_BaseRequestResponse):
+    """This class is the basis for Requests and websockets..
 
     Attributes:
         routing_exception: If an exception is raised during the route
@@ -156,10 +152,8 @@ class Request(_BaseRequestResponse, JSONMixin):
     url_rule: Optional['Rule'] = None
     view_args: Optional[Dict[str, Any]] = None
 
-    def __init__(
-            self, method: str, path: str, headers: CIMultiDict, body: asyncio.Future,
-    ) -> None:
-        """Create a request object.
+    def __init__(self, method: str, path: str, headers: CIMultiDict) -> None:
+        """Create a request or websocket base object.
 
         Arguments:
             method: The HTTP verb.
@@ -183,10 +177,6 @@ class Request(_BaseRequestResponse, JSONMixin):
         self.scheme = parsed_url.scheme
         self.server_name = parsed_url.netloc
         self.method = method
-        self._body = body
-        self._cached_json: Any = sentinel
-        self._form: Optional[MultiDict] = None
-        self._files: Optional[MultiDict] = None
 
     @property
     def endpoint(self) -> Optional[str]:
@@ -260,19 +250,46 @@ class Request(_BaseRequestResponse, JSONMixin):
         """Returns the remote address of the request, faked into the headers."""
         return self.headers['Remote-Addr']
 
-    async def get_data(self, raw: bool=True) -> AnyStr:
-        """The request body data."""
-        if raw:
-            return await self._body  # type: ignore
-        else:
-            return (await self._body).decode(self.charset)  # type: ignore
-
     @property
     def cookies(self) -> SimpleCookie:
         """The parsed cookies attached to this request."""
         cookies = SimpleCookie()  # type: ignore
         cookies.load(self.headers.get('Cookie', ''))
         return cookies
+
+
+class Request(BaseRequestWebsocket, JSONMixin):
+    """This class represents a request.
+
+    It can be subclassed and the subclassed used in preference by
+    replacing the :attr:`~quart.Quart.request_class` with your
+    subclass.
+    """
+
+    def __init__(
+            self, method: str, path: str, headers: CIMultiDict, body: asyncio.Future,
+    ) -> None:
+        """Create a request object.
+
+        Arguments:
+            method: The HTTP verb.
+            path: The full URL of the request.
+            headers: The request headers.
+            body: An awaitable future for the body data i.e.
+                ``data = await body``
+        """
+        super().__init__(method, path, headers)
+        self._body = body
+        self._cached_json: Any = sentinel
+        self._form: Optional[MultiDict] = None
+        self._files: Optional[MultiDict] = None
+
+    async def get_data(self, raw: bool=True) -> AnyStr:
+        """The request body data."""
+        if raw:
+            return await self._body  # type: ignore
+        else:
+            return (await self._body).decode(self.charset)  # type: ignore
 
     @property
     async def form(self) -> MultiDict:
@@ -325,6 +342,34 @@ class Request(_BaseRequestResponse, JSONMixin):
     async def _load_json_data(self) -> str:
         """Return the data after decoding."""
         return await self.get_data(raw=False)
+
+
+class Websocket(BaseRequestWebsocket):
+
+    def __init__(
+            self,
+            path: str,
+            headers: CIMultiDict,
+            queue: asyncio.Queue,
+            send: Callable,
+    ) -> None:
+        """Create a request object.
+
+        Arguments:
+            method: The HTTP verb.
+            path: The full URL of the request.
+            headers: The request headers.
+            websocket: The actual websocket with the data.
+        """
+        super().__init__('GET', path, headers)
+        self._queue = queue
+        self._send = send
+
+    async def receive(self) -> bytes:
+        return await self._queue.get()
+
+    async def send(self, data: bytes) -> None:
+        self._send(data)
 
 
 class Response(_BaseRequestResponse, JSONMixin):

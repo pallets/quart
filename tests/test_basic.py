@@ -1,6 +1,6 @@
 import pytest
 
-from quart import abort, jsonify, Quart, request, Response, ResponseReturnValue
+from quart import abort, jsonify, Quart, request, Response, ResponseReturnValue, websocket
 
 
 @pytest.fixture
@@ -24,6 +24,13 @@ def app() -> Quart:
     @app.errorhandler(409)
     async def handler(_: Exception) -> ResponseReturnValue:
         return 'Something Unique', 409
+
+    @app.websocket('/ws/')
+    async def ws() -> None:
+        # async for message in websocket:
+        while True:
+            message = await websocket.receive()
+            await websocket.send(message)
 
     return app
 
@@ -84,3 +91,13 @@ async def test_make_response_response(app: Quart) -> None:
     assert response.status_code == 404
     assert (await response.get_data()) == b'Result'
     assert response.headers['name'] == 'value'
+
+
+@pytest.mark.asyncio
+async def test_websocket(app: Quart) -> None:
+    test_client = app.test_client()
+    data = b'bob'
+    with test_client.websocket('/ws/') as test_websocket:
+        await test_websocket.send(data)
+        result = await test_websocket.receive()
+    assert result == data

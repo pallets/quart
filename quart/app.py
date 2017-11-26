@@ -13,7 +13,8 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union, 
 from .blueprints import Blueprint
 from .config import Config, ConfigAttribute, DEFAULT_CONFIG
 from .ctx import (
-    _AppCtxGlobals, _request_ctx_stack, AppContext, has_request_context, RequestContext,
+    _AppCtxGlobals, _request_ctx_stack, _websocket_ctx_stack, AppContext, has_request_context,
+    has_websocket_context, RequestContext, WebsocketContext,
 )
 from .datastructures import CIMultiDict
 from .exceptions import all_http_exceptions, HTTPException
@@ -33,7 +34,7 @@ from .templating import _default_template_context_processor, DispatchingJinjaLoa
 from .testing import TestClient
 from .typing import ResponseReturnValue
 from .utils import ensure_coroutine
-from .wrappers import Request, Response
+from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
 
@@ -198,7 +199,7 @@ class Quart(PackageStatic):
         """Create and return the configuration with appropriate defaults."""
         return self.config_class(self.root_path, DEFAULT_CONFIG)
 
-    def create_url_adapter(self, request: Optional[Request]) -> Optional[MapAdapter]:
+    def create_url_adapter(self, request: Optional[BaseRequestWebsocket]) -> Optional[MapAdapter]:
         """Create and return a URL adapter.
 
         This will create the adapter based on the request if present
@@ -343,6 +344,56 @@ class Quart(PackageStatic):
                 path, methods, endpoint, provide_automatic_options=automatic_options,
             ),
         )
+        if handler is not None:
+            old_handler = self.view_functions.get(endpoint)
+            if old_handler is not None and old_handler != handler:
+                raise AssertionError(f"Handler is overwriting existing for endpoint {endpoint}")
+
+        self.view_functions[endpoint] = handler
+
+    def websocket(self, path: str) -> Callable:
+        """Add a websocket to the application.
+
+        This is designed to be used as a decorator. An example usage,
+
+        .. code-block:: python
+
+            @app.websocket('/')
+            def websocket_route():
+                ...
+
+        Arguments:
+            path: The path to route on, should start with a ``/``.
+        """
+        def decorator(func: Callable) -> Callable:
+            self.add_websocket(path, func)
+            return func
+        return decorator
+
+    def add_websocket(self, path: str, view_func: Callable, endpoint: Optional[str]=None) -> None:
+        """Add a websocket url rule to the application.
+
+        This is designed to be used on the application directly. An
+        example usage,
+
+        .. code-block:: python
+
+            def websocket_route():
+                ...
+
+            app.add_websocket('/', websocket_route)
+
+        Arguments:
+            path: The path to route on, should start with a ``/``.
+            func: Callable that returns a reponse.
+            endpoint: Optional endpoint name, if not present the
+                function name is used.
+        """
+        endpoint = endpoint or _endpoint_from_view_func(view_func)
+        handler = ensure_coroutine(view_func)
+        methods = ['GET']
+
+        self.url_map.add(self.url_rule_class(path, methods, endpoint, is_websocket=True))
         if handler is not None:
             old_handler = self.view_functions.get(endpoint)
             if old_handler is not None and old_handler != handler:
@@ -640,10 +691,6 @@ class Quart(PackageStatic):
         By default this switches the error response to a 500 internal
         server error.
         """
-        # If task is cancelled error should propogate to serving code.
-        if isinstance(error, asyncio.CancelledError):
-            raise error
-
         await got_request_exception.send(self, exception=error)
         internal_server_error = all_http_exceptions[500]()
         handler = self._find_exception_handler(internal_server_error)
@@ -654,16 +701,33 @@ class Quart(PackageStatic):
         else:
             return await handler(error)
 
+    async def handle_websocket_exception(self, error: Exception) -> None:
+        """Handle an uncaught exception.
+
+        By default this logs the exception and then re-raises it.
+        """
+        await got_request_exception.send(self, exception=error)
+
+        self.log_exception(sys.exc_info())
+        raise error
+
     def log_exception(self, exception_info: Tuple[type, BaseException, TracebackType]) -> None:
         """Log a exception to the :attr:`logger`.
 
         By default this is only invoked for unhandled exceptions.
         """
-        request_ = _request_ctx_stack.top.request
-        self.logger.error(
-            f"Exception on {request_.method} {request_.path}",
-            exc_info=exception_info,
-        )
+        if has_request_context():
+            request_ = _request_ctx_stack.top.request
+            self.logger.error(
+                f"Exception on request {request_.method} {request_.path}",
+                exc_info=exception_info,
+            )
+        if has_websocket_context():
+            websocket_ = _websocket_ctx_stack.top.websocket
+            self.logger.error(
+                f"Exception on websocket {websocket_.path}",
+                exc_info=exception_info,
+            )
 
     def before_request(self, func: Callable, name: AppOrBlueprintKey=None) -> Callable:
         """Add a before request function.
@@ -784,7 +848,7 @@ class Quart(PackageStatic):
         """Return a iterator over the blueprints."""
         return self.blueprints.values()
 
-    def open_session(self, request: Request) -> Session:
+    def open_session(self, request: BaseRequestWebsocket) -> Session:
         """Open and return a Session using the request."""
         return self.session_interface.open_session(self, request)
 
@@ -852,6 +916,22 @@ class Quart(PackageStatic):
             request: A request to build a context around.
         """
         return RequestContext(self, request)
+
+    def websocket_context(self,  websocket: Websocket) -> WebsocketContext:
+        """Create and return a websocket context.
+
+        Use the :meth:`test_websocket_context` whilst testing. This is
+        best used within a context, i.e.
+
+        .. code-block:: python
+
+            async with app.websocket_context(websocket):
+                ...
+
+        Arguments:
+            websocket: A websocket to build a context around.
+        """
+        return WebsocketContext(self, websocket)
 
     def run(
             self,
@@ -1089,8 +1169,48 @@ class Quart(PackageStatic):
         async with self.request_context(request) as request_context:
             try:
                 return await self.full_dispatch_request(request_context)
+            except asyncio.CancelledError:
+                raise  # CancelledErrors should be handled by serving code.
             except Exception as error:
                 return await self.handle_exception(error)
+
+    async def handle_websocket(self, websocket: Websocket) -> None:
+        async with self.websocket_context(websocket) as websocket_context:
+            try:
+                await self.full_dispatch_websocket(websocket_context)
+            except asyncio.CancelledError:
+                raise  # CancelledErrors should be handled by serving code.
+            except Exception as error:
+                await self.handle_websocket_exception(error)
+
+    async def full_dispatch_websocket(
+        self, websocket_context: Optional[WebsocketContext]=None,
+    ) -> Optional[Response]:
+        """Adds pre and post processing to the request dispatching.
+
+        Arguments:
+            websocket_context: The websocket context, optional to match
+                the Flask convention.
+        """
+        await self.try_trigger_before_first_request_functions()
+        await self.dispatch_websocket(websocket_context)
+        return None
+
+    async def dispatch_websocket(
+        self, websocket_context: Optional[WebsocketContext]=None,
+    ) -> None:
+        """Dispatch the request to the view function.
+
+        Arguments:
+            websocket_context: The websocket context, optional to match
+                the Flask convention.
+        """
+        websocket_ = (websocket_context or _websocket_ctx_stack.top).websocket
+        if websocket_.routing_exception is not None:
+            raise websocket_.routing_exception
+
+        handler = self.view_functions[websocket_.url_rule.endpoint]
+        await handler(**websocket_.view_args)
 
     def __call__(self) -> 'Quart':
         # Required for Gunicorn compatibility.

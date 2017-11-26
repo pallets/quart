@@ -34,6 +34,7 @@ How-To Guides
    session_storage.rst
    templating.rst
    testing.rst
+   websockets.rst
 
 Discussion Points
 -----------------
