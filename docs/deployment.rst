@@ -36,12 +36,14 @@ access log formatting.
 HTTP/2 deployment
 -----------------
 
-Quart will only serve HTTP/2 over a TLS connection (upgrading from
-http/1.1 is not supported), additionally HTTP/2 is only supported with
-TLSv1.2 or better and a certain set of ciphers [ `RFC 7540
-<https://tools.ietf.org/html/rfc7540>`_ ]. With TLSv1.2 the cipher
-ECDHE+AESGCM must be supported, therefore a recommendation is
+Quart only serves HTTP/2 over a TLS connection with TLSv1.2 or better
+and certain ciphers, see :ref:`http2_discussion`. Additionally SSL
+certificates are required, see :ref:`ssl`. With this in mind the
+recommended gunicorn command is,
 
 .. code-block:: bash
 
     gunicorn --worker-class quart.worker.GunicornWorker example:app --keyfile key.pem --certfile cert.pem --ciphers 'ECDHE+AESGCM'
+
+Note that this can also placed into a `gunicorn settings
+<http://docs.gunicorn.org/en/stable/settings.html>`_ file.

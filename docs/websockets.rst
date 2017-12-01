@@ -16,7 +16,7 @@ function, like so,
 ``websocket`` is a global.
 
 Testing websockets
-==================
+------------------
 
 To test a websocket route use the test_client like so,
 

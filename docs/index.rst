@@ -28,7 +28,7 @@ How-To Guides
    factory_pattern.rst
    flask_extensions.rst
    flask_migration.rst
-   http2.rst
+   serving_http2.rst
    json_encoding.rst
    logging.rst
    session_storage.rst
@@ -46,6 +46,7 @@ Discussion Points
    contexts.rst
    design_choices.rst
    globals.rst
+   http2_discussion.rst
    timeout.rst
 
 Reference
