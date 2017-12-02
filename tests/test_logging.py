@@ -1,6 +1,7 @@
 import os
 import time
 from asyncio import Future
+from datetime import timedelta
 
 from quart.datastructures import CIMultiDict
 from quart.logging import AccessLogAtoms
@@ -15,7 +16,7 @@ def test_access_log_standard_atoms() -> None:
     })
     request = Request('GET', '/?x=y', request_headers, Future())
     response = Response('Hello', 202)
-    atoms = AccessLogAtoms(request, response, 'h2')
+    atoms = AccessLogAtoms(request, response, 'h2', timedelta(microseconds=23))
     assert atoms['h'] == '127.0.0.1'
     assert atoms['l'] == '-'
     assert time.strptime(atoms['t'], '[%d/%b/%Y:%H:%M:%S %z]')
@@ -30,6 +31,9 @@ def test_access_log_standard_atoms() -> None:
     assert atoms['a'] == 'quart'
     assert atoms['p'] == f"<{os.getpid()}>"
     assert atoms['not-atom'] == '-'
+    assert atoms['T'] == 0
+    assert atoms['D'] == 23
+    assert atoms['L'] == '0.000023'
 
 
 def test_access_log_header_atoms() -> None:
@@ -42,7 +46,7 @@ def test_access_log_header_atoms() -> None:
         'Random': 'Response',
     })
     response = Response('Hello', 200, response_headers)
-    atoms = AccessLogAtoms(request, response, 'h2')
+    atoms = AccessLogAtoms(request, response, 'h2', timedelta())
     assert atoms['{random}i'] == 'Request'
     assert atoms['{RANDOM}i'] == 'Request'
     assert atoms['{not-atom}i'] == '-'
@@ -57,5 +61,5 @@ def test_access_log_environ_atoms() -> None:
     })
     request = Request('GET', '/', request_headers, Future())
     response = Response('Hello', 200)
-    atoms = AccessLogAtoms(request, response, 'h2')
+    atoms = AccessLogAtoms(request, response, 'h2', timedelta())
     assert atoms['{random}e'] == 'Environ'
