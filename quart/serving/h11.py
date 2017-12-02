@@ -115,7 +115,7 @@ class H11Server(HTTPProtocol):
         self._send(h11.EndOfMessage())
 
     def _handle_error(self) -> None:
-        self._send(h11.Response(status_code=400, headers=[]))
+        self._send(h11.Response(status_code=400, headers=self.response_headers()))
         self._send(h11.EndOfMessage())
 
     def _send(
