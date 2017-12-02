@@ -3,7 +3,7 @@ from logging import Logger
 from ssl import SSLContext
 from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union  # noqa: F401
 
-from .h11 import H11Server, WebsocketProtocolRequired
+from .h11 import H11Server, H2CProtocolRequired, WebsocketProtocolRequired
 from .h2 import H2Server
 from .websocket import WebsocketServer
 from ..wrappers import Request, Response  # noqa: F401
@@ -60,6 +60,11 @@ class Server(asyncio.Protocol):
         except WebsocketProtocolRequired as error:
             self._server = WebsocketServer(
                 self.app, self.loop, self._server._transport, error.request,
+            )
+        except H2CProtocolRequired as error:
+            self._server = H2Server(
+                self.app, self.loop, self._server._transport, self.logger, self.access_log_format,
+                self.timeout, upgrade_request=error.request,
             )
 
     def eof_received(self) -> bool:

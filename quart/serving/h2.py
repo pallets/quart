@@ -12,6 +12,7 @@ from ..datastructures import CIMultiDict
 from ..wrappers import Request, Response  # noqa: F401
 
 if TYPE_CHECKING:
+    import h11  # noqa
     from ..app import Quart  # noqa
 
 
@@ -45,12 +46,24 @@ class H2Server(HTTPProtocol):
             logger: Optional[Logger],
             access_log_format: str,
             timeout: int,
+            *,
+            upgrade_request: Optional['h11.Request']=None,
     ) -> None:
         super().__init__(app, loop, transport, logger, access_log_format, timeout)
         self.connection = h2.connection.H2Connection(
-            h2.config.H2Configuration(client_side=False, header_encoding='utf-8'),
+            config=h2.config.H2Configuration(client_side=False, header_encoding='utf-8'),
         )
-        self.connection.initiate_connection()
+        if upgrade_request is None:
+            self.connection.initiate_connection()
+        else:
+            headers = CIMultiDict()
+            for name, value in upgrade_request.headers:
+                headers.add(name.decode().title(), value.decode())
+            self.connection.initiate_upgrade_connection(headers.get('HTTP2-Settings', ''))
+            self.handle_request(
+                1, upgrade_request.method.decode().upper(), upgrade_request.target.decode(),
+                headers,
+            )
         self.send(self.connection.data_to_send())  # type: ignore
 
     def data_received(self, data: bytes) -> None:
@@ -103,7 +116,7 @@ class H2Server(HTTPProtocol):
         push_stream_id = self.connection.get_next_available_stream_id()
         request_headers = [
             (':method', 'GET'), (':path', path),
-            (':scheme', 'https'),  # quart only supports HTTPS HTTP2 so can assume this
+            (':scheme', self.streams[stream_id].request.headers[':scheme']),
             (':authority', self.streams[stream_id].request.headers[':authority']),
         ]
         try:

@@ -13,10 +13,18 @@ if TYPE_CHECKING:
     from ..app import Quart  # noqa
 
 
-class WebsocketProtocolRequired(Exception):
+class WrongProtocolError(Exception):
 
     def __init__(self, request: h11.Request) -> None:
         self.request = request
+
+
+class WebsocketProtocolRequired(WrongProtocolError):
+    pass
+
+
+class H2CProtocolRequired(WrongProtocolError):
+    pass
 
 
 class H11Server(HTTPProtocol):
@@ -61,12 +69,9 @@ class H11Server(HTTPProtocol):
                     headers = CIMultiDict()
                     for name, value in event.headers:
                         headers.add(name.decode().title(), value.decode())
-                    if (
-                            headers.get('connection') == 'Upgrade' and
-                            headers.get('upgrade') == 'websocket'
-                    ):
-                        self._timeout_handle.cancel()
-                        raise WebsocketProtocolRequired(event)
+                    if 'Upgrade' in headers:
+                        self._handle_upgrade_request(headers, event)
+                        break
                     self.handle_request(
                         0, event.method.decode().upper(), event.target.decode(), headers,
                     )
@@ -79,6 +84,19 @@ class H11Server(HTTPProtocol):
                 elif isinstance(event, h11.ConnectionClosed):
                     break
         if self.connection.our_state is h11.MUST_CLOSE:
+            self.close()
+
+    def _handle_upgrade_request(self, headers: CIMultiDict, event: h11.Request) -> None:
+        self._timeout_handle.cancel()
+        if headers.get('connection') == 'Upgrade' and headers.get('upgrade') == 'websocket':
+            raise WebsocketProtocolRequired(event)
+        elif headers.get('upgrade') == 'h2c':
+            self._send(h11.InformationalResponse(
+                status_code=101, headers=[('upgrade', 'h2c')] + self.response_headers(),
+            ))
+            raise H2CProtocolRequired(event)
+        else:
+            self._handle_error()
             self.close()
 
     def _after_request(self, stream_id: int, future: asyncio.Future) -> None:
