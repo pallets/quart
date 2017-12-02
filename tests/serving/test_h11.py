@@ -6,6 +6,7 @@ import pytest
 
 from quart import Quart, request, ResponseReturnValue
 from quart.serving.h11 import H11Server
+from .helpers import MockTransport
 
 BASIC_HEADERS = [('Host', 'quart'), ('Connection', 'close')]
 BASIC_DATA = 'index'
@@ -27,33 +28,9 @@ def serving_app() -> Quart:
 
     @app.route('/chunked')
     async def chunked() -> ResponseReturnValue:
-        return [b'chunked ', b'data']
+        return [b'chunked ', b'data']  # type: ignore
 
     return app
-
-
-class MockTransport:
-
-    def __init__(self) -> None:
-        self.data = bytearray()
-        self.closed = asyncio.Event()
-        self.updated = asyncio.Event()
-
-    def get_extra_info(self, _: str) -> tuple:
-        return ('127.0.0.1',)
-
-    def write(self, data: bytes) -> None:
-        assert not self.closed.is_set()
-        self.data.extend(data)
-        self.updated.set()
-
-    def close(self) -> None:
-        self.updated.set()
-        self.closed.set()
-
-    def clear(self) -> None:
-        self.data = bytearray()
-        self.updated.clear()
 
 
 class MockConnection:
@@ -108,7 +85,7 @@ async def test_post_request(serving_app: Quart, event_loop: asyncio.AbstractEven
     await connection.send(
         h11.Request(
             method='POST', target='/echo',
-            headers=BASIC_HEADERS + [('content-length', str(len(BASIC_DATA)).encode())],
+            headers=BASIC_HEADERS + [('content-length', str(len(BASIC_DATA.encode())))],
         ),
     )
     await connection.send(h11.Data(data=BASIC_DATA.encode()))
@@ -149,7 +126,7 @@ async def test_client_sends_chunked(
         serving_app: Quart, event_loop: asyncio.AbstractEventLoop,
 ) -> None:
     connection = MockConnection(serving_app, event_loop)
-    chunked_headers = [(b'transfer-encoding', b'chunked'), (b'expect', b'100-continue')]
+    chunked_headers = [('transfer-encoding', 'chunked'), ('expect', '100-continue')]
     await connection.send(
         h11.Request(method='POST', target='/echo', headers=BASIC_HEADERS + chunked_headers),
     )
