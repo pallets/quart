@@ -1,5 +1,6 @@
-Quart
-=====
+.. image:: _static/logo.png
+   :width: 300px
+   :alt: Quart logo
 
 Quart is a web microframework for Python based on `Flask
 <http://flask.pocoo.org/>`_ and asyncio. The Quart API is compatible
@@ -56,3 +57,4 @@ Reference
    :maxdepth: 1
 
    api.rst
+   logo.rst

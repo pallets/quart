@@ -1,6 +1,10 @@
 Quart
 =====
 
+.. image:: https://assets.gitlab-static.net/pgjones/quart/raw/master/artwork/logo.png
+   :alt: Quart logo
+
+
 |Build Status| |docs| |pypi| |http|
 
 Quart is a Python asyncio web microframework with the same API as

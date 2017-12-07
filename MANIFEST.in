@@ -1,6 +1,7 @@
 include CHANGELOG.rst
 include LICENSE
 include README.rst
+recursive-include artwork *
 recursive-include quart *.py
 recursive-include tests *.py
 recursive-include tests *.cfg
