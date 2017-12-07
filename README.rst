@@ -2,6 +2,7 @@ Quart
 =====
 
 .. image:: https://assets.gitlab-static.net/pgjones/quart/raw/master/artwork/logo.png
+   :width: 300px
    :alt: Quart logo
 
 
