@@ -1,10 +1,9 @@
 Quart
 =====
 
-.. image:: https://assets.gitlab-static.net/pgjones/quart/raw/master/artwork/logo.png
-   :width: 300px
-   :alt: Quart logo
+.. raw:: html
 
+    <img width="320" src="https://assets.gitlab-static.net/pgjones/quart/raw/master/artwork/logo.png">
 
 |Build Status| |docs| |pypi| |http|
 
