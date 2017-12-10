@@ -4,7 +4,9 @@ from base64 import b64decode
 from cgi import FieldStorage, parse_header
 from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
-from typing import Any, AnyStr, Callable, Dict, Iterable, Optional, Set, TYPE_CHECKING, Union
+from typing import (
+    Any, AnyStr, Callable, Dict, Generator, Iterable, Optional, Set, TYPE_CHECKING, Union,
+)
 from urllib.parse import parse_qs, unquote, urlparse
 from urllib.request import parse_http_list, parse_keqv_list
 
@@ -19,6 +21,60 @@ if TYPE_CHECKING:
     from .routing import Rule  # noqa
 
 sentinel = object()
+
+
+class Body:
+    """A request body container.
+
+    The request body can either be iterated over and consumed in parts
+    (without building up memory usage) or awaited.
+
+    .. code-block:: python
+
+        async for data in body:
+            ...
+        # or simply
+        complete = await body
+
+    Note: It is not possible to iterate over the data and then await
+    it.
+    """
+
+    def __init__(self) -> None:
+        self._body: asyncio.Future = asyncio.Future()
+        self._stream: asyncio.Queue = asyncio.Queue()
+
+    def __aiter__(self) -> 'Body':
+        return self
+
+    async def __anext__(self) -> bytes:
+        # The iterator should return whenever there is any data, but
+        # quit if the body future is done i.e. there is no more data.
+        done, _ = await asyncio.wait(  # type: ignore
+            [self._body, self._stream.get()], return_when=asyncio.FIRST_COMPLETED,  # type: ignore
+        )
+        if self._body.done():
+            raise StopAsyncIteration()
+        else:
+            return bytearray(b''.join(future.result() for future in done))
+
+    def __await__(self) -> Generator[Any, None, Any]:
+        return self._body.__await__()
+
+    def append(self, data: bytes) -> None:
+        self._stream.put_nowait(data)
+
+    def set_complete(self) -> None:
+        buffer_ = bytearray()
+        try:
+            while True:
+                buffer_.extend(self._stream.get_nowait())
+        except asyncio.QueueEmpty:
+            self._body.set_result(buffer_)
+
+    def set_result(self, data: bytes) -> None:
+        """Convienience method, mainly for testing."""
+        self._body.set_result(data)
 
 
 class JSONMixin:
@@ -266,9 +322,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
     subclass.
     """
 
-    def __init__(
-            self, method: str, path: str, headers: CIMultiDict, body: asyncio.Future,
-    ) -> None:
+    def __init__(self, method: str, path: str, headers: CIMultiDict) -> None:
         """Create a request object.
 
         Arguments:
@@ -279,7 +333,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
                 ``data = await body``
         """
         super().__init__(method, path, headers)
-        self._body = body
+        self.body = Body()
         self._cached_json: Any = sentinel
         self._form: Optional[MultiDict] = None
         self._files: Optional[MultiDict] = None
@@ -287,9 +341,9 @@ class Request(BaseRequestWebsocket, JSONMixin):
     async def get_data(self, raw: bool=True) -> AnyStr:
         """The request body data."""
         if raw:
-            return await self._body  # type: ignore
+            return await self.body  # type: ignore
         else:
-            return (await self._body).decode(self.charset)  # type: ignore
+            return (await self.body).decode(self.charset)  # type: ignore
 
     @property
     async def form(self) -> MultiDict:
@@ -314,7 +368,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
         return self._files
 
     async def _load_form_data(self) -> None:
-        data = await self._body
+        data = await self.body  # type: ignore
         self._form = MultiDict()
         self._files = MultiDict()
         content_header = self.headers.get('Content-Type')

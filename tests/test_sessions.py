@@ -1,4 +1,3 @@
-from asyncio import Future
 from contextlib import contextmanager
 from http.cookies import SimpleCookie
 from typing import Any, Generator
@@ -8,6 +7,7 @@ import pytest
 from hypothesis import given
 
 from quart.app import Quart
+from quart.datastructures import CIMultiDict
 from quart.sessions import (
     NullSession, SecureCookieSession, SecureCookieSessionInterface, TaggedJSONSerializer,
 )
@@ -79,7 +79,7 @@ def test_secure_cookie_session_interface_open_session() -> None:
     app.secret_key = 'secret'
     response = Response('')
     interface.save_session(app, session, response)
-    request = Request('GET', '/', {}, Future())  # type: ignore
+    request = Request('GET', '/', CIMultiDict())
     request.headers['Cookie'] = response.headers['Set-Cookie']
     new_session = interface.open_session(app, request)
     assert new_session == session

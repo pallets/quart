@@ -1,6 +1,5 @@
 import os
 import time
-from asyncio import Future
 from datetime import timedelta
 
 from quart.datastructures import CIMultiDict
@@ -14,7 +13,7 @@ def test_access_log_standard_atoms() -> None:
         'Remote-Addr': '127.0.0.1',
         'User-Agent': 'quart',
     })
-    request = Request('GET', '/?x=y', request_headers, Future())
+    request = Request('GET', '/?x=y', request_headers)
     response = Response('Hello', 202)
     atoms = AccessLogAtoms(request, response, 'h2', timedelta(microseconds=23))
     assert atoms['h'] == '127.0.0.1'
@@ -41,7 +40,7 @@ def test_access_log_header_atoms() -> None:
         'Random': 'Request',
         'Remote-Addr': '127.0.0.1',
     })
-    request = Request('GET', '/', request_headers, Future())
+    request = Request('GET', '/', request_headers)
     response_headers = CIMultiDict({
         'Random': 'Response',
     })
@@ -59,7 +58,7 @@ def test_access_log_environ_atoms() -> None:
     request_headers = CIMultiDict({
         'Remote-Addr': '127.0.0.1',
     })
-    request = Request('GET', '/', request_headers, Future())
+    request = Request('GET', '/', request_headers)
     response = Response('Hello', 200)
     atoms = AccessLogAtoms(request, response, 'h2', timedelta())
     assert atoms['{random}e'] == 'Environ'

@@ -77,7 +77,6 @@ class TestClient:
         headers.setdefault('Remote-Addr', '127.0.0.1')
         headers.setdefault('User-Agent', 'Quart')
 
-        body: asyncio.Future = asyncio.get_event_loop().create_future()
         if json is not sentinel and form is not None:
             raise ValueError('Cannot send JSON and form data in the body')
         elif json is not sentinel:
@@ -88,12 +87,12 @@ class TestClient:
             headers['Content-Type'] = 'application/x-www-form-urlencoded'
         else:
             data = b''
-        body.set_result(data)
         if query_string is not None:
             path = f"{path}?{urlencode(query_string)}"
         if self.cookie_jar is not None:
             headers.add('Cookie', self.cookie_jar.output(header=''))  # type: ignore
-        request = Request(method, path, headers, body)  # type: ignore
+        request = Request(method, path, headers)  # type: ignore
+        request.body.set_result(data)
         response = await asyncio.ensure_future(self.app.handle_request(request))
         if self.cookie_jar is not None and 'Set-Cookie' in response.headers:
             self.cookie_jar.load(";".join(response.headers.getall('Set-Cookie')))

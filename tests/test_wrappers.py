@@ -1,14 +1,16 @@
-from asyncio import Future
+import asyncio
 from base64 import b64encode
 
+import pytest
+
 from quart.datastructures import CIMultiDict
-from quart.wrappers import _BaseRequestResponse, Request
+from quart.wrappers import _BaseRequestResponse, Body, Request
 
 
 def test_basic_authorization() -> None:
     headers = CIMultiDict()
     headers['Authorization'] = "Basic {}".format(b64encode(b'identity:secret').decode('ascii'))
-    request = Request('GET', '/', headers, Future())
+    request = Request('GET', '/', headers)
     auth = request.authorization
     assert auth.username == 'identity'
     assert auth.password == 'secret'
@@ -25,7 +27,7 @@ def test_digest_authorization() -> None:
         'response="abcd1235", '
         'opaque="abcd1236"'
     )
-    request = Request('GET', '/', headers, Future())
+    request = Request('GET', '/', headers)
     auth = request.authorization
     assert auth.username == 'identity'
     assert auth.realm == 'realm@rea.lm'
@@ -47,3 +49,43 @@ def test_mimetype_set_property() -> None:
     assert base_request_response.headers['Content-Type'] == 'text/html; charset=utf-8'
     base_request_response.mimetype = 'application/json'
     assert base_request_response.headers['Content-Type'] == 'application/json'
+
+
+async def _fill_body(body: Body, semaphore: asyncio.Semaphore, limit: int) -> None:
+    for number in range(limit):
+        body.append(b"%d" % number)
+        await semaphore.acquire()
+    body.set_complete()
+
+
+@pytest.mark.asyncio
+async def test_full_body() -> None:
+    body = Body()
+    limit = 3
+    semaphore = asyncio.Semaphore(limit)
+    asyncio.ensure_future(_fill_body(body, semaphore, limit))
+    assert b'012' == await body  # type: ignore
+
+
+@pytest.mark.asyncio
+async def test_body_streaming() -> None:
+    body = Body()
+    limit = 3
+    semaphore = asyncio.Semaphore(0)
+    asyncio.ensure_future(_fill_body(body, semaphore, limit))
+    index = 0
+    async for data in body:  # type: ignore
+        semaphore.release()
+        assert data == b"%d" % index
+        index += 1
+    assert b'' == await body  # type: ignore
+
+
+@pytest.mark.asyncio
+async def test_body_streaming_no_data() -> None:
+    body = Body()
+    semaphore = asyncio.Semaphore(0)
+    asyncio.ensure_future(_fill_body(body, semaphore, 0))
+    async for _ in body:  # type: ignore # noqa: F841
+        assert False  # Should not reach this
+    assert b'' == await body  # type: ignore

@@ -995,9 +995,9 @@ class Quart(PackageStatic):
             method: HTTP verb
             path: Request path.
         """
-        body: asyncio.Future = asyncio.get_event_loop().create_future()
-        body.set_result(b'')
-        return self.request_context(self.request_class(method, path, CIMultiDict(), body))
+        request = self.request_class(method, path, CIMultiDict())
+        request.body.set_result(b'')
+        return self.request_context(request)
 
     async def try_trigger_before_first_request_functions(self) -> None:
         """Trigger the before first request methods."""

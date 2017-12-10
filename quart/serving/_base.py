@@ -18,15 +18,14 @@ class Stream:
     __slots__ = ('buffer', 'request', 'task')
 
     def __init__(self, loop: asyncio.AbstractEventLoop, request: Request) -> None:
-        self.buffer = bytearray()
         self.request = request
         self.task: Optional[asyncio.Future] = None
 
     def append(self, data: bytes) -> None:
-        self.buffer.extend(data)
+        self.request.body.append(data)
 
     def complete(self) -> None:
-        self.request._body.set_result(self.buffer)
+        self.request.body.set_complete()
 
 
 class HTTPProtocol:
@@ -71,7 +70,7 @@ class HTTPProtocol:
     ) -> None:
         self._timeout_handle.cancel()
         headers['Remote-Addr'] = self._transport.get_extra_info('peername')[0]
-        request = self.app.request_class(method, path, headers, self.loop.create_future())
+        request = self.app.request_class(method, path, headers)
         self.streams[stream_id] = self.stream_class(self.loop, request)
         # It is important that the app handles the request in a unique
         # task as the globals are task locals

@@ -47,6 +47,7 @@ How-To Guides
    serving_http2.rst
    json_encoding.rst
    logging.rst
+   request_body.rst
    session_storage.rst
    templating.rst
    testing.rst
