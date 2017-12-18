@@ -7,7 +7,7 @@ from .static import PackageStatic
 if TYPE_CHECKING:
     from .app import Quart  # noqa
 
-DeferedSetupFunction = Callable[['BlueprintSetupState'], None]
+DeferedSetupFunction = Callable[['BlueprintSetupState'], Callable]
 
 
 class Blueprint(PackageStatic):
