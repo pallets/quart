@@ -11,6 +11,7 @@ from types import TracebackType
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union, ValuesView  # noqa
 
 from .blueprints import Blueprint
+from .cli import AppGroup
 from .config import Config, ConfigAttribute, DEFAULT_CONFIG
 from .ctx import (
     _AppCtxGlobals, _request_ctx_stack, _websocket_ctx_stack, AppContext, has_request_context,
@@ -135,6 +136,7 @@ class Quart(PackageStatic):
         self.blueprints: Dict[str, Blueprint] = OrderedDict()
         self.error_handler_spec: Dict[AppOrBlueprintKey, Dict[Exception, Callable]] = defaultdict(dict)  # noqa: E501
         self.extensions: Dict[str, Any] = {}
+        self.shell_context_processors: List[Callable] = []
         self.static_folder = static_folder
         self.static_url_path = static_url_path
         self.teardown_appcontext_funcs: List[Callable] = []
@@ -151,6 +153,7 @@ class Quart(PackageStatic):
         self._jinja_env: Optional[Environment] = None
         self._logger: Optional[Logger] = None
 
+        self.cli = AppGroup(self.name)
         if self.has_static_folder:
             self.add_url_rule(
                 f"{self.static_url_path}/<path:filename>", self.send_static_file,
@@ -269,6 +272,17 @@ class Quart(PackageStatic):
         original = context.copy()
         context.update(extra_context)
         context.update(original)
+
+    def make_shell_context(self) -> dict:
+        """Create a context for interactive shell usage.
+
+        The :attr:`shell_context_processors` can be used to add
+        additional context.
+        """
+        context = {'app': self, 'g': g}
+        for processor in self.shell_context_processors:
+            context.update(processor())
+        return context
 
     def route(
             self,
@@ -588,6 +602,21 @@ class Quart(PackageStatic):
 
             @app.context_processor
             def update_context(context):
+                return context
+
+        """
+        self.template_context_processors[name].append(func)
+        return func
+
+    def shell_context_processor(self, func: Callable, name: AppOrBlueprintKey=None) -> Callable:
+        """Add a shell context processor.
+
+        This is designed to be used as a decorator. An example usage,
+
+        .. code-block:: python
+
+            @app.shell_context_processor
+            def additional_context():
                 return context
 
         """

@@ -23,9 +23,16 @@ is, (file ``hello-world.py``)
 
 and is simply run via
 
-.. code-block:: sh
+.. code-block:: console
 
     python hello-world.py
+
+or alternatively
+
+.. code-block:: console
+
+    $ export QUART_APP=hello-world:app
+    $ quart run
 
 and tested by
 

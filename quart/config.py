@@ -6,9 +6,12 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any, Callable, Dict, Mapping, Optional, Union
 
+from .helpers import get_debug_flag
+
+
 DEFAULT_CONFIG = {
     'APPLICATION_ROOT': None,
-    'DEBUG': False,
+    'DEBUG': get_debug_flag(default=False),
     'JSONIFY_MIMETYPE': 'application/json',
     'JSONIFY_PRETTYPRINT_REGULAR': False,
     'PERMANENT_SESSION_LIFETIME': timedelta(days=31),

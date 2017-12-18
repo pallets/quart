@@ -40,6 +40,7 @@ How-To Guides
    :maxdepth: 1
 
    blueprints.rst
+   command_line.rst
    configuration.rst
    factory_pattern.rst
    flask_extensions.rst

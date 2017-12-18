@@ -18,6 +18,7 @@ with open(os.path.join(PROJECT_ROOT, 'README.rst')) as file_:
 INSTALL_REQUIRES = [
     'aiofiles',
     'blinker',
+    'click',
     'h11',
     'h2',
     'itsdangerous',
@@ -56,4 +57,7 @@ setup(
         'pytest',
         'pytest-asyncio',
     ],
+    entry_points={
+        'console_scripts': ['quart=quart.cli:main'],
+    },
 )

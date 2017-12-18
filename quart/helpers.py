@@ -1,3 +1,4 @@
+import os
 from typing import Any, Callable, List, Optional, Tuple, Union
 from urllib.parse import quote
 
@@ -6,6 +7,13 @@ from .globals import current_app, request, session
 from .routing import BuildError
 from .signals import message_flashed
 from .wrappers import Response
+
+
+def get_debug_flag(default: Optional[bool]=None) -> bool:
+    value = os.environ.get('QUART_DEBUG')
+    if value is None:
+        return default
+    return value.lower() not in {'0', 'false', 'no'}
 
 
 async def make_response(*args: Any) -> Response:
