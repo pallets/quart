@@ -75,3 +75,4 @@ Reference
 
    api.rst
    logo.rst
+   response_values.rst
