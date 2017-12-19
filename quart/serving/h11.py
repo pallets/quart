@@ -110,7 +110,7 @@ class H11Server(HTTPProtocol):
             ((key, value) for key, value in response.headers.items()), self.response_headers(),
         )
         self._send(h11.Response(status_code=response.status_code, headers=headers))
-        for data in response.response:
+        async for data in response.response:
             self._send(h11.Data(data=data))
         self._send(h11.EndOfMessage())
 

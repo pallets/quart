@@ -107,7 +107,7 @@ class H2Server(HTTPProtocol):
         for push_promise in response.push_promises:
             self._server_push(stream_id, push_promise)
         self.send(self.connection.data_to_send())  # type: ignore
-        for data in response.response:
+        async for data in response.response:
             await self._send_data(stream_id, data)
         self.connection.end_stream(stream_id)
         self.send(self.connection.data_to_send())  # type: ignore

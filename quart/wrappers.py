@@ -4,8 +4,10 @@ from base64 import b64decode
 from cgi import FieldStorage, parse_header
 from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
+from inspect import isasyncgen  # type: ignore
 from typing import (
-    Any, AnyStr, Callable, Dict, Generator, Iterable, Optional, Set, TYPE_CHECKING, Union,
+    Any, AnyStr, AsyncGenerator, Callable, Dict, Generator, Iterable, Optional, Set, TYPE_CHECKING,
+    Union,
 )
 from urllib.parse import parse_qs, unquote, urlparse
 from urllib.request import parse_http_list, parse_keqv_list
@@ -487,17 +489,17 @@ class Response(_BaseRequestResponse, JSONMixin):
         if content_type is not None:
             self.headers['Content-Type'] = content_type
 
-        self.response: Iterable[bytes]
+        self.response: AsyncGenerator[bytes, None]
         if isinstance(response, (str, bytes)):
             self.set_data(response)  # type: ignore
         else:
-            self.response = response  # type: ignore
+            self.response = _ensure_aiter(response)  # type: ignore
         self.push_promises: Set[str] = set()
 
     async def get_data(self, raw: bool=True) -> AnyStr:
         """Return the body data."""
         result = b'' if raw else ''
-        for data in self.response:
+        async for data in self.response:  # type: ignore
             if raw:
                 result += data  # type: ignore
             else:
@@ -513,7 +515,7 @@ class Response(_BaseRequestResponse, JSONMixin):
             bytes_data = data.encode(self.charset)
         else:
             bytes_data = data
-        self.response = [bytes_data]
+        self.response = _ensure_aiter([bytes_data])
         if self.automatically_set_content_length:
             self.headers['Content-Length'] = str(len(bytes_data))
 
@@ -543,3 +545,16 @@ class Response(_BaseRequestResponse, JSONMixin):
     async def _load_json_data(self) -> str:
         """Return the data after decoding."""
         return await self.get_data(raw=False)
+
+
+def _ensure_aiter(
+        iter_: Union[AsyncGenerator[bytes, None], Iterable],
+) -> AsyncGenerator[bytes, None]:
+    if isasyncgen(iter_):
+        return iter_  # type: ignore
+    else:
+        async def aiter() -> AsyncGenerator[bytes, None]:
+            for data in iter_:  # type: ignore
+                yield data
+
+        return aiter()

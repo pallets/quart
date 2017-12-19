@@ -61,7 +61,7 @@ class WebsocketServer:
             if not url_rule.is_websocket:
                 raise BadRequest()
         except (BadRequest, NotFound, MethodNotAllowed, RedirectRequired) as error:
-            self.send_error(error)
+            asyncio.ensure_future(self.send_error(error))
             # self.close()
         else:
             self.connection.accept(event)
@@ -74,13 +74,13 @@ class WebsocketServer:
         self.connection.send_data(data)
         self._send()
 
-    def send_error(self, error: HTTPException) -> None:
+    async def send_error(self, error: HTTPException) -> None:
         response = error.get_response()
         headers = ((key, value) for key, value in response.headers.items())
         self.connection._outgoing += self.connection._upgrade_connection.send(
             h11.Response(status_code=response.status_code, headers=headers),
         )
-        for data in response.response:
+        async for data in response.response:
             self.connection._outgoing += self.connection._upgrade_connection.send(
                 h11.Data(data=data),
             )
