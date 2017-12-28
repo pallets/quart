@@ -29,6 +29,7 @@ Tutorials
 
    installation.rst
    quickstart.rst
+   blog_tutorial.rst
    deployment.rst
    large_application.rst
    asyncio.rst

@@ -66,7 +66,14 @@ def connect_db():
     return engine
 
 
+@app.cli.command()
 def init_db():
+    """Create an empty database."""
+    _init_db()
+
+
+def _init_db():
+    # This exists soley for use in test code
     db = connect_db()
     with open(os.path.join(os.path.dirname(__file__), 'schema.sql'), mode='r') as file_:
         db.cursor().executescript(file_.read())
@@ -77,8 +84,3 @@ def get_db():
     if not hasattr(g, 'sqlite_db'):
         g.sqlite_db = connect_db()
     return g.sqlite_db
-
-
-if __name__ == '__main__':
-    init_db()
-    app.run()
