@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Calculator example</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='http2.css') }}">
+    <script type="text/javascript" src="{{ url_for('static', filename='http2.js') }}"></script>
+  </head>
+  <body>
+    <p>
+      <input type="number" name="a" placeholder="a">
+      <input type="number" name="b" placeholder="b">
+      <label id="result">?</span>
+    </p>
+    <p>
+      <button id="add">Add a and b</button>
+      <button id="subtract">Subtract b from a</button>
+      <button id="multiply">Multiply a and b</button>
+      <button id="divide">Divide a by b</button>
+    </p>
+  </body>
+</html>
