@@ -8,12 +8,13 @@ from click.testing import CliRunner
 
 import quart.cli
 from quart.__about__ import __version__
-from quart.cli import cli, NoAppException, ScriptInfo
+from quart.cli import AppGroup, cli, NoAppException, ScriptInfo
 
 
 @pytest.fixture(name='app')
 def loadable_app(monkeypatch: MonkeyPatch) -> Mock:
     app = Mock()
+    app.cli = AppGroup()
     module = Mock()
     module.app = app
     monkeypatch.setattr(quart.cli, 'import_module', lambda _: module)

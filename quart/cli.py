@@ -59,7 +59,10 @@ class ScriptInfo:
                 except ModuleNotFoundError:
                     raise NoAppException()
 
-                self._app = eval(app_name, vars(module))
+                try:
+                    self._app = eval(app_name, vars(module))
+                except NameError:
+                    raise NoAppException()
 
         if self._app is None:
             raise NoAppException()
@@ -115,13 +118,20 @@ class QuartGroup(AppGroup):
             self.add_command(shell_command)
 
     def get_command(self, ctx: click.Context, name: str) -> click.Command:
-        command = super().get_command(ctx, name)
+        """Return the relevant command given the context and name.
+
+        .. warning::
+
+            This differs substaintially from Flask in that it allows
+            for the inbuilt commands to be overridden.
+        """
+        info = ctx.ensure_object(ScriptInfo)
+        try:
+            command = info.load_app().cli.get_command(ctx, name)
+        except NoAppException:
+            pass
         if command is None:
-            info = ctx.ensure_object(ScriptInfo)
-            try:
-                command = info.load_app().cli.get_command(ctx, name)
-            except NoAppException:
-                pass
+            command = super().get_command(ctx, name)
         return command
 
     def list_commands(self, ctx: click.Context) -> Iterable[click.Command]:
