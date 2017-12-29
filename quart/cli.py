@@ -56,8 +56,11 @@ class ScriptInfo:
                 import_name = module_path.with_suffix('').name
                 try:
                     module = import_module(import_name)
-                except ModuleNotFoundError:
-                    raise NoAppException()
+                except ModuleNotFoundError as error:
+                    if error.name == import_name:  # type: ignore
+                        raise NoAppException()
+                    else:
+                        raise
 
                 try:
                     self._app = eval(app_name, vars(module))
@@ -126,6 +129,7 @@ class QuartGroup(AppGroup):
             for the inbuilt commands to be overridden.
         """
         info = ctx.ensure_object(ScriptInfo)
+        command = None
         try:
             command = info.load_app().cli.get_command(ctx, name)
         except NoAppException:
