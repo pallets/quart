@@ -1,4 +1,4 @@
-.. blog_tutorial:
+.. http2_tutorial:
 
 Tutorial: Using HTTP/2
 ======================

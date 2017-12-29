@@ -2,8 +2,8 @@ import quart.flask_patch
 
 from secrets import compare_digest
 
-from quart import Quart, redirect, request, url_for
 import flask_login
+from quart import Quart, redirect, request, url_for
 
 app = Quart(__name__)
 app.secret_key = 'secret'  # Create an actual secret key for production
@@ -31,7 +31,6 @@ def user_loader(username):
 
 @login_manager.request_loader
 def request_loader(request):
-    from flask import render_template_string
     username = request.form.get('username')
     password = request.form.get('password', '')
     if username not in users:
@@ -80,7 +79,3 @@ async def logout():
 @login_manager.unauthorized_handler
 def unauthorized_handler():
     return 'Unauthorized'
-
-
-if __name__ == '__main__':
-    app.run()
