@@ -30,6 +30,7 @@ Tutorials
    installation.rst
    quickstart.rst
    blog_tutorial.rst
+   broadcast_tutorial.rst
    flask_ext_tutorial.rst
    http2_tutorial.rst
    deployment.rst

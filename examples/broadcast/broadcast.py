@@ -1,10 +1,11 @@
 import asyncio
 from typing import Optional
 
-from quart import Quart, render_template, websocket
+from quart import jsonify, Quart, render_template, request
 
 
 app = Quart(__name__)
+app.clients = set()
 
 
 class ServerSentEvent:
@@ -35,26 +36,34 @@ class ServerSentEvent:
 
 
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 async def index():
     return await render_template('index.html')
 
 
-@app.websocket('/sse')
-async def ws():
+@app.route('/', methods=['POST'])
+async def broadcast():
+    data = await request.get_json()
+    for queue in app.clients:
+        await queue.put(data['message'])
+    return jsonify(True)
+
+
+@app.route('/sse')
+async def sse():
+    queue = asyncio.Queue()
+    app.clients.add(queue)
     async def send_events():
-        count = 0
         while True:
-            await asyncio.sleep(2)
-            event = ServerSentEvent('Hello', id=count)
-            yield event.encode()
-            count += 1
+            try:
+                data = await queue.get()
+                event = ServerSentEvent(data)
+                yield event.encode()
+            except asyncio.CancelledError as error:
+                app.clients.remove(queue)
+
     return send_events(), {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Transfer-Encoding': 'chunked',
     }
-
-
-if __name__ == '__main__':
-    app.run(port=5000)
