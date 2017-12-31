@@ -33,6 +33,7 @@ Tutorials
    broadcast_tutorial.rst
    flask_ext_tutorial.rst
    http2_tutorial.rst
+   websocket_tutorial.rst
    deployment.rst
    large_application.rst
    asyncio.rst
