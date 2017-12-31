@@ -5,6 +5,8 @@ from time import mktime
 from typing import Any, TYPE_CHECKING
 from uuid import UUID
 
+from jinja2 import Markup
+
 from .globals import _app_ctx_stack, _request_ctx_stack, current_app, request
 
 if TYPE_CHECKING:
@@ -19,6 +21,9 @@ def dumps(object_: Any, **kwargs: Any) -> str:
             blueprint = current_app.blueprints.get(request.blueprint)
             if blueprint is not None and blueprint.json_encoder is not None:
                 json_encoder = blueprint.json_encoder
+        kwargs.setdefault('ensure_ascii', current_app.config['JSON_AS_ASCII'])
+        kwargs.setdefault('sort_keys', current_app.config['JSON_SORT_KEYS'])
+    kwargs.setdefault('sort_keys', True)
     kwargs.setdefault('cls', json_encoder)
 
     return json.dumps(object_, **kwargs)
@@ -35,6 +40,17 @@ def loads(object_: Any, **kwargs: Any) -> str:
     kwargs.setdefault('cls', json_decoder)
 
     return json.loads(object_, **kwargs)
+
+
+def htmlsafe_dumps(object_: Any, **kwargs: Any) -> str:
+    # Note in the below the ascii characters are replaced with a
+    # unicode similar version.
+    result = dumps(object_, **kwargs).replace('<', '<').replace('>', '>')
+    return result.replace('&', '&').replace("'", "'")
+
+
+def tojson_filter(object_: Any, **kwargs: Any) -> Markup:
+    return Markup(htmlsafe_dumps(object_, **kwargs))
 
 
 def jsonify(*args: Any, **kwargs: Any) -> 'Response':

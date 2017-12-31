@@ -27,9 +27,9 @@ __all__ = (
     'appcontext_popped', 'appcontext_pushed', 'appcontext_tearing_down', 'before_render_template',
     'Blueprint', 'Config', 'current_app', 'escape', 'flash', 'g', 'get_flashed_messages',
     'get_template_attribute', 'got_request_exception', 'has_app_context', 'has_request_context',
-    'has_websocket_context', 'jsonify', 'make_response', 'Markup', 'message_flashed', 'Quart',
-    'redirect', 'render_template', 'render_template_string', 'request', 'Request',
-    'request_finished', 'request_started', 'request_tearing_down', 'Response',
-    'ResponseReturnValue', 'safe_join', 'send_file', 'send_from_directory', 'session',
+    'has_websocket_context', 'htmlsafe_dumps', 'jsonify', 'make_response', 'Markup',
+    'message_flashed', 'Quart', 'redirect', 'render_template', 'render_template_string',
+    'request', 'Request', 'request_finished', 'request_started', 'request_tearing_down',
+    'Response', 'ResponseReturnValue', 'safe_join', 'send_file', 'send_from_directory', 'session',
     'template_rendered', 'url_for', 'websocket',
 )

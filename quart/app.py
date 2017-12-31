@@ -21,7 +21,7 @@ from .datastructures import CIMultiDict
 from .exceptions import all_http_exceptions, HTTPException
 from .globals import g, request, session
 from .helpers import _endpoint_from_view_func, get_flashed_messages, url_for
-from .json import JSONDecoder, JSONEncoder
+from .json import JSONDecoder, JSONEncoder, tojson_filter
 from .logging import create_logger, create_serving_logger
 from .routing import Map, MapAdapter, Rule
 from .serving import run_app
@@ -240,6 +240,7 @@ class Quart(PackageStatic):
             'session': session,
             'url_for': url_for,
         })
+        jinja_env.filters['tojson'] = tojson_filter
         return jinja_env
 
     def create_global_jinja_loader(self) -> DispatchingJinjaLoader:

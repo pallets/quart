@@ -12,6 +12,8 @@ from .helpers import get_debug_flag
 DEFAULT_CONFIG = {
     'APPLICATION_ROOT': None,
     'DEBUG': get_debug_flag(default=False),
+    'JSON_AS_ASCII': True,
+    'JSON_SORT_KEYS': True,
     'JSONIFY_MIMETYPE': 'application/json',
     'JSONIFY_PRETTYPRINT_REGULAR': False,
     'PERMANENT_SESSION_LIFETIME': timedelta(days=31),
