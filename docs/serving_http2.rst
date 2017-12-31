@@ -55,3 +55,26 @@ any response, for example,
         return response
 
 see also :attr:`~quart.wrappers.Response.push_promises`.
+
+HTTP/2 clients
+''''''''''''''
+
+At the time of writing there aren't that many HTTP/2 clients. The best
+option is to use a browser and inspect the network connections (turn
+on the protocol information). Otherwise curl can be used, if HTTP/2
+support is `installed <https://curl.haxx.se/docs/http2.html>`_, as so,
+
+.. code-block:: console
+
+    $ curl --http2 ...
+
+.. note::
+
+    Quart does not support the ``--http2-prior-knowledge`` flag as
+    Quart assumes connections are HTTP/1.1 unless informed via the
+    ALPN protocol that it is HTTP/2 or a HTTP/1.1 upgrade header is
+    present.
+
+If you wish to communicate via HTTP/2 in python the `Hyper
+<https://hyper.readthedocs.io>`_ library is the best choice. It can be
+configured to work with requests.
