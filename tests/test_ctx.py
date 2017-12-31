@@ -5,21 +5,23 @@ import pytest
 from quart.app import Quart
 from quart.ctx import (
     _AppCtxGlobals, after_this_request, AppContext, has_app_context, has_request_context,
-    RequestContext,
+    RequestContext, WebsocketContext,
 )
 from quart.datastructures import CIMultiDict
-from quart.exceptions import MethodNotAllowed, NotFound, RedirectRequired
-from quart.wrappers import Request
+from quart.exceptions import BadRequest, MethodNotAllowed, NotFound, RedirectRequired
+from quart.routing import Rule
+from quart.wrappers import Request, Websocket
 
 
 def test_request_context_match() -> None:
     app = Quart(__name__)
     url_adapter = Mock()
-    url_adapter.match.return_value = ('Rule', {'arg': 'value'})
+    rule = Rule('/', ['GET'], 'index')
+    url_adapter.match.return_value = (rule, {'arg': 'value'})
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
     request = Request('GET', '/', CIMultiDict())
     RequestContext(app, request)
-    assert request.url_rule == 'Rule'
+    assert request.url_rule == rule
     assert request.view_args == {'arg': 'value'}
 
 
@@ -41,6 +43,38 @@ def test_request_context_matching_error(
     request = Request('GET', '/', CIMultiDict())
     RequestContext(app, request)
     assert isinstance(request.routing_exception, exception_type)  # type: ignore
+
+
+@pytest.mark.parametrize(
+    'request_factory, context_class, is_websocket',
+    [  # type: ignore
+        (lambda method, path, headers: Request(method, path, headers), RequestContext, True),
+        (
+            lambda _, path, headers: Websocket(path, headers, Mock(), Mock()),
+            WebsocketContext, False,
+        ),
+    ],
+)
+def test_bad_request_if_websocket_missmatch(
+        request_factory: object, context_class: object, is_websocket: bool,
+) -> None:
+    app = Quart(__name__)
+    url_adapter = Mock()
+    url_adapter.match.return_value = Rule('/', ['GET'], 'index', is_websocket=is_websocket), {}
+    app.create_url_adapter = lambda *_: url_adapter  # type: ignore
+    request_websocket = request_factory('GET', '/', CIMultiDict())  # type: ignore
+    context_class(app, request_websocket)  # type: ignore
+    assert isinstance(request_websocket.routing_exception, BadRequest)
+
+
+def test_bad_request_if_websocket_route() -> None:
+    app = Quart(__name__)
+    url_adapter = Mock()
+    url_adapter.match.return_value = Rule('/', ['GET'], 'index', is_websocket=True), {}
+    app.create_url_adapter = lambda *_: url_adapter  # type: ignore
+    request = Request('GET', '/', CIMultiDict())
+    RequestContext(app, request)
+    assert isinstance(request.routing_exception, BadRequest)
 
 
 @pytest.mark.asyncio

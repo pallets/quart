@@ -76,6 +76,11 @@ class RequestContext(_BaseRequestWebsocketContext):
     def request(self) -> Request:
         return cast(Request, self.request_websocket)
 
+    def match_request(self) -> None:
+        super().match_request()
+        if self.request.routing_exception is None and self.request.url_rule.is_websocket:
+            self.request.routing_exception = BadRequest()
+
     async def __aenter__(self) -> 'RequestContext':
         await super().__aenter__()
         _request_ctx_stack.push(self)
