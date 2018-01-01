@@ -1,3 +1,4 @@
+from functools import wraps
 from types import TracebackType
 from typing import Any, Callable, cast, Iterator, List, Optional, TYPE_CHECKING  # noqa: F401
 
@@ -29,6 +30,9 @@ class _BaseRequestWebsocketContext:
         self.session: Optional[Session] = None
 
         self.match_request()
+
+    def copy(self) -> '_BaseRequestWebsocketContext':
+        return self.__class__(self.app, self.request_websocket)
 
     def match_request(self) -> None:
         """Match the request against the adapter.
@@ -179,6 +183,56 @@ def after_this_request(func: Callable) -> Callable:
     """
     _request_ctx_stack.top._after_request_functions.append(func)
     return func
+
+
+def copy_current_request_context(func: Callable) -> Callable:
+    """Share the current request context with the function decorated.
+
+    The request context is local per task and hence will not be
+    available in any other task. This decorator can be used to make
+    the context available,
+
+    .. code-block:: python
+
+        @copy_current_request_context
+        async def within_context() -> None:
+            method = request.method
+            ...
+
+        await asyncio.ensure_future(within_context())
+    """
+    request_context = _request_ctx_stack.top.copy()
+
+    @wraps(func)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        async with request_context:
+            return await func(*args, **kwargs)
+    return wrapper
+
+
+def copy_current_websocket_context(func: Callable) -> Callable:
+    """Share the current websocket context with the function decorated.
+
+    The websocket context is local per task and hence will not be
+    available in any other task. This decorator can be used to make
+    the context available,
+
+    .. code-block:: python
+
+        @copy_current_websocket_context
+        async def within_context() -> None:
+            method = websocket.method
+            ...
+
+        await asyncio.ensure_future(within_context())
+    """
+    websocket_context = _websocket_ctx_stack.top.copy()
+
+    @wraps(func)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        async with websocket_context:
+            return await func(*args, **kwargs)
+    return wrapper
 
 
 def has_app_context() -> bool:

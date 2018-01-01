@@ -22,7 +22,8 @@ async def test_flask_app() -> None:
 
 def test_api_matches() -> None:
     normalised_quart_api = set(dir(quart)) - set([
-        '_websocket_ctx_stack', 'flask_patch', 'has_websocket_context', 'serving', 'websocket',
+        '_websocket_ctx_stack', 'copy_current_websocket_context', 'flask_patch',
+        'has_websocket_context', 'serving', 'websocket',
     ])
     normalised_flask_api = set(dir(flask)) - set([
         'Flask', 'flask_name', 'builtin_globals', 'new_handle_user_exception', 'name', 'module',

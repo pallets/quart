@@ -34,10 +34,10 @@ from builtins import globals as builtin_globals  # noqa: E402
 from jinja2 import escape, Markup  # noqa: E402
 from quart import (  # noqa: I201
     abort, after_this_request, appcontext_popped, appcontext_pushed, appcontext_tearing_down,
-    before_render_template, Blueprint, Config, got_request_exception, has_app_context,
-    has_request_context, jsonify, message_flashed, Quart, redirect, Request, request_finished,
-    request_started, request_tearing_down, Response, ResponseReturnValue, safe_join, send_file,
-    send_from_directory, template_rendered,
+    before_render_template, Blueprint, Config, copy_current_request_context, got_request_exception,
+    has_app_context, has_request_context, jsonify, message_flashed, Quart, redirect, Request,
+    request_finished, request_started, request_tearing_down, Response, ResponseReturnValue,
+    safe_join, send_file, send_from_directory, template_rendered,
 )  # noqa: E402
 from quart.flask_patch.globals import (
     _app_ctx_stack, _request_ctx_stack, current_app, g, request, session,
@@ -118,10 +118,10 @@ LocalStack.__ident_func__ = lambda _: TaskLocal._task_identity()  # type: ignore
 __all__ = (
     '_app_ctx_stack', '_request_ctx_stack', 'abort', 'after_this_request', 'appcontext_popped',
     'appcontext_pushed', 'appcontext_tearing_down', 'before_render_template', 'Blueprint',
-    'Config', 'current_app', 'escape', 'flash', 'g', 'get_flashed_messages',
-    'got_request_exception', 'get_template_attribute', 'has_app_context', 'has_request_context',
-    'jsonify', 'Markup', 'make_response', 'message_flashed', 'Quart', 'redirect',
-    'render_template', 'render_template_string', 'request', 'request_finished', 'request_started',
-    'request_tearing_down', 'Request', 'Response', 'ResponseReturnValue', 'safe_join',
-    'send_file', 'send_from_directory', 'session', 'template_rendered', 'url_for',
+    'Config', 'copy_current_request_context', 'current_app', 'escape', 'flash', 'g',
+    'get_flashed_messages', 'got_request_exception', 'get_template_attribute', 'has_app_context',
+    'has_request_context', 'jsonify', 'Markup', 'make_response', 'message_flashed', 'Quart',
+    'redirect', 'render_template', 'render_template_string', 'request', 'request_finished',
+    'request_started', 'request_tearing_down', 'Request', 'Response', 'ResponseReturnValue',
+    'safe_join', 'send_file', 'send_from_directory', 'session', 'template_rendered', 'url_for',
 )

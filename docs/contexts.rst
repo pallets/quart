@@ -31,3 +31,46 @@ The request context is a reference point for any information that is
 related to a request. This includes the request itself, a url_adapter
 bound to the request and the session. It is created and destroyed by
 the :func:`~quart.Quart.handle_request` method per request.
+
+Websocket Context
+-----------------
+
+The websocket context is analogous to the request context, but is
+related only to websocket requests. It is created and destroyed by the
+:func:`~quart.Quart.handle_websocket_request` method per websocket
+connection.
+
+Tasks and contexts
+------------------
+
+As a context is bound to a specific task trying to access the context
+within another task will fail. This means that the following will
+fail,
+
+.. code-block:: python
+
+    async def background_task():
+        method = request.method  # Will raise an exception
+        ...
+
+    @app.route('/')
+    async def index():
+        asyncio.ensure_future(background_task())
+        ...
+
+as the ``background_task`` coroutine will run in a different asyncio
+task than the index coroutine. To work around this Quart provides the
+decorators :func:`~quart.ctx.copy_current_request_context` and
+:func:`copy_current_websocket_context` which can be used as so,
+
+.. code-block:: python
+
+    @copy_current_request_context
+    async def background_task():
+        method = request.method  # Will raise an exception
+        ...
+
+    @app.route('/')
+    async def index():
+        asyncio.ensure_future(background_task())
+        ...

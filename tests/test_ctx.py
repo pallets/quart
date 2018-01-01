@@ -1,14 +1,17 @@
+import asyncio
 from unittest.mock import Mock
 
 import pytest
 
 from quart.app import Quart
 from quart.ctx import (
-    _AppCtxGlobals, after_this_request, AppContext, has_app_context, has_request_context,
-    RequestContext, WebsocketContext,
+    _AppCtxGlobals, after_this_request, AppContext, copy_current_request_context,
+    copy_current_websocket_context, has_app_context, has_request_context, RequestContext,
+    WebsocketContext,
 )
 from quart.datastructures import CIMultiDict
 from quart.exceptions import BadRequest, MethodNotAllowed, NotFound, RedirectRequired
+from quart.globals import request, websocket
 from quart.routing import Rule
 from quart.wrappers import Request, Websocket
 
@@ -134,3 +137,57 @@ def test_app_ctx_globals_iter() -> None:
     g.foo = 'bar'  # type: ignore
     g.bar = 'foo'  # type: ignore
     assert sorted(iter(g)) == ['bar', 'foo']  # type: ignore
+
+
+@pytest.mark.asyncio
+async def test_copy_current_request_context() -> None:
+    app = Quart(__name__)
+
+    @app.route('/')
+    async def index() -> str:
+        @copy_current_request_context
+        async def within_context() -> None:
+            assert request.path == '/'
+
+        await asyncio.ensure_future(within_context())
+        return ''
+
+    test_client = app.test_client()
+    response = await test_client.get('/')
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_fails_without_copy_current_request_context() -> None:
+    app = Quart(__name__)
+
+    @app.route('/')
+    async def index() -> str:
+        async def within_context() -> None:
+            assert request.path == '/'
+
+        await asyncio.ensure_future(within_context())
+        return ''
+
+    test_client = app.test_client()
+    response = await test_client.get('/')
+    assert response.status_code == 500
+
+
+@pytest.mark.asyncio
+async def test_copy_current_websocket_context() -> None:
+    app = Quart(__name__)
+
+    @app.websocket('/')
+    async def index() -> None:
+        @copy_current_websocket_context
+        async def within_context() -> None:
+            return websocket.path
+
+        data = await asyncio.ensure_future(within_context())
+        await websocket.send(data.encode())
+
+    test_client = app.test_client()
+    with test_client.websocket('/') as test_websocket:
+        data = await test_websocket.receive()
+    assert data == b'/'
