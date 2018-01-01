@@ -1,7 +1,4 @@
 import hashlib
-import json
-import uuid
-from base64 import b64decode, b64encode
 from collections.abc import MutableMapping
 from datetime import datetime
 from functools import wraps
@@ -9,6 +6,7 @@ from typing import Any, Callable, Optional, TYPE_CHECKING
 
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 
+from .json.tag import TaggedJSONSerializer
 from .wrappers import BaseRequestWebsocket, Response
 
 if TYPE_CHECKING:
@@ -103,66 +101,6 @@ class NullSession(Session, dict):
     popitem = _wrap_no_modification(dict.popitem)
     setdefault = _wrap_no_modification(dict.setdefault)
     update = _wrap_no_modification(dict.update)
-
-
-def _parse_datetime(value: str) -> datetime:
-    try:
-        return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f")
-    except ValueError:
-        return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f%z")
-
-
-class TaggedJSONSerializer:
-    """A itsdangerous compatible JSON serializer.
-
-    This will add tags to the JSON output corresponding to the python
-    type.
-    """
-
-    LOADS_MAP = {
-        ' t': tuple,
-        ' u': uuid.UUID,
-        ' b': b64decode,
-        # ' m': Markup,
-        ' d': _parse_datetime,
-    }
-
-    def dumps(self, value: Any) -> str:
-        return json.dumps(TaggedJSONSerializer._tag_type(value), separators=(',', ':'))
-
-    @staticmethod
-    def _tag_type(value: Any) -> Any:
-        if isinstance(value, tuple):
-            return {' t': [TaggedJSONSerializer._tag_type(x) for x in value]}
-        elif isinstance(value, uuid.UUID):
-            return {' u': value.hex}
-        elif isinstance(value, bytes):
-            return {' b': b64encode(value).decode('ascii')}
-        # elif callable(getattr(value, '__html__', None)):
-        #     return {' m': str(value.__html__())}
-        elif isinstance(value, list):
-            return [TaggedJSONSerializer._tag_type(element) for element in value]
-        elif isinstance(value, datetime):
-            return {' d': value.isoformat(timespec='microseconds')}  # type: ignore
-        elif isinstance(value, dict):
-            return {key: TaggedJSONSerializer._tag_type(val) for key, val in value.items()}
-        elif isinstance(value, str):
-            return value
-        else:
-            return value
-
-    @staticmethod
-    def _untag_type(object_: Any) -> Any:
-        if len(object_) != 1:
-            return object_
-        key, value = next(iter(object_.items()))
-        if key in TaggedJSONSerializer.LOADS_MAP:
-            return TaggedJSONSerializer.LOADS_MAP[key](value)  # type: ignore
-        else:
-            return object_
-
-    def loads(self, value: str) -> Any:
-        return json.loads(value, object_hook=TaggedJSONSerializer._untag_type)
 
 
 class SessionInterface:

@@ -1,28 +1,13 @@
 from contextlib import contextmanager
 from http.cookies import SimpleCookie
-from typing import Any, Generator
+from typing import Generator
 
-import hypothesis.strategies as strategies
 import pytest
-from hypothesis import given
 
 from quart.app import Quart
 from quart.datastructures import CIMultiDict
-from quart.sessions import (
-    NullSession, SecureCookieSession, SecureCookieSessionInterface, TaggedJSONSerializer,
-)
+from quart.sessions import NullSession, SecureCookieSession, SecureCookieSessionInterface
 from quart.wrappers import Request, Response
-
-
-@given(
-    value=strategies.one_of(
-        strategies.datetimes(), strategies.uuids(), strategies.binary(),
-        strategies.tuples(strategies.integers()),
-    ),
-)
-def test_jsonserializer(value: Any) -> None:
-    serializer = TaggedJSONSerializer()
-    assert serializer.loads(serializer.dumps(value)) == value
 
 
 @contextmanager

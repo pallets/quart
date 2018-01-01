@@ -7,7 +7,7 @@ from uuid import UUID
 
 from jinja2 import Markup
 
-from .globals import _app_ctx_stack, _request_ctx_stack, current_app, request
+from ..globals import _app_ctx_stack, _request_ctx_stack, current_app, request
 
 if TYPE_CHECKING:
     from .wrappers import Response  # noqa: F401

@@ -1,7 +1,12 @@
+from typing import Any
+
+import hypothesis.strategies as strategies
 import pytest
+from hypothesis import given
 
 from quart.app import Quart
 from quart.json import dumps, htmlsafe_dumps
+from quart.json.tag import TaggedJSONSerializer
 
 
 def test_htmlsafe_dumps() -> None:
@@ -20,3 +25,14 @@ async def test_ascii_dumps(as_ascii: bool, expected: str) -> None:
     async with app.app_context():
         app.config['JSON_AS_ASCII'] = as_ascii
         assert dumps('🎊') == expected
+
+
+@given(
+    value=strategies.one_of(
+        strategies.datetimes(), strategies.uuids(), strategies.binary(),
+        strategies.tuples(strategies.integers()),
+    ),
+)
+def test_jsonserializer(value: Any) -> None:
+    serializer = TaggedJSONSerializer()
+    assert serializer.loads(serializer.dumps(value)) == value
