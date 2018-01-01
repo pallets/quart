@@ -55,6 +55,7 @@ How-To Guides
    logging.rst
    request_body.rst
    session_storage.rst
+   streaming_response.rst
    templating.rst
    testing.rst
    websockets.rst

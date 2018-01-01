@@ -1,4 +1,4 @@
-.. blog_tutorial:
+.. broadcast_tutorial:
 
 Tutorial: Broadcast Server Side Events
 ======================================
