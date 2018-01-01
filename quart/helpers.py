@@ -1,4 +1,5 @@
 import os
+from functools import wraps
 from typing import Any, Callable, List, Optional, Tuple, Union
 from urllib.parse import quote
 
@@ -163,6 +164,35 @@ def url_for(
         quoted_anchor = quote(_anchor)
         url = f"{url}#{quoted_anchor}"
     return url
+
+
+def stream_with_context(func: Callable) -> Callable:
+    """Share the current request context with a generator.
+
+    This allows the request context to be accessed within a streaming
+    generator, for example,
+
+    .. code-block:: python
+
+        @app.route('/')
+        def index() -> AsyncGenerator[bytes, None]:
+            @stream_with_context
+            async def generator() -> bytes:
+                yield request.method.encode()
+                yield b' '
+                yield request.path.encode()
+
+            return generator()
+
+    """
+    request_context = _request_ctx_stack.top.copy()
+
+    @wraps(func)
+    async def generator(*args: Any, **kwargs: Any) -> Any:
+        async with request_context:
+            async for data in func(*args, **kwargs):
+                yield data
+    return generator
 
 
 def _endpoint_from_view_func(view_func: Callable) -> str:

@@ -1,7 +1,9 @@
+from typing import AsyncGenerator
+
 import pytest
 
-from quart import Blueprint, Quart
-from quart.helpers import flash, get_flashed_messages, make_response, url_for
+from quart import Blueprint, Quart, request
+from quart.helpers import flash, get_flashed_messages, make_response, stream_with_context, url_for
 
 SERVER_NAME = 'localhost'
 
@@ -108,3 +110,24 @@ async def test_url_for_blueprint_relative(app: Quart) -> None:
     async with app.test_request_context('GET', '/blue/'):
         assert url_for('.index') == '/blue/'
         assert url_for('index') == '/'
+
+
+@pytest.mark.asyncio
+async def test_stream_with_context() -> None:
+    app = Quart(__name__)
+
+    @app.route('/')
+    def index() -> AsyncGenerator[bytes, None]:
+
+        @stream_with_context
+        async def generator() -> AsyncGenerator[bytes, None]:
+            yield request.method.encode()
+            yield b' '
+            yield request.path.encode()
+
+        return generator()
+
+    test_client = app.test_client()
+    response = await test_client.get('/')
+    result = await response.get_data(raw=True)
+    assert result == b'GET /'
