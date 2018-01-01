@@ -63,7 +63,8 @@ for name, module in sys.modules.items():
         # This ensures that the sub modules e.g. json are importable
         # from flask i.e. from flask import json works (as it puts
         # the json module in this module called json).
-        builtin_globals()[name.rsplit('.', 1)[1]] = module
+        if name.count('.') == 1:
+            builtin_globals()[name.rsplit('.', 1)[1]] = module
 
 sys.modules.update(flask_modules)
 
