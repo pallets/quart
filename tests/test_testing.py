@@ -72,11 +72,7 @@ async def test_cookie_jar() -> None:
     @app.route('/', methods=['GET'])
     async def echo() -> Response:
         foo = session.get('foo')
-        cookie = request.cookies.get('bar')
-        if cookie is not None:
-            bar = cookie.value
-        else:
-            bar = None
+        bar = request.cookies.get('bar')
         session['foo'] = 'bar'
         response = jsonify({'foo': foo, 'bar': bar})
         response.set_cookie('bar', 'foo')
@@ -95,7 +91,7 @@ async def test_set_cookie() -> None:
 
     @app.route('/', methods=['GET'])
     async def echo() -> Response:
-        return jsonify({'foo': request.cookies.get('foo').value})
+        return jsonify({'foo': request.cookies.get('foo')})
 
     client = Client(app)
     client.set_cookie('foo', 'bar')

@@ -309,11 +309,11 @@ class BaseRequestWebsocket(_BaseRequestResponse):
         return self.headers['Remote-Addr']
 
     @property
-    def cookies(self) -> SimpleCookie:
+    def cookies(self) -> Dict[str, str]:
         """The parsed cookies attached to this request."""
         cookies = SimpleCookie()  # type: ignore
         cookies.load(self.headers.get('Cookie', ''))
-        return cookies
+        return {key: cookie.value for key, cookie in cookies.items()}
 
 
 class Request(BaseRequestWebsocket, JSONMixin):

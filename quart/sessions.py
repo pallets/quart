@@ -236,7 +236,7 @@ class SecureCookieSessionInterface(SessionInterface):
             return self.session_class()
         try:
             data = signer.loads(
-                cookie.value, max_age=app.permanent_session_lifetime.total_seconds(),
+                cookie, max_age=app.permanent_session_lifetime.total_seconds(),
             )
             return self.session_class(**data)
         except BadSignature:
