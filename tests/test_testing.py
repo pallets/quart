@@ -72,14 +72,21 @@ async def test_cookie_jar() -> None:
     @app.route('/', methods=['GET'])
     async def echo() -> Response:
         foo = session.get('foo')
+        cookie = request.cookies.get('bar')
+        if cookie is not None:
+            bar = cookie.value
+        else:
+            bar = None
         session['foo'] = 'bar'
-        return jsonify({'foo': foo})
+        response = jsonify({'foo': foo, 'bar': bar})
+        response.set_cookie('bar', 'foo')
+        return response
 
     client = Client(app)
     response = await client.get('/')
-    assert (await response.get_json()) == {'foo': None}
+    assert (await response.get_json()) == {'foo': None, 'bar': None}
     response = await client.get('/')
-    assert (await response.get_json()) == {'foo': 'bar'}
+    assert (await response.get_json()) == {'foo': 'bar', 'bar': 'foo'}
 
 
 @pytest.mark.asyncio
