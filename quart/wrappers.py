@@ -42,9 +42,11 @@ class Body:
     it.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, max_content_length: Optional[int]) -> None:
         self._body: asyncio.Future = asyncio.Future()
         self._stream: asyncio.Queue = asyncio.Queue()
+        self._size = 0
+        self._max_content_length = max_content_length
 
     def __aiter__(self) -> 'Body':
         return self
@@ -58,13 +60,22 @@ class Body:
         if self._body.done():
             raise StopAsyncIteration()
         else:
-            return bytearray(b''.join(future.result() for future in done))
+            result = bytearray()
+            for future in done:
+                data = future.result()
+                result.extend(data)
+                self._size -= len(data)
+            return result
 
     def __await__(self) -> Generator[Any, None, Any]:
         return self._body.__await__()
 
     def append(self, data: bytes) -> None:
         self._stream.put_nowait(data)
+        self._size += len(data)
+        if self._max_content_length is not None and self._size > self._max_content_length:
+            from .exceptions import RequestEntityTooLarge  # noqa Avoiding circular import
+            raise RequestEntityTooLarge()
 
     def set_complete(self) -> None:
         buffer_ = bytearray()
@@ -324,7 +335,14 @@ class Request(BaseRequestWebsocket, JSONMixin):
     subclass.
     """
 
-    def __init__(self, method: str, path: str, headers: CIMultiDict) -> None:
+    def __init__(
+            self,
+            method: str,
+            path: str,
+            headers: CIMultiDict,
+            *,
+            max_content_length: Optional[int]=None,
+    ) -> None:
         """Create a request object.
 
         Arguments:
@@ -333,9 +351,19 @@ class Request(BaseRequestWebsocket, JSONMixin):
             headers: The request headers.
             body: An awaitable future for the body data i.e.
                 ``data = await body``
+            max_content_length: The maximum length in bytes of the
+                body (None implies no limit in Quart).
         """
         super().__init__(method, path, headers)
-        self.body = Body()
+        content_length = headers.get('Content-Length')
+        self.max_content_length = max_content_length
+        if (
+                content_length is not None and self.max_content_length is not None and
+                int(content_length) > self.max_content_length
+        ):
+            from .exceptions import RequestEntityTooLarge  # noqa Avoiding circular import
+            raise RequestEntityTooLarge()
+        self.body = Body(self.max_content_length)
         self._cached_json: Any = sentinel
         self._form: Optional[MultiDict] = None
         self._files: Optional[MultiDict] = None

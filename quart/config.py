@@ -16,6 +16,7 @@ DEFAULT_CONFIG = {
     'JSON_SORT_KEYS': True,
     'JSONIFY_MIMETYPE': 'application/json',
     'JSONIFY_PRETTYPRINT_REGULAR': False,
+    'MAX_CONTENT_LENGTH': 16 * 1024 * 1024,  # 16 MB Limit
     'PERMANENT_SESSION_LIFETIME': timedelta(days=31),
     'PREFERRED_URL_SCHEME': 'http',
     'SECRET_KEY': None,

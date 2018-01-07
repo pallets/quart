@@ -54,6 +54,10 @@ class NotFound(HTTPStatusException):
     status = HTTPStatus.NOT_FOUND
 
 
+class RequestEntityTooLarge(HTTPStatusException):
+    status = HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+
+
 class MethodNotAllowed(HTTPStatusException):
 
     def __init__(self, allowed_methods: Optional[Iterable[str]]=None) -> None:

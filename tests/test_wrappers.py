@@ -4,6 +4,7 @@ from base64 import b64encode
 import pytest
 
 from quart.datastructures import CIMultiDict
+from quart.exceptions import RequestEntityTooLarge
 from quart.wrappers import _BaseRequestResponse, Body, Request
 
 
@@ -60,7 +61,7 @@ async def _fill_body(body: Body, semaphore: asyncio.Semaphore, limit: int) -> No
 
 @pytest.mark.asyncio
 async def test_full_body() -> None:
-    body = Body()
+    body = Body(None)
     limit = 3
     semaphore = asyncio.Semaphore(limit)
     asyncio.ensure_future(_fill_body(body, semaphore, limit))
@@ -69,7 +70,7 @@ async def test_full_body() -> None:
 
 @pytest.mark.asyncio
 async def test_body_streaming() -> None:
-    body = Body()
+    body = Body(None)
     limit = 3
     semaphore = asyncio.Semaphore(0)
     asyncio.ensure_future(_fill_body(body, semaphore, limit))
@@ -83,9 +84,24 @@ async def test_body_streaming() -> None:
 
 @pytest.mark.asyncio
 async def test_body_streaming_no_data() -> None:
-    body = Body()
+    body = Body(None)
     semaphore = asyncio.Semaphore(0)
     asyncio.ensure_future(_fill_body(body, semaphore, 0))
     async for _ in body:  # type: ignore # noqa: F841
         assert False  # Should not reach this
     assert b'' == await body  # type: ignore
+
+
+def test_body_exceeds_max_content_length() -> None:
+    max_content_length = 5
+    body = Body(max_content_length)
+    with pytest.raises(RequestEntityTooLarge):
+        body.append(b' ' * (max_content_length + 1))
+
+
+def test_request_exceeds_max_content_length() -> None:
+    max_content_length = 5
+    headers = CIMultiDict()
+    headers['Content-Length'] = str(max_content_length + 1)
+    with pytest.raises(RequestEntityTooLarge):
+        Request('GET', '/', headers, max_content_length=max_content_length)
