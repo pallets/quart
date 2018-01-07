@@ -1,5 +1,6 @@
 import asyncio
 from typing import Union
+from unittest.mock import Mock
 
 import h11
 import pytest
@@ -160,3 +161,10 @@ async def test_server_sends_chunked(
     assert all(isinstance(datum, h11.Data) for datum in data)
     assert b''.join(datum.data for datum in data).decode() == 'chunked data'
     assert isinstance(end, h11.EndOfMessage)
+
+
+def test_max_incomplete_size() -> None:
+    transport = MockTransport()
+    server = H11Server(Mock(), Mock(), transport, None, '', 5, max_incomplete_size=5)  # type: ignore # noqa: E501
+    server.data_received(b'GET / HTTP/1.1\r\nHost: quart\r\n')  # Longer than 5 bytes
+    assert transport.data.startswith(b'HTTP/1.1 400')

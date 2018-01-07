@@ -12,6 +12,8 @@ from ..wrappers import Request, Response  # noqa: F401
 if TYPE_CHECKING:
     from ..app import Quart  # noqa
 
+DEFAULT_MAX_INCOMPLETE_EVENT_SIZE = 16 * 1024
+
 
 class WrongProtocolError(Exception):
 
@@ -39,9 +41,14 @@ class H11Server(HTTPProtocol):
             logger: Optional[Logger],
             access_log_format: str,
             timeout: int,
+            *,
+            max_incomplete_size: Optional[int]=None,
     ) -> None:
         super().__init__(app, loop, transport, logger, access_log_format, timeout)
-        self.connection = h11.Connection(h11.SERVER)
+        self.connection = h11.Connection(
+            h11.SERVER,
+            max_incomplete_event_size=max_incomplete_size or DEFAULT_MAX_INCOMPLETE_EVENT_SIZE,
+        )
 
     def data_received(self, data: bytes) -> None:
         super().data_received(data)

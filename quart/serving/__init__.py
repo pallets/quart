@@ -25,6 +25,8 @@ class Server(asyncio.Protocol):
             logger: Optional[Logger],
             access_log_format: str,
             timeout: int,
+            *,
+            h11_max_incomplete_size: Optional[int]=None,
     ) -> None:
         self.app = app
         self.loop = loop
@@ -32,6 +34,7 @@ class Server(asyncio.Protocol):
         self.logger = logger
         self.access_log_format = access_log_format
         self.timeout = timeout
+        self.h11_max_incomplete_size = h11_max_incomplete_size
 
     def connection_made(self, transport: asyncio.BaseTransport) -> None:
         ssl_object = transport.get_extra_info('ssl_object')
@@ -48,7 +51,7 @@ class Server(asyncio.Protocol):
         else:
             self._server = H11Server(
                 self.app, self.loop, transport, self.logger, self.access_log_format,
-                self.timeout,
+                self.timeout, max_incomplete_size=self.h11_max_incomplete_size,
             )
 
     def connection_lost(self, exception: Exception) -> None:

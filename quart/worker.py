@@ -38,10 +38,12 @@ class GunicornWorker(Worker):
         ssl_context = self._create_ssl_context()
         access_logger = self.log.access_log if self.cfg.accesslog else None
         for sock in self.sockets:
+            max_fields_size = self.cfg.limit_request_fields * self.cfg.limit_request_field_size
+            h11_max_incomplete_size = self.cfg.limit_request_line + max_fields_size
             server = await self.loop.create_server(
                 lambda: Server(
                     self.wsgi, self.loop, access_logger, self.cfg.access_log_format,
-                    self.cfg.keepalive,
+                    self.cfg.keepalive, h11_max_incomplete_size=h11_max_incomplete_size,
                 ),
                 sock=sock.sock, ssl=ssl_context,
             )
