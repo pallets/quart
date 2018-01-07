@@ -1,7 +1,6 @@
 import os
 import sys
 import time
-from datetime import timedelta
 from logging import DEBUG, Formatter, getLogger, INFO, Logger, NOTSET, StreamHandler
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
@@ -54,7 +53,7 @@ class AccessLogAtoms(dict):
             request: Request,
             response: Response,
             protocol: str,
-            request_time: timedelta,
+            request_time: float,
     ) -> None:
         parsed_url = urlparse(request.full_path)
         self.update({
@@ -71,9 +70,9 @@ class AccessLogAtoms(dict):
             'B': response.headers.get('Content-Length'),
             'f': request.headers.get('Referer', '-'),
             'a': request.headers.get('User-Agent', '-'),
-            'T': request_time.seconds,
-            'D': (request_time.seconds*1000000) + request_time.microseconds,
-            'L': "%d.%06d" % (request_time.seconds, request_time.microseconds),
+            'T': int(request_time),
+            'D': int(request_time * 1000000),
+            'L': f"{request_time:.6f}",
             'p': f"<{os.getpid()}>",
         })
         for name, value in request.headers.items():

@@ -1,5 +1,4 @@
 import asyncio
-from datetime import datetime
 from email.utils import formatdate
 from functools import partial
 from logging import Logger
@@ -81,13 +80,13 @@ class HTTPProtocol:
 
     async def _handle_request(self, stream_id: int) -> None:
         request = self.streams[stream_id].request
-        start_time = datetime.now()
+        start_time = time()
         response = await self.app.handle_request(request)
         await self.send_response(stream_id, response)
         if self.logger is not None:
             self.logger.info(
                 self.access_log_format,
-                AccessLogAtoms(request, response, self.protocol, datetime.now() - start_time),
+                AccessLogAtoms(request, response, self.protocol, time() - start_time),
             )
 
     async def send_response(self, stream_id: int, response: Response) -> None:
