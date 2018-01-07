@@ -1254,7 +1254,3 @@ def _find_exception_handler(
         if isinstance(error, exception):  # type: ignore
             return handler
     return None
-
-
-async def _default_error_handler(error: HTTPException) -> Response:
-    return error.get_response()
