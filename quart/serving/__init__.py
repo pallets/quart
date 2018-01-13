@@ -35,10 +35,12 @@ class Server(asyncio.Protocol):
         self.access_log_format = access_log_format
         self.timeout = timeout
         self.h11_max_incomplete_size = h11_max_incomplete_size
+        self._ssl_enabled = False
 
     def connection_made(self, transport: asyncio.BaseTransport) -> None:
         ssl_object = transport.get_extra_info('ssl_object')
         if ssl_object is not None:
+            self._ssl_enabled = True
             protocol = ssl_object.selected_alpn_protocol()
         else:
             protocol = 'http/1.1'
@@ -71,6 +73,10 @@ class Server(asyncio.Protocol):
             )
 
     def eof_received(self) -> bool:
+        if self._ssl_enabled:
+            # Returning anything other than False has no affect under
+            # SSL, and just raises an annoying warning.
+            return False
         return self._server.eof_received()
 
 
