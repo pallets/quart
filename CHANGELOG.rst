@@ -1,9 +1,20 @@
-0.4.0
------
+0.4.0 2018-01-14
+----------------
 
 * Change to async signals and context management. This allows the
   signal recievers to be async (which is much more useful) but
   requires changes to any current usage (notably test contexts).
+* Add initial support of websockets.
+* Support HTTP/1.1 to HTTP/2 (h2c) upgrades, includes supporting
+  HTTP/2 without SSL (note browsers don't support this).
+* Add timing to access logging.
+* Add a new Logo :). Thanks to @koddr.
+* Support streaming of the request body.
+* Add initial CLI support, using click.
+* Add context copying helper functions and clarify how to stream a
+  response.
+* Improved tutorials.
+* Allow the request to be limited to prevent DOS attacks.
 
 0.3.1 2017-10-25
 ----------------
