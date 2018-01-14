@@ -39,7 +39,7 @@ class WebsocketServer:
             elif isinstance(event, wsproto.events.DataReceived):
                 self.queue.put_nowait(event.data)
             elif isinstance(event, wsproto.events.ConnectionClosed):
-                print('Dead')
+                pass
             self._send()
 
     def eof_received(self) -> bool:
