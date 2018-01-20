@@ -1156,7 +1156,7 @@ class Quart(PackageStatic):
             status = status_or_headers
 
         if not isinstance(value, Response):
-            response = self.response_class(value, content_type='text/html')
+            response = self.response_class(value)
         else:
             response = value
 
