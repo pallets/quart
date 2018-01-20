@@ -1,4 +1,5 @@
 import importlib
+import importlib.util
 import json
 import os
 from configparser import ConfigParser
@@ -102,12 +103,12 @@ class Config(dict):
         return self.from_pyfile(value)
 
     def from_pyfile(self, filename: str, silent: bool=False) -> None:
-        """Load the configuration from a Python cfg file.
+        """Load the configuration from a Python cfg or py file.
 
         See Python's ConfigParser docs for details on the cfg format.
         It is a common practice to load the defaults from the source
-        using the :meth:`from_object` and then override with a cfg
-        file, for example
+        using the :meth:`from_object` and then override with a cfg or
+        py file, for example
 
         .. code-block:: python
 
@@ -120,17 +121,22 @@ class Config(dict):
 
         """
         file_path = self.root_path / filename
-        parser = ConfigParser()
-        parser.optionxform = str  # type: ignore # Prevents lowercasing of keys
         try:
-            with open(file_path) as file_:
-                config_str = '[section]\n' + file_.read()
-            parser.read_string(config_str)
+            spec = importlib.util.spec_from_file_location("module.name", file_path)  # type: ignore
+            if spec is None:  # Likely passed a cfg file
+                parser = ConfigParser()
+                parser.optionxform = str  # type: ignore # Prevents lowercasing of keys
+                with open(file_path) as file_:
+                    config_str = '[section]\n' + file_.read()
+                parser.read_string(config_str)
+                self.from_mapping(parser['section'])
+            else:
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                self.from_object(module)
         except (FileNotFoundError, IsADirectoryError):
             if not silent:
                 raise
-        else:
-            self.from_mapping(parser['section'])
 
     def from_object(self, instance: Union[object, str]) -> None:
         """Load the configuration from a Python object.

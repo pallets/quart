@@ -1,8 +1,11 @@
 import os
 
+import pytest
+
 from quart.config import Config, ConfigAttribute
 
-TEST_KEY = 'test_value'
+FOO = 'bar'
+BOB = 'jeff'
 
 
 class ConfigInstance:
@@ -16,21 +19,46 @@ def test_config_attribute() -> None:
     assert instance.config['VALUE'] == 'test'
 
 
+def _check_standard_config(config: Config) -> None:
+    assert config.pop('FOO') == 'bar'
+    assert config.pop('BOB') == 'jeff'
+    assert len(config) == 0
+
+
 def test_config_from_object() -> None:
     config = Config(os.path.dirname(__file__))
     config.from_object(__name__)
-    assert config['TEST_KEY'] == 'test_value'
+    _check_standard_config(config)
 
 
-def _check_standard_config(config: Config) -> None:
-    assert config['FOO'] == 'bar'
-    assert config['BOB'] == 'jeff'
+def test_config_from_pyfile_this() -> None:
+    config = Config(os.path.dirname(__file__))
+    config.from_pyfile(__file__)
+    _check_standard_config(config)
 
 
-def test_config_from_pyfile() -> None:
+def test_config_from_pyfile_py() -> None:
+    config = Config(os.path.dirname(__file__))
+    config.from_pyfile('assets/config.py')
+    _check_standard_config(config)
+
+
+def test_config_from_pyfile_cfg() -> None:
     config = Config(os.path.dirname(__file__))
     config.from_pyfile('assets/config.cfg')
     _check_standard_config(config)
+
+
+def test_config_from_pyfile_no_file() -> None:
+    config = Config(os.path.dirname(__file__))
+    with pytest.raises(FileNotFoundError):
+        config.from_pyfile('assets/no_file.cfg')
+
+
+def test_config_from_pyfile_directory() -> None:
+    config = Config(os.path.dirname(__file__))
+    with pytest.raises(IsADirectoryError):
+        config.from_pyfile('assets')
 
 
 def test_config_from_envvar() -> None:
