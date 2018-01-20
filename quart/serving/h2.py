@@ -75,6 +75,7 @@ class H2Server(HTTPProtocol):
             self.close()
         else:
             self._handle_events(events)
+            self.send(self.connection.data_to_send())  # type: ignore
 
     def _handle_events(self, events: List[h2.events.Event]) -> None:
         for event in events:

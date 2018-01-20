@@ -82,7 +82,7 @@ class MockH2Connection:
             events = self.connection.receive_data(self.transport.data)
             self.transport.clear()
             for event in events:
-                if isinstance(event, (h2.events.StreamEnded, h2.events.ConnectionTerminated)):
+                if isinstance(event, h2.events.ConnectionTerminated):
                     self.transport.close()
                 elif isinstance(event, h2.events.DataReceived):
                     self.connection.acknowledge_received_data(
@@ -107,6 +107,8 @@ async def test_h2server(serving_app: Quart, event_loop: asyncio.AbstractEventLoo
             assert (b'x-test', b'Test') in event.headers
         elif isinstance(event, h2.events.DataReceived):
             response_data += event.data
+        elif isinstance(event, h2.events.StreamEnded):
+            break
     assert response_data.decode() == BASIC_DATA
 
 
@@ -130,6 +132,8 @@ async def test_h2_flow_control(serving_app: Quart, event_loop: asyncio.AbstractE
         if isinstance(event, h2.events.DataReceived):
             assert len(event.data) <= FLOW_WINDOW_SIZE
             response_data += event.data
+        elif isinstance(event, h2.events.StreamEnded):
+            break
     assert response_data.decode() == BASIC_DATA
 
 
@@ -138,6 +142,7 @@ async def test_h2_push(serving_app: Quart, event_loop: asyncio.AbstractEventLoop
     connection = MockH2Connection(serving_app, event_loop)
     connection.send_request(BASIC_H2_PUSH_HEADERS, {})
     push_received = False
+    streams_received = 0
     async for event in connection.get_events():
         if isinstance(event, h2.events.PushedStreamReceived):
             assert (b':path', b'/') in event.headers
@@ -145,4 +150,8 @@ async def test_h2_push(serving_app: Quart, event_loop: asyncio.AbstractEventLoop
             assert (b':scheme', b'https') in event.headers
             assert (b':authority', b'quart') in event.headers
             push_received = True
+        elif isinstance(event, h2.events.StreamEnded):
+            streams_received += 1
+            if streams_received == 2:
+                break
     assert push_received
