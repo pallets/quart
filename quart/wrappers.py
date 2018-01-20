@@ -182,9 +182,12 @@ class _BaseRequestResponse:
             self.headers = CIMultiDict(headers)
 
     @property
-    def mimetype(self) -> str:
+    def mimetype(self) -> Optional[str]:
         """Returns the mimetype parsed from the Content-Type header."""
-        return parse_header(self.headers.get('Content-Type'))[0]
+        if 'Content-Type' in self.headers:
+            return parse_header(self.headers.get('Content-Type'))[0]
+        else:
+            return None
 
     @mimetype.setter
     def mimetype(self, value: str) -> None:
