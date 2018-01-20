@@ -88,7 +88,7 @@ class H2Server(HTTPProtocol):
             elif isinstance(event, h2.events.DataReceived):
                 self.streams[event.stream_id].append(event.data)
             elif isinstance(event, h2.events.StreamReset):
-                self.streams.pop(event.stream_id).task.cancel()
+                self.streams[event.stream_id].task.cancel()
             elif isinstance(event, h2.events.StreamEnded):
                 self.streams[event.stream_id].complete()
             elif isinstance(event, h2.events.WindowUpdated):
