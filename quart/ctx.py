@@ -205,8 +205,10 @@ def copy_current_app_context(func: Callable) -> Callable:
             ...
 
         await asyncio.ensure_future(within_context())
-
     """
+    if not has_app_context():
+        raise RuntimeError('Attempt to copy app context outside of a app context')
+
     app_context = _app_ctx_stack.top.copy()
 
     @wraps(func)
@@ -232,6 +234,9 @@ def copy_current_request_context(func: Callable) -> Callable:
 
         await asyncio.ensure_future(within_context())
     """
+    if not has_request_context():
+        raise RuntimeError('Attempt to copy request context outside of a request context')
+
     request_context = _request_ctx_stack.top.copy()
 
     @wraps(func)
@@ -257,6 +262,9 @@ def copy_current_websocket_context(func: Callable) -> Callable:
 
         await asyncio.ensure_future(within_context())
     """
+    if not has_websocket_context():
+        raise RuntimeError('Attempt to copy websocket context outside of a websocket context')
+
     websocket_context = _websocket_ctx_stack.top.copy()
 
     @wraps(func)

@@ -159,6 +159,11 @@ async def test_copy_current_app_context() -> None:
     assert response.status_code == 200
 
 
+def test_copy_current_app_context_error() -> None:
+    with pytest.raises(RuntimeError):
+        copy_current_app_context(lambda: None)()
+
+
 @pytest.mark.asyncio
 async def test_copy_current_request_context() -> None:
     app = Quart(__name__)
@@ -175,6 +180,11 @@ async def test_copy_current_request_context() -> None:
     test_client = app.test_client()
     response = await test_client.get('/')
     assert response.status_code == 200
+
+
+def test_copy_current_request_context_error() -> None:
+    with pytest.raises(RuntimeError):
+        copy_current_request_context(lambda: None)()
 
 
 @pytest.mark.asyncio
@@ -211,3 +221,8 @@ async def test_copy_current_websocket_context() -> None:
     with test_client.websocket('/') as test_websocket:
         data = await test_websocket.receive()
     assert data == b'/'
+
+
+def test_copy_current_websocket_context_error() -> None:
+    with pytest.raises(RuntimeError):
+        copy_current_websocket_context(lambda: None)()
