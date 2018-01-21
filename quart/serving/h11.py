@@ -95,9 +95,13 @@ class H11Server(HTTPProtocol):
 
     def _handle_upgrade_request(self, headers: CIMultiDict, event: h11.Request) -> None:
         self._timeout_handle.cancel()
-        if headers.get('connection') == 'Upgrade' and headers.get('upgrade') == 'websocket':
+        connection_tokens = headers.get('connection', '').lower().split(',')
+        if (
+                any(token == 'upgrade' for token in connection_tokens) and
+                headers.get('upgrade', '').lower() == 'websocket'
+        ):
             raise WebsocketProtocolRequired(event)
-        elif headers.get('upgrade') == 'h2c':
+        elif headers.get('upgrade', '').lower() == 'h2c':
             self._send(h11.InformationalResponse(
                 status_code=101, headers=[('upgrade', 'h2c')] + self.response_headers(),
             ))
