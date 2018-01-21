@@ -143,6 +143,11 @@ class AppContext:
         self.g = app.app_ctx_globals_class()
         self._app_reference_count = 0
 
+    def copy(self) -> 'AppContext':
+        app_context = self.__class__(self.app)
+        app_context.g = self.g
+        return app_context
+
     async def push(self) -> None:
         self._app_reference_count += 1
         _app_ctx_stack.push(self)
@@ -183,6 +188,32 @@ def after_this_request(func: Callable) -> Callable:
     """
     _request_ctx_stack.top._after_request_functions.append(func)
     return func
+
+
+def copy_current_app_context(func: Callable) -> Callable:
+    """Share the current app context with the function decorated.
+
+    The app context is local per task and hence will not be available
+    in any other task. This decorator can be used to make the context
+    available,
+
+    .. code-block:: python
+
+        @copy_current_app_context
+        async def within_context() -> None:
+            name = current_app.name
+            ...
+
+        await asyncio.ensure_future(within_context())
+
+    """
+    app_context = _app_ctx_stack.top.copy()
+
+    @wraps(func)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        async with app_context:
+            return await func(*args, **kwargs)
+    return wrapper
 
 
 def copy_current_request_context(func: Callable) -> Callable:
