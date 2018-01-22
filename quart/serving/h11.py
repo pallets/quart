@@ -116,13 +116,14 @@ class H11Server(HTTPProtocol):
             self.connection.start_next_cycle()
         self._handle_events()
 
-    async def send_response(self, stream_id: int, response: Response) -> None:
+    async def send_response(self, stream_id: int, response: Response, suppress_body: bool) -> None:
         headers = chain(
             ((key, value) for key, value in response.headers.items()), self.response_headers(),
         )
         self._send(h11.Response(status_code=response.status_code, headers=headers))
-        async for data in response.response:
-            self._send(h11.Data(data=data))
+        if not suppress_body:
+            async for data in response.response:
+                self._send(h11.Data(data=data))
         self._send(h11.EndOfMessage())
 
     def _handle_error(self) -> None:

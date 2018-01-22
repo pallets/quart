@@ -100,7 +100,7 @@ class H2Server(HTTPProtocol):
 
             self.send(self.connection.data_to_send())  # type: ignore
 
-    async def send_response(self, stream_id: int, response: Response) -> None:
+    async def send_response(self, stream_id: int, response: Response, suppress_body: bool) -> None:
         headers = [(':status', str(response.status_code))]
         headers.extend([(key, value) for key, value in response.headers.items()])
         headers.extend(self.response_headers())
@@ -108,8 +108,9 @@ class H2Server(HTTPProtocol):
         for push_promise in response.push_promises:
             self._server_push(stream_id, push_promise)
         self.send(self.connection.data_to_send())  # type: ignore
-        async for data in response.response:
-            await self._send_data(stream_id, data)
+        if not suppress_body:
+            async for data in response.response:
+                await self._send_data(stream_id, data)
         self.connection.end_stream(stream_id)
         self.send(self.connection.data_to_send())  # type: ignore
 

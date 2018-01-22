@@ -82,14 +82,19 @@ class HTTPProtocol:
         request = self.streams[stream_id].request
         start_time = time()
         response = await self.app.handle_request(request)
-        await self.send_response(stream_id, response)
+        suppress_body = (
+            request.method == 'HEAD' or
+            100 <= response.status_code < 200 or
+            response.status_code in {204, 304, 412}
+        )
+        await self.send_response(stream_id, response, suppress_body)
         if self.logger is not None:
             self.logger.info(
                 self.access_log_format,
                 AccessLogAtoms(request, response, self.protocol, time() - start_time),
             )
 
-    async def send_response(self, stream_id: int, response: Response) -> None:
+    async def send_response(self, stream_id: int, response: Response, suppress_body: bool) -> None:
         raise NotImplemented()
 
     def send(self, data: bytes) -> None:
