@@ -1,5 +1,5 @@
 import asyncio
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Union
 
 import h11
 import wsproto.connection
@@ -30,6 +30,7 @@ class WebsocketServer:
         self.queue: asyncio.Queue = asyncio.Queue()
         fake_client = h11.Connection(h11.CLIENT)
         self.data_received(fake_client.send(request))
+        self._buffer: Optional[Union[bytes, str]] = None
 
     def data_received(self, data: bytes) -> None:
         self.connection.receive_bytes(data)
@@ -37,9 +38,18 @@ class WebsocketServer:
             if isinstance(event, wsproto.events.ConnectionRequested):
                 self.handle_websocket(event)
             elif isinstance(event, wsproto.events.DataReceived):
-                self.queue.put_nowait(event.data)
+                if self._buffer is None:
+                    if isinstance(event, wsproto.events.TextReceived):
+                        self._buffer = ''
+                    else:
+                        self._buffer = b''
+                self._buffer += event.data
+                if event.message_finished:
+                    self.queue.put_nowait(self._buffer)
+                    self._buffer = None
             elif isinstance(event, wsproto.events.ConnectionClosed):
-                pass
+                self._send()
+                self.close()
             self._send()
 
     def eof_received(self) -> bool:
@@ -47,6 +57,10 @@ class WebsocketServer:
 
     def connection_lost(self, exception: Exception) -> None:
         pass
+
+    def close(self) -> None:
+        self.task.cancel()
+        self._transport.close()
 
     def handle_websocket(self, event: wsproto.events.ConnectionRequested) -> None:
         headers = CIMultiDict()
@@ -62,7 +76,7 @@ class WebsocketServer:
                 raise BadRequest()
         except (BadRequest, NotFound, MethodNotAllowed, RedirectRequired) as error:
             asyncio.ensure_future(self.send_error(error))
-            # self.close()
+            self.close()
         else:
             self.connection.accept(event)
             self.task = asyncio.ensure_future(self._handle_websocket(websocket))
