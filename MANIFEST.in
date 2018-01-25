@@ -7,7 +7,9 @@ recursive-include tests *.py
 recursive-include tests *.cfg
 recursive-include tests *.json
 recursive-exclude examples *
+recursive-exclude compliance *
 recursive-exclude docs *
 exclude examples
 exclude .gitlab-ci.yml
+exclude compliance
 exclude docs

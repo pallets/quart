@@ -1,13 +1,13 @@
-image: python:3.6.1
-
-before_script:
-  - pip install tox sphinx
+image: python:3.6.4-stretch
 
 tox:
-  script: tox
+  script:
+  - pip install tox
+  - tox
 
 pages:
   script:
+  - pip install sphinx
   - python setup.py install
   - rm -rf docs/source && sphinx-apidoc -e -f -o docs/source/ quart/
   - cd docs/ && make html && cd ../
@@ -17,3 +17,11 @@ pages:
     - public
   only:
   - master
+
+h2spec:
+  script:
+  - python setup.py install
+  - cd compliance/http2 && nohup python server.py &
+  - wget https://github.com/summerwind/h2spec/releases/download/v2.1.0/h2spec_linux_amd64.tar.gz
+  - tar -xvf h2spec_linux_amd64.tar.gz
+  - ./h2spec -tk -h 127.0.0.1 -p 5000
