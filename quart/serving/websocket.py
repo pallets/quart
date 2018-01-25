@@ -4,6 +4,7 @@ from typing import Optional, TYPE_CHECKING, Union
 import h11
 import wsproto.connection
 import wsproto.events
+import wsproto.extensions
 
 from ..datastructures import CIMultiDict
 from ..exceptions import BadRequest, HTTPException, MethodNotAllowed, NotFound, RedirectRequired
@@ -25,7 +26,9 @@ class WebsocketServer:
         self.app = app
         self.loop = loop
         self._transport = transport
-        self.connection = wsproto.connection.WSConnection(wsproto.connection.SERVER)
+        self.connection = wsproto.connection.WSConnection(
+            wsproto.connection.SERVER, extensions=[wsproto.extensions.PerMessageDeflate()],
+        )
         self.task: Optional[asyncio.Future] = None
         self.queue: asyncio.Queue = asyncio.Queue()
         fake_client = h11.Connection(h11.CLIENT)
