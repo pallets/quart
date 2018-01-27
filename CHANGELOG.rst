@@ -1,3 +1,12 @@
+0.4.1 2018-01-27
+----------------
+
+* Bugfix HTTP/2 support and pass h2spec compliance testing.
+* Bugifx Websocket support and pass autobahn fuzzy test compliance
+  testing.
+* Bugfix HEAD request support (don't try to send a body).
+* Bugfix content-type (remove forced override).
+
 0.4.0 2018-01-14
 ----------------
 
