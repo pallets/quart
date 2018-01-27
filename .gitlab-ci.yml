@@ -24,4 +24,5 @@ h2spec:
   - cd compliance/http2 && nohup python server.py &
   - wget https://github.com/summerwind/h2spec/releases/download/v2.1.0/h2spec_linux_amd64.tar.gz
   - tar -xvf h2spec_linux_amd64.tar.gz
+  - sleep 10
   - ./h2spec -tk -h 127.0.0.1 -p 5000
