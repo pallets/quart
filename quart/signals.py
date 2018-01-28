@@ -5,6 +5,9 @@ from blinker import NamedSignal, Namespace
 from .utils import ensure_coroutine
 
 
+signals_available = True
+
+
 class AsyncNamedSignal(NamedSignal):
 
     def __init__(self, name: str, doc: Optional[str]=None) -> None:

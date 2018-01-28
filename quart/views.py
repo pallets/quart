@@ -3,7 +3,7 @@ from typing import Any, Callable, List, Optional
 from .globals import request
 from .typing import ResponseReturnValue
 
-HTTP_METHOD_FUNCTIONS = frozenset([
+http_method_funcs = frozenset([
     'get', 'post', 'head', 'options', 'delete', 'put', 'trace', 'patch',
 ])
 
@@ -79,7 +79,7 @@ class MethodViewType(type):
         if 'methods' not in attributes:
             methods = []
 
-            for key in HTTP_METHOD_FUNCTIONS:
+            for key in http_method_funcs:
                 if hasattr(cls, key):
                     methods.append(key.upper())
 
