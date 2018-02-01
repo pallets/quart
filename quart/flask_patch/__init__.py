@@ -101,7 +101,7 @@ async def new_handle_http_exception(self, error: Exception) -> Response:  # type
         if handler is None:
             werkzeug_response = error.get_response()
             return await self.make_response((
-                werkzeug_response.get_data(), werkzeug_response.status_code,
+                (await werkzeug_response.get_data()), werkzeug_response.status_code,
                 werkzeug_response.headers,
             ))
         else:
