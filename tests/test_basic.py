@@ -22,8 +22,12 @@ def app() -> Quart:
         return 'OK'
 
     @app.errorhandler(409)
-    async def handler(_: Exception) -> ResponseReturnValue:
+    async def generic_http_handler(_: Exception) -> ResponseReturnValue:
         return 'Something Unique', 409
+
+    @app.errorhandler(404)
+    async def not_found_handler(_: Exception) -> ResponseReturnValue:
+        return 'Not Found', 404
 
     @app.websocket('/ws/')
     async def ws() -> None:
@@ -52,11 +56,19 @@ async def test_json(app: Quart) -> None:
 
 
 @pytest.mark.asyncio
-async def test_error(app: Quart) -> None:
+async def test_generic_error(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get('/error/')
     assert response.status_code == 409
     assert b'Something Unique' in (await response.get_data())
+
+
+@pytest.mark.asyncio
+async def test_not_found_error(app: Quart) -> None:
+    test_client = app.test_client()
+    response = await test_client.get('/not_found/')
+    assert response.status_code == 404
+    assert b'Not Found' in (await response.get_data())
 
 
 @pytest.mark.asyncio
