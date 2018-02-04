@@ -52,6 +52,7 @@ class Blueprint(PackageStatic):
             self,
             path: str,
             methods: List[str]=['GET'],
+            defaults: Optional[dict]=None,
             *,
             provide_automatic_options: bool=True
     ) -> Callable:
@@ -69,7 +70,8 @@ class Blueprint(PackageStatic):
         """
         def decorator(func: Callable) -> Callable:
             self.add_url_rule(
-                path, func, methods, provide_automatic_options=provide_automatic_options,
+                path, func, methods, defaults=defaults,
+                provide_automatic_options=provide_automatic_options,
             )
             return func
         return decorator
@@ -80,6 +82,7 @@ class Blueprint(PackageStatic):
             view_func: Callable,
             methods: List[str]=['GET'],
             endpoint: Optional[str]=None,
+            defaults: Optional[dict]=None,
             *,
             provide_automatic_options: bool=True
     ) -> None:
@@ -102,7 +105,7 @@ class Blueprint(PackageStatic):
             raise ValueError('Blueprint endpoints should not contain periods')
         self.record(
             lambda state: state.add_url_rule(
-                path, view_func, methods, endpoint,
+                path, view_func, methods, endpoint, defaults,
                 provide_automatic_options=provide_automatic_options,
             ),
         )
@@ -588,6 +591,7 @@ class BlueprintSetupState:
             view_func: Callable,
             methods: List[str]=['GET'],
             endpoint: Optional[str]=None,
+            defaults: Optional[dict]=None,
             *,
             provide_automatic_options: bool=True
     ) -> None:
@@ -595,7 +599,8 @@ class BlueprintSetupState:
             path = f"{self.url_prefix}{path}"
         endpoint = f"{self.blueprint.name}.{endpoint}"
         self.app.add_url_rule(
-            path, view_func, methods, endpoint, provide_automatic_options=provide_automatic_options,
+            path, view_func, methods, endpoint, defaults,
+            provide_automatic_options=provide_automatic_options,
         )
 
     def register_endpoint(self, endpoint: str, func: Callable) -> None:

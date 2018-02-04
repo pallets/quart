@@ -32,6 +32,13 @@ def _test_match(map_: Map, path: str, method: str, expected: Tuple[Rule, Dict[st
     assert adapter.match() == expected
 
 
+def _test_match_redirect(map_: Map, path: str, method: str, redirect_path: str) -> None:
+    adapter = map_.bind_to_request('http', 'localhost', method, path)
+    with pytest.raises(RedirectRequired) as error:
+        adapter.match()
+    assert error.value.redirect_path == redirect_path
+
+
 def test_no_match_error(basic_map: Map) -> None:
     _test_no_match(basic_map, '/wrong/', 'GET')
 
@@ -72,11 +79,7 @@ def test_strict_slashes() -> None:
         adapter = map_.bind_to_request('http', 'localhost', 'POST', '/path/')
         with pytest.raises(MethodNotAllowed):
             adapter.match()
-        adapter = map_.bind_to_request('http', 'localhost', 'GET', '/path')
-        try:
-            adapter.match()
-        except RedirectRequired as error:
-            assert error.redirect_path == '/path/'
+        _test_match_redirect(map_, '/path', 'GET', '/path/')
 
     map_ = Map()
     map_.add(Rule('/path', ['POST'], 'leaf'))
@@ -101,6 +104,19 @@ def test_ordering() -> None:
     _test_match(
         map_, '/left/right', 'GET', (map_.endpoints['path'][0], {'left': 'left', 'right': 'right'}),
     )
+
+
+def test_defaults() -> None:
+    map_ = Map()
+    map_.add(Rule('/book/', ['GET'], 'book', defaults={'page': 1}))
+    map_.add(Rule('/book/<int:page>/', ['GET'], 'book'))
+    _test_match(map_, '/book/', 'GET', (map_.endpoints['book'][0], {'page': 1}))
+    _test_match_redirect(map_, '/book/1/', 'GET', '/book/')
+    _test_match(map_, '/book/2/', 'GET', (map_.endpoints['book'][1], {'page': 2}))
+    adapter = map_.bind('http', 'localhost')
+    assert adapter.build('book', method='GET') == '/book/'
+    assert adapter.build('book', method='GET', values={'page': 1}) == '/book/'
+    assert adapter.build('book', method='GET', values={'page': 2}) == '/book/2/'
 
 
 def test_any_converter() -> None:

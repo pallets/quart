@@ -221,8 +221,13 @@ class MapAdapter:
             if self.method in rule.methods:
                 if needs_slash:
                     raise RedirectRequired(rule.build(**variables))
-                else:
-                    return rule, variables
+
+                # Check if there is a default rule that can be used instead
+                for potential_rule in self.map.endpoints[rule.endpoint]:
+                    if potential_rule.provides_defaults_for(rule, **variables):
+                        raise RedirectRequired(potential_rule.build(**variables))
+
+                return rule, variables
             else:
                 allowed_methods.update(rule.methods)
         if allowed_methods:
@@ -245,8 +250,15 @@ class MapAdapter:
 class Rule:
 
     def __init__(
-            self, rule: str, methods: List[str], endpoint: str, strict_slashes: bool=True,
-            *, provide_automatic_options: bool=True, is_websocket: bool=False
+            self,
+            rule: str,
+            methods: List[str],
+            endpoint: str,
+            strict_slashes: bool=True,
+            defaults: Optional[dict]=None,
+            *,
+            provide_automatic_options: bool=True,
+            is_websocket: bool=False,
     ) -> None:
         if not rule.startswith('/'):
             raise ValueError(f"Rule '{rule}' does not start with a slash")
@@ -260,6 +272,7 @@ class Rule:
             raise ValueError(f"{methods} must only be GET for a websocket route")
         self.endpoint = endpoint
         self.strict_slashes = strict_slashes
+        self.defaults = defaults or {}
         self.map: Optional[Map] = None
         self._pattern: Optional[Pattern] = None
         self._builder: Optional[str] = None
@@ -293,9 +306,16 @@ class Rule:
             except ValidationError:  # Doesn't meet conversion rules, no match
                 return None, False
             else:
-                return converted_varaibles, needs_slash
+                return {**self.defaults, **converted_varaibles}, needs_slash
         else:
             return None, False
+
+    def provides_defaults_for(self, rule: 'Rule', **values: Any) -> bool:
+        """Returns true if this rule provides defaults for the argument and values."""
+        defaults_match = all(
+            values[key] == self.defaults[key] for key in self.defaults if key in values
+        )
+        return self != rule and bool(self.defaults) and defaults_match
 
     def build(self, **values: Any) -> str:
         """Build this rule into a path using the values given."""
@@ -306,16 +326,24 @@ class Rule:
         }
         result = self._builder.format(**converted_values)
         query_string = urlencode(
-            {key: value for key, value in values.items() if key not in self._converters},
+            {
+                key: value
+                for key, value in values.items()
+                if key not in self._converters and key not in self.defaults
+            },
         )
         if query_string:
             result = "{}?{}".format(result, query_string)
         return result
 
     def buildable(self, values: Optional[dict]=None, method: Optional[str]=None) -> bool:
+        """Return True if this rule can build with the values and method."""
         if method is not None and method not in self.methods:
             return False
-        return set(values.keys()) >= set(self._converters.keys())
+        defaults_match = all(
+            values[key] == self.defaults[key] for key in self.defaults if key in values
+        )
+        return defaults_match and set(values.keys()) >= set(self._converters.keys())
 
     def bind(self, map: Map) -> None:
         """Bind the Rule to a Map and compile it."""
@@ -348,14 +376,16 @@ class Rule:
         self._builder = builder
 
     @property
-    def match_key(self) -> Tuple[bool, int, List[WeightedPart]]:
+    def match_key(self) -> Tuple[bool, bool, int, List[WeightedPart]]:
         """A Key to sort the rules by weight for matching.
 
         The key leads to ordering:
 
-         - By first order on the complexity of the rule, i.e. does it
-           have any converted parts. This is as simple rules are quick
-           to match or reject.
+         - By first order by defaults as they are simple rules without
+           conversions.
+         - Then on the complexity of the rule, i.e. does it have any
+           converted parts. This is as simple rules are quick to match
+           or reject.
          - Then by the number of parts, with more complex (more parts)
            first.
          - Finally by the weights themselves. Note that weights are also
@@ -364,17 +394,21 @@ class Rule:
         if self.map is None:
             raise RuntimeError(f"{self!r} is not bound to a Map")
         complex_rule = any(weight.converter for weight in self._weights)
-        return (complex_rule, -len(self._weights), self._weights)
+        return (not bool(self.defaults), complex_rule, -len(self._weights), self._weights)
 
     @property
-    def build_key(self) -> int:
+    def build_key(self) -> Tuple[bool, int]:
         """A Key to sort the rules by weight for building.
 
-        The more complex routes (most converted parts) should be first.
+        The key leads to ordering:
+
+         - By routes with defaults first, as these must be evaulated
+           for building before ones without.
+         - Then the more complex routes (most converted parts).
         """
         if self.map is None:
             raise RuntimeError(f"{self!r} is not bound to a Map")
-        return (-sum(1 for weight in self._weights if weight.converter))
+        return (not bool(self.defaults), -sum(1 for weight in self._weights if weight.converter))
 
 
 def _parse_rule(rule: str) -> Generator[Union[str, VariablePart], None, None]:

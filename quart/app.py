@@ -289,6 +289,7 @@ class Quart(PackageStatic):
             self,
             path: str,
             methods: List[str]=['GET'],
+            defaults: Optional[dict]=None,
             *,
             provide_automatic_options: bool=True
     ) -> Callable:
@@ -305,12 +306,24 @@ class Quart(PackageStatic):
         Arguments:
             path: The path to route on, should start with a ``/``.
             methods: List of HTTP verbs the function routes.
+            defaults: A dictionary of variables to provide automatically, use
+                to provide a simpler default path for a route, e.g. to allow
+                for ``/book`` rather than ``/book/0``,
+
+                .. code-block:: python
+
+                    @app.route('/book', defaults={'page': 0})
+                    @app.route('/book/<int:page>')
+                    def book(page):
+                        ...
+
             provide_automatic_options: Optionally False to prevent
                 OPTION handling.
         """
         def decorator(func: Callable) -> Callable:
             self.add_url_rule(
-                path, func, methods, provide_automatic_options=provide_automatic_options,
+                path, func, methods, defaults=defaults,
+                provide_automatic_options=provide_automatic_options,
             )
             return func
         return decorator
@@ -321,6 +334,7 @@ class Quart(PackageStatic):
             view_func: Callable,
             methods: Optional[List[str]]=None,
             endpoint: Optional[str]=None,
+            defaults: Optional[dict]=None,
             *,
             provide_automatic_options: bool=True
     ) -> None:
@@ -342,6 +356,17 @@ class Quart(PackageStatic):
             methods: List of HTTP verbs the function routes.
             endpoint: Optional endpoint name, if not present the
                 function name is used.
+            defaults: A dictionary of variables to provide automatically, use
+                to provide a simpler default path for a route, e.g. to allow
+                for ``/book`` rather than ``/book/0``,
+
+                .. code-block:: python
+
+                    @app.route('/book', defaults={'page': 0})
+                    @app.route('/book/<int:page>')
+                    def book(page):
+                        ...
+
             provide_automatic_options: Optionally False to prevent
                 OPTION handling.
         """
