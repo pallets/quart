@@ -59,6 +59,14 @@ def test_basic_building(basic_map: Map) -> None:
     assert adapter.build('branch') == '/branch/'
 
 
+def test_value_building() -> None:
+    map_ = Map()
+    map_.add(Rule('/book/<page>', ['GET'], 'book'))
+    adapter = map_.bind('http', 'localhost')
+    assert adapter.build('book', values={'page': 1}) == '/book/1'
+    assert adapter.build('book', values={'page': 1, 'line': 12}) == '/book/1?line=12'
+
+
 def test_strict_slashes() -> None:
     def _test_strict_slashes(map_: Map) -> None:
         adapter = map_.bind_to_request('http', 'localhost', 'POST', '/path/')

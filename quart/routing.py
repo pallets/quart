@@ -4,6 +4,7 @@ from ast import literal_eval
 from collections import defaultdict
 from typing import Any, Dict, Generator, List, NamedTuple, Optional, Set, Tuple, Union  # noqa
 from typing.re import Pattern  # noqa
+from urllib.parse import urlencode
 
 from sortedcontainers import SortedListWithKey
 
@@ -299,14 +300,22 @@ class Rule:
     def build(self, **values: Any) -> str:
         """Build this rule into a path using the values given."""
         converted_values = {
-            key: self._converters[key].to_url(value) for key, value in values.items()
+            key: self._converters[key].to_url(value)
+            for key, value in values.items()
+            if key in self._converters
         }
-        return self._builder.format(**converted_values)
+        result = self._builder.format(**converted_values)
+        query_string = urlencode(
+            {key: value for key, value in values.items() if key not in self._converters},
+        )
+        if query_string:
+            result = "{}?{}".format(result, query_string)
+        return result
 
     def buildable(self, values: Optional[dict]=None, method: Optional[str]=None) -> bool:
         if method is not None and method not in self.methods:
             return False
-        return set(values.keys()) <= set(self._converters.keys())
+        return set(values.keys()) >= set(self._converters.keys())
 
     def bind(self, map: Map) -> None:
         """Bind the Rule to a Map and compile it."""
