@@ -86,6 +86,12 @@ mostly to await test requests i.e.
     await test_client.post('/')
     await test_client.open('/', 'PUT')
 
+Extensions
+----------
+
+To use a Flask extension with Quart see the :ref:`flask_extensions`
+documentation.
+
 Known differences
 -----------------
 
