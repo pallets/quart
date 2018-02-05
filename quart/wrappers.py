@@ -550,10 +550,10 @@ class Response(_BaseRequestResponse, JSONMixin):
         if self.automatically_set_content_length:
             self.headers['Content-Length'] = str(len(bytes_data))
 
-    def set_cookie(
+    def set_cookie(  # type: ignore
             self,
             key: str,
-            value: str='',
+            value: AnyStr='',
             max_age: Optional[Union[int, timedelta]]=None,
             expires: Optional[datetime]=None,
             path: str='/',
@@ -566,7 +566,9 @@ class Response(_BaseRequestResponse, JSONMixin):
         The arguments are the standard cookie morsels and this is a
         wrapper around the stdlib SimpleCookie code.
         """
-        cookie = create_cookie(key, value, max_age, expires, path, domain, secure, httponly)
+        if isinstance(value, bytes):
+            value = value.decode()  # type: ignore
+        cookie = create_cookie(key, value, max_age, expires, path, domain, secure, httponly)  # type: ignore  # noqa: E501
         self.headers.add('Set-Cookie', cookie.output(header=''))
 
     def delete_cookie(self, key: str, path: str='/', domain: Optional[str]=None) -> None:
