@@ -54,6 +54,7 @@ and known to work with quart,
 
 - `Flask-BCrypt <http://pythonhosted.org/Flask-Bcrypt/>`_
 - `Flask-Caching <https://flask-caching.readthedocs.io/en/latest/>`_
+- `Flask-KVSession <https://github.com/mbr/flask-kvsession>`_
 - `Flask-Limiter <http://github.com/alisaifee/flask-limiter/>`_
 - `Flask-Login <http://github.com/maxcountryman/flask-login/>`_
 - `Flask-Mail <https://github.com/mattupstate/flask-mail>`_
