@@ -22,8 +22,12 @@ the ``__init__.py`` file should contain something like,
 
     from quart import Blueprint
 
-    blueprint = Blueprint(__name__)
+    blueprint = Blueprint('store', __name__)
 
     @blueprint.route('/')
     def index():
         return render_template('index.html')
+
+
+the endpoint is then identified as ``store.index`` for example when
+using ``url_for('store.index')``.
