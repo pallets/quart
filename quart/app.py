@@ -1217,7 +1217,7 @@ class Quart(PackageStatic):
 
         session_ = (request_context or _request_ctx_stack.top).session
         if not self.session_interface.is_null_session(session_):
-            response = self.save_session(session_, response)  # type: ignore
+            self.save_session(session_, response)  # type: ignore
         return response
 
     async def handle_request(self, request: Request) -> Response:
@@ -1240,7 +1240,7 @@ class Quart(PackageStatic):
 
     async def full_dispatch_websocket(
         self, websocket_context: Optional[WebsocketContext]=None,
-    ) -> Optional[Response]:
+    ) -> None:
         """Adds pre and post processing to the request dispatching.
 
         Arguments:
@@ -1249,7 +1249,6 @@ class Quart(PackageStatic):
         """
         await self.try_trigger_before_first_request_functions()
         await self.dispatch_websocket(websocket_context)
-        return None
 
     async def dispatch_websocket(
         self, websocket_context: Optional[WebsocketContext]=None,
