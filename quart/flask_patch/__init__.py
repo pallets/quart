@@ -76,9 +76,10 @@ sys.modules.update(flask_modules)
 # HTTPExceptions to be considered in a special way (like the quart
 # HTTPException).
 try:
-    from werkzeug.exceptions import HTTPException
+    from werkzeug.exceptions import HTTPException  # type: ignore
 except ImportError:
-    HTTPException = object  # type: ignore
+    class HTTPException:  # type: ignore
+        pass
 
 
 old_handle_user_exception = Quart.handle_user_exception
@@ -101,7 +102,7 @@ async def new_handle_http_exception(self, error: Exception) -> Response:  # type
         if handler is None:
             werkzeug_response = error.get_response()
             return await self.make_response((
-                (await werkzeug_response.get_data()), werkzeug_response.status_code,
+                werkzeug_response.get_data(), werkzeug_response.status_code,
                 werkzeug_response.headers,
             ))
         else:
