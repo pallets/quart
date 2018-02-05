@@ -7,6 +7,7 @@ from typing import Any, Generator, Optional, TYPE_CHECKING, Union
 from urllib.parse import urlencode
 
 from .datastructures import CIMultiDict
+from .exceptions import BadRequest
 from .utils import create_cookie
 from .wrappers import Request, Response, Websocket
 
@@ -207,6 +208,11 @@ class TestClient:
         queue: asyncio.Queue = asyncio.Queue()
         websocket_client = _TestingWebsocket(queue)
         websocket = Websocket(path, headers, queue, websocket_client.local_queue.put_nowait)  # type: ignore # noqa
+        adapter = self.app.create_url_adapter(websocket)
+        url_rule, _ = adapter.match()
+        if not url_rule.is_websocket:
+            raise BadRequest()
+
         task = asyncio.ensure_future(self.app.handle_websocket(websocket))
 
         try:

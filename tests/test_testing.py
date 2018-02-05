@@ -1,6 +1,7 @@
 import pytest
 
 from quart import jsonify, Quart, request, Response, session
+from quart.exceptions import BadRequest
 from quart.testing import TestClient as Client
 
 
@@ -97,3 +98,17 @@ async def test_set_cookie() -> None:
     client.set_cookie('foo', 'bar')
     response = await client.get('/')
     assert (await response.get_json()) == {'foo': 'bar'}
+
+
+@pytest.mark.asyncio
+async def test_websocket_bad_request() -> None:
+    app = Quart(__name__)
+
+    @app.route('/')
+    async def index() -> str:
+        return ''
+
+    test_client = app.test_client()
+    with pytest.raises(BadRequest):
+        with test_client.websocket('/'):
+            pass
