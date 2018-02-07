@@ -27,13 +27,16 @@ def test_basic_matching(basic_map: Map) -> None:
     _test_match(basic_map, '/branch/', 'GET', (basic_map.endpoints['branch'][0], {}))
 
 
-def _test_match(map_: Map, path: str, method: str, expected: Tuple[Rule, Dict[str, Any]]) -> None:
-    adapter = map_.bind_to_request('http', 'localhost', method, path)
+def _test_match(
+        map_: Map, path: str, method: str, expected: Tuple[Rule, Dict[str, Any]],
+        host: str='',
+) -> None:
+    adapter = map_.bind_to_request('http', host, method, path)
     assert adapter.match() == expected
 
 
 def _test_match_redirect(map_: Map, path: str, method: str, redirect_path: str) -> None:
-    adapter = map_.bind_to_request('http', 'localhost', method, path)
+    adapter = map_.bind_to_request('http', '', method, path)
     with pytest.raises(RedirectRequired) as error:
         adapter.match()
     assert error.value.redirect_path == redirect_path
@@ -44,13 +47,13 @@ def test_no_match_error(basic_map: Map) -> None:
 
 
 def _test_no_match(map_: Map, path: str, method: str) -> None:
-    adapter = map_.bind_to_request('http', 'localhost', method, path)
+    adapter = map_.bind_to_request('http', '', method, path)
     with pytest.raises(NotFound):
         adapter.match()
 
 
 def test_method_not_allowed_error(basic_map: Map) -> None:
-    adapter = basic_map.bind_to_request('http', 'localhost', 'GET', '/')
+    adapter = basic_map.bind_to_request('http', '', 'GET', '/')
     try:
         adapter.match()
     except Exception as error:
@@ -59,7 +62,7 @@ def test_method_not_allowed_error(basic_map: Map) -> None:
 
 
 def test_basic_building(basic_map: Map) -> None:
-    adapter = basic_map.bind('http', 'localhost')
+    adapter = basic_map.bind('http', '')
     assert adapter.build('index', method='POST') == '/'
     assert adapter.build('delete_index', method='DELETE') == '/'
     assert adapter.build('leaf') == '/leaf'
@@ -69,14 +72,14 @@ def test_basic_building(basic_map: Map) -> None:
 def test_value_building() -> None:
     map_ = Map()
     map_.add(Rule('/book/<page>', ['GET'], 'book'))
-    adapter = map_.bind('http', 'localhost')
+    adapter = map_.bind('http', '')
     assert adapter.build('book', values={'page': 1}) == '/book/1'
     assert adapter.build('book', values={'page': 1, 'line': 12}) == '/book/1?line=12'
 
 
 def test_strict_slashes() -> None:
     def _test_strict_slashes(map_: Map) -> None:
-        adapter = map_.bind_to_request('http', 'localhost', 'POST', '/path/')
+        adapter = map_.bind_to_request('http', '', 'POST', '/path/')
         with pytest.raises(MethodNotAllowed):
             adapter.match()
         _test_match_redirect(map_, '/path', 'GET', '/path/')
@@ -113,10 +116,18 @@ def test_defaults() -> None:
     _test_match(map_, '/book/', 'GET', (map_.endpoints['book'][0], {'page': 1}))
     _test_match_redirect(map_, '/book/1/', 'GET', '/book/')
     _test_match(map_, '/book/2/', 'GET', (map_.endpoints['book'][1], {'page': 2}))
-    adapter = map_.bind('http', 'localhost')
+    adapter = map_.bind('http', '')
     assert adapter.build('book', method='GET') == '/book/'
     assert adapter.build('book', method='GET', values={'page': 1}) == '/book/'
     assert adapter.build('book', method='GET', values={'page': 2}) == '/book/2/'
+
+
+def test_host() -> None:
+    map_ = Map()
+    map_.add(Rule('/', ['GET'], 'index'))
+    map_.add(Rule('/', ['GET'], 'subdomain', host='quart.com'))
+    _test_match(map_, '/', 'GET', (map_.endpoints['index'][0], {}))
+    _test_match(map_, '/', 'GET', (map_.endpoints['subdomain'][0], {}), host='quart.com')
 
 
 def test_any_converter() -> None:

@@ -41,17 +41,20 @@ class Blueprint(PackageStatic):
             static_url_path: Optional[str]=None,
             template_folder: Optional[str]=None,
             url_prefix: Optional[str]=None,
+            subdomain: Optional[str]=None,
             root_path: Optional[str]=None,
     ) -> None:
         super().__init__(import_name, template_folder, root_path)
         self.name = name
         self.url_prefix = url_prefix
         self.deferred_functions: List[DeferedSetupFunction] = []
+        self.subdomain = subdomain
 
     def route(
             self,
             path: str,
             methods: List[str]=['GET'],
+            endpoint: Optional[str]=None,
             defaults: Optional[dict]=None,
             *,
             provide_automatic_options: bool=True
@@ -70,7 +73,7 @@ class Blueprint(PackageStatic):
         """
         def decorator(func: Callable) -> Callable:
             self.add_url_rule(
-                path, func, methods, defaults=defaults,
+                path, func, methods, endpoint, defaults=defaults,
                 provide_automatic_options=provide_automatic_options,
             )
             return func
@@ -105,7 +108,7 @@ class Blueprint(PackageStatic):
             raise ValueError('Blueprint endpoints should not contain periods')
         self.record(
             lambda state: state.add_url_rule(
-                path, view_func, methods, endpoint, defaults,
+                path, view_func, methods, endpoint, defaults, self.subdomain,
                 provide_automatic_options=provide_automatic_options,
             ),
         )
@@ -592,6 +595,7 @@ class BlueprintSetupState:
             methods: List[str]=['GET'],
             endpoint: Optional[str]=None,
             defaults: Optional[dict]=None,
+            subdomain: Optional[str]=None,
             *,
             provide_automatic_options: bool=True
     ) -> None:
@@ -599,7 +603,7 @@ class BlueprintSetupState:
             path = f"{self.url_prefix}{path}"
         endpoint = f"{self.blueprint.name}.{endpoint}"
         self.app.add_url_rule(
-            path, view_func, methods, endpoint, defaults,
+            path, view_func, methods, endpoint, defaults, subdomain=subdomain,
             provide_automatic_options=provide_automatic_options,
         )
 

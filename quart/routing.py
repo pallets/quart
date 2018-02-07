@@ -161,6 +161,7 @@ class Map:
         self.rules = SortedListWithKey(key=lambda rule: rule.match_key)
         self.endpoints: Dict[str, SortedListWithKey] = defaultdict(lambda: SortedListWithKey(key=lambda rule: rule.build_key))  # noqa
         self.converters = self.default_converters.copy()
+        self.host_matching = False
 
     def add(self, rule: 'Rule') -> None:
         rule.bind(self)
@@ -241,8 +242,9 @@ class MapAdapter:
         return allowed_methods
 
     def _matches(self) -> Generator[Tuple['Rule', Dict[str, Any], bool], None, None]:
+        full_path = "{}|{}".format(self.server_name or '', self.path)
         for rule in self.map.rules:
-            variables, needs_slash = rule.match(self.path)
+            variables, needs_slash = rule.match(full_path)
             if variables is not None:
                 yield rule, variables, needs_slash
 
@@ -256,6 +258,7 @@ class Rule:
             endpoint: str,
             strict_slashes: bool=True,
             defaults: Optional[dict]=None,
+            host: Optional[str]=None,
             *,
             provide_automatic_options: bool=True,
             is_websocket: bool=False,
@@ -273,6 +276,7 @@ class Rule:
         self.endpoint = endpoint
         self.strict_slashes = strict_slashes
         self.defaults = defaults or {}
+        self.host = host
         self.map: Optional[Map] = None
         self._pattern: Optional[Pattern] = None
         self._builder: Optional[str] = None
@@ -324,7 +328,7 @@ class Rule:
             for key, value in values.items()
             if key in self._converters
         }
-        result = self._builder.format(**converted_values)
+        result = self._builder.format(**converted_values).split('|', 1)[1]
         query_string = urlencode(
             {
                 key: value
@@ -354,7 +358,8 @@ class Rule:
 
         pattern = ''
         builder = ''
-        for part in _parse_rule(self.rule):
+        full_rule = "{}\\|{}".format(self.host or '', self.rule)
+        for part in _parse_rule(full_rule):
             if isinstance(part, VariablePart):
                 converter = self.map.converters[part.converter](
                     *part.arguments[0], **part.arguments[1],

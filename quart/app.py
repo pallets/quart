@@ -107,6 +107,8 @@ class Quart(PackageStatic):
             import_name: str,
             static_url_path: Optional[str]=None,
             static_folder: Optional[str]='static',
+            static_host: Optional[str]=None,
+            host_matching: bool=False,
             template_folder: Optional[str]='templates',
             root_path: Optional[str]=None,
     ) -> None:
@@ -120,6 +122,8 @@ class Quart(PackageStatic):
         Arguments:
             import_name: The name at import of the application, use
                 ``__name__`` unless there is a specific issue.
+            host_matching: Optionally choose to match the host to the
+                configured host on request (404 if no match).
         Attributes:
             after_request_funcs: The functions to execute after a
                 request has been handled.
@@ -145,6 +149,7 @@ class Quart(PackageStatic):
         self.url_build_error_handlers: List[Callable] = []
         self.url_default_functions: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
         self.url_map = Map()
+        self.url_map.host_matching = host_matching
         self.url_value_preprocessors: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
         self.view_functions: Dict[str, Callable] = {}
 
@@ -155,9 +160,14 @@ class Quart(PackageStatic):
 
         self.cli = AppGroup(self.name)
         if self.has_static_folder:
+            if static_host is None and host_matching:
+                raise ValueError(
+                    'static_host must be set if there is a static folder and host_matching is '
+                    'enabled',
+                )
             self.add_url_rule(
                 f"{self.static_url_path}/<path:filename>", self.send_static_file,
-                endpoint='static',
+                endpoint='static', host=static_host,
             )
 
         self.template_context_processors[None] = [_default_template_context_processor]
@@ -209,8 +219,13 @@ class Quart(PackageStatic):
         otherwise the app configuration.
         """
         if request is not None:
+            if self.url_map.host_matching:
+                host = request.host
+            else:
+                host = ''
+
             return self.url_map.bind_to_request(
-                request.scheme, request.server_name, request.method, request.path,
+                request.scheme, host, request.method, request.path,
             )
 
         if self.config['SERVER_NAME'] is not None:
@@ -289,7 +304,10 @@ class Quart(PackageStatic):
             self,
             path: str,
             methods: List[str]=['GET'],
+            endpoint: Optional[str]=None,
             defaults: Optional[dict]=None,
+            host: Optional[str]=None,
+            subdomain: Optional[str]=None,
             *,
             provide_automatic_options: bool=True
     ) -> Callable:
@@ -317,12 +335,15 @@ class Quart(PackageStatic):
                     def book(page):
                         ...
 
+            host: The full host name for this route (should include subdomain
+                if needed) - cannot be used with subdomain.
+            subdomain: A subdomain for this specific route.
             provide_automatic_options: Optionally False to prevent
                 OPTION handling.
         """
         def decorator(func: Callable) -> Callable:
             self.add_url_rule(
-                path, func, methods, defaults=defaults,
+                path, func, methods, endpoint, defaults=defaults, host=host, subdomain=subdomain,
                 provide_automatic_options=provide_automatic_options,
             )
             return func
@@ -335,6 +356,8 @@ class Quart(PackageStatic):
             methods: Optional[List[str]]=None,
             endpoint: Optional[str]=None,
             defaults: Optional[dict]=None,
+            host: Optional[str]=None,
+            subdomain: Optional[str]=None,
             *,
             provide_automatic_options: bool=True
     ) -> None:
@@ -367,6 +390,9 @@ class Quart(PackageStatic):
                     def book(page):
                         ...
 
+            host: The full host name for this route (should include subdomain
+                if needed) - cannot be used with subdomain.
+            subdomain: A subdomain for this specific route.
             provide_automatic_options: Optionally False to prevent
                 OPTION handling.
         """
@@ -379,9 +405,26 @@ class Quart(PackageStatic):
             view_func, 'provide_automatic_options',
             'OPTIONS' not in methods and provide_automatic_options,
         )
+        if not self.url_map.host_matching and (host is not None or subdomain is not None):
+            raise RuntimeError('Cannot use host or subdomain without host matching enabled.')
+        if host is not None and subdomain is not None:
+            raise ValueError('Cannot set host and subdomain, please choose one or the other')
+
+        if subdomain is not None:
+            if self.config['SERVER_NAME'] is None:
+                raise RuntimeError('SERVER_NAME config is required to use subdomain in a route.')
+            host = f"{subdomain}.{self.config['SERVER_NAME']}"
+        elif host is None and self.url_map.host_matching:
+            host = self.config['SERVER_NAME']
+            if host is None:
+                raise RuntimeError(
+                    'Cannot add a route with host matching enabled without either a specified '
+                    'host or a config SERVER_NAME',
+                )
+
         self.url_map.add(
             self.url_rule_class(
-                path, methods, endpoint, provide_automatic_options=automatic_options,
+                path, methods, endpoint, host=host, provide_automatic_options=automatic_options,
             ),
         )
         if handler is not None:
