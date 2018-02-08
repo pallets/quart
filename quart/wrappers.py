@@ -182,12 +182,9 @@ class _BaseRequestResponse:
             self.headers = CIMultiDict(headers)
 
     @property
-    def mimetype(self) -> Optional[str]:
+    def mimetype(self) -> str:
         """Returns the mimetype parsed from the Content-Type header."""
-        if 'Content-Type' in self.headers:
-            return parse_header(self.headers.get('Content-Type'))[0]
-        else:
-            return None
+        return parse_header(self.headers.get('Content-Type', ''))[0]
 
     @mimetype.setter
     def mimetype(self, value: str) -> None:
@@ -204,7 +201,7 @@ class _BaseRequestResponse:
     @property
     def mimetype_params(self) -> Dict[str, str]:
         """Returns the params parsed from the Content-Type header."""
-        return parse_header(self.headers.get('Content-Type'))[1]
+        return parse_header(self.headers.get('Content-Type', ''))[1]
 
     async def get_data(self, raw: bool=True) -> AnyStr:
         raise NotImplemented()
