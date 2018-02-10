@@ -74,6 +74,8 @@ class H11Server(HTTPProtocol):
             else:
                 if isinstance(event, h11.Request):
                     headers = CIMultiDict()
+                    if event.http_version < b'1.1':
+                        headers.setdefault('host', self.app.config['SERVER_NAME'] or '')
                     for name, value in event.headers:
                         headers.add(name.decode().title(), value.decode())
                     if 'Upgrade' in headers:

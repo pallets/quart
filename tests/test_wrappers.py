@@ -1,7 +1,10 @@
 import asyncio
 from base64 import b64encode
+from string import ascii_lowercase
 
+import hypothesis.strategies as strategies
 import pytest
+from hypothesis import given
 
 from quart.datastructures import CIMultiDict
 from quart.exceptions import RequestEntityTooLarge
@@ -105,3 +108,12 @@ def test_request_exceeds_max_content_length() -> None:
     headers['Content-Length'] = str(max_content_length + 1)
     with pytest.raises(RequestEntityTooLarge):
         Request('GET', '/', headers, max_content_length=max_content_length)
+
+
+@given(
+    host=strategies.text(alphabet=ascii_lowercase),
+    path=strategies.text(alphabet=ascii_lowercase),
+)
+def test_request_url(host: str, path: str) -> None:
+    request = Request('GET', path, CIMultiDict({'host': host}))
+    assert request.url == f"{host}{path}"

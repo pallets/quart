@@ -244,7 +244,6 @@ class BaseRequestWebsocket(_BaseRequestResponse):
                 self.args[key] = value
         self.path = unquote(parsed_url.path)
         self.scheme = parsed_url.scheme
-        self.server_name = parsed_url.netloc
         self.method = method
 
     @property
@@ -318,6 +317,14 @@ class BaseRequestWebsocket(_BaseRequestResponse):
     def remote_addr(self) -> str:
         """Returns the remote address of the request, faked into the headers."""
         return self.headers['Remote-Addr']
+
+    @property
+    def url(self) -> str:
+        return f"{self.host}{self.full_path}"
+
+    @property
+    def host(self) -> str:
+        return self.headers['host']
 
     @property
     def cookies(self) -> Dict[str, str]:

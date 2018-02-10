@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
 from json import dumps
-from typing import Any, Generator, Optional, TYPE_CHECKING, Union
+from typing import Any, Generator, Optional, Tuple, TYPE_CHECKING, Union
 from urllib.parse import urlencode
 
 from .datastructures import CIMultiDict
@@ -69,14 +69,7 @@ class TestClient:
         Returns:
             The response from the app handling the request.
         """
-        if headers is None:
-            headers = CIMultiDict()
-        elif isinstance(headers, CIMultiDict):
-            headers = headers
-        elif headers is not None:
-            headers = CIMultiDict(headers)
-        headers.setdefault('Remote-Addr', '127.0.0.1')
-        headers.setdefault('User-Agent', 'Quart')
+        headers, path = self._build_headers_and_path(path, headers, query_string)
 
         if json is not sentinel and form is not None:
             raise ValueError('Cannot send JSON and form data in the body')
@@ -88,8 +81,6 @@ class TestClient:
             headers['Content-Type'] = 'application/x-www-form-urlencoded'
         else:
             data = b''
-        if query_string is not None:
-            path = f"{path}?{urlencode(query_string)}"
         if self.cookie_jar is not None:
             headers.add('Cookie', self.cookie_jar.output(header=''))  # type: ignore
         request = Request(method, path, headers)  # type: ignore
@@ -194,17 +185,7 @@ class TestClient:
             headers: Optional[Union[dict, CIMultiDict]]=None,
             query_string: Optional[dict]=None,
     ) -> Generator[_TestingWebsocket, None, None]:
-        if headers is None:
-            headers = CIMultiDict()
-        elif isinstance(headers, CIMultiDict):
-            headers = headers
-        elif headers is not None:
-            headers = CIMultiDict(headers)
-        headers.setdefault('Remote-Addr', '127.0.0.1')
-        headers.setdefault('User-Agent', 'Quart')
-        if query_string is not None:
-            path = f"{path}?{urlencode(query_string)}"
-
+        headers, path = self._build_headers_and_path(path, headers, query_string)
         queue: asyncio.Queue = asyncio.Queue()
         websocket_client = _TestingWebsocket(queue)
         websocket = Websocket(path, headers, queue, websocket_client.local_queue.put_nowait)  # type: ignore # noqa
@@ -219,3 +200,22 @@ class TestClient:
             yield websocket_client
         finally:
             task.cancel()
+
+    def _build_headers_and_path(
+            self,
+            path: str,
+            headers: Optional[Union[dict, CIMultiDict]]=None,
+            query_string: Optional[dict]=None,
+    ) -> Tuple[CIMultiDict, str]:
+        if headers is None:
+            headers = CIMultiDict()
+        elif isinstance(headers, CIMultiDict):
+            headers = headers
+        elif headers is not None:
+            headers = CIMultiDict(headers)
+        headers.setdefault('Remote-Addr', '127.0.0.1')
+        headers.setdefault('User-Agent', 'Quart')
+        headers.setdefault('host', self.app.config['SERVER_NAME'] or 'localhost')
+        if query_string is not None:
+            path = f"{path}?{urlencode(query_string)}"
+        return headers, path  # type: ignore
