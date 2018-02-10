@@ -1,6 +1,7 @@
 import pytest
 
 from quart import jsonify, Quart, request, Response, session
+from quart.datastructures import CIMultiDict
 from quart.exceptions import BadRequest
 from quart.testing import TestClient as Client
 
@@ -21,6 +22,36 @@ async def test_methods() -> None:
         func = getattr(client, method.lower())
         response = await func('/')
         assert method in (await response.get_data(raw=False))
+
+
+def test_build_headers_and_path() -> None:
+    client = Client(Quart(__name__))
+    headers, path = client._build_headers_and_path('/path', None, {'a': 'b'})
+    assert path == '/path?a=b'
+    assert headers['Remote-Addr'] == '127.0.0.1'
+    assert headers['User-Agent'] == 'Quart'
+    assert headers['host'] == 'localhost'
+
+
+@pytest.mark.parametrize(
+    'headers, expected',
+    [
+        (
+            None,
+            CIMultiDict({'Remote-Addr': '127.0.0.1', 'User-Agent': 'Quart',  'host': 'localhost'}),
+        ),
+        (
+            CIMultiDict({'Remote-Addr': '1.2.3.4', 'User-Agent': 'Quarty', 'host': 'quart.com'}),
+            CIMultiDict({'Remote-Addr': '1.2.3.4', 'User-Agent': 'Quarty', 'host': 'quart.com'}),
+        ),
+    ],
+)
+def test_build_headers_and_path_headers_defaults(
+        headers: CIMultiDict, expected: CIMultiDict,
+) -> None:
+    client = Client(Quart(__name__))
+    result, _ = client._build_headers_and_path('/path', headers)
+    assert result == expected
 
 
 @pytest.mark.asyncio

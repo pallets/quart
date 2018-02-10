@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
 from json import dumps
 from typing import Any, Generator, Optional, Tuple, TYPE_CHECKING, Union
-from urllib.parse import urlencode
+from urllib.parse import ParseResult, urlencode, urlunparse
 
 from .datastructures import CIMultiDict
 from .exceptions import BadRequest
@@ -217,5 +217,8 @@ class TestClient:
         headers.setdefault('User-Agent', 'Quart')
         headers.setdefault('host', self.app.config['SERVER_NAME'] or 'localhost')
         if query_string is not None:
-            path = f"{path}?{urlencode(query_string)}"
+            path = urlunparse(ParseResult(
+                scheme='', netloc='', params='', path=path, query=urlencode(query_string),
+                fragment='',
+            ))
         return headers, path  # type: ignore
