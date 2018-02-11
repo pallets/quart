@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
 from inspect import isasyncgen  # type: ignore
 from typing import (
-    Any, AnyStr, AsyncGenerator, Callable, Dict, Generator, Iterable, Optional, Set, TYPE_CHECKING,
-    Union,
+    Any, AnyStr, AsyncGenerator, AsyncIterable, Callable, Dict, Generator, Iterable, Optional, Set,
+    TYPE_CHECKING, Union,
 )
 from urllib.parse import parse_qs, unquote, urlparse
 from urllib.request import parse_http_list, parse_keqv_list
@@ -475,11 +475,15 @@ class Response(_BaseRequestResponse, JSONMixin):
             header must be provided.
         default_status: The status code to use if not provided.
         default_mimetype: The mimetype to use if not provided.
+        implicit_sequence_conversion: Implicitly convert the response
+            to a iterable in the get_data method, to allow multiple
+            iterations.
     """
 
     automatically_set_content_length = True
     default_status = 200
     default_mimetype = 'text/html'
+    implicit_sequence_conversion = True
 
     def __init__(
             self,
@@ -524,7 +528,7 @@ class Response(_BaseRequestResponse, JSONMixin):
         if content_type is not None:
             self.headers['Content-Type'] = content_type
 
-        self.response: AsyncGenerator[bytes, None]
+        self.response: AsyncIterable[bytes]
         if isinstance(response, (str, bytes)):
             self.set_data(response)  # type: ignore
         else:
@@ -533,6 +537,8 @@ class Response(_BaseRequestResponse, JSONMixin):
 
     async def get_data(self, raw: bool=True) -> AnyStr:
         """Return the body data."""
+        if not isinstance(self.response, _AsyncList) and self.implicit_sequence_conversion:
+            self.response = _AsyncList([data async for data in self.response])  # type: ignore
         result = b'' if raw else ''
         async for data in self.response:  # type: ignore
             if raw:
@@ -595,3 +601,19 @@ def _ensure_aiter(
                 yield data
 
         return aiter()
+
+
+class _AsyncList(list):
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.iter_ = iter(self)
+
+    async def __aiter__(self) -> '_AsyncList':
+        return _AsyncList(self)
+
+    async def __anext__(self) -> Any:
+        try:
+            return next(self.iter_)
+        except StopIteration as error:
+            raise StopAsyncIteration() from error

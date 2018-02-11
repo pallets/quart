@@ -8,7 +8,7 @@ from hypothesis import given
 
 from quart.datastructures import CIMultiDict
 from quart.exceptions import RequestEntityTooLarge
-from quart.wrappers import _BaseRequestResponse, Body, Request
+from quart.wrappers import _BaseRequestResponse, Body, Request, Response
 
 
 def test_basic_authorization() -> None:
@@ -117,3 +117,11 @@ def test_request_exceeds_max_content_length() -> None:
 def test_request_url(host: str, path: str) -> None:
     request = Request('GET', path, CIMultiDict({'host': host}))
     assert request.url == f"{host}{path}"
+
+
+@pytest.mark.asyncio
+async def test_response_body() -> None:
+    response = Response(b'Body')
+    assert b'Body' == (await response.get_data())  # type: ignore
+    # Fetch again to ensure it isn't exhausted
+    assert b'Body' == (await response.get_data())  # type: ignore
