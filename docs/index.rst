@@ -54,6 +54,7 @@ How-To Guides
    json_encoding.rst
    logging.rst
    request_body.rst
+   routing.rst
    session_storage.rst
    streaming_response.rst
    templating.rst
