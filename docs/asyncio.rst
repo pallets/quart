@@ -52,3 +52,29 @@ requests from the network. This means that asyncio is a very good fit
 even if the code within the framework does no IO itself. Yet in
 practice IO is present, for example when loading a template from a
 file, or contacting a database or another server.
+
+Common pitfalls
+---------------
+
+It is very easy to await the wrong thing, for example,
+
+.. code-block:: python
+
+    await awaitable.attribute
+
+will not await the ``awaitable`` object as you might expect, but
+rather attempt to resolve the attribute and then await it. This is
+quite commonly seen as,
+
+.. code-block:: python
+
+    await request.form.get('key')
+
+which fails with an error that the coroutine wrapper has no get
+attribute. To work around this simply use brackets to indicate what
+must be awaited first,
+
+.. code-block:: python
+
+    (await awaitable).attribute
+    (await request.form).get('key')
