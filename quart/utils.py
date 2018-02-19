@@ -6,7 +6,7 @@ from typing import Callable, Optional, TYPE_CHECKING, Union
 from .globals import current_app
 
 if TYPE_CHECKING:
-    from .wrappers import Response  # noqa: F401
+    from .wrappers.response import Response  # noqa: F401
 
 
 def redirect(location: str, status_code: int=301) -> 'Response':

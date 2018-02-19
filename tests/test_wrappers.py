@@ -8,7 +8,8 @@ from hypothesis import given
 
 from quart.datastructures import CIMultiDict
 from quart.exceptions import RequestEntityTooLarge
-from quart.wrappers import _BaseRequestResponse, Body, Request, Response
+from quart.wrappers import Body, Request, Response
+from quart.wrappers._base import _BaseRequestResponse
 
 
 def test_basic_authorization() -> None:
