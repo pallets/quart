@@ -109,7 +109,7 @@ def run_app(
     server = loop.run_until_complete(create_server)
 
     scheme = 'http' if ssl is None else 'https'
-    print("Running on {}://{}:{} (CTRL + C to quit)".format(scheme, host, port))
+    print("Running on {}://{}:{} (CTRL + C to quit)".format(scheme, host, port))  # noqa: T001
 
     try:
         loop.run_forever()
