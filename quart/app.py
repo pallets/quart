@@ -18,6 +18,7 @@ from .ctx import (
     has_websocket_context, RequestContext, WebsocketContext,
 )
 from .datastructures import CIMultiDict
+from .debug import traceback_response
 from .exceptions import all_http_exceptions, HTTPException
 from .globals import g, request, session
 from .helpers import _endpoint_from_view_func, get_flashed_messages, url_for
@@ -795,7 +796,10 @@ class Quart(PackageStatic):
 
         self.log_exception(sys.exc_info())
         if handler is None:
-            return internal_server_error.get_response()
+            if self.debug and not self.testing:
+                return await traceback_response()
+            else:
+                return internal_server_error.get_response()
         else:
             return await handler(error)
 
