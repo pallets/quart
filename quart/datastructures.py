@@ -128,6 +128,7 @@ class Authorization:
 class AcceptOption(NamedTuple):
     value: str
     quality: float
+    parameters: dict
 
 
 class Accept:
@@ -136,21 +137,18 @@ class Accept:
         self.options: List[AcceptOption] = []
         for accept_option in parse_http_list(header_value):
             option, params = parse_header(accept_option)
-            if 'q' in params:
-                quality = float(params['q'])
-            else:
-                quality = 1.0
-            self.options.append(AcceptOption(option, quality))
+            quality = float(params.pop('q', 1.0))
+            self.options.append(AcceptOption(option, quality, params))
 
     def best_match(self, matches: List[str], default: Optional[str]=None) -> Optional[str]:
-        best_match = AcceptOption(default, -1.0)
+        best_match = AcceptOption(default, -1.0, {})
         for possible_match in matches:
             for option in self.options:
                 if (
                         self._values_match(possible_match, option.value) and
                         option.quality > best_match.quality
                 ):
-                    best_match = AcceptOption(possible_match, option.quality)
+                    best_match = AcceptOption(possible_match, option.quality, {})
         return best_match.value
 
     def _values_match(self, lhs: str, rhs: str) -> bool:

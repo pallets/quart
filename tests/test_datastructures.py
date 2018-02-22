@@ -7,8 +7,8 @@ def test_accept() -> None:
         'application/vnd.google-earth.kmz;googleearth=context.kmz;q=0.7'
     )
     assert accept.options == [
-        AcceptOption(value='application/vnd.google-earth.kml+xml', quality=1.0),
-        AcceptOption(value='application/vnd.google-earth.kmz', quality=0.7),
+        AcceptOption('application/vnd.google-earth.kml+xml', 1.0, {'googleearth': 'context.kml'}),
+        AcceptOption('application/vnd.google-earth.kmz', 0.7, {'googleearth': 'context.kmz'}),
     ]
 
 
