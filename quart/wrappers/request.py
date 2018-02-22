@@ -156,20 +156,26 @@ class Request(BaseRequestWebsocket, JSONMixin):
         if content_type == 'application/x-www-form-urlencoded':
             for key, values in parse_qs(data.decode()).items():
                 for value in values:
-                    self._form[key] = value
+                    self._form.add(key, value)
         elif content_type == 'multipart/form-data':
             field_storage = FieldStorage(
                 io.BytesIO(data), headers=self.headers, environ={'REQUEST_METHOD': 'POST'},
             )
             for key in field_storage:  # type: ignore
                 field_storage_key = field_storage[key]
-                if field_storage_key.filename is None:
-                    self._form[key] = field_storage_key.value
-                else:
-                    self._files[key] = FileStorage(
+                if isinstance(field_storage_key, list):
+                    for value in field_storage_key:
+                        self._form.add(key, value)
+                elif (
+                        isinstance(field_storage_key, FieldStorage) and
+                        field_storage_key.filename is not None
+                ):
+                    self._files[key] = FileStorage(  # type: ignore
                         io.BytesIO(field_storage_key.file.read()), field_storage_key.filename,
-                        field_storage_key.name, field_storage_key.type, field_storage_key.headers,
+                        field_storage_key.name, field_storage_key.type, field_storage_key.headers,  # type: ignore # noqa: E501
                     )
+                else:
+                    self._form.add(key, str(field_storage_key.file.read()))
 
     async def _load_json_data(self) -> str:
         """Return the data after decoding."""
