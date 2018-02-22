@@ -135,13 +135,11 @@ class Accept:
     def __init__(self, header_value: str) -> None:
         self.options: List[AcceptOption] = []
         for accept_option in parse_http_list(header_value):
-            try:
-                option, raw_quality = accept_option.split(';')
-            except ValueError:
-                option = accept_option
-                quality = 1.0
+            option, params = parse_header(accept_option)
+            if 'q' in params:
+                quality = float(params['q'])
             else:
-                quality = float(raw_quality.split('=', 1)[-1])
+                quality = 1.0
             self.options.append(AcceptOption(option, quality))
 
     def best_match(self, matches: List[str], default: Optional[str]=None) -> Optional[str]:

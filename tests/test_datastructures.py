@@ -1,4 +1,15 @@
-from quart.datastructures import Accept, CharsetAccept, LanguageAccept, MIMEAccept
+from quart.datastructures import Accept, AcceptOption, CharsetAccept, LanguageAccept, MIMEAccept
+
+
+def test_accept() -> None:
+    accept = Accept(
+        'application/vnd.google-earth.kml+xml;googleearth=context.kml,'
+        'application/vnd.google-earth.kmz;googleearth=context.kmz;q=0.7'
+    )
+    assert accept.options == [
+        AcceptOption(value='application/vnd.google-earth.kml+xml', quality=1.0),
+        AcceptOption(value='application/vnd.google-earth.kmz', quality=0.7),
+    ]
 
 
 def test_accept_best_match() -> None:
