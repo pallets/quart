@@ -1,4 +1,7 @@
-from quart.datastructures import Accept, AcceptOption, CharsetAccept, LanguageAccept, MIMEAccept
+from quart.datastructures import (
+    _CacheControl, Accept, AcceptOption, CharsetAccept, LanguageAccept, MIMEAccept,
+    RequestCacheControl, ResponseCacheControl,
+)
 
 
 def test_accept() -> None:
@@ -36,3 +39,33 @@ def test_mime_accept_best_match() -> None:
     assert accept.best_match(['application/xml', 'text/html']) == 'text/html'
     assert accept.best_match(['application/jpg']) == 'application/jpg'
     assert accept.best_match(['bizarre/other']) == 'bizarre/other'
+
+
+def test_cache_control() -> None:
+    cache_control = _CacheControl()
+    cache_control.no_cache = True
+    cache_control.no_store = False
+    cache_control.max_age = 2
+    assert cache_control.to_header() == 'no-cache,max-age=2'
+
+
+def test_request_cache_control() -> None:
+    cache_control = RequestCacheControl.from_header('no-transform,no-cache,min-fresh=2')
+    assert cache_control.no_transform is True
+    assert cache_control.no_cache is True
+    assert cache_control.min_fresh == 2  # type: ignore
+
+
+def test_response_cache_control() -> None:
+    updated = False
+
+    def on_update(_: object) -> None:
+        nonlocal updated
+        updated = True
+
+    cache_control = ResponseCacheControl.from_header('public, max-age=2592000', on_update)
+    assert cache_control.public is True  # type: ignore
+    assert cache_control.max_age == 2592000
+    assert updated is False
+    cache_control.max_age = 2
+    assert updated is True

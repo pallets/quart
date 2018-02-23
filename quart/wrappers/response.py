@@ -5,7 +5,7 @@ from typing import (
 )
 
 from ._base import _BaseRequestResponse, JSONMixin
-from ..datastructures import CIMultiDict
+from ..datastructures import CIMultiDict, ResponseCacheControl
 from ..utils import create_cookie
 
 if TYPE_CHECKING:
@@ -133,6 +133,13 @@ class Response(_BaseRequestResponse, JSONMixin):
     def delete_cookie(self, key: str, path: str='/', domain: Optional[str]=None) -> None:
         """Delete a cookie (set to expire immediately)."""
         self.set_cookie(key, expires=datetime.utcnow(), max_age=0, path=path, domain=domain)
+
+    @property
+    def cache_control(self) -> ResponseCacheControl:
+        def on_update(cache_control: ResponseCacheControl) -> None:
+            self.headers['Cache-Control'] = cache_control.to_header()
+
+        return ResponseCacheControl.from_header(self.headers.get('Cache-Control', ''), on_update)  # type: ignore  # noqa: E501
 
     async def _load_json_data(self) -> str:
         """Return the data after decoding."""

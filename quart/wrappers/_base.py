@@ -7,6 +7,7 @@ from urllib.request import parse_http_list, parse_keqv_list
 
 from ..datastructures import (
     Accept, Authorization, CharsetAccept, CIMultiDict, LanguageAccept, MIMEAccept, MultiDict,
+    RequestCacheControl,
 )
 from ..json import loads
 
@@ -238,6 +239,10 @@ class BaseRequestWebsocket(_BaseRequestResponse):
                     return None
                 return Authorization(**params)
         return None
+
+    @property
+    def cache_control(self) -> RequestCacheControl:
+        return RequestCacheControl.from_header(self.headers.get('Cache-Control', ''))  # type: ignore # noqa: E501
 
     @property
     def remote_addr(self) -> str:
