@@ -90,3 +90,11 @@ def test_url_structure(
     assert base_request_websocket.method == method
     assert base_request_websocket.scheme == scheme
     assert base_request_websocket.is_secure == scheme.endswith('s')
+
+
+def test_query_string() -> None:
+    base_request_websocket = BaseRequestWebsocket(
+        'GET', 'http', '/?a=b&a=c', CIMultiDict({'host': 'localhost'}),
+    )
+    assert base_request_websocket.query_string == 'a=b&a=c'
+    assert base_request_websocket.args.getlist('a') == ['b', 'c']
