@@ -1,4 +1,5 @@
 import asyncio
+from urllib.parse import urlencode
 
 import pytest
 
@@ -60,3 +61,14 @@ def test_request_exceeds_max_content_length() -> None:
     headers['Content-Length'] = str(max_content_length + 1)
     with pytest.raises(RequestEntityTooLarge):
         Request('GET', 'http', '/', headers, max_content_length=max_content_length)
+
+
+@pytest.mark.asyncio
+async def test_request_values() -> None:
+    request = Request(
+        'GET', 'http', '/?a=b&a=c',
+        CIMultiDict({'host': 'quart.com', 'Content-Type': 'application/x-www-form-urlencoded'}),
+    )
+    request.body.append(urlencode({'a': 'd'}).encode())
+    request.body.set_complete()
+    assert (await request.values).getlist('a') == ['b', 'c', 'd']

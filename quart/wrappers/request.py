@@ -126,6 +126,14 @@ class Request(BaseRequestWebsocket, JSONMixin):
             return (await self.body).decode(self.charset)  # type: ignore
 
     @property
+    async def values(self) -> MultiDict:
+        result = MultiDict()
+        result.update(self.args)
+        for key, value in (await self.form).items():
+            result.add(key, value)
+        return result
+
+    @property
     async def form(self) -> MultiDict:
         """The parsed form encoded data.
 
