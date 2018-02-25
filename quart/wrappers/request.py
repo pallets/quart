@@ -106,11 +106,10 @@ class Request(BaseRequestWebsocket, JSONMixin):
                 body (None implies no limit in Quart).
         """
         super().__init__(method, scheme, path, headers)
-        content_length = headers.get('Content-Length')
         self.max_content_length = max_content_length
         if (
-                content_length is not None and self.max_content_length is not None and
-                int(content_length) > self.max_content_length
+                self.content_length is not None and self.max_content_length is not None and
+                self.content_length > self.max_content_length
         ):
             from ..exceptions import RequestEntityTooLarge  # noqa Avoiding circular import
             raise RequestEntityTooLarge()
@@ -124,6 +123,10 @@ class Request(BaseRequestWebsocket, JSONMixin):
             return await self.body  # type: ignore
         else:
             return (await self.body).decode(self.charset)  # type: ignore
+
+    @property
+    async def data(self) -> bytes:
+        return await self.get_data()
 
     @property
     async def values(self) -> MultiDict:
@@ -159,7 +162,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
         data = await self.body  # type: ignore
         self._form = MultiDict()
         self._files = MultiDict()
-        content_header = self.headers.get('Content-Type')
+        content_header = self.content_type
         if content_header is None:
             return
         content_type, parameters = parse_header(content_header)
@@ -186,6 +189,25 @@ class Request(BaseRequestWebsocket, JSONMixin):
                     )
                 else:
                     self._form.add(key, str(field_storage_key.file.read()))
+
+    @property
+    def content_encoding(self) -> Optional[str]:
+        return self.headers.get('Content-Encoding')
+
+    @property
+    def content_length(self) -> Optional[int]:
+        if 'Content-Length' in self.headers:
+            return int(self.headers['Content-Length'])
+        else:
+            return None
+
+    @property
+    def content_md5(self) -> Optional[str]:
+        return self.headers.get('Content-md5')
+
+    @property
+    def content_type(self) -> Optional[str]:
+        return self.headers.get('Content-Type')
 
     async def _load_json_data(self) -> str:
         """Return the data after decoding."""

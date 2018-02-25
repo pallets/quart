@@ -1,7 +1,9 @@
 from base64 import b64decode
 from cgi import parse_header
+from datetime import datetime
+from email.utils import parsedate_to_datetime
 from http.cookies import SimpleCookie
-from typing import Any, AnyStr, Dict, Optional, TYPE_CHECKING, Union
+from typing import Any, AnyStr, Dict, List, Optional, TYPE_CHECKING, Union
 from urllib.parse import parse_qs, ParseResult, unquote, urlparse, urlunparse
 from urllib.request import parse_http_list, parse_keqv_list
 
@@ -97,7 +99,7 @@ class _BaseRequestResponse:
     Attributes:
         charset: The default charset for encoding/decoding.
     """
-    charset = 'utf-8'
+    charset = url_charset = 'utf-8'
 
     def __init__(self, headers: Optional[Union[dict, CIMultiDict]]) -> None:
         self.headers: CIMultiDict
@@ -288,3 +290,25 @@ class BaseRequestWebsocket(_BaseRequestResponse):
         cookies = SimpleCookie()  # type: ignore
         cookies.load(self.headers.get('Cookie', ''))
         return {key: cookie.value for key, cookie in cookies.items()}
+
+    @property
+    def access_route(self) -> List[str]:
+        if 'X-Forwarded-For' in self.headers:
+            return parse_http_list(self.headers['X-Forwarded-For'])
+        else:
+            return [self.remote_addr]
+
+    @property
+    def date(self) -> Optional[datetime]:
+        if 'date' in self.headers:
+            return parsedate_to_datetime(self.headers['date'])
+        else:
+            return None
+
+    @property
+    def max_forwards(self) -> Optional[str]:
+        return self.headers.get('Max-Forwards')
+
+    @property
+    def referrer(self) -> Optional[str]:
+        return self.headers.get('Referer')
