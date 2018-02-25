@@ -69,8 +69,10 @@ class HTTPProtocol:
     ) -> None:
         self._timeout_handle.cancel()
         headers['Remote-Addr'] = self._transport.get_extra_info('peername')[0]
+        scheme = 'https' if self._transport.get_extra_info('ssl_object') is not None else 'http'
         request = self.app.request_class(
-            method, path, headers, max_content_length=self.app.config['MAX_CONTENT_LENGTH'],
+            method, scheme, path, headers,
+            max_content_length=self.app.config['MAX_CONTENT_LENGTH'],
         )
         self.streams[stream_id] = self.stream_class(self.loop, request)
         # It is important that the app handles the request in a unique

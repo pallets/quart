@@ -148,11 +148,12 @@ class BaseRequestWebsocket(_BaseRequestResponse):
     url_rule: Optional['Rule'] = None
     view_args: Optional[Dict[str, Any]] = None
 
-    def __init__(self, method: str, path: str, headers: CIMultiDict) -> None:
+    def __init__(self, method: str, scheme: str, path: str, headers: CIMultiDict) -> None:
         """Create a request or websocket base object.
 
         Arguments:
             method: The HTTP verb.
+            scheme: The scheme used for the request.
             path: The full URL of the request.
             headers: The request headers.
             body: An awaitable future for the body data i.e.
@@ -170,7 +171,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
             for value in values:
                 self.args[key] = value
         self.path = unquote(parsed_url.path)
-        self.scheme = parsed_url.scheme
+        self.scheme = scheme
         self.method = method
 
     @property
@@ -256,6 +257,10 @@ class BaseRequestWebsocket(_BaseRequestResponse):
     @property
     def host(self) -> str:
         return self.headers['host']
+
+    @property
+    def is_secure(self) -> bool:
+        return self.scheme in {'https', 'wss'}
 
     @property
     def cookies(self) -> Dict[str, str]:

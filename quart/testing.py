@@ -47,14 +47,15 @@ class TestClient:
         self.app = app
 
     async def open(
-        self,
-        path: str,
-        *,
-        method: str='GET',
-        headers: Optional[Union[dict, CIMultiDict]]=None,
-        form: Optional[dict]=None,
-        query_string: Optional[dict]=None,
-        json: Any=sentinel,
+            self,
+            path: str,
+            *,
+            method: str='GET',
+            headers: Optional[Union[dict, CIMultiDict]]=None,
+            form: Optional[dict]=None,
+            query_string: Optional[dict]=None,
+            json: Any=sentinel,
+            scheme: str='http',
     ) -> Response:
         """Open a request to the app associated with this client.
 
@@ -65,6 +66,7 @@ class TestClient:
             form: Data to send form encoded in the request body.
             query_string: Data to send via query string.
             json: Data to send json encoded in the request body.
+            scheme: The scheme to use in the request, default http.
 
         Returns:
             The response from the app handling the request.
@@ -83,7 +85,7 @@ class TestClient:
             data = b''
         if self.cookie_jar is not None:
             headers.add('Cookie', self.cookie_jar.output(header=''))  # type: ignore
-        request = Request(method, path, headers)  # type: ignore
+        request = Request(method, scheme, path, headers)  # type: ignore
         request.body.set_result(data)
         response = await asyncio.ensure_future(self.app.handle_request(request))
         if self.cookie_jar is not None and 'Set-Cookie' in response.headers:
@@ -184,11 +186,14 @@ class TestClient:
             *,
             headers: Optional[Union[dict, CIMultiDict]]=None,
             query_string: Optional[dict]=None,
+            scheme: str='http',
     ) -> Generator[_TestingWebsocket, None, None]:
         headers, path = self._build_headers_and_path(path, headers, query_string)
         queue: asyncio.Queue = asyncio.Queue()
         websocket_client = _TestingWebsocket(queue)
-        websocket = Websocket(path, headers, queue, websocket_client.local_queue.put_nowait)  # type: ignore # noqa
+        websocket = Websocket(
+            path, scheme, headers, queue, websocket_client.local_queue.put_nowait,
+        )
         adapter = self.app.create_url_adapter(websocket)
         url_rule, _ = adapter.match()
         if not url_rule.is_websocket:

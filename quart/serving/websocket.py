@@ -69,8 +69,9 @@ class WebsocketServer:
         headers = CIMultiDict()
         for name, value in event.h11request.headers:
             headers.add(name.decode().title(), value.decode())
+        scheme = 'wss' if self._transport.get_extra_info('ssl_object') is not None else 'ws'
         websocket = Websocket(
-            event.h11request.target.decode(), headers, self.queue, self.send_data,
+            event.h11request.target.decode(), scheme, headers, self.queue, self.send_data,
         )
         adapter = self.app.create_url_adapter(websocket)
         try:

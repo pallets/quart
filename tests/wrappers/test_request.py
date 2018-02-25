@@ -59,4 +59,4 @@ def test_request_exceeds_max_content_length() -> None:
     headers = CIMultiDict()
     headers['Content-Length'] = str(max_content_length + 1)
     with pytest.raises(RequestEntityTooLarge):
-        Request('GET', '/', headers, max_content_length=max_content_length)
+        Request('GET', 'http', '/', headers, max_content_length=max_content_length)

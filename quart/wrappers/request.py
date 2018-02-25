@@ -87,6 +87,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
     def __init__(
             self,
             method: str,
+            scheme: str,
             path: str,
             headers: CIMultiDict,
             *,
@@ -96,6 +97,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
 
         Arguments:
             method: The HTTP verb.
+            scheme: The scheme used for the request.
             path: The full URL of the request.
             headers: The request headers.
             body: An awaitable future for the body data i.e.
@@ -103,7 +105,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
             max_content_length: The maximum length in bytes of the
                 body (None implies no limit in Quart).
         """
-        super().__init__(method, path, headers)
+        super().__init__(method, scheme, path, headers)
         content_length = headers.get('Content-Length')
         self.max_content_length = max_content_length
         if (
@@ -187,6 +189,7 @@ class Websocket(BaseRequestWebsocket):
     def __init__(
             self,
             path: str,
+            scheme: str,
             headers: CIMultiDict,
             queue: asyncio.Queue,
             send: Callable,
@@ -195,11 +198,12 @@ class Websocket(BaseRequestWebsocket):
 
         Arguments:
             method: The HTTP verb.
+            scheme: The scheme used for the request.
             path: The full URL of the request.
             headers: The request headers.
             websocket: The actual websocket with the data.
         """
-        super().__init__('GET', path, headers)
+        super().__init__('GET', scheme, path, headers)
         self._queue = queue
         self._send = send
 

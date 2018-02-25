@@ -1081,7 +1081,13 @@ class Quart(PackageStatic):
         """Creates and returns a test client."""
         return self.test_client_class(self)
 
-    def test_request_context(self, method: str, path: str) -> RequestContext:
+    def test_request_context(
+            self,
+            method: str,
+            path: str,
+            *,
+            scheme: str='http',
+    ) -> RequestContext:
         """Create a request context for testing purposes.
 
         This is best used for testing code within request contexts. It
@@ -1096,8 +1102,9 @@ class Quart(PackageStatic):
         Arguments:
             method: HTTP verb
             path: Request path.
+            scheme: Scheme for the request, default http.
         """
-        request = self.request_class(method, path, CIMultiDict())
+        request = self.request_class(method, scheme, path, CIMultiDict())
         request.body.set_result(b'')
         return self.request_context(request)
 

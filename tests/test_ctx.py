@@ -22,7 +22,7 @@ def test_request_context_match() -> None:
     rule = Rule('/', ['GET'], 'index')
     url_adapter.match.return_value = (rule, {'arg': 'value'})
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
-    request = Request('GET', '/', CIMultiDict())
+    request = Request('GET', 'http', '/', CIMultiDict())
     RequestContext(app, request)
     assert request.url_rule == rule
     assert request.view_args == {'arg': 'value'}
@@ -43,7 +43,7 @@ def test_request_context_matching_error(
     url_adapter = Mock()
     url_adapter.match.side_effect = exception_instance
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
-    request = Request('GET', '/', CIMultiDict())
+    request = Request('GET', 'http', '/', CIMultiDict())
     RequestContext(app, request)
     assert isinstance(request.routing_exception, exception_type)  # type: ignore
 
@@ -51,9 +51,12 @@ def test_request_context_matching_error(
 @pytest.mark.parametrize(
     'request_factory, context_class, is_websocket',
     [  # type: ignore
-        (lambda method, path, headers: Request(method, path, headers), RequestContext, True),
         (
-            lambda _, path, headers: Websocket(path, headers, Mock(), Mock()),
+            lambda method, path, headers: Request(method, 'http', path, headers),
+            RequestContext, True,
+        ),
+        (
+            lambda _, path, headers: Websocket(path, 'ws', headers, Mock(), Mock()),
             WebsocketContext, False,
         ),
     ],
@@ -75,21 +78,24 @@ def test_bad_request_if_websocket_route() -> None:
     url_adapter = Mock()
     url_adapter.match.return_value = Rule('/', ['GET'], 'index', is_websocket=True), {}
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
-    request = Request('GET', '/', CIMultiDict())
+    request = Request('GET', 'http', '/', CIMultiDict())
     RequestContext(app, request)
     assert isinstance(request.routing_exception, BadRequest)
 
 
 @pytest.mark.asyncio
 async def test_after_this_request() -> None:
-    async with RequestContext(Quart(__name__), Request('GET', '/', CIMultiDict())) as context:
+    async with RequestContext(
+            Quart(__name__),
+            Request('GET', 'http', '/', CIMultiDict()),
+    ) as context:
         after_this_request(lambda: 'hello')
         assert context._after_request_functions[0]() == 'hello'
 
 
 @pytest.mark.asyncio
 async def test_has_request_context() -> None:
-    async with RequestContext(Quart(__name__), Request('GET', '/', CIMultiDict())):
+    async with RequestContext(Quart(__name__), Request('GET', 'http', '/', CIMultiDict())):
         assert has_request_context() is True
         assert has_app_context() is True
     assert has_request_context() is False

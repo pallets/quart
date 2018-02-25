@@ -12,7 +12,7 @@ from quart.wrappers.request import Request
 def test_basic_authorization() -> None:
     headers = CIMultiDict()
     headers['Authorization'] = "Basic {}".format(b64encode(b'identity:secret').decode('ascii'))
-    request = BaseRequestWebsocket('GET', '/', headers)
+    request = BaseRequestWebsocket('GET', 'http', '/', headers)
     auth = request.authorization
     assert auth.username == 'identity'
     assert auth.password == 'secret'
@@ -29,7 +29,7 @@ def test_digest_authorization() -> None:
         'response="abcd1235", '
         'opaque="abcd1236"'
     )
-    request = BaseRequestWebsocket('GET', '/', headers)
+    request = BaseRequestWebsocket('GET', 'http', '/', headers)
     auth = request.authorization
     assert auth.username == 'identity'
     assert auth.realm == 'realm@rea.lm'
@@ -58,5 +58,5 @@ def test_mimetype_set_property() -> None:
     path=strategies.text(alphabet=ascii_lowercase),
 )
 def test_request_url(host: str, path: str) -> None:
-    request = Request('GET', path, CIMultiDict({'host': host}))
+    request = Request('GET', 'http', path, CIMultiDict({'host': host}))
     assert request.url == f"{host}{path}"
