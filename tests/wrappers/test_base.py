@@ -1,12 +1,9 @@
 from base64 import b64encode
-from string import ascii_lowercase
 
-import hypothesis.strategies as strategies
-from hypothesis import given
+import pytest
 
 from quart.datastructures import CIMultiDict
 from quart.wrappers._base import _BaseRequestResponse, BaseRequestWebsocket
-from quart.wrappers.request import Request
 
 
 def test_basic_authorization() -> None:
@@ -53,10 +50,43 @@ def test_mimetype_set_property() -> None:
     assert base_request_response.headers['Content-Type'] == 'application/json'
 
 
-@given(
-    host=strategies.text(alphabet=ascii_lowercase),
-    path=strategies.text(alphabet=ascii_lowercase),
+@pytest.mark.parametrize(
+    'method, scheme, host, path,'
+    'expected_path, expected_query_string, expected_full_path, expected_url, expected_base_url,'
+    'expected_url_root, expected_host_url',
+    [
+        (
+            'GET', 'http', 'quart.com', '/',
+            '/', '', '/', 'http://quart.com/', 'http://quart.com/', 'http://quart.com/',
+            'http://quart.com',
+        ),
+        (
+            'GET', 'http', 'quart.com', '/?a=b',
+            '/', 'a=b', '/?a=b', 'http://quart.com/?a=b', 'http://quart.com/', 'http://quart.com/',
+            'http://quart.com',
+        ),
+        (
+            'GET', 'https', 'quart.com', '/branch/leaf?a=b',
+            '/branch/leaf', 'a=b', '/branch/leaf?a=b', 'https://quart.com/branch/leaf?a=b',
+            'https://quart.com/branch/leaf', 'https://quart.com/branch/', 'https://quart.com',
+        ),
+    ],
 )
-def test_request_url(host: str, path: str) -> None:
-    request = Request('GET', 'http', path, CIMultiDict({'host': host}))
-    assert request.url == f"{host}{path}"
+def test_url_structure(
+        method: str, scheme: str, host: str, path: str,
+        expected_path: str, expected_query_string: str, expected_full_path: str, expected_url: str,
+        expected_base_url: str, expected_url_root: str, expected_host_url: str,
+) -> None:
+    base_request_websocket = BaseRequestWebsocket(method, scheme, path, CIMultiDict({'host': host}))
+
+    assert base_request_websocket.path == expected_path
+    assert base_request_websocket.query_string == expected_query_string
+    assert base_request_websocket.full_path == expected_full_path
+    assert base_request_websocket.url == expected_url
+    assert base_request_websocket.base_url == expected_base_url
+    assert base_request_websocket.url_root == expected_url_root
+    assert base_request_websocket.host_url == expected_host_url
+    assert base_request_websocket.host == host
+    assert base_request_websocket.method == method
+    assert base_request_websocket.scheme == scheme
+    assert base_request_websocket.is_secure == scheme.endswith('s')

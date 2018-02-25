@@ -2,7 +2,7 @@ from base64 import b64decode
 from cgi import parse_header
 from http.cookies import SimpleCookie
 from typing import Any, AnyStr, Dict, Optional, TYPE_CHECKING, Union
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import parse_qs, ParseResult, unquote, urlparse, urlunparse
 from urllib.request import parse_http_list, parse_keqv_list
 
 from ..datastructures import (
@@ -171,6 +171,8 @@ class BaseRequestWebsocket(_BaseRequestResponse):
             for value in values:
                 self.args[key] = value
         self.path = unquote(parsed_url.path)
+        self.query_string = parsed_url.query
+        self.fragment = parsed_url.fragment
         self.scheme = scheme
         self.method = method
 
@@ -251,12 +253,30 @@ class BaseRequestWebsocket(_BaseRequestResponse):
         return self.headers['Remote-Addr']
 
     @property
-    def url(self) -> str:
-        return f"{self.host}{self.full_path}"
+    def base_url(self) -> str:
+        """Returns the base url without query string or fragments."""
+        return urlunparse(ParseResult(self.scheme, self.host, self.path, '', '', ''))
 
     @property
     def host(self) -> str:
         return self.headers['host']
+
+    @property
+    def host_url(self) -> str:
+        return urlunparse(ParseResult(self.scheme, self.host, '', '', '', ''))
+
+    @property
+    def url(self) -> str:
+        """Returns the full url requested."""
+        return urlunparse(ParseResult(
+            self.scheme, self.host, self.path, '', self.query_string, self.fragment,
+        ))
+
+    @property
+    def url_root(self) -> str:
+        return urlunparse(ParseResult(
+            self.scheme, self.host, self.path.rsplit('/', 1)[0] + '/', '', '', '',
+        ))
 
     @property
     def is_secure(self) -> bool:
