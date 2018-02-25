@@ -1,6 +1,6 @@
 from quart.datastructures import (
-    _CacheControl, Accept, AcceptOption, CharsetAccept, LanguageAccept, MIMEAccept,
-    RequestCacheControl, ResponseCacheControl,
+    _CacheControl, Accept, AcceptOption, CharsetAccept, ETags, LanguageAccept, MIMEAccept,
+    Range, RangeSet, RequestCacheControl, ResponseCacheControl,
 )
 
 
@@ -69,3 +69,22 @@ def test_response_cache_control() -> None:
     assert updated is False
     cache_control.max_age = 2
     assert updated is True
+
+
+def test_etags() -> None:
+    etags = ETags.from_header('W/"67ab43", "54ed21"')
+    assert etags.weak == {'67ab43'}
+    assert etags.strong == {'54ed21'}
+    assert '54ed21' in etags
+    assert etags.to_header() == 'W/"67ab43","54ed21"'
+
+
+def test_range() -> None:
+    range_ = Range.from_header('bytes=500-600,601-999')
+    assert range_.units == 'bytes'
+    assert range_.ranges == [RangeSet(500, 600), RangeSet(601, 999)]
+    assert range_.to_header() == 'bytes=500-600,601-999'
+    range_ = Range.from_header('bytes=-999')
+    assert range_.units == 'bytes'
+    assert range_.ranges == [RangeSet(-999, None)]
+    assert range_.to_header() == 'bytes=-999'

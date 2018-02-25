@@ -8,8 +8,8 @@ from urllib.parse import parse_qs, ParseResult, unquote, urlparse, urlunparse
 from urllib.request import parse_http_list, parse_keqv_list
 
 from ..datastructures import (
-    Accept, Authorization, CharsetAccept, CIMultiDict, LanguageAccept, MIMEAccept, MultiDict,
-    RequestCacheControl,
+    Accept, Authorization, CharsetAccept, CIMultiDict, ETags, IfRange, LanguageAccept, MIMEAccept,
+    MultiDict, Range, RequestCacheControl,
 )
 from ..json import loads
 
@@ -306,9 +306,43 @@ class BaseRequestWebsocket(_BaseRequestResponse):
             return None
 
     @property
+    def if_match(self) -> ETags:
+        return ETags.from_header(self.headers.get('If-Match', ''))
+
+    @property
+    def if_modified_since(self) -> Optional[datetime]:
+        if 'If-Modified-Since' in self.headers:
+            return parsedate_to_datetime(self.headers['If-Modified-Since'])
+        else:
+            return None
+
+    @property
+    def if_none_match(self) -> ETags:
+        return ETags.from_header(self.headers.get('If-None-Match', ''))
+
+    @property
+    def if_range(self) -> IfRange:
+        return IfRange.from_header(self.headers.get('If-Range', ''))
+
+    @property
     def max_forwards(self) -> Optional[str]:
         return self.headers.get('Max-Forwards')
 
     @property
+    def pragma(self) -> List[str]:
+        return parse_http_list(self.headers.get('Pragma', ''))
+
+    @property
+    def range(self) -> Range:
+        return Range.from_header(self.headers.get('Range', ''))
+
+    @property
     def referrer(self) -> Optional[str]:
         return self.headers.get('Referer')
+
+    @property
+    def if_unmodified_since(self) -> Optional[datetime]:
+        if 'If-Unmodified-Since' in self.headers:
+            return parsedate_to_datetime(self.headers['If-Unmodified-Since'])
+        else:
+            return None

@@ -2,8 +2,11 @@ import codecs
 import io
 import re
 from cgi import parse_header
+from datetime import datetime
+from email.utils import formatdate, parsedate_to_datetime
 from shutil import copyfileobj
-from typing import Any, BinaryIO, Callable, Dict, Iterable, List, NamedTuple, Optional, Type
+from time import mktime
+from typing import Any, BinaryIO, Callable, Dict, Iterable, List, NamedTuple, Optional, Set, Type
 from urllib.request import parse_http_list, parse_keqv_list
 
 from multidict import CIMultiDict as AIOCIMultiDict, MultiDict as AIOMultiDict
@@ -272,3 +275,107 @@ class ResponseCacheControl(_CacheControl):
     proxy_revalidate = _CacheDirective('proxy-revalidate', bool)
     public = _CacheDirective('public', bool)
     s_maxage = _CacheDirective('s-maxage', int)
+
+
+class ETags:
+
+    def __init__(
+            self,
+            weak: Optional[Set[str]]=None,
+            strong: Optional[Set[str]]=None,
+            star: bool=False,
+    ) -> None:
+        self.weak = weak or set()
+        self.strong = strong or set()
+        self.star = star
+
+    def __contains__(self, etag: str) -> bool:
+        return self.star or etag in self.strong
+
+    @classmethod
+    def from_header(cls: Type['ETags'], header: str) -> 'ETags':
+        header = header.strip()
+        weak = set()
+        strong = set()
+        if header == '*':
+            return ETags(star=True)
+        else:
+            for item in parse_http_list(header):
+                if item.upper().startswith('W/'):
+                    weak.add(item[2:].strip('"'))
+                else:
+                    strong.add(item.strip('"'))
+            return ETags(weak, strong)
+
+    def to_header(self) -> str:
+        if self.star:
+            return '*'
+        else:
+            header = ''
+            for tag in self.weak:
+                header += f"W/\"{tag}\","
+            for tag in self.strong:
+                header += f"\"{tag}\","
+            return header.strip(',')
+
+
+class IfRange:
+
+    def __init__(self, etag: Optional[str]=None, date: Optional[datetime]=None) -> None:
+        self.etag = etag
+        self.date = date
+
+    @classmethod
+    def from_header(cls: Type['IfRange'], header: str) -> 'IfRange':
+        try:
+            return IfRange(date=parsedate_to_datetime(header))
+        except TypeError:  # Not a date format
+            return IfRange(etag=header.strip('"'))
+
+    def to_header(self) -> str:
+        if self.etag is not None:
+            return f"\"{self.etag}\""
+        elif self.date is not None:
+            return formatdate(timeval=mktime((self.date.timetuple())), localtime=False, usegmt=True)  # type: ignore # noqa
+        else:
+            return ''
+
+
+class RangeSet(NamedTuple):
+    begin: int
+    end: Optional[int]
+
+
+class Range:
+
+    def __init__(self, units: str, ranges: List[RangeSet]) -> None:
+        self.units = units
+        self.ranges = ranges
+
+    @classmethod
+    def from_header(cls: Type['Range'], header: str) -> 'Range':
+        try:
+            units, raw_ranges = header.split('=', 1)
+        except ValueError:
+            return cls('', [])
+
+        units = units.strip().lower()
+        ranges = []
+        for range_set in parse_http_list(raw_ranges):
+            if range_set.startswith('-'):
+                ranges.append(RangeSet(int(range_set), None))
+            elif '-' in range_set:
+                begin, end = range_set.split('-')
+                ranges.append(RangeSet(int(begin), int(end)))
+            else:
+                ranges.append(RangeSet(0, int(range_set)))
+        return Range(units, ranges)
+
+    def to_header(self) -> str:
+        header = f"{self.units}="
+        for range_set in self.ranges:
+            header += f"{range_set.begin}"
+            if range_set.end is not None:
+                header += f"-{range_set.end}"
+            header += ','
+        return header.strip(',')
