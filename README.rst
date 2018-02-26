@@ -55,8 +55,8 @@ if the above is in a file called ``app.py`` it can be run as,
 
     $ python app.py
 
-To deploy in a production setting see the `docs
-<https://pgjones.gitlab.io/quart/deployment.html>`_.
+To deploy in a production setting see the `deployment
+<https://pgjones.gitlab.io/quart/deployment.html>`_ documentation.
 
 Features
 --------
@@ -72,7 +72,7 @@ support for,
 Contributing
 ------------
 
-Quart is developed on GitLab, see `Quart
+Quart is developed on `GitLab
 <https://gitlab.com/pgjones/quart>`_. You are very welcome to open
 `issues <https://gitlab.com/pgjones/quart/issues>`_ or propose `merge
 requests <https://gitlab.com/pgjones/quart/merge_requests>`_.
