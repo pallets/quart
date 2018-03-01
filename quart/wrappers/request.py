@@ -177,8 +177,8 @@ class Request(BaseRequestWebsocket, JSONMixin):
             for key in field_storage:  # type: ignore
                 field_storage_key = field_storage[key]
                 if isinstance(field_storage_key, list):
-                    for value in field_storage_key:
-                        self._form.add(key, value)
+                    for item in field_storage_key:
+                        self._form.add(key, item.value)
                 elif (
                         isinstance(field_storage_key, FieldStorage) and
                         field_storage_key.filename is not None
@@ -188,7 +188,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
                         field_storage_key.name, field_storage_key.type, field_storage_key.headers,  # type: ignore # noqa: E501
                     )
                 else:
-                    self._form.add(key, str(field_storage_key.file.read()))
+                    self._form.add(key, field_storage_key.value)
 
     @property
     def content_encoding(self) -> Optional[str]:
