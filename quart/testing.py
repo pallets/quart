@@ -52,9 +52,10 @@ class TestClient:
             *,
             method: str='GET',
             headers: Optional[Union[dict, CIMultiDict]]=None,
+            data: Any=None,
             form: Optional[dict]=None,
             query_string: Optional[dict]=None,
-            json: Any=sentinel,
+            json: Any=None,
             scheme: str='http',
     ) -> Response:
         """Open a request to the app associated with this client.
@@ -63,6 +64,7 @@ class TestClient:
             path: The path to make the request too.
             method: The method to make the request with, defaults GET.
             headers: Headers to include in the request.
+            data: Raw data to send in the request body.
             form: Data to send form encoded in the request body.
             query_string: Data to send via query string.
             json: Data to send json encoded in the request body.
@@ -73,20 +75,27 @@ class TestClient:
         """
         headers, path = self._build_headers_and_path(path, headers, query_string)
 
-        if json is not sentinel and form is not None:
-            raise ValueError('Cannot send JSON and form data in the body')
-        elif json is not sentinel:
-            data = dumps(json).encode('utf-8')
+        if [x is not None for x in [json, form, data]].count(True) > 1:
+            raise ValueError("Quart test args 'json', 'form', and 'data' are mutually exclusive")
+
+        req_data = b''
+
+        if data is not None:
+            req_data = data
+
+        if json is not None:
+            req_data = dumps(json).encode('utf-8')
             headers['Content-Type'] = 'application/json'
-        elif form is not None:
-            data = urlencode(form).encode('utf-8')
+
+        if form is not None:
+            req_data = urlencode(form).encode('utf-8')
             headers['Content-Type'] = 'application/x-www-form-urlencoded'
-        else:
-            data = b''
+
         if self.cookie_jar is not None:
             headers.add('Cookie', self.cookie_jar.output(header=''))  # type: ignore
+
         request = Request(method, scheme, path, headers)  # type: ignore
-        request.body.set_result(data)
+        request.body.set_result(req_data)
         response = await asyncio.ensure_future(self.app.handle_request(request))
         if self.cookie_jar is not None and 'Set-Cookie' in response.headers:
             self.cookie_jar.load(";".join(response.headers.getall('Set-Cookie')))

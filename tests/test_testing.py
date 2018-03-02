@@ -83,6 +83,21 @@ async def test_form() -> None:
 
 
 @pytest.mark.asyncio
+async def test_data() -> None:
+    app = Quart(__name__)
+
+    @app.route('/', methods=['POST'])
+    async def echo() -> Response:
+        data = await request.get_data(True)
+        return data
+
+    client = Client(app)
+    headers = {'Content-Type': 'application/octet-stream'}
+    response = await client.post('/', data=b'ABCDEFG', headers=headers)
+    assert (await response.get_data(True)) == b'ABCDEFG'
+
+
+@pytest.mark.asyncio
 async def test_query_string() -> None:
     app = Quart(__name__)
 
