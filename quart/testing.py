@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
 from json import dumps
-from typing import Any, Generator, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Any, AnyStr, Generator, Optional, Tuple, TYPE_CHECKING, Union
 from urllib.parse import ParseResult, urlencode, urlunparse
 
 from .datastructures import CIMultiDict
@@ -52,10 +52,10 @@ class TestClient:
             *,
             method: str='GET',
             headers: Optional[Union[dict, CIMultiDict]]=None,
-            data: Any=None,
+            data: AnyStr=None,
             form: Optional[dict]=None,
             query_string: Optional[dict]=None,
-            json: Any=None,
+            json: Any=sentinel,
             scheme: str='http',
     ) -> Response:
         """Open a request to the app associated with this client.
@@ -75,27 +75,29 @@ class TestClient:
         """
         headers, path = self._build_headers_and_path(path, headers, query_string)
 
-        if [x is not None for x in [json, form, data]].count(True) > 1:
+        if [json is not sentinel, form is not None, data is not None].count(True) > 1:
             raise ValueError("Quart test args 'json', 'form', and 'data' are mutually exclusive")
 
-        req_data = b''
+        request_data = b''
 
-        if data is not None:
-            req_data = data
+        if isinstance(data, str):
+            request_data = data.encode('utf-8')
+        elif isinstance(data, bytes):
+            request_data = data
 
-        if json is not None:
-            req_data = dumps(json).encode('utf-8')
+        if json is not sentinel:
+            request_data = dumps(json).encode('utf-8')
             headers['Content-Type'] = 'application/json'
 
         if form is not None:
-            req_data = urlencode(form).encode('utf-8')
+            request_data = urlencode(form).encode('utf-8')
             headers['Content-Type'] = 'application/x-www-form-urlencoded'
 
         if self.cookie_jar is not None:
             headers.add('Cookie', self.cookie_jar.output(header=''))  # type: ignore
 
         request = Request(method, scheme, path, headers)  # type: ignore
-        request.body.set_result(req_data)
+        request.body.set_result(request_data)
         response = await asyncio.ensure_future(self.app.handle_request(request))
         if self.cookie_jar is not None and 'Set-Cookie' in response.headers:
             self.cookie_jar.load(";".join(response.headers.getall('Set-Cookie')))
