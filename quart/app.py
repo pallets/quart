@@ -958,9 +958,9 @@ class Quart(PackageStatic):
         """Create and return a null session."""
         return self.session_interface.make_null_session(self)
 
-    def save_session(self, session: Session, response: Response) -> Response:
+    def save_session(self, session: Session, response: Response) -> None:
         """Saves the session to the response."""
-        return self.session_interface.save_session(self, session, response)  # type: ignore
+        self.session_interface.save_session(self, session, response)  # type: ignore
 
     async def do_teardown_request(
             self,

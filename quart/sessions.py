@@ -244,20 +244,20 @@ class SecureCookieSessionInterface(SessionInterface):
 
     def save_session(  # type: ignore
             self, app: 'Quart', session: SecureCookieSession, response: Response,
-    ) -> Response:
+    ) -> None:
         """Saves the session to the response in a secure cookie."""
         domain = self.get_cookie_domain(app)
         path = self.get_cookie_path(app)
         if not session:
             if session.modified:
                 response.delete_cookie(app.session_cookie_name, domain=domain, path=path)
-            return response
+            return
 
         if session.accessed:
             response.headers['Vary'] = 'Cookie'
 
         if not self.should_set_cookie(app, session):
-            return response
+            return
 
         data = self.get_signing_serializer(app).dumps(dict(session))
         response.set_cookie(  # type: ignore
@@ -269,4 +269,3 @@ class SecureCookieSessionInterface(SessionInterface):
             path=path,
             secure=self.get_cookie_secure(app),
         )
-        return response
