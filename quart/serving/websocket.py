@@ -59,7 +59,7 @@ class WebsocketServer:
         pass
 
     def connection_lost(self, exception: Exception) -> None:
-        pass
+        self.close()
 
     def close(self) -> None:
         self.task.cancel()
