@@ -186,6 +186,15 @@ class Quart(PackageStatic):
         return self.import_name
 
     @property
+    def propagate_exceptions(self) -> bool:
+        """Return true if exceptions should be propagated into debug pages.
+
+        If false the exception will be handled. See the
+        ``PROPAGATE_EXCEPTIONS`` config settin.
+        """
+        return self.config['PROPAGATE_EXCEPTIONS'] or (self.debug and not self.testing)
+
+    @property
     def logger(self) -> Logger:
         """A :class:`logging.Logger` logger for the app.
 
@@ -208,6 +217,11 @@ class Quart(PackageStatic):
         if self._jinja_env is None:
             self._jinja_env = self.create_jinja_environment()
         return self._jinja_env
+
+    @property
+    def got_first_request(self) -> bool:
+        """Return if the app has received a request."""
+        return self._got_first_request
 
     def make_config(self) -> Config:
         """Create and return the configuration with appropriate defaults."""
@@ -769,6 +783,16 @@ class Quart(PackageStatic):
         else:
             return await handler(error)
 
+    def trap_http_exception(self, error: Exception) -> bool:
+        """Check it error is http and should be trapped.
+
+        Trapped errors are not handled by the
+        :meth:`handle_http_exception`, but instead trapped by the
+        outer most (or user handlers). This can be useful when
+        debuging to allow tracebacks to be viewed by the debug page.
+        """
+        return self.config['TRAP_HTTP_EXCEPTIONS']
+
     async def handle_user_exception(self, error: Exception) -> Response:
         """Handle an exception that has been raised.
 
@@ -776,7 +800,7 @@ class Quart(PackageStatic):
         :meth:`handle_http_exception`, then attempt to handle the
         error. If it cannot it should reraise the error.
         """
-        if isinstance(error, HTTPException):
+        if isinstance(error, HTTPException) and not self.trap_http_exception(error):
             return await self.handle_http_exception(error)
 
         handler = self._find_exception_handler(error)
@@ -791,6 +815,10 @@ class Quart(PackageStatic):
         server error.
         """
         await got_request_exception.send(self, exception=error)
+
+        if self.propagate_exceptions:
+            return await traceback_response()
+
         internal_server_error = all_http_exceptions[500]()
         handler = self._find_exception_handler(internal_server_error)
 
