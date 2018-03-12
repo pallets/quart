@@ -53,7 +53,10 @@ class ScriptInfo:
 
                 module_path = Path(module_name).resolve()
                 sys.path.insert(0, str(module_path.parent))
-                import_name = module_path.with_suffix('').name
+                if module_path.is_file():
+                    import_name = module_path.with_suffix('').name
+                else:
+                    import_name = module_path.name
                 try:
                     module = import_module(import_name)
                 except ModuleNotFoundError as error:
