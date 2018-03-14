@@ -1071,6 +1071,7 @@ class Quart(PackageStatic):
             debug: Optional[bool]=None,
             access_log_format: str="%(h)s %(r)s %(s)s %(b)s %(D)s",
             timeout: int=5,
+            use_reloader: bool=False,
             **kwargs: Any,
     ) -> None:
         """Run this application.
@@ -1087,6 +1088,7 @@ class Quart(PackageStatic):
                 by default this is %(h)s %(r)s %(s)s %(b)s %(D)s.
             timeout: The keep alive equivalent timeout in seconds by
                 default this is 5 seconds.
+            use_reloader: Automatically reload on code changes.
         """
         if kwargs:
             warnings.warn(
@@ -1100,6 +1102,7 @@ class Quart(PackageStatic):
             run_app(
                 self, host=host, port=port, ssl=ssl, logger=create_serving_logger(),
                 access_log_format=access_log_format, timeout=timeout, debug=debug,
+                use_reloader=use_reloader,
             )
         finally:
             # Reset the first request, so as to enable reuse.

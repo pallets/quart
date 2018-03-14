@@ -1,6 +1,10 @@
 import asyncio
+import os
+import sys
 from logging import Logger
+from pathlib import Path
 from ssl import SSLContext
+from types import ModuleType
 from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union  # noqa: F401
 
 from .h11 import H11Server, H2CProtocolRequired, WebsocketProtocolRequired
@@ -80,6 +84,20 @@ class Server(asyncio.Protocol):
         return self._server.eof_received()
 
 
+async def _observe_changes() -> bool:
+    last_updates: Dict[ModuleType, float] = {}
+    while True:
+        for module in list(sys.modules.values()):
+            filename = getattr(module, '__file__', None)
+            if filename is None:
+                continue
+            mtime = Path(filename).stat().st_mtime
+            if mtime > last_updates.get(module, mtime):
+                return True
+            last_updates[module] = mtime
+        await asyncio.sleep(1)
+
+
 def run_app(
         app: 'Quart',
         *,
@@ -90,6 +108,7 @@ def run_app(
         logger: Optional[Logger]=None,
         timeout: int,
         debug: bool=False,
+        use_reloader: bool=False,
 ) -> None:
     """Create a server to run the app on given the options.
 
@@ -99,6 +118,7 @@ def run_app(
         port: The port to listen on.
         ssl: Optional SSLContext to use.
         logger: Optional logger for serving (access) logs.
+        use_reloader: Automatically reload on changes.
     """
     loop = asyncio.get_event_loop()
     loop.set_debug(debug)
@@ -112,7 +132,14 @@ def run_app(
     print("Running on {}://{}:{} (CTRL + C to quit)".format(scheme, host, port))  # noqa: T001
 
     try:
-        loop.run_forever()
+        if use_reloader:
+            loop.run_until_complete(_observe_changes())
+            server.close()
+            loop.run_until_complete(server.wait_closed())
+            # Restart this process (only safe for dev/debug)
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+        else:
+            loop.run_forever()
     except KeyboardInterrupt:  # pragma: no cover
         pass
     finally:

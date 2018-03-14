@@ -162,6 +162,7 @@ def run_command(info: ScriptInfo, host: str, port: int) -> None:
     run_app(
         info.load_app(), host=host, port=port, logger=create_serving_logger(),
         access_log_format=access_log_format, timeout=5, debug=debug,
+        use_reloader=debug,
     )
 
 
