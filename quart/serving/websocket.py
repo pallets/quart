@@ -62,7 +62,8 @@ class WebsocketServer:
         self.close()
 
     def close(self) -> None:
-        self.task.cancel()
+        if self.task is not None:
+            self.task.cancel()
         self._transport.close()
 
     def handle_websocket(self, event: wsproto.events.ConnectionRequested) -> None:
@@ -80,7 +81,6 @@ class WebsocketServer:
                 raise BadRequest()
         except (BadRequest, NotFound, MethodNotAllowed, RedirectRequired) as error:
             asyncio.ensure_future(self.send_error(error))
-            self.close()
         else:
             self.connection.accept(event)
             self.task = asyncio.ensure_future(self._handle_websocket(websocket))
@@ -104,6 +104,7 @@ class WebsocketServer:
             )
         self.connection._outgoing += self.connection._upgrade_connection.send(h11.EndOfMessage())
         self._send()
+        self.close()
 
     def _send(self) -> None:
         self._transport.write(self.connection.bytes_to_send())  # type: ignore
