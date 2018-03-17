@@ -102,7 +102,15 @@ class H11Server(HTTPProtocol):
                 headers.get('upgrade', '').lower() == 'websocket'
         ):
             raise WebsocketProtocolRequired(event)
-        elif headers.get('upgrade', '').lower() == 'h2c':
+        # h2c Upgrade requests with a body are a pain as the body must
+        # be fully recieved in HTTP/1.1 before the upgrade response
+        # and HTTP/2 takes over, so Quart ignores the upgrade and
+        # responds in HTTP/1.1. Use a preflight OPTIONS request to
+        # initiate the upgrade if really required (or just use h2).
+        elif (
+                headers.get('upgrade', '').lower() == 'h2c' and 'Content-Length' not in headers
+                and 'Transfer-Encoding' not in headers
+        ):
             self._send(h11.InformationalResponse(
                 status_code=101, headers=[('upgrade', 'h2c')] + self.response_headers(),
             ))

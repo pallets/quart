@@ -13,7 +13,7 @@ from .helpers import MockTransport
 def serving_app() -> Quart:
     app = Quart(__name__)
 
-    @app.route('/')
+    @app.route('/', methods=['GET', 'POST'])
     async def index() -> str:
         return 'index'
 
@@ -61,6 +61,27 @@ async def test_h2c_upgrade(
         b'HTTP/1.1 101 \r\nupgrade: h2c\r\n'
         b'date: Sat, 02 Dec 2017 15:43:15 GMT\r\nserver: quart-h11\r\n\r\n'
     )
+
+
+@pytest.mark.asyncio
+async def test_h2c_upgrade_with_body(
+        serving_app: Quart, event_loop: asyncio.AbstractEventLoop, monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(quart.serving._base, 'time', lambda: 1512229395)
+    server = Server(serving_app, event_loop, None, '', 5)  # type: ignore
+    transport = MockTransport()
+    server.connection_made(transport)  # type: ignore
+    server.data_received(
+        b'POST / HTTP/1.1\r\n'
+        b'Host: localhost\r\n'
+        b'Upgrade: h2c\r\n'
+        b'Content-Length: 7\r\n'
+        b'Content-Type: application/x-www-form-urlencoded\r\n'
+        b'\r\n'
+        b'foo=bar',
+    )
+    await transport.updated.wait()
+    assert transport.data.startswith(b'HTTP/1.1 200')
 
 
 @pytest.mark.asyncio
