@@ -80,7 +80,6 @@ class H11Server(HTTPProtocol):
                         headers.add(name.decode().title(), value.decode())
                     if 'Upgrade' in headers:
                         self._handle_upgrade_request(headers, event)
-                        break
                     self.handle_request(
                         0, event.method.decode().upper(), event.target.decode(), headers,
                     )
@@ -108,9 +107,6 @@ class H11Server(HTTPProtocol):
                 status_code=101, headers=[('upgrade', 'h2c')] + self.response_headers(),
             ))
             raise H2CProtocolRequired(event)
-        else:
-            self._handle_error()
-            self.close()
 
     def _after_request(self, stream_id: int, future: asyncio.Future) -> None:
         super()._after_request(stream_id, future)
