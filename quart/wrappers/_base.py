@@ -169,7 +169,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
         self.full_path = path
         parsed_url = urlparse(path)
         self.args = MultiDict()
-        for key, values in parse_qs(parsed_url.query).items():
+        for key, values in parse_qs(parsed_url.query, keep_blank_values=True).items():
             for value in values:
                 self.args.add(key, value)
         self.path = unquote(parsed_url.path)

@@ -167,7 +167,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
             return
         content_type, parameters = parse_header(content_header)
         if content_type == 'application/x-www-form-urlencoded':
-            for key, values in parse_qs(data.decode()).items():
+            for key, values in parse_qs(data.decode(), keep_blank_values=True).items():
                 for value in values:
                     self._form.add(key, value)
         elif content_type == 'multipart/form-data':
