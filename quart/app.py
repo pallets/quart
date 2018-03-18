@@ -816,18 +816,16 @@ class Quart(PackageStatic):
         """
         await got_request_exception.send(self, exception=error)
 
+        self.log_exception(sys.exc_info())
+
         if self.propagate_exceptions:
             return await traceback_response()
 
         internal_server_error = all_http_exceptions[500]()
         handler = self._find_exception_handler(internal_server_error)
 
-        self.log_exception(sys.exc_info())
         if handler is None:
-            if self.debug and not self.testing:
-                return await traceback_response()
-            else:
-                return internal_server_error.get_response()
+            return internal_server_error.get_response()
         else:
             return await handler(error)
 
