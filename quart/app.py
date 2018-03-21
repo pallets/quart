@@ -1159,6 +1159,78 @@ class Quart(PackageStatic):
         methods = _request_ctx_stack.top.url_adapter.allowed_methods()
         return self.response_class('', headers={'Allow': ', '.join(methods)})
 
+    async def make_response(self, result: ResponseReturnValue) -> Response:
+        """Make a Response from the result of the route handler.
+
+        The result itself can either be:
+          - A Response object (or subclass) .
+          - A tuple of a ResponseValue and a header dictionary.
+          - A tuple of a ResponseValue, status code and a header dictionary.
+        A ResponseValue is either a Response object (or subclass) or a str.
+        """
+        status_or_headers = None
+        headers = None
+        status = None
+        if isinstance(result, tuple):
+            value, status_or_headers, headers = result + (None,) * (3 - len(result))
+        else:
+            value = result
+
+        if isinstance(status_or_headers, (dict, list)):
+            headers = status_or_headers
+            status = None
+        elif status_or_headers is not None:
+            status = status_or_headers
+
+        if not isinstance(value, Response):
+            response = self.response_class(value)
+        else:
+            response = value
+
+        if status is not None:
+            response.status_code = status
+
+        if headers is not None:
+            response.headers.update(headers)
+
+        return response
+
+    async def process_response(
+        self,
+        response: Response,
+        request_context: Optional[RequestContext]=None,
+    ) -> Response:
+        """Postprocess the request acting on the response.
+
+        Arguments:
+            response: The response after the request is finalized.
+            request_context: The request context, optional as Flask
+                omits this argument.
+        """
+        request_ = (request_context or _request_ctx_stack.top).request
+        functions = (request_context or _request_ctx_stack.top)._after_request_functions
+        functions = chain(functions, self.after_request_funcs[None])
+        blueprint = request_.blueprint
+        if blueprint is not None:
+            functions = chain(functions, self.after_request_funcs[blueprint])  # type: ignore
+
+        for function in functions:
+            response = await function(response)
+
+        session_ = (request_context or _request_ctx_stack.top).session
+        if not self.session_interface.is_null_session(session_):
+            self.save_session(session_, response)  # type: ignore
+        return response
+
+    async def handle_request(self, request: Request) -> Response:
+        async with self.request_context(request) as request_context:
+            try:
+                return await self.full_dispatch_request(request_context)
+            except asyncio.CancelledError:
+                raise  # CancelledErrors should be handled by serving code.
+            except Exception as error:
+                return await self.handle_exception(error)
+
     async def full_dispatch_request(
         self, request_context: Optional[RequestContext]=None,
     ) -> Response:
@@ -1239,78 +1311,6 @@ class Quart(PackageStatic):
         response = await self.process_response(response, request_context)
         await request_finished.send(self, response=response)
         return response
-
-    async def make_response(self, result: ResponseReturnValue) -> Response:
-        """Make a Response from the result of the route handler.
-
-        The result itself can either be:
-          - A Response object (or subclass) .
-          - A tuple of a ResponseValue and a header dictionary.
-          - A tuple of a ResponseValue, status code and a header dictionary.
-        A ResponseValue is either a Response object (or subclass) or a str.
-        """
-        status_or_headers = None
-        headers = None
-        status = None
-        if isinstance(result, tuple):
-            value, status_or_headers, headers = result + (None,) * (3 - len(result))
-        else:
-            value = result
-
-        if isinstance(status_or_headers, (dict, list)):
-            headers = status_or_headers
-            status = None
-        elif status_or_headers is not None:
-            status = status_or_headers
-
-        if not isinstance(value, Response):
-            response = self.response_class(value)
-        else:
-            response = value
-
-        if status is not None:
-            response.status_code = status
-
-        if headers is not None:
-            response.headers.update(headers)
-
-        return response
-
-    async def process_response(
-        self,
-        response: Response,
-        request_context: Optional[RequestContext]=None,
-    ) -> Response:
-        """Postprocess the request acting on the response.
-
-        Arguments:
-            response: The response after the request is finalized.
-            request_context: The request context, optional as Flask
-                omits this argument.
-        """
-        request_ = (request_context or _request_ctx_stack.top).request
-        functions = (request_context or _request_ctx_stack.top)._after_request_functions
-        functions = chain(functions, self.after_request_funcs[None])
-        blueprint = request_.blueprint
-        if blueprint is not None:
-            functions = chain(functions, self.after_request_funcs[blueprint])  # type: ignore
-
-        for function in functions:
-            response = await function(response)
-
-        session_ = (request_context or _request_ctx_stack.top).session
-        if not self.session_interface.is_null_session(session_):
-            self.save_session(session_, response)  # type: ignore
-        return response
-
-    async def handle_request(self, request: Request) -> Response:
-        async with self.request_context(request) as request_context:
-            try:
-                return await self.full_dispatch_request(request_context)
-            except asyncio.CancelledError:
-                raise  # CancelledErrors should be handled by serving code.
-            except Exception as error:
-                return await self.handle_exception(error)
 
     async def handle_websocket(self, websocket: Websocket) -> None:
         async with self.websocket_context(websocket) as websocket_context:
