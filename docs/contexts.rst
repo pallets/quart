@@ -65,12 +65,16 @@ decorators :func:`~quart.ctx.copy_current_request_context` and
 
 .. code-block:: python
 
-    @copy_current_request_context
-    async def background_task():
-        method = request.method  # Will raise an exception
-        ...
-
     @app.route('/')
     async def index():
+
+        @copy_current_request_context
+        async def background_task():
+            method = request.method
+            ...
+
         asyncio.ensure_future(background_task())
         ...
+
+.. note:: The decorator must be used within an existing context, hence
+          the nested function.
