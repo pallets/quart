@@ -19,7 +19,7 @@ INSTALL_REQUIRES = [
     'aiofiles',
     'blinker',
     'click',
-    'h11',
+    'h11 ~= 0.7.0',
     'h2',
     'itsdangerous',
     'jinja2',
