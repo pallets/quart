@@ -254,7 +254,7 @@ class SecureCookieSessionInterface(SessionInterface):
             return
 
         if session.accessed:
-            response.headers['Vary'] = 'Cookie'
+            response.vary.add('Cookie')
 
         if not self.should_set_cookie(app, session):
             return

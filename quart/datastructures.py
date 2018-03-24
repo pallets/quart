@@ -4,9 +4,12 @@ import re
 from cgi import parse_header
 from datetime import datetime
 from email.utils import formatdate, parsedate_to_datetime
+from functools import wraps
 from shutil import copyfileobj
 from time import mktime
-from typing import Any, BinaryIO, Callable, Dict, Iterable, List, NamedTuple, Optional, Set, Type
+from typing import (
+    Any, BinaryIO, Callable, Dict, Iterable, List, NamedTuple, Optional, Set, Type, Union,
+)
 from urllib.request import parse_http_list, parse_keqv_list
 
 from multidict import CIMultiDict as AIOCIMultiDict, MultiDict as AIOMultiDict
@@ -240,7 +243,9 @@ class _CacheControl:
 
     @classmethod
     def from_header(
-            cls: Type['_CacheControl'], header: str, on_update: Optional[Callable]=None,
+            cls: Type['_CacheControl'],
+            header: str,
+            on_update: Optional[Callable]=None,
     ) -> '_CacheControl':
         cache_control = cls(on_update)
         for item in parse_http_list(header):
@@ -379,3 +384,118 @@ class Range:
                 header += f"-{range_set.end}"
             header += ','
         return header.strip(',')
+
+
+def _on_update(method: Callable) -> Callable:
+    @wraps(method)
+    def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+        result = method(self, *args, **kwargs)
+        self.on_update(self)
+        return result
+    return wrapper
+
+
+class HeaderSet(set):
+
+    def __init__(self, *args: Any, on_update: Optional[Callable]=None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.on_update = on_update
+
+    def to_header(self) -> str:
+        header = ', '.join(self)
+        return header.strip(',')
+
+    @classmethod
+    def from_header(
+            cls: Type['HeaderSet'],
+            header: str,
+            on_update: Optional[Callable]=None,
+    ) -> 'HeaderSet':
+        items = {item for item in parse_http_list(header)}
+        return cls(items, on_update=on_update)
+
+    add = _on_update(set.add)
+    clear = _on_update(set.clear)
+    pop = _on_update(set.pop)
+    remove = _on_update(set.remove)
+    update = _on_update(set.update)
+
+
+class _ContentRangeSpec:
+
+    def __init__(self, name: str, converter: Callable) -> None:
+        self.name = name
+        self.converter = converter
+
+    def __get__(self, instance: object, owner: type=None) -> Any:
+        if instance is None:
+            return self
+        result = instance._specs.get(self.name)  # type: ignore
+        if result is not None:
+            return self.converter(result)
+        else:
+            return None
+
+    def __set__(self, instance: object, value: Any) -> None:
+        instance._specs[self.name] = value  # type: ignore
+        if instance._on_update is not None:  # type: ignore
+            instance._on_update(instance)  # type: ignore
+
+
+class ContentRange:
+    units = _ContentRangeSpec('units', str)
+    start = _ContentRangeSpec('start', int)
+    stop = _ContentRangeSpec('stop', int)
+    length = _ContentRangeSpec('length', int)
+
+    def __init__(
+            self,
+            units: Optional[str],
+            start: Optional[int],
+            stop: Optional[int],
+            length: Optional[Union[int, str]]=None,
+            on_update: Optional[Callable]=None,
+    ) -> None:
+        self._on_update = on_update
+        self._specs: Dict[str, Any] = {}
+        self.units = units
+        self.start = start
+        self.stop = stop
+        self.length = length
+
+    @classmethod
+    def from_header(
+            cls: Type['ContentRange'],
+            header: str,
+            on_update: Optional[Callable]=None,
+    ) -> 'ContentRange':
+        try:
+            units, range_spec = header.split(None, 1)
+        except ValueError:
+            return cls(None, None, None)
+
+        try:
+            range_, length = range_spec.split('/', 1)
+        except ValueError:
+            return cls(None, None, None)
+
+        if range_ == '*':
+            return cls(units, None, None, length, on_update)
+
+        try:
+            start, stop = range_.split('-', 1)
+            start = int(start)  # type: ignore
+            stop = int(stop)  # type: ignore
+        except ValueError:
+            return cls(None, None, None)
+
+        return cls(units, start, stop, length, on_update)  # type: ignore
+
+    def to_header(self) -> str:
+        if self.units is None:
+            return ''
+        length = self.length or '*'
+        if self.start is None:
+            return f"{self.units} */{length}"
+        else:
+            return f"{self.units} {self.start}-{self.stop}/{length}"

@@ -1,11 +1,15 @@
 from datetime import datetime, timedelta
+from email.utils import formatdate, parsedate_to_datetime
+from hashlib import md5
 from inspect import isasyncgen  # type: ignore
+from time import mktime
 from typing import (
-    Any, AnyStr, AsyncGenerator, AsyncIterable, Iterable, Optional, Set, TYPE_CHECKING, Union,
+    Any, AnyStr, AsyncGenerator, AsyncIterable, Iterable, Optional, Set, Tuple, TYPE_CHECKING,
+    Union,
 )
 
 from ._base import _BaseRequestResponse, JSONMixin
-from ..datastructures import CIMultiDict, ResponseCacheControl
+from ..datastructures import CIMultiDict, ContentRange, HeaderSet, ResponseCacheControl
 from ..utils import create_cookie
 
 if TYPE_CHECKING:
@@ -114,6 +118,10 @@ class Response(_BaseRequestResponse, JSONMixin):
         if self.automatically_set_content_length:
             self.headers['Content-Length'] = str(len(bytes_data))
 
+    async def freeze(self) -> None:
+        """Freeze this object ready for pickling."""
+        self.set_data((await self.get_data()))
+
     def set_cookie(  # type: ignore
             self,
             key: str,
@@ -139,12 +147,213 @@ class Response(_BaseRequestResponse, JSONMixin):
         """Delete a cookie (set to expire immediately)."""
         self.set_cookie(key, expires=datetime.utcnow(), max_age=0, path=path, domain=domain)
 
+    async def add_etag(self, overwrite: bool=False, weak: bool=False) -> None:
+        if overwrite or 'etag' not in self.headers:
+            self.set_etag(md5((await self.get_data())).hexdigest(), weak)  # type: ignore
+
+    def get_etag(self) -> Tuple[Optional[str], Optional[bool]]:
+        etag = self.headers.get('ETag')
+        if etag is None:
+            return None, None
+        else:
+            weak = False
+            if etag.upper().startswith('W/'):
+                etag = etag[2:]
+            return etag.strip('"'), weak
+
+    def set_etag(self, etag: str, weak: bool=False) -> None:
+        if weak:
+            self.headers['ETag'] = f"W/\"{etag}\""
+        else:
+            self.headers['ETag'] = f"\"{etag}\""
+
+    @property
+    def accept_ranges(self) -> Optional[str]:
+        return self.headers.get('Accept-Ranges')
+
+    @accept_ranges.setter
+    def accept_ranges(self, value: str) -> None:
+        self.headers['Accept-Ranges'] = value
+
+    @property
+    def age(self) -> Optional[int]:
+        try:
+            value = self.headers.get('Age', '')
+        except (TypeError, ValueError):
+            return None
+        return int(value) if value > 0 else None
+
+    @age.setter
+    def age(self, value: Union[int, timedelta]) -> None:
+        if isinstance(value, timedelta):
+            self.headers['Age'] = str(value.total_seconds())
+        else:
+            self.headers['Age'] = str(value)
+
+    @property
+    def allow(self) -> HeaderSet:
+        def on_update(header_set: HeaderSet) -> None:
+            self.headers['Allow'] = header_set.to_header()
+
+        return HeaderSet.from_header(self.headers.get('Allow', ''), on_update=on_update)
+
+    @allow.setter
+    def allow(self, value: HeaderSet) -> None:
+        self.headers['Allow'] = value.to_header()
+
     @property
     def cache_control(self) -> ResponseCacheControl:
         def on_update(cache_control: ResponseCacheControl) -> None:
             self.headers['Cache-Control'] = cache_control.to_header()
 
         return ResponseCacheControl.from_header(self.headers.get('Cache-Control', ''), on_update)  # type: ignore  # noqa: E501
+
+    @cache_control.setter
+    def cache_control(self, value: ResponseCacheControl) -> None:
+        self.headers['Cache-Control'] = value.to_header()
+
+    @property
+    def content_encoding(self) -> Optional[str]:
+        return self.headers.get('Content-Encoding')
+
+    @content_encoding.setter
+    def content_encoding(self, value: str) -> None:
+        self.headers['Content-Encoding'] = value
+
+    @property
+    def content_language(self) -> HeaderSet:
+        def on_update(header_set: HeaderSet) -> None:
+            self.headers['Content-Language'] = header_set.to_header()
+
+        return HeaderSet.from_header(self.headers.get('Content-Language', ''), on_update=on_update)
+
+    @content_language.setter
+    def content_language(self, value: HeaderSet) -> None:
+        self.headers['Content_Language'] = value.to_header()
+
+    @property
+    def content_length(self) -> Optional[int]:
+        try:
+            return int(self.headers.get('Content-Length'))
+        except (ValueError, TypeError):
+            return None
+
+    @content_length.setter
+    def content_length(self, value: int) -> None:
+        self.headers['Content-Length'] = str(value)
+
+    @property
+    def content_location(self) -> Optional[str]:
+        return self.headers.get('Content-Location')
+
+    @content_location.setter
+    def content_location(self, value: str) -> None:
+        self.headers['Content-Location'] = value
+
+    @property
+    def content_md5(self) -> Optional[str]:
+        return self.headers.get('Content-MD5')
+
+    @content_md5.setter
+    def content_md5(self, value: str) -> None:
+        self.headers['Content-MD5'] = value
+
+    @property
+    def content_range(self) -> ContentRange:
+        def on_update(cache_range: ContentRange) -> None:
+            self.headers['Content-Range'] = cache_range.to_header()
+
+        return ContentRange.from_header(self.headers.get('Content-Range', ''), on_update)  # type: ignore  # noqa: E501
+
+    @content_range.setter
+    def content_range(self, value: ContentRange) -> None:
+        self.headers['Content-Range'] = value.to_header()
+
+    @property
+    def content_type(self) -> Optional[str]:
+        return self.headers.get('Content-Type')
+
+    @content_type.setter
+    def content_type(self, value: str) -> None:
+        self.headers['Content-Type'] = value
+
+    @property
+    def date(self) -> Optional[datetime]:
+        try:
+            return parsedate_to_datetime(self.headers.get('Date', ''))
+        except TypeError:  # Not a date format
+            return None
+
+    @date.setter
+    def date(self, value: datetime) -> None:
+        self.headers['Date'] = formatdate(timeval=mktime((self.date.timetuple())), localtime=False, usegmt=True)  # type: ignore # noqa
+
+    @property
+    def expires(self) -> Optional[datetime]:
+        try:
+            return parsedate_to_datetime(self.headers.get('Expires', ''))
+        except TypeError:  # Not a date format
+            return None
+
+    @expires.setter
+    def expires(self, value: datetime) -> None:
+        self.headers['Expires'] = formatdate(timeval=mktime((self.date.timetuple())), localtime=False, usegmt=True)  # type: ignore # noqa
+
+    @property
+    def last_modified(self) -> Optional[datetime]:
+        try:
+            return parsedate_to_datetime(self.headers.get('Last-Modified', ''))
+        except TypeError:  # Not a date format
+            return None
+
+    @last_modified.setter
+    def last_modified(self, value: datetime) -> None:
+        self.headers['Last-Modified'] = formatdate(timeval=mktime((self.date.timetuple())), localtime=False, usegmt=True)  # type: ignore # noqa
+
+    @property
+    def location(self) -> Optional[str]:
+        return self.headers.get('Location')
+
+    @location.setter
+    def location(self, value: str) -> None:
+        self.headers['Location'] = value
+
+    @property
+    def referrer(self) -> Optional[str]:
+        return self.headers.get('Referer')
+
+    @referrer.setter
+    def referrer(self, value: str) -> None:
+        self.headers['Referer'] = value
+
+    @property
+    def retry_after(self) -> Optional[datetime]:
+        value = self.headers.get('Retry-After', '')
+        if value.isdigit():
+            return datetime.utcnow() + timedelta(seconds=int(value))
+        else:
+            try:
+                return parsedate_to_datetime(value)
+            except TypeError:
+                return None
+
+    @retry_after.setter
+    def retry_after(self, value: Union[datetime, int]) -> None:
+        if isinstance(value, datetime):
+            self.headers['Retry-After'] = formatdate(timeval=mktime((self.date.timetuple())), localtime=False, usegmt=True)  # type: ignore # noqa
+        else:
+            self.headers['Retry-After'] = str(value)
+
+    @property
+    def vary(self) -> HeaderSet:
+        def on_update(header_set: HeaderSet) -> None:
+            self.headers['Vary'] = header_set.to_header()
+
+        return HeaderSet.from_header(self.headers.get('Vary', ''), on_update=on_update)
+
+    @vary.setter
+    def vary(self, value: HeaderSet) -> None:
+        self.headers['Vary'] = value.to_header()
 
     async def _load_json_data(self) -> str:
         """Return the data after decoding."""
