@@ -73,7 +73,7 @@ class Blueprint(PackageStatic):
         """
         def decorator(func: Callable) -> Callable:
             self.add_url_rule(
-                path, func, methods, endpoint, defaults=defaults,
+                path, endpoint, func, methods, defaults=defaults,
                 provide_automatic_options=provide_automatic_options,
             )
             return func
@@ -82,9 +82,9 @@ class Blueprint(PackageStatic):
     def add_url_rule(
             self,
             path: str,
-            view_func: Callable,
-            methods: List[str]=['GET'],
             endpoint: Optional[str]=None,
+            view_func: Optional[Callable]=None,
+            methods: List[str]=['GET'],
             defaults: Optional[dict]=None,
             *,
             provide_automatic_options: bool=True
@@ -108,7 +108,7 @@ class Blueprint(PackageStatic):
             raise ValueError('Blueprint endpoints should not contain periods')
         self.record(
             lambda state: state.add_url_rule(
-                path, view_func, methods, endpoint, defaults, self.subdomain,
+                path, endpoint, view_func, methods, defaults, self.subdomain,
                 provide_automatic_options=provide_automatic_options,
             ),
         )
@@ -591,9 +591,9 @@ class BlueprintSetupState:
     def add_url_rule(
             self,
             path: str,
-            view_func: Callable,
-            methods: List[str]=['GET'],
             endpoint: Optional[str]=None,
+            view_func: Optional[Callable]=None,
+            methods: List[str]=['GET'],
             defaults: Optional[dict]=None,
             subdomain: Optional[str]=None,
             *,
@@ -603,7 +603,7 @@ class BlueprintSetupState:
             path = f"{self.url_prefix}{path}"
         endpoint = f"{self.blueprint.name}.{endpoint}"
         self.app.add_url_rule(
-            path, view_func, methods, endpoint, defaults, subdomain=subdomain,
+            path, endpoint, view_func, methods, defaults, subdomain=subdomain,
             provide_automatic_options=provide_automatic_options,
         )
 

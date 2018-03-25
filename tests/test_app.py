@@ -11,9 +11,9 @@ def test_endpoint_overwrite() -> None:
     def route() -> str:
         return ''
 
-    app.add_url_rule('/', route, ['GET'], 'index')
+    app.add_url_rule('/', 'index', route, ['GET'])
     with pytest.raises(AssertionError):
-        app.add_url_rule('/a', route, ['GET'], 'index')
+        app.add_url_rule('/a', 'index', route, ['GET'])
 
 
 @pytest.mark.asyncio
@@ -76,4 +76,4 @@ def test_add_url_rule_host_and_subdomain_errors(
         return ''
 
     with pytest.raises(error):
-        app.add_url_rule('/', route, subdomain=subdomain, host=host)
+        app.add_url_rule('/', view_func=route, subdomain=subdomain, host=host)

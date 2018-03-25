@@ -177,8 +177,8 @@ class Quart(PackageStatic):
                     'enabled',
                 )
             self.add_url_rule(
-                f"{self.static_url_path}/<path:filename>", self.send_static_file,
-                endpoint='static', host=static_host,
+                f"{self.static_url_path}/<path:filename>", 'static', self.send_static_file,
+                host=static_host,
             )
 
         self.template_context_processors[None] = [_default_template_context_processor]
@@ -368,7 +368,7 @@ class Quart(PackageStatic):
         """
         def decorator(func: Callable) -> Callable:
             self.add_url_rule(
-                path, func, methods, endpoint, defaults=defaults, host=host, subdomain=subdomain,
+                path, endpoint, func, methods, defaults=defaults, host=host, subdomain=subdomain,
                 provide_automatic_options=provide_automatic_options,
             )
             return func
@@ -377,9 +377,9 @@ class Quart(PackageStatic):
     def add_url_rule(
             self,
             path: str,
-            view_func: Callable,
-            methods: Optional[List[str]]=None,
             endpoint: Optional[str]=None,
+            view_func: Optional[Callable]=None,
+            methods: Optional[List[str]]=None,
             defaults: Optional[dict]=None,
             host: Optional[str]=None,
             subdomain: Optional[str]=None,

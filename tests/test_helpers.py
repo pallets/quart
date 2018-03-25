@@ -21,7 +21,7 @@ def app() -> Quart:
     async def index_post() -> str:
         return ''
 
-    app.add_url_rule('/post', index_post, methods=['POST'], endpoint='index_post')
+    app.add_url_rule('/post', view_func=index_post, methods=['POST'], endpoint='index_post')
 
     @app.route('/resource/<int:id>')
     async def resource(id: int) -> str:
