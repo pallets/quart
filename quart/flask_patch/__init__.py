@@ -43,9 +43,9 @@ from quart import (  # noqa: I201
 from quart.flask_patch.globals import (
     _app_ctx_stack, _request_ctx_stack, current_app, g, request, session,
 )  # noqa: E402
-from quart.flask_patch.helpers import make_response  # noqa: E402
+from quart.flask_patch.helpers import flash, make_response  # noqa: E402
 from quart.helpers import (
-    flash, get_flashed_messages, get_template_attribute, stream_with_context, url_for,  # noqa: E402
+    get_flashed_messages, get_template_attribute, stream_with_context, url_for,  # noqa: E402
 )
 from quart.flask_patch.templating import render_template, render_template_string  # noqa: E402, I100
 import quart.views  # noqa: E402, F401, I100
