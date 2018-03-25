@@ -1,0 +1,10 @@
+{
+    "options": {"failByDrop": false},
+    "outdir": "./reports/servers",
+
+    "servers": [{"agent": "websockets", "url": "ws://localhost:5000/", "options": {"version": 18}}],
+
+    "cases": ["*"],
+    "exclude-cases": ["12.*", "13.*"],
+    "exclude-agent-cases": {}
+}
