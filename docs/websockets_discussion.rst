@@ -36,17 +36,17 @@ unauthorised usage of the websocket.
 
 .. code-block:: python
 
-    async def login_required(func):
+    def login_required(func):
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs):
             if websocket.authentication == (...):
-                return func(*args, **kwargs)
+                return await func(*args, **kwargs)
             else:
                 abort(401)
         return wrapper
 
-    @login_required
     @app.websocket('/ws')
+    @login_required
     async def ws():
         while True:
             await websocket.receive()
