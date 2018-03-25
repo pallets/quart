@@ -35,3 +35,6 @@ autobahn:
   - python3 setup.py install
   - cd compliance/autobahn && nohup python3 server.py &
   - cd compliance/autobahn && wstest -m fuzzingclient && python summarise.py
+  artifacts:
+    paths:
+    - compliance/autobahn/reports/servers/
