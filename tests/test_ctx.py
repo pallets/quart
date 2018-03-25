@@ -56,7 +56,7 @@ def test_request_context_matching_error(
             RequestContext, True,
         ),
         (
-            lambda _, path, headers: Websocket(path, 'ws', headers, Mock(), Mock()),
+            lambda _, path, headers: Websocket(path, 'ws', headers, Mock(), Mock(), lambda: None),
             WebsocketContext, False,
         ),
     ],

@@ -60,6 +60,22 @@ request_tearing_down = _signals.signal('request-tearing-down')
 # functions should have a signature of Callable[[Quart, Exception], None]
 got_request_exception = _signals.signal('got-request-exception')
 
+#: Called just after the websocket context has been created, connected
+# functions should have a signature of Callable[[Quart], None]
+websocket_started = _signals.signal('websocket-started')
+
+#: Called after a response is fully finalised, connected functions
+# should have a signature of Callable[[Quart, Optional[Response]], None]
+websocket_finished = _signals.signal('websocket-finished')
+
+#: Called as the websocket context is teared down, connected functions
+# should have a signature of Callable[[Quart, Exception], None]
+websocket_tearing_down = _signals.signal('websocket-tearing-down')
+
+#: Called if there is an exception handling the websocket, connected
+# functions should have a signature of Callable[[Quart, Exception], None]
+got_websocket_exception = _signals.signal('got-websocket-exception')
+
 #: Called as the application context is teared down, connected functions
 # should have a signature of Callable[[Quart, Exception], None]
 appcontext_tearing_down = _signals.signal('appcontext-tearing-down')

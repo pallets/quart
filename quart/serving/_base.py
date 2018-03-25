@@ -84,12 +84,8 @@ class HTTPProtocol:
         request = self.streams[stream_id].request
         start_time = time()
         response = await self.app.handle_request(request)
-        suppress_body = (
-            request.method == 'HEAD' or
-            100 <= response.status_code < 200 or
-            response.status_code in {204, 304, 412}
-        )
-        await self.send_response(stream_id, response, suppress_body)
+        suppress_body_ = suppress_body(request.method, response.status_code)
+        await self.send_response(stream_id, response, suppress_body_)
         if self.logger is not None:
             self.logger.info(
                 self.access_log_format,
@@ -123,11 +119,16 @@ class HTTPProtocol:
         ):
             self.logger.error('Request handling exception', exc_info=exception)
 
-    def response_headers(self) -> List[Tuple[str, str]]:
-        return [
-            ('date', formatdate(time(), usegmt=True)), ('server', f"quart-{self.protocol}"),
-        ]
-
     def _handle_timeout(self) -> None:
         if time() - self._last_activity > self._timeout:
             self.close()
+
+
+def response_headers(protocol: str) -> List[Tuple[str, str]]:
+    return [
+        ('date', formatdate(time(), usegmt=True)), ('server', f"quart-{protocol}"),
+    ]
+
+
+def suppress_body(method: str, status_code: int) -> bool:
+    return method == 'HEAD' or 100 <= status_code < 200 or status_code in {204, 304, 412}

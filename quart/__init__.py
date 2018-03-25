@@ -20,8 +20,9 @@ from .helpers import (
 from .json import jsonify
 from .signals import (
     appcontext_popped, appcontext_pushed, appcontext_tearing_down, before_render_template,
-    got_request_exception, message_flashed, request_finished, request_started,
-    request_tearing_down, signals_available, template_rendered,
+    got_request_exception, got_websocket_exception, message_flashed, request_finished,
+    request_started, request_tearing_down, signals_available, template_rendered,
+    websocket_finished, websocket_started, websocket_tearing_down,
 )
 from .static import safe_join, send_file, send_from_directory
 from .templating import render_template, render_template_string
@@ -34,10 +35,12 @@ __all__ = (
     'after_this_request', 'appcontext_popped', 'appcontext_pushed', 'appcontext_tearing_down',
     'before_render_template', 'Blueprint', 'Config', 'copy_current_request_context',
     'copy_current_websocket_context', 'current_app', 'escape', 'flash', 'g',
-    'get_flashed_messages', 'get_template_attribute', 'got_request_exception', 'has_app_context',
-    'has_request_context', 'has_websocket_context', 'htmlsafe_dumps', 'jsonify', 'make_response',
-    'Markup', 'message_flashed', 'Quart', 'redirect', 'render_template', 'render_template_string',
-    'request', 'Request', 'request_finished', 'request_started', 'request_tearing_down',
-    'Response', 'ResponseReturnValue', 'safe_join', 'send_file', 'send_from_directory', 'session',
-    'signals_available', 'stream_with_context', 'template_rendered', 'url_for', 'websocket',
+    'get_flashed_messages', 'get_template_attribute', 'got_request_exception',
+    'got_websocket_exception', 'has_app_context', 'has_request_context', 'has_websocket_context',
+    'htmlsafe_dumps', 'jsonify', 'make_response', 'Markup', 'message_flashed', 'Quart', 'redirect',
+    'render_template', 'render_template_string', 'request', 'Request', 'request_finished',
+    'request_started', 'request_tearing_down', 'Response', 'ResponseReturnValue', 'safe_join',
+    'send_file', 'send_from_directory', 'session', 'signals_available', 'stream_with_context',
+    'template_rendered', 'url_for', 'websocket', 'websocket_finished', 'websocket_started',
+    'websocket_tearing_down',
 )

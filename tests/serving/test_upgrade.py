@@ -4,7 +4,7 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
 import quart.serving._base
-from quart import Quart
+from quart import Quart, websocket
 from quart.serving import Server
 from .helpers import MockTransport
 
@@ -19,6 +19,7 @@ def serving_app() -> Quart:
 
     @app.websocket('/ws')
     async def ws() -> None:
+        websocket.accept()
         return None
 
     return app

@@ -7,7 +7,7 @@ import h2.connection
 import h2.events
 import h2.exceptions
 
-from ._base import HTTPProtocol, Stream
+from ._base import HTTPProtocol, response_headers, Stream
 from ..datastructures import CIMultiDict
 from ..wrappers import Request, Response  # noqa: F401
 
@@ -103,7 +103,7 @@ class H2Server(HTTPProtocol):
     async def send_response(self, stream_id: int, response: Response, suppress_body: bool) -> None:
         headers = [(':status', str(response.status_code))]
         headers.extend([(key, value) for key, value in response.headers.items()])
-        headers.extend(self.response_headers())
+        headers.extend(response_headers(self.protocol))
         self.connection.send_headers(stream_id, headers)
         for push_promise in response.push_promises:
             self._server_push(stream_id, push_promise)

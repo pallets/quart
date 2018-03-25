@@ -203,7 +203,7 @@ class TestClient:
         queue: asyncio.Queue = asyncio.Queue()
         websocket_client = _TestingWebsocket(queue)
         websocket = Websocket(
-            path, scheme, headers, queue, websocket_client.local_queue.put_nowait,
+            path, scheme, headers, queue, websocket_client.local_queue.put_nowait, lambda: None,
         )
         adapter = self.app.create_url_adapter(websocket)
         url_rule, _ = adapter.match()

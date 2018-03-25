@@ -28,8 +28,9 @@ from .routing import Map, MapAdapter, Rule
 from .serving import run_app
 from .sessions import SecureCookieSessionInterface, Session
 from .signals import (
-    appcontext_tearing_down, got_request_exception, request_finished, request_started,
-    request_tearing_down,
+    appcontext_tearing_down, got_request_exception, got_websocket_exception, request_finished,
+    request_started, request_tearing_down, websocket_finished, websocket_started,
+    websocket_tearing_down,
 )
 from .static import PackageStatic
 from .templating import _default_template_context_processor, DispatchingJinjaLoader, Environment
@@ -128,16 +129,24 @@ class Quart(PackageStatic):
         Attributes:
             after_request_funcs: The functions to execute after a
                 request has been handled.
+            after_websocket_funcs: The functions to execute after a
+                websocket has been handled.
             before_first_request_func: Functions to execute before the
                 first request only.
+            before_request_funcs: The functions to execute before handling
+                a request.
+            before_websocket_funcs: The functions to execute before handling
+                a websocket.
         """
         super().__init__(import_name, template_folder, root_path)
 
         self.config = self.make_config()
 
         self.after_request_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
+        self.after_websocket_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
         self.before_first_request_funcs: List[Callable] = []
         self.before_request_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
+        self.before_websocket_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
         self.blueprints: Dict[str, Blueprint] = OrderedDict()
         self.error_handler_spec: Dict[AppOrBlueprintKey, Dict[Exception, Callable]] = defaultdict(dict)  # noqa: E501
         self.extensions: Dict[str, Any] = {}
@@ -146,6 +155,7 @@ class Quart(PackageStatic):
         self.static_url_path = static_url_path
         self.teardown_appcontext_funcs: List[Callable] = []
         self.teardown_request_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)  # noqa: E501
+        self.teardown_websocket_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)  # noqa: E501
         self.template_context_processors: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)  # noqa: E501
         self.url_build_error_handlers: List[Callable] = []
         self.url_default_functions: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
@@ -762,9 +772,13 @@ class Quart(PackageStatic):
         raise error
 
     def _find_exception_handler(self, error: Exception) -> Optional[Callable]:
-        handler = _find_exception_handler(
-            error, self.error_handler_spec.get(_request_ctx_stack.top.request.blueprint, {}),
-        )
+        if _request_ctx_stack.top is not None:
+            blueprint = _request_ctx_stack.top.request.blueprint
+        elif _websocket_ctx_stack.top is not None:
+            blueprint = _websocket_ctx_stack.top.websocket.blueprint
+        else:
+            blueprint = None
+        handler = _find_exception_handler(error, self.error_handler_spec.get(blueprint, {}))
         if handler is None:
             handler = _find_exception_handler(
                 error, self.error_handler_spec[None],
@@ -834,10 +848,17 @@ class Quart(PackageStatic):
 
         By default this logs the exception and then re-raises it.
         """
-        await got_request_exception.send(self, exception=error)
+        await got_websocket_exception.send(self, exception=error)
 
         self.log_exception(sys.exc_info())
-        raise error
+
+        internal_server_error = all_http_exceptions[500]()
+        handler = self._find_exception_handler(internal_server_error)
+
+        if handler is None:
+            return internal_server_error.get_response()
+        else:
+            return await handler(error)
 
     def log_exception(self, exception_info: Tuple[type, BaseException, TracebackType]) -> None:
         """Log a exception to the :attr:`logger`.
@@ -874,6 +895,25 @@ class Quart(PackageStatic):
         """
         handler = ensure_coroutine(func)
         self.before_request_funcs[name].append(handler)
+        return func
+
+    def before_websocket(self, func: Callable, name: AppOrBlueprintKey=None) -> Callable:
+        """Add a before websocket function.
+
+        This is designed to be used as a decorator. An example usage,
+
+        .. code-block:: python
+
+            @app.before_websocket
+            def func():
+                ...
+
+        Arguments:
+            func: The before websocket function itself.
+            name: Optional blueprint key name.
+        """
+        handler = ensure_coroutine(func)
+        self.before_websocket_funcs[name].append(handler)
         return func
 
     def before_first_request(self, func: Callable, name: AppOrBlueprintKey=None) -> Callable:
@@ -914,6 +954,25 @@ class Quart(PackageStatic):
         self.after_request_funcs[name].append(handler)
         return func
 
+    def after_websocket(self, func: Callable, name: AppOrBlueprintKey=None) -> Callable:
+        """Add an after websocket function.
+
+        This is designed to be used as a decorator. An example usage,
+
+        .. code-block:: python
+
+            @app.after_websocket
+            def func(response):
+                return response
+
+        Arguments:
+            func: The after websocket function itself.
+            name: Optional blueprint key name.
+        """
+        handler = ensure_coroutine(func)
+        self.after_websocket_funcs[name].append(handler)
+        return func
+
     def teardown_request(self, func: Callable, name: AppOrBlueprintKey=None) -> Callable:
         """Add a teardown request function.
 
@@ -930,6 +989,24 @@ class Quart(PackageStatic):
             name: Optional blueprint key name.
         """
         self.teardown_request_funcs[name].append(func)
+        return func
+
+    def teardown_websocket(self, func: Callable, name: AppOrBlueprintKey=None) -> Callable:
+        """Add a teardown websocket function.
+
+        This is designed to be used as a decorator. An example usage,
+
+        .. code-block:: python
+
+            @app.teardown_websocket
+            def func():
+                ...
+
+        Arguments:
+            func: The teardown websocket function itself.
+            name: Optional blueprint key name.
+        """
+        self.teardown_websocket_funcs[name].append(func)
         return func
 
     def teardown_appcontext(self, func: Callable) -> Callable:
@@ -1010,6 +1087,29 @@ class Quart(PackageStatic):
         for function in functions:
             function(exc=exc)
         await request_tearing_down.send(self, exc=exc)
+
+    async def do_teardown_websocket(
+            self,
+            exc: Optional[BaseException],
+            websocket_context: Optional[WebsocketContext]=None,
+    ) -> None:
+        """Teardown the websocket, calling the teardown functions.
+
+        Arguments:
+            exc: Any exception not handled that has caused the websocket
+                to teardown.
+            websocket_context: The websocket context, optional as Flask
+                omits this argument.
+        """
+        websocket_ = (websocket_context or _websocket_ctx_stack.top).websocket
+        functions = self.teardown_websocket_funcs[None]
+        blueprint = websocket_.blueprint
+        if blueprint is not None:
+            functions = chain(functions, self.teardown_websocket_funcs[blueprint])  # type: ignore
+
+        for function in functions:
+            function(exc=exc)
+        await websocket_tearing_down.send(self, exc=exc)
 
     async def do_teardown_appcontext(self, exc: Optional[BaseException]) -> None:
         """Teardown the app (context), calling the teardown functions."""
@@ -1146,6 +1246,8 @@ class Quart(PackageStatic):
         self.teardown_appcontext_funcs = list(reversed(self.teardown_appcontext_funcs))
         for key, value in self.teardown_request_funcs.items():
             self.teardown_request_funcs[key] = list(reversed(value))
+        for key, value in self.teardown_websocket_funcs.items():
+            self.teardown_websocket_funcs[key] = list(reversed(value))
 
         with await self._first_request_lock:
             if self._got_first_request:
@@ -1193,33 +1295,6 @@ class Quart(PackageStatic):
         if headers is not None:
             response.headers.update(headers)
 
-        return response
-
-    async def process_response(
-        self,
-        response: Response,
-        request_context: Optional[RequestContext]=None,
-    ) -> Response:
-        """Postprocess the request acting on the response.
-
-        Arguments:
-            response: The response after the request is finalized.
-            request_context: The request context, optional as Flask
-                omits this argument.
-        """
-        request_ = (request_context or _request_ctx_stack.top).request
-        functions = (request_context or _request_ctx_stack.top)._after_request_functions
-        functions = chain(functions, self.after_request_funcs[None])
-        blueprint = request_.blueprint
-        if blueprint is not None:
-            functions = chain(functions, self.after_request_funcs[blueprint])  # type: ignore
-
-        for function in functions:
-            response = await function(response)
-
-        session_ = (request_context or _request_ctx_stack.top).session
-        if not self.session_interface.is_null_session(session_):
-            self.save_session(session_, response)  # type: ignore
         return response
 
     async def handle_request(self, request: Request) -> Response:
@@ -1312,31 +1387,91 @@ class Quart(PackageStatic):
         await request_finished.send(self, response=response)
         return response
 
-    async def handle_websocket(self, websocket: Websocket) -> None:
+    async def process_response(
+        self,
+        response: Response,
+        request_context: Optional[RequestContext]=None,
+    ) -> Response:
+        """Postprocess the request acting on the response.
+
+        Arguments:
+            response: The response after the request is finalized.
+            request_context: The request context, optional as Flask
+                omits this argument.
+        """
+        request_ = (request_context or _request_ctx_stack.top).request
+        functions = (request_context or _request_ctx_stack.top)._after_request_functions
+        functions = chain(functions, self.after_request_funcs[None])
+        blueprint = request_.blueprint
+        if blueprint is not None:
+            functions = chain(functions, self.after_request_funcs[blueprint])  # type: ignore
+
+        for function in functions:
+            response = await function(response)
+
+        session_ = (request_context or _request_ctx_stack.top).session
+        if not self.session_interface.is_null_session(session_):
+            self.save_session(session_, response)  # type: ignore
+        return response
+
+    async def handle_websocket(self, websocket: Websocket) -> Optional[Response]:
         async with self.websocket_context(websocket) as websocket_context:
             try:
-                await self.full_dispatch_websocket(websocket_context)
+                return await self.full_dispatch_websocket(websocket_context)
             except asyncio.CancelledError:
                 raise  # CancelledErrors should be handled by serving code.
             except Exception as error:
-                await self.handle_websocket_exception(error)
+                return await self.handle_websocket_exception(error)
 
     async def full_dispatch_websocket(
         self, websocket_context: Optional[WebsocketContext]=None,
-    ) -> None:
-        """Adds pre and post processing to the request dispatching.
+    ) -> Optional[Response]:
+        """Adds pre and post processing to the websocket dispatching.
 
         Arguments:
             websocket_context: The websocket context, optional to match
                 the Flask convention.
         """
         await self.try_trigger_before_first_request_functions()
-        await self.dispatch_websocket(websocket_context)
+        await websocket_started.send(self)
+        try:
+            result = await self.preprocess_websocket(websocket_context)
+            if result is None:
+                result = await self.dispatch_websocket(websocket_context)
+        except Exception as error:
+            result = await self.handle_user_exception(error)
+        return await self.finalize_websocket(result, websocket_context)
+
+    async def preprocess_websocket(
+        self, websocket_context: Optional[WebsocketContext]=None,
+    ) -> Optional[ResponseReturnValue]:
+        """Preprocess the websocket i.e. call before_websocket functions.
+
+        Arguments:
+            websocket_context: The websocket context, optional as Flask
+                omits this argument.
+        """
+        websocket_ = (websocket_context or _websocket_ctx_stack.top).websocket
+        blueprint = websocket_.blueprint
+        processors = self.url_value_preprocessors[None]
+        if blueprint is not None:
+            processors = chain(processors, self.url_value_preprocessors[blueprint])  # type: ignore
+        for processor in processors:
+            processor(websocket_.endpoint, websocket_.view_args)
+
+        functions = self.before_websocket_funcs[None]
+        if blueprint is not None:
+            functions = chain(functions, self.before_websocket_funcs[blueprint])  # type: ignore
+        for function in functions:
+            result = await function()
+            if result is not None:
+                return result
+        return None
 
     async def dispatch_websocket(
         self, websocket_context: Optional[WebsocketContext]=None,
     ) -> None:
-        """Dispatch the request to the view function.
+        """Dispatch the websocket to the view function.
 
         Arguments:
             websocket_context: The websocket context, optional to match
@@ -1348,6 +1483,50 @@ class Quart(PackageStatic):
 
         handler = self.view_functions[websocket_.url_rule.endpoint]
         await handler(**websocket_.view_args)
+
+    async def finalize_websocket(
+        self,
+        result: ResponseReturnValue,
+        websocket_context: Optional[WebsocketContext]=None,
+    ) -> Optional[Response]:
+        """Turns the view response return value into a response.
+
+        Arguments:
+            result: The result of the websocket to finalize into a response.
+            websocket_context: The websocket context, optional as Flask
+                omits this argument.
+        """
+        if result is not None:
+            response = await self.make_response(result)
+        else:
+            response = None
+        response = await self.postprocess_websocket(response, websocket_context)
+        await websocket_finished.send(self, response=response)
+        return response
+
+    async def postprocess_websocket(
+        self,
+        response: Optional[Response],
+        websocket_context: Optional[WebsocketContext]=None,
+    ) -> Response:
+        """Postprocess the websocket acting on the response.
+
+        Arguments:
+            response: The response after the websocket is finalized.
+            webcoket_context: The websocket context, optional as Flask
+                omits this argument.
+        """
+        websocket_ = (websocket_context or _websocket_ctx_stack.top).websocket
+        functions = (websocket_context or _websocket_ctx_stack.top)._after_websocket_functions
+        functions = chain(functions, self.after_websocket_funcs[None])
+        blueprint = websocket_.blueprint
+        if blueprint is not None:
+            functions = chain(functions, self.after_websocket_funcs[blueprint])  # type: ignore
+
+        for function in functions:
+            response = await function(response)
+
+        return response
 
     def __call__(self) -> 'Quart':
         # Required for Gunicorn compatibility.

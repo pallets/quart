@@ -74,6 +74,7 @@ Discussion Points
    globals.rst
    http2_discussion.rst
    timeout.rst
+   websockets_discussion.rst
 
 Reference
 ---------

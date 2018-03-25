@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union  # noqa: F4
 
 import h11
 
-from ._base import HTTPProtocol
+from ._base import HTTPProtocol, response_headers
 from ..datastructures import CIMultiDict
 from ..wrappers import Request, Response  # noqa: F401
 
@@ -62,9 +62,9 @@ class H11Server(HTTPProtocol):
     def _handle_events(self) -> None:
         while True:
             if self.connection.they_are_waiting_for_100_continue:
-                self._send(
-                    h11.InformationalResponse(status_code=100, headers=self.response_headers()),
-                )
+                self._send(h11.InformationalResponse(
+                    status_code=100, headers=response_headers(self.protocol),
+                ))
             try:
                 event = self.connection.next_event()
             except h11.RemoteProtocolError:
@@ -99,7 +99,8 @@ class H11Server(HTTPProtocol):
         connection_tokens = headers.get('connection', '').lower().split(',')
         if (
                 any(token == 'upgrade' for token in connection_tokens) and
-                headers.get('upgrade', '').lower() == 'websocket'
+                headers.get('upgrade', '').lower() == 'websocket' and
+                event.method.decode().upper() == 'GET'
         ):
             raise WebsocketProtocolRequired(event)
         # h2c Upgrade requests with a body are a pain as the body must
@@ -112,7 +113,7 @@ class H11Server(HTTPProtocol):
                 and 'Transfer-Encoding' not in headers
         ):
             self._send(h11.InformationalResponse(
-                status_code=101, headers=[('upgrade', 'h2c')] + self.response_headers(),
+                status_code=101, headers=[('upgrade', 'h2c')] + response_headers(self.protocol),
             ))
             raise H2CProtocolRequired(event)
 
@@ -124,7 +125,8 @@ class H11Server(HTTPProtocol):
 
     async def send_response(self, stream_id: int, response: Response, suppress_body: bool) -> None:
         headers = chain(
-            ((key, value) for key, value in response.headers.items()), self.response_headers(),
+            ((key, value) for key, value in response.headers.items()),
+            response_headers(self.protocol),
         )
         self._send(h11.Response(status_code=response.status_code, headers=headers))
         if not suppress_body:
@@ -135,7 +137,8 @@ class H11Server(HTTPProtocol):
     def _handle_error(self) -> None:
         self._send(h11.Response(
             status_code=400, headers=chain(
-                [('content-length', '0'), ('connection', 'close')], self.response_headers(),
+                [('content-length', '0'), ('connection', 'close')],
+                response_headers(self.protocol),
             ),
         ))
         self._send(h11.EndOfMessage())

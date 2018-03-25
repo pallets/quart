@@ -102,7 +102,15 @@ class WebsocketContext(_BaseRequestWebsocketContext):
     Do not use directly, prefer the
     :func:`~quart.Quart.websocket_context` or
     :func:`~quart.Quart.test_websocket_context` instead.
+
+    Attributes:
+        _after_websocket_functions: List of functions to execute after the curret
+            websocket, see :func:`after_this_websocket`.
     """
+
+    def __init__(self, app: 'Quart', request: Websocket) -> None:
+        super().__init__(app, request)
+        self._after_websocket_functions: List[Callable] = []
 
     @property
     def websocket(self) -> Websocket:
@@ -119,6 +127,7 @@ class WebsocketContext(_BaseRequestWebsocketContext):
         return self
 
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+        await self.app.do_teardown_websocket(exc_value, self)
         _websocket_ctx_stack.pop()
         await super().__aexit__(exc_type, exc_value, tb)
 
@@ -187,6 +196,32 @@ def after_this_request(func: Callable) -> Callable:
             ...
     """
     _request_ctx_stack.top._after_request_functions.append(func)
+    return func
+
+
+def after_this_websocket(func: Callable) -> Callable:
+    """Schedule the func to be called after the current websocket.
+
+    This is useful in situations whereby you want an after websocket
+    function for a specific route or circumstance only, for example,
+
+    .. note::
+        The response is an optional argument, and will only be
+        passed if the websocket was not active (i.e. there was an
+        error).
+
+    .. code-block:: python
+
+        def index():
+            @after_this_websocket
+            def set_cookie(response: Optional[Response]):
+                response.set_cookie('special', 'value')
+                return response
+
+            ...
+
+    """
+    _websocket_ctx_stack.top._after_websocket_functions.append(func)
     return func
 
 

@@ -223,6 +223,7 @@ class Websocket(BaseRequestWebsocket):
             headers: CIMultiDict,
             queue: asyncio.Queue,
             send: Callable,
+            accept: Callable,
     ) -> None:
         """Create a request object.
 
@@ -232,12 +233,15 @@ class Websocket(BaseRequestWebsocket):
             path: The full URL of the request.
             headers: The request headers.
             websocket: The actual websocket with the data.
+            accept: Idempotent callable to accept the websocket connection.
         """
         super().__init__('GET', scheme, path, headers)
         self._queue = queue
         self._send = send
+        self._accept = accept
 
     async def receive(self) -> bytes:
+        self._accept()
         return await self._queue.get()
 
     async def send(self, data: bytes) -> None:
@@ -245,4 +249,9 @@ class Websocket(BaseRequestWebsocket):
         # setup a tight loop sending data over a websocket (as in the
         # example). So yield via the sleep.
         await asyncio.sleep(0)
+        self._accept()
         self._send(data)
+
+    def accept(self) -> None:
+        """Manually chose to accept the websocket connection."""
+        self._accept()

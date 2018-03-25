@@ -16,6 +16,8 @@ class MockTransport:
 
     def write(self, data: bytes) -> None:
         assert not self.closed.is_set()
+        if data == b'':
+            return
         self.data.extend(data)
         self.updated.set()
 
