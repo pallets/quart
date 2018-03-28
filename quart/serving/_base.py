@@ -2,6 +2,7 @@ import asyncio
 from email.utils import formatdate
 from functools import partial
 from logging import Logger
+from ssl import SSLObject, SSLSocket
 from time import time
 from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union  # noqa: F401
 
@@ -11,6 +12,93 @@ from ..wrappers import Request, Response  # noqa: F401
 
 if TYPE_CHECKING:
     from ..app import Quart  # noqa
+
+
+class HTTPServer:
+
+    def __init__(
+            self,
+            loop: asyncio.AbstractEventLoop,
+            transport: asyncio.BaseTransport,
+            logger: Optional[Logger],
+            protocol: str,
+    ) -> None:
+        self.loop = loop
+        self.transport = transport
+        self.logger = logger
+        self.protocol = protocol
+
+        self._can_write = asyncio.Event(loop=loop)
+        self._can_write.set()
+
+    def data_received(self, data: bytes) -> None:
+        # Called whenever data is received.
+        pass
+
+    def eof_received(self) -> bool:
+        # Either received once or not at all, if the client signals
+        # the connection is closed from their side. Is not called for
+        # SSL connections. If it returns Falsey the connection is
+        # closed from our side.
+        return True
+
+    def pause_writing(self) -> None:
+        # Will be called whenever the transport crosses the high-water
+        # mark.
+        self._can_write.clear()
+
+    def resume_writing(self) -> None:
+        # Will be called whenever the transport drops back below the
+        # low-water mark.
+        self._can_write.set()
+
+    def connection_lost(self, _: Exception) -> None:
+        # Called once when the connection is closed from our side.
+        self.close()
+
+    async def drain(self) -> None:
+        await self._can_write.wait()
+
+    def write(self, data: bytes) -> None:
+        self.transport.write(data)  # type: ignore
+
+    def close(self) -> None:
+        self.transport.close()
+
+    def response_headers(self) -> List[Tuple[str, str]]:
+        return [
+            ('date', formatdate(time(), usegmt=True)), ('server', f"quart-{self.protocol}"),
+        ]
+
+    def cleanup_task(self, future: asyncio.Future) -> None:
+        """Call after a task (future) to clean up.
+
+        This should be added as a add_done_callback for any protocol
+        task to ensure that the proper cleanup is handled on
+        cancellation i.e. early connection closing.
+        """
+        # Fetch the exception (if exists) from the future, without
+        # this asyncio will print annoying warnings.
+        try:
+            exception = future.exception()
+        except Exception as error:
+            exception = error
+        # If the connection was closed, the exception will be a
+        # CancelledError and does not need to be logged (expected
+        # behaviour).
+        if (
+                exception is not None and not isinstance(exception, asyncio.CancelledError) and
+                self.logger is not None
+        ):
+            self.logger.error('Exception handling the request', exc_info=exception)
+
+    @property
+    def remote_addr(self) -> str:
+        return self.transport.get_extra_info('peername')[0]
+
+    @property
+    def ssl_info(self) -> Optional[Union[SSLObject, SSLSocket]]:
+        return self.transport.get_extra_info('ssl_object')
 
 
 class Stream:
@@ -27,9 +115,8 @@ class Stream:
         self.request.body.set_complete()
 
 
-class HTTPProtocol:
+class RequestResponseServer(HTTPServer):
 
-    protocol = ''
     stream_class = Stream
 
     def __init__(
@@ -38,21 +125,27 @@ class HTTPProtocol:
             loop: asyncio.AbstractEventLoop,
             transport: asyncio.BaseTransport,
             logger: Optional[Logger],
+            protocol: str,
             access_log_format: str,
-            timeout: int,
+            timeout: float,
     ) -> None:
+        super().__init__(loop, transport, logger, protocol)
         self.app = app
-        self.loop = loop
-        self.logger = logger
         self.streams: Dict[int, Stream] = {}
         self.access_log_format = access_log_format
         self._timeout = timeout
         self._last_activity = time()
         self._timeout_handle = self.loop.call_later(self._timeout, self._handle_timeout)
-        self._transport = transport
 
-    def connection_lost(self, _: Exception) -> None:
-        self.close()
+    def write(self, data: bytes) -> None:
+        self._last_activity = time()
+        super().write(data)
+
+    def close(self) -> None:
+        for stream in self.streams.values():
+            stream.task.cancel()
+        super().close()
+        self._timeout_handle.cancel()
 
     def data_received(self, data: bytes) -> None:
         self._last_activity = time()
@@ -68,8 +161,8 @@ class HTTPProtocol:
             headers: CIMultiDict,
     ) -> None:
         self._timeout_handle.cancel()
-        headers['Remote-Addr'] = self._transport.get_extra_info('peername')[0]
-        scheme = 'https' if self._transport.get_extra_info('ssl_object') is not None else 'http'
+        headers['Remote-Addr'] = self.remote_addr
+        scheme = 'https' if self.ssl_info is not None else 'http'
         request = self.app.request_class(
             method, scheme, path, headers,
             max_content_length=self.app.config['MAX_CONTENT_LENGTH'],
@@ -95,39 +188,15 @@ class HTTPProtocol:
     async def send_response(self, stream_id: int, response: Response, suppress_body: bool) -> None:
         raise NotImplemented()
 
-    def send(self, data: bytes) -> None:
-        self._last_activity = time()
-        self._transport.write(data)  # type: ignore
-
-    def close(self) -> None:
-        for stream in self.streams.values():
-            stream.task.cancel()
-        self._transport.close()
-        self._timeout_handle.cancel()
-
     def _after_request(self, stream_id: int, future: asyncio.Future) -> None:
         del self.streams[stream_id]
         if not self.streams:
             self._timeout_handle = self.loop.call_later(self._timeout, self._handle_timeout)
-        try:
-            exception = future.exception()
-        except Exception as error:
-            exception = error
-        if (
-                exception is not None and not isinstance(exception, asyncio.CancelledError) and
-                self.logger is not None
-        ):
-            self.logger.error('Request handling exception', exc_info=exception)
+        self.cleanup_task(future)
 
     def _handle_timeout(self) -> None:
         if time() - self._last_activity > self._timeout:
             self.close()
-
-
-def response_headers(protocol: str) -> List[Tuple[str, str]]:
-    return [
-        ('date', formatdate(time(), usegmt=True)), ('server', f"quart-{protocol}"),
-    ]
 
 
 def suppress_body(method: str, status_code: int) -> bool:

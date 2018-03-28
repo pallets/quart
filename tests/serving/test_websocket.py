@@ -30,6 +30,6 @@ async def test_not_found(
             ('Sec-WebSocket-Key', 'NA63HJnrvVYlgKt6wI58Yw=='), ('Sec-WebSocket-Version', '13'),
         ],
     )
-    WebsocketServer(serving_app, event_loop, transport, request)  # type: ignore
+    WebsocketServer(serving_app, event_loop, transport, None, request)  # type: ignore
     await transport.closed.wait()
     assert transport.data.startswith(b'HTTP/1.1 404')

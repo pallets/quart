@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union  # noqa: F4
 
 import h11
 
-from ._base import HTTPProtocol, response_headers
+from ._base import RequestResponseServer
 from ..datastructures import CIMultiDict
 from ..wrappers import Request, Response  # noqa: F401
 
@@ -29,9 +29,7 @@ class H2CProtocolRequired(WrongProtocolError):
     pass
 
 
-class H11Server(HTTPProtocol):
-
-    protocol = 'h11'
+class H11Server(RequestResponseServer):
 
     def __init__(
             self,
@@ -44,7 +42,7 @@ class H11Server(HTTPProtocol):
             *,
             max_incomplete_size: Optional[int]=None,
     ) -> None:
-        super().__init__(app, loop, transport, logger, access_log_format, timeout)
+        super().__init__(app, loop, transport, logger, 'h11', access_log_format, timeout)
         self.connection = h11.Connection(
             h11.SERVER,
             max_incomplete_event_size=max_incomplete_size or DEFAULT_MAX_INCOMPLETE_EVENT_SIZE,
@@ -63,7 +61,7 @@ class H11Server(HTTPProtocol):
         while True:
             if self.connection.they_are_waiting_for_100_continue:
                 self._send(h11.InformationalResponse(
-                    status_code=100, headers=response_headers(self.protocol),
+                    status_code=100, headers=self.response_headers(),
                 ))
             try:
                 event = self.connection.next_event()
@@ -113,7 +111,7 @@ class H11Server(HTTPProtocol):
                 and 'Transfer-Encoding' not in headers
         ):
             self._send(h11.InformationalResponse(
-                status_code=101, headers=[('upgrade', 'h2c')] + response_headers(self.protocol),
+                status_code=101, headers=[('upgrade', 'h2c')] + self.response_headers(),
             ))
             raise H2CProtocolRequired(event)
 
@@ -126,19 +124,20 @@ class H11Server(HTTPProtocol):
     async def send_response(self, stream_id: int, response: Response, suppress_body: bool) -> None:
         headers = chain(
             ((key, value) for key, value in response.headers.items()),
-            response_headers(self.protocol),
+            self.response_headers(),
         )
         self._send(h11.Response(status_code=response.status_code, headers=headers))
         if not suppress_body:
             async for data in response.response:
                 self._send(h11.Data(data=data))
+                await self.drain()
         self._send(h11.EndOfMessage())
 
     def _handle_error(self) -> None:
         self._send(h11.Response(
             status_code=400, headers=chain(
                 [('content-length', '0'), ('connection', 'close')],
-                response_headers(self.protocol),
+                self.response_headers(),
             ),
         ))
         self._send(h11.EndOfMessage())
@@ -146,4 +145,4 @@ class H11Server(HTTPProtocol):
     def _send(
             self, event: Union[h11.Data, h11.EndOfMessage, h11.InformationalResponse, h11.Response],
     ) -> None:
-        self.send(self.connection.send(event))  # type: ignore
+        self.write(self.connection.send(event))  # type: ignore

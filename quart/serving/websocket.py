@@ -1,6 +1,7 @@
 import asyncio
 from functools import partial
 from itertools import chain
+from logging import Logger
 from typing import Optional, TYPE_CHECKING, Union
 
 import h11
@@ -8,7 +9,7 @@ import wsproto.connection
 import wsproto.events
 import wsproto.extensions
 
-from ._base import response_headers, suppress_body
+from ._base import HTTPServer, suppress_body
 from ..datastructures import CIMultiDict
 from ..wrappers import Websocket
 
@@ -16,20 +17,24 @@ if TYPE_CHECKING:
     from ..app import Quart  # noqa
 
 
-class WebsocketServer:
-
-    protocol = 'wsproto'
+class WebsocketServer(HTTPServer):
 
     def __init__(
             self,
             app: 'Quart',
             loop: asyncio.AbstractEventLoop,
             transport: asyncio.BaseTransport,
+            logger: Optional[Logger],
             request: h11.Request,
     ) -> None:
+        """Instantiate a Websocket handling server.
+
+        This requires a request that has websocket upgrade headers
+        present. If no such request exists, this is the wrong server
+        to use, see H11Server or H2Server instead.
+        """
+        super().__init__(loop, transport, logger, 'wsproto')
         self.app = app
-        self.loop = loop
-        self._transport = transport
         self.connection = wsproto.connection.WSConnection(
             wsproto.connection.SERVER, extensions=[wsproto.extensions.PerMessageDeflate()],
         )
@@ -39,11 +44,8 @@ class WebsocketServer:
         self._buffer: Optional[Union[bytes, str]] = None
         self.data_received(fake_client.send(request))
 
-    @property
-    def active(self) -> bool:
-        return self.connection._state == wsproto.connection.ConnectionState.OPEN
-
     def data_received(self, data: bytes) -> None:
+        super().data_received(data)
         self.connection.receive_bytes(data)
         for event in self.connection.events():
             if isinstance(event, wsproto.events.ConnectionRequested):
@@ -59,64 +61,62 @@ class WebsocketServer:
                     self.queue.put_nowait(self._buffer)
                     self._buffer = None
             elif isinstance(event, wsproto.events.ConnectionClosed):
-                self._send()
+                self.write(self.connection.bytes_to_send())
                 self.close()
-            self._send()
-
-    def eof_received(self) -> bool:
-        pass
-
-    def connection_lost(self, exception: Exception) -> None:
-        self.close()
+            self.write(self.connection.bytes_to_send())
 
     def close(self) -> None:
         if self.task is not None:
             self.task.cancel()
-        self._transport.close()
+        super().close()
+
+    @property
+    def active(self) -> bool:
+        return self.connection._state == wsproto.connection.ConnectionState.OPEN
 
     def handle_websocket(self, event: wsproto.events.ConnectionRequested) -> None:
         headers = CIMultiDict()
         for name, value in event.h11request.headers:
             headers.add(name.decode().title(), value.decode())
-        scheme = 'wss' if self._transport.get_extra_info('ssl_object') is not None else 'ws'
+        headers['Remote-Addr'] = self.remote_addr
+        scheme = 'wss' if self.ssl_info is not None else 'ws'
         websocket = Websocket(
             event.h11request.target.decode(), scheme, headers, self.queue, self.send_data,
             partial(self.accept_connection, event),
         )
         self.task = asyncio.ensure_future(self._handle_websocket(websocket))
+        self.task.add_done_callback(self.cleanup_task)
 
     def accept_connection(self, event: wsproto.events.ConnectionRequested) -> None:
         if not self.active:
             self.connection.accept(event)
-            self._send()
+            self.write(self.connection.bytes_to_send())
 
     async def _handle_websocket(self, websocket: Websocket) -> None:
         response = await self.app.handle_websocket(websocket)
         if response is not None:
             if self.active:
                 self.connection.close(wsproto.connection.CloseReason.INTERNAL_ERROR)
+                self.write(self.connection.bytes_to_send())
             else:
                 headers = chain(
                     ((key, value) for key, value in response.headers.items()),
-                    response_headers(self.protocol),
+                    self.response_headers(),
                 )
-                self.connection._outgoing += self.connection._upgrade_connection.send(
+                self.write(self.connection._upgrade_connection.send(
                     h11.Response(status_code=response.status_code, headers=headers),
-                )
+                ))
                 if not suppress_body('GET', response.status_code):
                     async for data in response.response:
-                        self.connection._outgoing += self.connection._upgrade_connection.send(
+                        self.write(self.connection._upgrade_connection.send(
                             h11.Data(data=data),
-                        )
-                self.connection._outgoing += self.connection._upgrade_connection.send(
+                        ))
+                        await self.drain()
+                self.write(self.connection._upgrade_connection.send(
                     h11.EndOfMessage(),
-                )
-        self._send()
+                ))
         self.close()
 
     def send_data(self, data: bytes) -> None:
         self.connection.send_data(data)
-        self._send()
-
-    def _send(self) -> None:
-        self._transport.write(self.connection.bytes_to_send())  # type: ignore
+        self.write(self.connection.bytes_to_send())

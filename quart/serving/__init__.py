@@ -5,7 +5,7 @@ from logging import Logger
 from pathlib import Path
 from ssl import SSLContext
 from types import ModuleType
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union  # noqa: F401
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING  # noqa: F401
 
 from .h11 import H11Server, H2CProtocolRequired, WebsocketProtocolRequired
 from .h2 import H2Server
@@ -13,7 +13,7 @@ from .websocket import WebsocketServer
 from ..wrappers import Request, Response  # noqa: F401
 
 if TYPE_CHECKING:
-    from ._base import HTTPProtocol  # noqa
+    from ._base import HTTPServer  # noqa
     from ..app import Quart  # noqa
 
 
@@ -34,7 +34,7 @@ class Server(asyncio.Protocol):
     ) -> None:
         self.app = app
         self.loop = loop
-        self._server: Optional[Union['HTTPProtocol', WebsocketServer]] = None
+        self._server: Optional['HTTPServer'] = None
         self.logger = logger
         self.access_log_format = access_log_format
         self.timeout = timeout
@@ -68,11 +68,11 @@ class Server(asyncio.Protocol):
             self._server.data_received(data)
         except WebsocketProtocolRequired as error:
             self._server = WebsocketServer(
-                self.app, self.loop, self._server._transport, error.request,
+                self.app, self.loop, self._server.transport, self.logger, error.request,
             )
         except H2CProtocolRequired as error:
             self._server = H2Server(
-                self.app, self.loop, self._server._transport, self.logger, self.access_log_format,
+                self.app, self.loop, self._server.transport, self.logger, self.access_log_format,
                 self.timeout, upgrade_request=error.request,
             )
 
@@ -82,6 +82,12 @@ class Server(asyncio.Protocol):
             # SSL, and just raises an annoying warning.
             return False
         return self._server.eof_received()
+
+    def pause_writing(self) -> None:
+        self._server.pause_writing()
+
+    def resume_writing(self) -> None:
+        self._server.resume_writing()
 
 
 async def _observe_changes() -> bool:

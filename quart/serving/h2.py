@@ -7,7 +7,7 @@ import h2.connection
 import h2.events
 import h2.exceptions
 
-from ._base import HTTPProtocol, response_headers, Stream
+from ._base import RequestResponseServer, Stream
 from ..datastructures import CIMultiDict
 from ..wrappers import Request, Response  # noqa: F401
 
@@ -33,9 +33,8 @@ class H2Stream(Stream):
         await self.event.wait()
 
 
-class H2Server(HTTPProtocol):
+class H2Server(RequestResponseServer):
 
-    protocol = 'h2'
     stream_class = H2Stream
 
     def __init__(
@@ -49,7 +48,7 @@ class H2Server(HTTPProtocol):
             *,
             upgrade_request: Optional['h11.Request']=None,
     ) -> None:
-        super().__init__(app, loop, transport, logger, access_log_format, timeout)
+        super().__init__(app, loop, transport, logger, 'h2', access_log_format, timeout)
         self.connection = h2.connection.H2Connection(
             config=h2.config.H2Configuration(client_side=False, header_encoding='utf-8'),
         )
@@ -64,18 +63,18 @@ class H2Server(HTTPProtocol):
                 1, upgrade_request.method.decode().upper(), upgrade_request.target.decode(),
                 headers,
             )
-        self.send(self.connection.data_to_send())  # type: ignore
+        self.write(self.connection.data_to_send())  # type: ignore
 
     def data_received(self, data: bytes) -> None:
         super().data_received(data)
         try:
             events = self.connection.receive_data(data)
         except h2.exceptions.ProtocolError:
-            self.send(self.connection.data_to_send())  # type: ignore
+            self.write(self.connection.data_to_send())  # type: ignore
             self.close()
         else:
             self._handle_events(events)
-            self.send(self.connection.data_to_send())  # type: ignore
+            self.write(self.connection.data_to_send())  # type: ignore
 
     def _handle_events(self, events: List[h2.events.Event]) -> None:
         for event in events:
@@ -98,21 +97,21 @@ class H2Server(HTTPProtocol):
                 self.close()
                 return
 
-            self.send(self.connection.data_to_send())  # type: ignore
+            self.write(self.connection.data_to_send())  # type: ignore
 
     async def send_response(self, stream_id: int, response: Response, suppress_body: bool) -> None:
         headers = [(':status', str(response.status_code))]
         headers.extend([(key, value) for key, value in response.headers.items()])
-        headers.extend(response_headers(self.protocol))
+        headers.extend(self.response_headers())
         self.connection.send_headers(stream_id, headers)
         for push_promise in response.push_promises:
             self._server_push(stream_id, push_promise)
-        self.send(self.connection.data_to_send())  # type: ignore
+        self.write(self.connection.data_to_send())  # type: ignore
         if not suppress_body:
             async for data in response.response:
                 await self._send_data(stream_id, data)
         self.connection.end_stream(stream_id)
-        self.send(self.connection.data_to_send())  # type: ignore
+        self.write(self.connection.data_to_send())  # type: ignore
 
     def _server_push(self, stream_id: int, path: str) -> None:
         push_stream_id = self.connection.get_next_available_stream_id()
@@ -139,10 +138,11 @@ class H2Server(HTTPProtocol):
             chunk_size = min(len(data), self.connection.local_flow_control_window(stream_id))
             chunk_size = min(chunk_size, self.connection.max_outbound_frame_size)
             self.connection.send_data(stream_id, data[:chunk_size])
-            self.send(self.connection.data_to_send())  # type: ignore
+            self.write(self.connection.data_to_send())  # type: ignore
             data = data[chunk_size:]
             if not data:
                 break
+            await self.drain()
 
     def _window_updated(self, stream_id: Optional[int]) -> None:
         if stream_id:
