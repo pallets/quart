@@ -40,10 +40,12 @@ class Body:
     async def __anext__(self) -> bytes:
         # The iterator should return whenever there is any data, but
         # quit if the body future is done i.e. there is no more data.
+        stream_future = asyncio.ensure_future(self._stream.get())
         done, _ = await asyncio.wait(  # type: ignore
-            [self._body, self._stream.get()], return_when=asyncio.FIRST_COMPLETED,  # type: ignore
+            [self._body, stream_future], return_when=asyncio.FIRST_COMPLETED,  # type: ignore
         )
         if self._body.done():
+            stream_future.cancel()
             raise StopAsyncIteration()
         else:
             result = bytearray()
