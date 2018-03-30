@@ -6,6 +6,7 @@ import pytest
 
 from quart import make_response, Quart, ResponseReturnValue
 from quart.serving.h2 import H2Server
+from .helpers import MockTransport
 
 BASIC_H2_HEADERS = [
     (':authority', 'quart'), (':path', '/'), (':scheme', 'https'), (':method', 'GET'),
@@ -32,30 +33,6 @@ def serving_app() -> Quart:
         return response
 
     return app
-
-
-class MockTransport:
-
-    def __init__(self) -> None:
-        self.data = bytearray()
-        self.closed = asyncio.Event()
-        self.updated = asyncio.Event()
-
-    def get_extra_info(self, _: str) -> tuple:
-        return ('127.0.0.1',)
-
-    def write(self, data: bytes) -> None:
-        assert not self.closed.is_set()
-        self.data.extend(data)
-        self.updated.set()
-
-    def close(self) -> None:
-        self.updated.set()
-        self.closed.set()
-
-    def clear(self) -> None:
-        self.data = bytearray()
-        self.updated.clear()
 
 
 class MockH2Connection:
