@@ -57,6 +57,9 @@ class WebsocketServer(HTTPServer):
                     else:
                         self._buffer = b''
                 self._buffer += event.data
+                if len(self._buffer) > self.app.config['MAX_CONTENT_LENGTH']:
+                    self.write(self.connection.bytes_to_send())
+                    self.close()
                 if event.message_finished:
                     self.queue.put_nowait(self._buffer)
                     self._buffer = None
