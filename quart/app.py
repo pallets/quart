@@ -1285,7 +1285,7 @@ class Quart(PackageStatic):
             status = status_or_headers
 
         if not isinstance(value, Response):
-            response = self.response_class(value)
+            response = self.response_class(value, timeout=self.config['RESPONSE_TIMEOUT'])
         else:
             response = value
 

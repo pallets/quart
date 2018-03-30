@@ -179,12 +179,19 @@ class RequestResponseServer(HTTPServer):
         start_time = time()
         response = await self.app.handle_request(request)
         suppress_body_ = suppress_body(request.method, response.status_code)
-        await self.send_response(stream_id, response, suppress_body_)
-        if self.logger is not None:
-            self.logger.info(
-                self.access_log_format,
-                AccessLogAtoms(request, response, self.protocol, time() - start_time),
+        try:
+            await asyncio.wait_for(
+                self.send_response(stream_id, response, suppress_body_),
+                timeout=response.timeout,
             )
+        except asyncio.TimeoutError:
+            self.close()
+        else:
+            if self.logger is not None:
+                self.logger.info(
+                    self.access_log_format,
+                    AccessLogAtoms(request, response, self.protocol, time() - start_time),
+                )
 
     async def send_response(self, stream_id: int, response: Response, suppress_body: bool) -> None:
         raise NotImplemented()

@@ -22,6 +22,7 @@ DEFAULT_CONFIG = {
     'PERMANENT_SESSION_LIFETIME': timedelta(days=31),
     'PREFERRED_URL_SCHEME': 'http',
     'PROPAGATE_EXCEPTIONS': None,
+    'RESPONSE_TIMEOUT': 60,  # Second
     'SECRET_KEY': None,
     'SERVER_NAME': None,
     'SESSION_COOKIE_DOMAIN': None,

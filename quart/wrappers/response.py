@@ -41,6 +41,8 @@ class Response(_BaseRequestResponse, JSONMixin):
             headers: Optional[Union[dict, CIMultiDict]]=None,
             mimetype: Optional[str]=None,
             content_type: Optional[str]=None,
+            *,
+            timeout: Optional[int]=None,
     ) -> None:
         """Create a response object.
 
@@ -57,6 +59,8 @@ class Response(_BaseRequestResponse, JSONMixin):
             headers: Headers to attach to the response.
             mimetype: Mimetype of the response.
             content_type: Content-Type header value.
+            timeout: Optional argument to specify timeout when sending
+                response data.
 
         Attributes:
             response: An iterable of the response bytes-data.
@@ -64,6 +68,7 @@ class Response(_BaseRequestResponse, JSONMixin):
                 client if the protocol is HTTP/2.
         """
         super().__init__(headers)
+        self.timeout = timeout
         if status is not None and not isinstance(status, int):
             raise ValueError('Quart does not support non-integer status values')
         self.status_code: int = status or self.default_status
