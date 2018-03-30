@@ -70,6 +70,7 @@ Discussion Points
    async_compatibility.rst
    contexts.rst
    design_choices.rst
+   dos_mitigations.rst
    flask_evolution.rst
    globals.rst
    http2_discussion.rst
