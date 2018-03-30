@@ -93,7 +93,7 @@ class H11Server(RequestResponseServer):
             self.close()
 
     def _handle_upgrade_request(self, headers: CIMultiDict, event: h11.Request) -> None:
-        self._timeout_handle.cancel()
+        self._keep_alive_timeout_handle.cancel()
         connection_tokens = headers.get('connection', '').lower().split(',')
         if (
                 any(token == 'upgrade' for token in connection_tokens) and

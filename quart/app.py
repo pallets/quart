@@ -1168,7 +1168,7 @@ class Quart(PackageStatic):
             ssl: Optional[SSLContext]=None,
             debug: Optional[bool]=None,
             access_log_format: str="%(h)s %(r)s %(s)s %(b)s %(D)s",
-            timeout: int=5,
+            keep_alive_timeout: int=5,
             use_reloader: bool=False,
             **kwargs: Any,
     ) -> None:
@@ -1184,8 +1184,8 @@ class Quart(PackageStatic):
             ssl: Optional SSL context (required for HTTP2).
             access_log_format: The format to use for the access log,
                 by default this is %(h)s %(r)s %(s)s %(b)s %(D)s.
-            timeout: The keep alive equivalent timeout in seconds by
-                default this is 5 seconds.
+            keep_alive_timeout: Timeout in seconds to keep an inactive
+                connection before closing.
             use_reloader: Automatically reload on code changes.
         """
         if kwargs:
@@ -1199,8 +1199,8 @@ class Quart(PackageStatic):
         try:
             run_app(
                 self, host=host, port=port, ssl=ssl, logger=create_serving_logger(),
-                access_log_format=access_log_format, timeout=timeout, debug=debug,
-                use_reloader=use_reloader,
+                access_log_format=access_log_format, keep_alive_timeout=keep_alive_timeout,
+                debug=debug, use_reloader=use_reloader,
             )
         finally:
             # Reset the first request, so as to enable reuse.

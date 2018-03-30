@@ -161,7 +161,7 @@ def run_command(info: ScriptInfo, host: str, port: int) -> None:
     access_log_format = "%(h)s %(r)s %(s)s %(b)s %(D)s"
     run_app(
         info.load_app(), host=host, port=port, logger=create_serving_logger(),
-        access_log_format=access_log_format, timeout=5, debug=debug,
+        access_log_format=access_log_format, keep_alive_timeout=5, debug=debug,
         use_reloader=debug,
     )
 

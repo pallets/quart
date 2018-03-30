@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 class Server(asyncio.Protocol):
     __slots__ = (
-        'access_log_format', 'app', 'logger', 'loop', 'timeout', '_http_server',
+        'access_log_format', 'app', 'logger', 'loop', 'keep_alive_timeout', '_http_server',
     )
 
     def __init__(
@@ -28,7 +28,7 @@ class Server(asyncio.Protocol):
             loop: asyncio.AbstractEventLoop,
             logger: Optional[Logger],
             access_log_format: str,
-            timeout: int,
+            keep_alive_timeout: int,
             *,
             h11_max_incomplete_size: Optional[int]=None,
     ) -> None:
@@ -37,7 +37,7 @@ class Server(asyncio.Protocol):
         self._server: Optional['HTTPServer'] = None
         self.logger = logger
         self.access_log_format = access_log_format
-        self.timeout = timeout
+        self.keep_alive_timeout = keep_alive_timeout
         self.h11_max_incomplete_size = h11_max_incomplete_size
         self._ssl_enabled = False
 
@@ -52,12 +52,12 @@ class Server(asyncio.Protocol):
         if protocol == 'h2':
             self._server = H2Server(
                 self.app, self.loop, transport, self.logger, self.access_log_format,
-                self.timeout,
+                self.keep_alive_timeout,
             )
         else:
             self._server = H11Server(
                 self.app, self.loop, transport, self.logger, self.access_log_format,
-                self.timeout, max_incomplete_size=self.h11_max_incomplete_size,
+                self.keep_alive_timeout, max_incomplete_size=self.h11_max_incomplete_size,
             )
 
     def connection_lost(self, exception: Exception) -> None:
@@ -73,7 +73,7 @@ class Server(asyncio.Protocol):
         except H2CProtocolRequired as error:
             self._server = H2Server(
                 self.app, self.loop, self._server.transport, self.logger, self.access_log_format,
-                self.timeout, upgrade_request=error.request,
+                self.keep_alive_timeout, upgrade_request=error.request,
             )
 
     def eof_received(self) -> bool:
@@ -112,7 +112,7 @@ def run_app(
         access_log_format: str,
         ssl: Optional[SSLContext]=None,
         logger: Optional[Logger]=None,
-        timeout: int,
+        keep_alive_timeout: int,
         debug: bool=False,
         use_reloader: bool=False,
 ) -> None:
@@ -124,12 +124,13 @@ def run_app(
         port: The port to listen on.
         ssl: Optional SSLContext to use.
         logger: Optional logger for serving (access) logs.
+        keep_alive_timeout: Timeout for inactive connections.
         use_reloader: Automatically reload on changes.
     """
     loop = asyncio.get_event_loop()
     loop.set_debug(debug)
     create_server = loop.create_server(
-        lambda: Server(app, loop, logger, access_log_format, timeout),
+        lambda: Server(app, loop, logger, access_log_format, keep_alive_timeout),
         host, port, ssl=ssl,
     )
     server = loop.run_until_complete(create_server)

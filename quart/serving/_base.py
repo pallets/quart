@@ -127,15 +127,17 @@ class RequestResponseServer(HTTPServer):
             logger: Optional[Logger],
             protocol: str,
             access_log_format: str,
-            timeout: float,
+            keep_alive_timeout: float,
     ) -> None:
         super().__init__(loop, transport, logger, protocol)
         self.app = app
         self.streams: Dict[int, Stream] = {}
         self.access_log_format = access_log_format
-        self._timeout = timeout
+        self._keep_alive_timeout = keep_alive_timeout
         self._last_activity = time()
-        self._timeout_handle = self.loop.call_later(self._timeout, self._handle_timeout)
+        self._keep_alive_timeout_handle = self.loop.call_later(
+            self._keep_alive_timeout, self._handle_keep_alive_timeout,
+        )
 
     def write(self, data: bytes) -> None:
         self._last_activity = time()
@@ -145,7 +147,7 @@ class RequestResponseServer(HTTPServer):
         for stream in self.streams.values():
             stream.task.cancel()
         super().close()
-        self._timeout_handle.cancel()
+        self._keep_alive_timeout_handle.cancel()
 
     def data_received(self, data: bytes) -> None:
         self._last_activity = time()
@@ -160,7 +162,7 @@ class RequestResponseServer(HTTPServer):
             path: str,
             headers: CIMultiDict,
     ) -> None:
-        self._timeout_handle.cancel()
+        self._keep_alive_timeout_handle.cancel()
         headers['Remote-Addr'] = self.remote_addr
         scheme = 'https' if self.ssl_info is not None else 'http'
         request = self.app.request_class(
@@ -199,11 +201,13 @@ class RequestResponseServer(HTTPServer):
     def _after_request(self, stream_id: int, future: asyncio.Future) -> None:
         del self.streams[stream_id]
         if not self.streams:
-            self._timeout_handle = self.loop.call_later(self._timeout, self._handle_timeout)
+            self._keep_alive_timeout_handle = self.loop.call_later(
+                self._keep_alive_timeout, self._handle_keep_alive_timeout,
+            )
         self.cleanup_task(future)
 
-    def _handle_timeout(self) -> None:
-        if time() - self._last_activity > self._timeout:
+    def _handle_keep_alive_timeout(self) -> None:
+        if time() - self._last_activity > self._keep_alive_timeout:
             self.close()
 
 
