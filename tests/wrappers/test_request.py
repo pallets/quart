@@ -4,7 +4,7 @@ from urllib.parse import urlencode
 import pytest
 
 from quart.datastructures import CIMultiDict
-from quart.exceptions import RequestEntityTooLarge
+from quart.exceptions import RequestEntityTooLarge, RequestTimeout
 from quart.wrappers.request import Body, Request
 
 
@@ -60,7 +60,14 @@ def test_request_exceeds_max_content_length() -> None:
     headers = CIMultiDict()
     headers['Content-Length'] = str(max_content_length + 1)
     with pytest.raises(RequestEntityTooLarge):
-        Request('GET', 'http', '/', headers, max_content_length=max_content_length)
+        Request('POST', 'http', '/', headers, max_content_length=max_content_length)
+
+
+@pytest.mark.asyncio
+async def test_request_get_data_timeout() -> None:
+    request = Request('POST', 'http', '/', CIMultiDict(), body_timeout=1)
+    with pytest.raises(RequestTimeout):
+        await request.get_data()
 
 
 @pytest.mark.asyncio

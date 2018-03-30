@@ -54,6 +54,10 @@ class NotFound(HTTPStatusException):
     status = HTTPStatus.NOT_FOUND
 
 
+class RequestTimeout(HTTPStatusException):
+    status = HTTPStatus.REQUEST_TIMEOUT
+
+
 class RequestEntityTooLarge(HTTPStatusException):
     status = HTTPStatus.REQUEST_ENTITY_TOO_LARGE
 

@@ -158,8 +158,6 @@ class BaseRequestWebsocket(_BaseRequestResponse):
             scheme: The scheme used for the request.
             path: The full URL of the request.
             headers: The request headers.
-            body: An awaitable future for the body data i.e.
-                ``data = await body``
 
         Attributes:
             args: The query string arguments.

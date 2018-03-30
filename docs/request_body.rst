@@ -20,15 +20,35 @@ before continuing,
     async def index():
         await request.get_data()
 
-alternatively, for advanced usage, quart provides methods to iterate
-over the body as it is received,
+Advanced usage
+--------------
+
+You may wish to completely control how the request body is consumed,
+most likely to consume the data as it is received. To do this quart
+provides methods to iterate over the body,
 
 .. code-block:: python
 
+    from async_timeout import timeout
+
     @app.route('/', methods=['POST'])
     async def index():
-        async for data in request.body:
-            ...
+        async with timeout(app.config['BODY_TIMEOUT']):
+            async for data in request.body:
+                ...
+
+.. note::
+
+   The above snippet uses `Async-Timeout
+   <https://github.com/aio-libs/async-timeout>`_ to ensure the body is
+   received within the timeout specified.
+
+.. warning::
+
+   Whilst the other request methods and attributes for accessing the
+   body will timeout if the client takes to long send the
+   request. Usage of :attr:`~quart.wrappers.request.Request.body` will
+   not and it is up to you to wrap usage in a timeout.
 
 .. warning::
 

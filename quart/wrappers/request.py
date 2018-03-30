@@ -94,6 +94,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
             headers: CIMultiDict,
             *,
             max_content_length: Optional[int]=None,
+            body_timeout: Optional[int]=None,
     ) -> None:
         """Create a request object.
 
@@ -106,9 +107,12 @@ class Request(BaseRequestWebsocket, JSONMixin):
                 ``data = await body``
             max_content_length: The maximum length in bytes of the
                 body (None implies no limit in Quart).
+            body_timeout: The maximum time (seconds) to wait for the
+                body before timing out.
         """
         super().__init__(method, scheme, path, headers)
         self.max_content_length = max_content_length
+        self.body_timeout = body_timeout
         if (
                 self.content_length is not None and self.max_content_length is not None and
                 self.content_length > self.max_content_length
@@ -121,10 +125,18 @@ class Request(BaseRequestWebsocket, JSONMixin):
 
     async def get_data(self, raw: bool=True) -> AnyStr:
         """The request body data."""
+        try:
+            body_future = asyncio.ensure_future(self.body)
+            raw_data = await asyncio.wait_for(body_future, timeout=self.body_timeout)
+        except asyncio.TimeoutError:
+            body_future.cancel()
+            from ..exceptions import RequestTimeout
+            raise RequestTimeout()
+
         if raw:
-            return await self.body  # type: ignore
+            return raw_data
         else:
-            return (await self.body).decode(self.charset)  # type: ignore
+            return raw_data.decode(self.charset)
 
     @property
     async def data(self) -> bytes:

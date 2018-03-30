@@ -139,6 +139,7 @@ async def test_client_sends_chunked(
     for chunk in [b'chunked ', b'data']:
         await connection.send(h11.Data(data=chunk, chunk_start=True, chunk_end=True))
     await connection.send(h11.EndOfMessage())
+    await connection.transport.closed.wait()
     response, *data, end = connection.get_events()
     assert isinstance(response, h11.Response)
     assert response.status_code == 200
