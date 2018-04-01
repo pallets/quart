@@ -31,6 +31,37 @@ class _TestingWebsocket:
         await asyncio.sleep(0)
 
 
+def make_test_headers_and_path(
+        app: 'Quart',
+        path: str,
+        headers: Optional[Union[dict, CIMultiDict]]=None,
+        query_string: Optional[dict]=None,
+) -> Tuple[CIMultiDict, str]:
+    """Make the headers and path with defaults for testing.
+
+    Arguments:
+        app: The application to test against.
+        path: The path to request.
+        headers: Initial headers to send.
+        query_string: To send as a dictionary.
+    """
+    if headers is None:
+        headers = CIMultiDict()
+    elif isinstance(headers, CIMultiDict):
+        headers = headers
+    elif headers is not None:
+        headers = CIMultiDict(headers)
+    headers.setdefault('Remote-Addr', '127.0.0.1')
+    headers.setdefault('User-Agent', 'Quart')
+    headers.setdefault('host', app.config['SERVER_NAME'] or 'localhost')
+    if query_string is not None:
+        path = urlunparse(ParseResult(
+            scheme='', netloc='', params='', path=path, query=urlencode(query_string),
+            fragment='',
+        ))
+    return headers, path  # type: ignore
+
+
 class TestClient:
     """A Client bound to an app for testing.
 
@@ -73,7 +104,7 @@ class TestClient:
         Returns:
             The response from the app handling the request.
         """
-        headers, path = self._build_headers_and_path(path, headers, query_string)
+        headers, path = make_test_headers_and_path(self.app, path, headers, query_string)
 
         if [json is not sentinel, form is not None, data is not None].count(True) > 1:
             raise ValueError("Quart test args 'json', 'form', and 'data' are mutually exclusive")
@@ -199,7 +230,7 @@ class TestClient:
             query_string: Optional[dict]=None,
             scheme: str='http',
     ) -> Generator[_TestingWebsocket, None, None]:
-        headers, path = self._build_headers_and_path(path, headers, query_string)
+        headers, path = make_test_headers_and_path(self.app, path, headers, query_string)
         queue: asyncio.Queue = asyncio.Queue()
         websocket_client = _TestingWebsocket(queue)
         websocket = Websocket(
@@ -216,25 +247,3 @@ class TestClient:
             yield websocket_client
         finally:
             task.cancel()
-
-    def _build_headers_and_path(
-            self,
-            path: str,
-            headers: Optional[Union[dict, CIMultiDict]]=None,
-            query_string: Optional[dict]=None,
-    ) -> Tuple[CIMultiDict, str]:
-        if headers is None:
-            headers = CIMultiDict()
-        elif isinstance(headers, CIMultiDict):
-            headers = headers
-        elif headers is not None:
-            headers = CIMultiDict(headers)
-        headers.setdefault('Remote-Addr', '127.0.0.1')
-        headers.setdefault('User-Agent', 'Quart')
-        headers.setdefault('host', self.app.config['SERVER_NAME'] or 'localhost')
-        if query_string is not None:
-            path = urlunparse(ParseResult(
-                scheme='', netloc='', params='', path=path, query=urlencode(query_string),
-                fragment='',
-            ))
-        return headers, path  # type: ignore

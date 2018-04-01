@@ -142,6 +142,7 @@ def url_for(
                 endpoint = endpoint[1:]
     elif app_context is not None:
         url_adapter = app_context.url_adapter
+        _external = True
     else:
         raise RuntimeError('Cannot create a url outside of an application context')
 

@@ -13,6 +13,7 @@ from quart.datastructures import CIMultiDict
 from quart.exceptions import BadRequest, MethodNotAllowed, NotFound, RedirectRequired
 from quart.globals import g, request, websocket
 from quart.routing import Rule
+from quart.testing import make_test_headers_and_path
 from quart.wrappers import Request, Websocket
 
 
@@ -85,9 +86,11 @@ def test_bad_request_if_websocket_route() -> None:
 
 @pytest.mark.asyncio
 async def test_after_this_request() -> None:
+    app = Quart(__name__)
+    headers, path = make_test_headers_and_path(app, '/')
     async with RequestContext(
             Quart(__name__),
-            Request('GET', 'http', '/', CIMultiDict()),
+            Request('GET', 'http', path, headers),
     ) as context:
         after_this_request(lambda: 'hello')
         assert context._after_request_functions[0]() == 'hello'
@@ -95,7 +98,9 @@ async def test_after_this_request() -> None:
 
 @pytest.mark.asyncio
 async def test_has_request_context() -> None:
-    async with RequestContext(Quart(__name__), Request('GET', 'http', '/', CIMultiDict())):
+    app = Quart(__name__)
+    headers, path = make_test_headers_and_path(app, '/')
+    async with RequestContext(Quart(__name__), Request('GET', 'http', path, headers)):
         assert has_request_context() is True
         assert has_app_context() is True
     assert has_request_context() is False

@@ -10,9 +10,11 @@ from .helpers import MockTransport
 
 BASIC_H2_HEADERS = [
     (':authority', 'quart'), (':path', '/'), (':scheme', 'https'), (':method', 'GET'),
+    ('Host', 'quart'),
 ]
 BASIC_H2_PUSH_HEADERS = [
     (':authority', 'quart'), (':path', '/push'), (':scheme', 'https'), (':method', 'GET'),
+    ('Host', 'quart'),
 ]
 BASIC_DATA = 'index'
 FLOW_WINDOW_SIZE = 1

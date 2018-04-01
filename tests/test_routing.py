@@ -123,7 +123,7 @@ def test_defaults() -> None:
 
 
 def test_host() -> None:
-    map_ = Map()
+    map_ = Map(host_matching=True)
     map_.add(Rule('/', ['GET'], 'index'))
     map_.add(Rule('/', ['GET'], 'subdomain', host='quart.com'))
     _test_match(map_, '/', 'GET', (map_.endpoints['index'][0], {}))

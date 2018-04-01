@@ -119,6 +119,7 @@ class H2Server(RequestResponseServer):
             (':method', 'GET'), (':path', path),
             (':scheme', self.streams[stream_id].request.headers[':scheme']),
             (':authority', self.streams[stream_id].request.headers[':authority']),
+            ('Host', self.streams[stream_id].request.headers['Host']),
         ]
         try:
             self.connection.push_stream(

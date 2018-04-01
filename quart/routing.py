@@ -157,11 +157,11 @@ class Map:
         'uuid': UUIDConverter,
     }
 
-    def __init__(self) -> None:
+    def __init__(self, host_matching: bool=False) -> None:
         self.rules = SortedListWithKey(key=lambda rule: rule.match_key)
         self.endpoints: Dict[str, SortedListWithKey] = defaultdict(lambda: SortedListWithKey(key=lambda rule: rule.build_key))  # noqa
         self.converters = self.default_converters.copy()
-        self.host_matching = False
+        self.host_matching = host_matching
 
     def add(self, rule: 'Rule') -> None:
         rule.bind(self)
@@ -211,7 +211,8 @@ class MapAdapter:
                 path = rule.build(**values)
                 if external:
                     scheme = scheme or self.scheme
-                    return f"{scheme}://{self.server_name}{path}"
+                    host = rule.host or self.server_name
+                    return f"{scheme}://{host}{path}"
                 else:
                     return path
         raise BuildError()
@@ -242,7 +243,10 @@ class MapAdapter:
         return allowed_methods
 
     def _matches(self) -> Generator[Tuple['Rule', Dict[str, Any], bool], None, None]:
-        full_path = "{}|{}".format(self.server_name or '', self.path)
+        if self.map.host_matching:
+            full_path = f"{self.server_name}|{self.path}"
+        else:
+            full_path = f"|{self.path}"
         for rule in self.map.rules:
             variables, needs_slash = rule.match(full_path)
             if variables is not None:

@@ -30,6 +30,22 @@ def app() -> Quart:
     return app
 
 
+@pytest.fixture
+def host_matched_app() -> Quart:
+    app = Quart(__name__, host_matching=True, static_host='localhost')
+    app.config['SERVER_NAME'] = SERVER_NAME
+
+    @app.route('/')
+    async def index() -> str:
+        return ''
+
+    @app.route('/', host='quart.com')
+    async def host() -> str:
+        return ''
+
+    return app
+
+
 @pytest.mark.asyncio
 async def test_make_response(app: Quart) -> None:
     async with app.app_context():
@@ -66,22 +82,29 @@ async def test_flash_category_filter(app: Quart) -> None:
 
 @pytest.mark.asyncio
 async def test_url_for(app: Quart) -> None:
-    async with app.app_context():
+    async with app.test_request_context('GET', '/'):
         assert url_for('index') == '/'
         assert url_for('index_post', _method='POST') == '/post'
         assert url_for('resource', id=5) == '/resource/5'
 
 
 @pytest.mark.asyncio
+async def test_url_for_host_matching(host_matched_app: Quart) -> None:
+    async with host_matched_app.app_context():
+        assert url_for('index') == 'http://localhost/'
+        assert url_for('host') == 'http://quart.com/'
+
+
+@pytest.mark.asyncio
 async def test_url_for_external(app: Quart) -> None:
-    async with app.app_context():
+    async with app.test_request_context('GET', '/'):
         assert url_for('index', _external=True) == 'http://localhost/'
         assert url_for('resource', id=5, _external=True) == 'http://localhost/resource/5'
 
 
 @pytest.mark.asyncio
 async def test_url_for_scheme(app: Quart) -> None:
-    async with app.app_context():
+    async with app.test_request_context('GET', '/'):
         with pytest.raises(ValueError):
             url_for('index', _scheme='https')
         assert url_for('index', _scheme='https', _external=True) == 'https://localhost/'
@@ -92,7 +115,7 @@ async def test_url_for_scheme(app: Quart) -> None:
 
 @pytest.mark.asyncio
 async def test_url_for_anchor(app: Quart) -> None:
-    async with app.app_context():
+    async with app.test_request_context('GET', '/'):
         assert url_for('index', _anchor='&foo') == '/#%26foo'
         assert url_for('resource', id=5, _anchor='&foo') == '/resource/5#%26foo'
 

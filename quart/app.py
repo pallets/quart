@@ -17,7 +17,6 @@ from .ctx import (
     _AppCtxGlobals, _request_ctx_stack, _websocket_ctx_stack, AppContext, has_request_context,
     has_websocket_context, RequestContext, WebsocketContext,
 )
-from .datastructures import CIMultiDict
 from .debug import traceback_response
 from .exceptions import all_http_exceptions, HTTPException
 from .globals import g, request, session
@@ -34,7 +33,7 @@ from .signals import (
 )
 from .static import PackageStatic
 from .templating import _default_template_context_processor, DispatchingJinjaLoader, Environment
-from .testing import TestClient
+from .testing import make_test_headers_and_path, TestClient
 from .typing import ResponseReturnValue
 from .utils import ensure_coroutine
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
@@ -159,8 +158,7 @@ class Quart(PackageStatic):
         self.template_context_processors: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)  # noqa: E501
         self.url_build_error_handlers: List[Callable] = []
         self.url_default_functions: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
-        self.url_map = Map()
-        self.url_map.host_matching = host_matching
+        self.url_map = Map(host_matching)
         self.url_value_preprocessors: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
         self.view_functions: Dict[str, Callable] = {}
 
@@ -244,11 +242,7 @@ class Quart(PackageStatic):
         otherwise the app configuration.
         """
         if request is not None:
-            if self.url_map.host_matching:
-                host = request.host
-            else:
-                host = ''
-
+            host = request.host
             return self.url_map.bind_to_request(
                 request.scheme, host, request.method, request.path,
             )
@@ -1233,7 +1227,8 @@ class Quart(PackageStatic):
             path: Request path.
             scheme: Scheme for the request, default http.
         """
-        request = self.request_class(method, scheme, path, CIMultiDict())
+        headers, path = make_test_headers_and_path(self, path)
+        request = self.request_class(method, scheme, path, headers)
         request.body.set_result(b'')
         return self.request_context(request)
 
