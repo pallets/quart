@@ -259,7 +259,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
 
     @property
     def host(self) -> str:
-        return self.headers['host']
+        return self.headers.get('host') or self.headers.get(':authority')
 
     @property
     def host_url(self) -> str:
