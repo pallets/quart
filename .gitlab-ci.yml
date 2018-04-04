@@ -34,6 +34,7 @@ autobahn:
   - pip install autobahntestsuite
   - python3 setup.py install
   - cd compliance/autobahn && nohup python3 server.py &
+  - while ! netstat -l -t | grep -q 5000; do sleep 1; done
   - cd compliance/autobahn && wstest -m fuzzingclient && python summarise.py
   artifacts:
     paths:
