@@ -1164,6 +1164,7 @@ class Quart(PackageStatic):
             access_log_format: str="%(h)s %(r)s %(s)s %(b)s %(D)s",
             keep_alive_timeout: int=5,
             use_reloader: bool=False,
+            loop: Optional[asyncio.AbstractEventLoop]=None,
             **kwargs: Any,
     ) -> None:
         """Run this application.
@@ -1181,6 +1182,7 @@ class Quart(PackageStatic):
             keep_alive_timeout: Timeout in seconds to keep an inactive
                 connection before closing.
             use_reloader: Automatically reload on code changes.
+            loop: Asyncio loop to create the server in, if None, take default one.
         """
         if kwargs:
             warnings.warn(
@@ -1194,7 +1196,7 @@ class Quart(PackageStatic):
             run_app(
                 self, host=host, port=port, ssl=ssl, logger=create_serving_logger(),
                 access_log_format=access_log_format, keep_alive_timeout=keep_alive_timeout,
-                debug=debug, use_reloader=use_reloader,
+                debug=debug, use_reloader=use_reloader, loop=loop,
             )
         finally:
             # Reset the first request, so as to enable reuse.

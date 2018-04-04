@@ -115,6 +115,7 @@ def run_app(
         keep_alive_timeout: int,
         debug: bool=False,
         use_reloader: bool=False,
+        loop: Optional[asyncio.AbstractEventLoop]=None,
 ) -> None:
     """Create a server to run the app on given the options.
 
@@ -126,8 +127,10 @@ def run_app(
         logger: Optional logger for serving (access) logs.
         keep_alive_timeout: Timeout for inactive connections.
         use_reloader: Automatically reload on changes.
+        loop: Asyncio loop to create the server in, if None, take default one.
     """
-    loop = asyncio.get_event_loop()
+    if loop is None:
+        loop = asyncio.get_event_loop()
     loop.set_debug(debug)
     create_server = loop.create_server(
         lambda: Server(app, loop, logger, access_log_format, keep_alive_timeout),
