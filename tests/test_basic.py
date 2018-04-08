@@ -48,6 +48,16 @@ async def test_index(app: Quart) -> None:
 
 
 @pytest.mark.asyncio
+async def test_options(app: Quart) -> None:
+    test_client = app.test_client()
+    response = await test_client.options('/')
+    assert response.status_code == 200
+    assert {method.strip() for method in response.headers['Allow'].split(',')} == {
+        'HEAD', 'OPTIONS', 'GET',
+    }
+
+
+@pytest.mark.asyncio
 async def test_json(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.post('/json/', json={'value': 'json'})

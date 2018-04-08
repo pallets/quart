@@ -322,7 +322,7 @@ class Quart(PackageStatic):
     def route(
             self,
             path: str,
-            methods: List[str]=['GET'],
+            methods: List[str]=None,
             endpoint: Optional[str]=None,
             defaults: Optional[dict]=None,
             host: Optional[str]=None,
@@ -424,6 +424,9 @@ class Quart(PackageStatic):
             view_func, 'provide_automatic_options',
             'OPTIONS' not in methods and provide_automatic_options,
         )
+        if automatic_options:
+            methods.append('OPTIONS')
+
         if not self.url_map.host_matching and (host is not None or subdomain is not None):
             raise RuntimeError('Cannot use host or subdomain without host matching enabled.')
         if host is not None and subdomain is not None:
