@@ -96,7 +96,7 @@ class H11Server(RequestResponseServer):
         self._keep_alive_timeout_handle.cancel()
         connection_tokens = headers.get('connection', '').lower().split(',')
         if (
-                any(token == 'upgrade' for token in connection_tokens) and
+                any(token.strip() == 'upgrade' for token in connection_tokens) and
                 headers.get('upgrade', '').lower() == 'websocket' and
                 event.method.decode().upper() == 'GET'
         ):
