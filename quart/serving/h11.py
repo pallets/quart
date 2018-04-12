@@ -123,7 +123,7 @@ class H11Server(RequestResponseServer):
 
     async def send_response(self, stream_id: int, response: Response, suppress_body: bool) -> None:
         headers = chain(
-            ((key, value) for key, value in response.headers.items()),
+            ((key.strip(), value.strip()) for key, value in response.headers.items()),
             self.response_headers(),
         )
         self._send(h11.Response(status_code=response.status_code, headers=headers))
