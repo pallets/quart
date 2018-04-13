@@ -62,7 +62,7 @@ def make_test_headers_and_path(
     return headers, path  # type: ignore
 
 
-class TestClient:
+class QuartClient:
     """A Client bound to an app for testing.
 
     This should be used to make requests and receive responses from
@@ -137,7 +137,7 @@ class TestClient:
     async def delete(self, *args: Any, **kwargs: Any) -> Response:
         """Make a DELETE request.
 
-        See :meth:`~quart.testing.TestClient.open` for argument
+        See :meth:`~quart.testing.QuartClient.open` for argument
         details.
         """
         return await self.open(*args, method='DELETE', **kwargs)
@@ -145,7 +145,7 @@ class TestClient:
     async def get(self, *args: Any, **kwargs: Any) -> Response:
         """Make a GET request.
 
-        See :meth:`~quart.testing.TestClient.open` for argument
+        See :meth:`~quart.testing.QuartClient.open` for argument
         details.
         """
         return await self.open(*args, method='GET', **kwargs)
@@ -153,7 +153,7 @@ class TestClient:
     async def head(self, *args: Any, **kwargs: Any) -> Response:
         """Make a HEAD request.
 
-        See :meth:`~quart.testing.TestClient.open` for argument
+        See :meth:`~quart.testing.QuartClient.open` for argument
         details.
         """
         return await self.open(*args, method='HEAD', **kwargs)
@@ -161,7 +161,7 @@ class TestClient:
     async def options(self, *args: Any, **kwargs: Any) -> Response:
         """Make a OPTIONS request.
 
-        See :meth:`~quart.testing.TestClient.open` for argument
+        See :meth:`~quart.testing.QuartClient.open` for argument
         details.
         """
         return await self.open(*args, method='OPTIONS', **kwargs)
@@ -169,7 +169,7 @@ class TestClient:
     async def patch(self, *args: Any, **kwargs: Any) -> Response:
         """Make a PATCH request.
 
-        See :meth:`~quart.testing.TestClient.open` for argument
+        See :meth:`~quart.testing.QuartClient.open` for argument
         details.
         """
         return await self.open(*args, method='PATCH', **kwargs)
@@ -177,7 +177,7 @@ class TestClient:
     async def post(self, *args: Any, **kwargs: Any) -> Response:
         """Make a POST request.
 
-        See :meth:`~quart.testing.TestClient.open` for argument
+        See :meth:`~quart.testing.QuartClient.open` for argument
         details.
         """
         return await self.open(*args, method='POST', **kwargs)
@@ -185,7 +185,7 @@ class TestClient:
     async def put(self, *args: Any, **kwargs: Any) -> Response:
         """Make a PUT request.
 
-        See :meth:`~quart.testing.TestClient.open` for argument
+        See :meth:`~quart.testing.QuartClient.open` for argument
         details.
         """
         return await self.open(*args, method='PUT', **kwargs)
@@ -193,7 +193,7 @@ class TestClient:
     async def trace(self, *args: Any, **kwargs: Any) -> Response:
         """Make a TRACE request.
 
-        See :meth:`~quart.testing.TestClient.open` for argument
+        See :meth:`~quart.testing.QuartClient.open` for argument
         details.
         """
         return await self.open(*args, method='TRACE', **kwargs)

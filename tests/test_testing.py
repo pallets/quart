@@ -3,7 +3,7 @@ import pytest
 from quart import jsonify, Quart, request, Response, session
 from quart.datastructures import CIMultiDict
 from quart.exceptions import BadRequest
-from quart.testing import make_test_headers_and_path, TestClient as Client
+from quart.testing import make_test_headers_and_path, QuartClient as Client
 
 
 @pytest.mark.asyncio

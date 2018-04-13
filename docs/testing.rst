@@ -47,8 +47,8 @@ Calling routes
 --------------
 
 The test client has helper methods for all the HTTP verbs
-e.g. :meth:`~quart.testing.TestClient.post`. These are helper methods
-for :meth:`~quart.testing.TestClient.open`, as such all the methods at
+e.g. :meth:`~quart.testing.QuartClient.post`. These are helper methods
+for :meth:`~quart.testing.QuartClient.open`, as such all the methods at
 a minimum expect a path and optionally can have query parameters, json
 or form data. A standard :class:`~quart.wrappers.Response` class is
 returned. An example:

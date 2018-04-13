@@ -33,7 +33,7 @@ from .signals import (
 )
 from .static import PackageStatic
 from .templating import _default_template_context_processor, DispatchingJinjaLoader, Environment
-from .testing import make_test_headers_and_path, TestClient
+from .testing import make_test_headers_and_path, QuartClient
 from .typing import ResponseReturnValue
 from .utils import ensure_coroutine
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
@@ -99,7 +99,7 @@ class Quart(PackageStatic):
     secret_key = ConfigAttribute('SECRET_KEY')
     session_cookie_name = ConfigAttribute('SESSION_COOKIE_NAME')
     session_interface = SecureCookieSessionInterface()
-    test_client_class = TestClient
+    test_client_class = QuartClient
     testing = ConfigAttribute('TESTING')
     url_rule_class = Rule
 
@@ -1205,7 +1205,7 @@ class Quart(PackageStatic):
             # Reset the first request, so as to enable reuse.
             self._got_first_request = False
 
-    def test_client(self) -> TestClient:
+    def test_client(self) -> QuartClient:
         """Creates and returns a test client."""
         return self.test_client_class(self)
 
