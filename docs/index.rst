@@ -29,6 +29,7 @@ Tutorials
 
    installation.rst
    quickstart.rst
+   AsyncProgressBar_tutorial.rst
    blog_tutorial.rst
    broadcast_tutorial.rst
    flask_ext_tutorial.rst
