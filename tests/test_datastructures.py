@@ -1,7 +1,29 @@
+from typing import Union
+
+import pytest
+
 from quart.datastructures import (
-    _CacheControl, Accept, AcceptOption, CharsetAccept, ContentRange, ETags, HeaderSet,
-    LanguageAccept, MIMEAccept, Range, RangeSet, RequestCacheControl, ResponseCacheControl,
+    _CacheControl, Accept, AcceptOption, CharsetAccept, CIMultiDict, ContentRange, ETags,
+    HeaderSet, LanguageAccept, MIMEAccept, MultiDict, Range, RangeSet, RequestCacheControl,
+    ResponseCacheControl,
 )
+
+
+@pytest.mark.parametrize('dict_class', [CIMultiDict, MultiDict])
+def test_multidict_getlist(dict_class: Union[CIMultiDict, MultiDict]) -> None:
+    data = CIMultiDict()
+    data.add('x', 'y')
+    data.add('x', 'z')
+    assert data.getlist('x') == ['y', 'z']
+
+
+@pytest.mark.parametrize('dict_class', [CIMultiDict, MultiDict])
+def test_multidict_type_conversion(dict_class: Union[CIMultiDict, MultiDict]) -> None:
+    data = CIMultiDict()
+    data['x'] = '2'
+    data['y'] = 'b'
+    assert data.get('x', type=int) == 2
+    assert data.get('y', default=None, type=int) is None
 
 
 def test_accept() -> None:

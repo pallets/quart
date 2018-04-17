@@ -15,16 +15,27 @@ from urllib.request import parse_http_list, parse_keqv_list
 from multidict import CIMultiDict as AIOCIMultiDict, MultiDict as AIOMultiDict
 
 
-class MultiDict(AIOMultiDict):
+class _WerkzeugMultidictMixin:
+
+    def get(self, key: str, default: Any=None, type: Any=None) -> Any:
+        value = super().get(key, default)  # type: ignore
+        if type is not None:
+            try:
+                value = type(value)
+            except ValueError:
+                value = default
+        return value
 
     def getlist(self, key: str) -> List[Any]:
-        return self.getall(key)
+        return self.getall(key)  # type: ignore
 
 
-class CIMultiDict(AIOCIMultiDict):
+class MultiDict(_WerkzeugMultidictMixin, AIOMultiDict):
+    pass
 
-    def getlist(self, key: str) -> List[Any]:
-        return self.getall(key)
+
+class CIMultiDict(_WerkzeugMultidictMixin, AIOCIMultiDict):
+    pass
 
 
 class FileStorage(object):
