@@ -30,11 +30,11 @@ class _WerkzeugMultidictMixin:
         return self.getall(key)  # type: ignore
 
 
-class MultiDict(_WerkzeugMultidictMixin, AIOMultiDict):
+class MultiDict(_WerkzeugMultidictMixin, AIOMultiDict):  # type: ignore
     pass
 
 
-class CIMultiDict(_WerkzeugMultidictMixin, AIOCIMultiDict):
+class CIMultiDict(_WerkzeugMultidictMixin, AIOCIMultiDict):  # type: ignore
     pass
 
 
