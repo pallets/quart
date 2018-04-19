@@ -3,8 +3,8 @@ import sys
 
 from setuptools import setup, find_packages
 
-if sys.version_info < (3,6):
-    sys.exit('Python 3.6 is the minimum required version')
+if sys.version_info < (3,6,1):
+    sys.exit('Python 3.6.1 is the minimum required version')
 
 PROJECT_ROOT = os.path.dirname(__file__)
 
