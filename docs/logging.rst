@@ -62,6 +62,19 @@ below) to include in a specific format. By default quart will choose
 ``%(h)s %(r)s %(s)s %(b)s %(D)s`` as the format. To choose a different
 format specify when running the app, e.g. ``app.run(..., access_log_format=...)``.
 
+The default Flask (Werkzeug) access log format is ``%(h)s - - %(t)s
+"%(r)s" %(s)s %(b)s``. Which should be combined with a
+:attr:`~quart.logging.default_serving_handler` that only formats a
+message,
+
+.. code-block:: python
+
+    from logging import Formatter
+    from quart.logging import serving_handler
+
+    serving_handler.setFormatter(Formatter('%(message)s'))
+
+
 Access log atoms
 ````````````````
 
