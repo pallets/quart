@@ -80,7 +80,7 @@ requests <https://gitlab.com/pgjones/quart/merge_requests>`_.
 Testing
 ~~~~~~~
 
-Tox is best used test Quart,
+The best way to test Quart is with Tox,
 
 .. code-block:: console
 
