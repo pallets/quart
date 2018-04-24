@@ -360,7 +360,7 @@ def has_websocket_context() -> bool:
 _sentinel = object()
 
 
-class _AppCtxGlobals(object):
+class _AppCtxGlobals:
     """The g class, a plain object with some mapping methods."""
 
     def get(self, name: str, default: Optional[Any]=None) -> Any:
