@@ -3,61 +3,79 @@
 Tutorial: Asynchronous Progress Bar
 ===================================
 
-This tutorial will guide you through building the example present in the ``examples/AsyncProgressBar`` directory. The nature of this example is to demonstrate one way to handle a longer task within Quart, along with an example of how to show the progress of that task, without blocking or slowing down user interaction.
+This tutorial will guide you through building the example present in the
+``examples/AsyncProgressBar`` directory. The nature of this example is to
+demonstrate one way to handle a longer task within Quart, along with an
+example of how to show the progress of that task, without blocking or
+slowing down user interaction.
 
 Running the example
 '''''''''''''''''''
 
-To run the example, in ``examples/AsyncProgressBar`` the following should start
-the server, (see :ref:`installation` first),
+To run the example, in ``examples/AsyncProgressBar`` the following should
+start the server, (see :ref:`installation` first),
 
 .. code-block:: console
 
     $ export QUART_APP=progress_bar:app
     $ quart run
 
-the example web app is then available at `http://localhost:5000/ <http://localhost:5000/>`_.
+the example web app is then available at `http://localhost:5000/
+<http://localhost:5000/>`_.
 
 1: Redis
 --------
 
-This example uses Redis as a data store for keeping track of the state of our long task. The description as found  on their site is as follows.
+This example uses Redis as a data store for keeping track of the state of our
+long task. The description as found  on their site is as follows.
 
-    ``Redis is an open source (BSD licensed), in-memory data structure store, used as a database, cache and message broker. It supports data structures such as strings, hashes, lists, sets, sorted sets with range queries, bitmaps, hyperloglogs and geospatial indexes with radius queries. Redis has built-in replication, Lua scripting, LRU eviction, transactions and different levels of on-disk persistence, and provides high availability via Redis Sentinel and automatic partitioning with Redis Cluster.``
+    ``Redis is an open source (BSD licensed), in-memory data structure store,
+    used as a database, cache and message broker. It supports data structures
+    such as strings, hashes, lists, sets, sorted sets with range queries,
+    bitmaps, hyperloglogs and geospatial indexes with radius queries.
+    Redis has built-in replication, Lua scripting, LRU eviction, transactions
+    and different levels of on-disk persistence, and provides high
+    availability via Redis Sentinel and automatic partitioning with Redis
+    Cluster.``
 
 More information can be found at `https://redis.io/ <https://redis.io/>`_.
 
-Using Redis opens up a whole host of possible use cases which are beyond the scope of this tutorial, but can include:
+Using Redis opens up a whole host of possible use cases which are beyond the
+scope of this tutorial, but can include:
     - Interacting with information across multiple servers and / or applications
     - Atomic data operations to avoid race conditions
     - Real time analysis
     - Caching / Queueing
-    - Storage of data along with a pre-defined Time To Live, which comes in handy for user sessions and auto log-out
+    - Storage of data along with a pre-defined Time To Live, which comes in
+    handy for user sessions and auto log-out
     - more...
 
-Redis is separate from Quart and does need to be installed to utilize it. Instructions on how to do that can be found here `https://redis.io/download <https://redis.io/download>`_.
+Redis is separate from Quart and does need to be installed to utilize it.
+Instructions on how to do that can be found here `https://redis.io/download
+<https://redis.io/download>`_.
 
 2: Installation
 ---------------
 
-It is always best to run python projects within a virtualenv, which should be created and activated as follows, (Python 3.6 or better is required),
+It is always best to run python projects within a virtualenv, which should be
+created and activated as follows, (Python 3.6 or better is required),
 
 .. code-block:: console
 
     $ cd AsyncProgressBar
-    $ python -m venv venv
-    $ source venv/bin/activate
+    $ pipenv install quart, aioredis, redis
 
-for this blog we will need Quart, aioredis, and redis libraries, which should be installed,
+for this blog we will need Quart, aioredis, and redis libraries. Now
+pipenv can be activated,
 
 .. code-block:: console
 
-    (venv) $ pip install quart, aioredis, redis
+    $ pipenv shell
 
 .. Note::
 
    ``(venv)`` is used to indicate when the commands must be run within
-   the virtualenv.
+   the pipenv's virtualenv.
 
 3: Creating the app
 -------------------
@@ -74,7 +92,11 @@ First we'll import the required libraries, and initialize the Quart web app obje
 
     app = Quart(__name__)
 
-Then, for the purposes of this tutorial and so that you have a clean slate each time you run the app, we'll create a synchronous connection to the Redis database and run ``FLUSHDB`` to clear any data from the last execution. In production, depending on what it is Redis and / or the app(s) are being used for, this may not be desired behavior. Please modify where necessary.
+Then, for the purposes of this tutorial and so that you have a clean slate
+each time you run the app, we'll create a synchronous connection to the Redis
+database and run ``FLUSHDB`` to clear any data from the last execution.
+In production, depending on what it is Redis and / or the app(s) are being
+used for, this may not be desired behavior. Please modify where necessary.
 
 .. code-block:: python
 
@@ -96,11 +118,17 @@ Let's define an asynchronous function to handle our work called ``some_work()``.
         await aredis.set('state', 'ready')
         await aredis.set('percent', 100)
 
-What we're doing here is setting the key ``state`` to ``running`` and then using a for loop with ``random.random()`` to simulate work that may need to be done. Once complete the ``state`` is returned to ``ready`` so that more work can be queued and performed.
+What we're doing here is setting the key ``state`` to ``running`` and then
+using a for loop with ``random.random()`` to simulate work that may need to
+be done. Once complete the ``state`` is returned to ``ready`` so that more
+work can be queued and performed.
 
-That's all well and good, but how do we access that from within the web application? We'll cover that a bit later.
+That's all well and good, but how do we access that from within the web
+application? We'll cover that a bit later.
 
-Next is the function to check the status of the work. This function returns a JSON response, which is used by ``progress()`` below to generate the progress bar.
+Next is the function to check the status of the work. This function returns
+a JSON response, which is used by ``progress()`` below to generate the
+progress bar.
 
 .. code-block:: python
 
@@ -132,9 +160,18 @@ Next is the function to check the status of the work. This function returns a JS
 
         return jsonify(status)
 
-in ``check_status()``, if the ``state`` is ``running`` then we'll retrieve information on the progress, calculate a percentage, and throw it all into a dictionary. That dictionary is then handed to ``jsonify()`` to return a JSON response. The synchronous calls to Redis were added to work around an issue where ``aredis`` did not exist yet.
+in ``check_status()``, if the ``state`` is ``running`` then we'll retrieve
+information on the progress, calculate a percentage, and throw it all into a
+dictionary. That dictionary is then handed to ``jsonify()`` to return a JSON
+response. The synchronous calls to Redis were added to work around an issue
+where ``aredis`` did not exist yet.
 
-Next is the function to display a progress bar, to visually represent where we are in the work that is being done. This view / endpoint is just a page which uses Javascript and JQuery to poll ``check_status()``, via AJAX, on an interval of ``1000`` milliseconds, as long as the percentage is less than 100. Each time the percentage changes, the bar and the text under the bar are updated. When the percentage reaches 100, then the script displays "Done!".
+Next is the function to display a progress bar, to visually represent where
+we are in the work that is being done. This view / endpoint is just a page
+which uses Javascript and JQuery to poll ``check_status()``, via AJAX, on an
+interval of ``1000`` milliseconds, as long as the percentage is less than 100.
+Each time the percentage changes, the bar and the text under the bar are
+updated. When the percentage reaches 100, then the script displays "Done!".
 
 .. code-block:: python
 
@@ -195,7 +232,8 @@ Next is the function to display a progress bar, to visually represent where we a
         </body>
         </html>"""
 
-Next is just a view for entering / interacting with the example, so the work can be started. It starts the work by calling the ``start_work()`` function.
+Next is just a view for entering / interacting with the example, so the work
+can be started. It starts the work by calling the ``start_work()`` function.
 
 .. code-block:: python
 
@@ -204,7 +242,12 @@ Next is just a view for entering / interacting with the example, so the work can
         return 'This is the index page. Try the following to <a href="' + url_for(
             'start_work') + '">start some test work</a> with a progress indicator.'
 
-The ``start_work()`` function then gets the event loop, creates an asynchronous connection to Redis. After that, if the current ``state`` is ``running``, it will advise you to wait for the current work to finish. If the ``state`` is ``ready``, then it will add the ``some_work()`` function to the event loop, and return an indication that the work has been started, before redirecting the user to the ``/progress`` view.
+The ``start_work()`` function then gets the event loop, creates an
+asynchronous connection to Redis. After that, if the current ``state`` is
+``running``, it will advise you to wait for the current work to finish.
+If the ``state`` is ``ready``, then it will add the ``some_work()`` function
+to the event loop, and return an indication that the work has been started,
+before redirecting the user to the ``/progress`` view.
 
 .. code-block:: python
 
@@ -241,4 +284,6 @@ Finally, we run the app.
 Conclusion
 ----------
 
-This wraps up the tutorial on performing asynchronous work withing a Quart web application. This is but one way to accomplish the handling of a long task without blocking the user interface.
+This wraps up the tutorial on performing asynchronous work withing a Quart
+web application. This is but one way to accomplish the handling of a long
+task without blocking the user interface.

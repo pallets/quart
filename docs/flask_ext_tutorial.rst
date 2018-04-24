@@ -26,27 +26,26 @@ this example is then available at `http://localhost:5000/
 1: Installation
 ---------------
 
-It is always best to run python projects within a virtualenv, which
+It is always best to run python projects within a pipenv, which
 should be created and activated as follows, (Python 3.6 or better is
 required),
 
 .. code-block:: console
 
     $ cd flask_ext
-    $ python -m venv venv
-    $ source venv/bin/activate
+    $ pipenv install quart flask-login
 
-for this we will only need Quart and Flask-Login, which should be
-installed,
+for this we will only need Quart and Flask-Login. Now pipenv can
+be activated,
 
 .. code-block:: console
 
-    (venv) $ pip install quart flask-login
+    $ pipenv shell
 
 .. Note::
 
    ``(venv)`` is used to indicate when the commands must be run within
-   the virtualenv.
+   the pipenv's virtualenv.
 
 3: Using Flask-Login with Quart
 -------------------------------

@@ -43,26 +43,25 @@ the same convention.
 2: Installation
 ---------------
 
-It is always best to run python projects within a virtualenv, which
+It is always best to run python projects within a pipenv, which
 should be created and activated as follows, (Python 3.6 or better is
 required),
 
 .. code-block:: console
 
     $ cd http2
-    $ python -m venv venv
-    $ source venv/bin/activate
+    $ pipenv install quart
 
-for this we will only need Quart, which should be installed,
+for this we will only need Quart. Now pipenv can be activated,
 
 .. code-block:: console
 
-    (venv) $ pip install quart
+    $ pipenv shell
 
 .. Note::
 
    ``(venv)`` is used to indicate when the commands must be run within
-   the virtualenv.
+   the pipenv's virtualenv.
 
 3: Creating the app
 -------------------

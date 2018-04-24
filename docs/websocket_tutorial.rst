@@ -42,26 +42,20 @@ the same convention.
 2: Installation
 ---------------
 
-It is always best to run python projects within a virtualenv, which
+It is always best to run python projects with a pipenv, which
 should be created and activated as follows, (Python 3.6 or better is
 required),
 
 .. code-block:: console
 
     $ cd websocket
-    $ python -m venv venv
-    $ source venv/bin/activate
+    $ pipenv install quart
 
-for this websocket we will only need Quart, which should be installed,
+for this websocket we will only need Quart. Now pipenv can be activated,
 
 .. code-block:: console
 
-    (venv) $ pip install quart
-
-.. Note::
-
-   ``(venv)`` is used to indicate when the commands must be run within
-   the virtualenv.
+    $ pipenv shell
 
 3: Websockets
 -------------

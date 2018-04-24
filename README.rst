@@ -21,11 +21,13 @@ Quart specific extensions will be written soon).
 Quickstart
 ----------
 
-Quart can be installed via `pip
-<https://docs.python.org/3/installing/index.html>`_,
+Quart can be installed via `pipenv
+<https://docs.pipenv.org/install/#installing-packages-for-your-project>`_ or
+`pip <https://docs.python.org/3/installing/index.html>`_,
 
 .. code-block:: console
 
+    $ pipenv install quart
     $ pip install quart
 
 and requires Python 3.6 or higher.
@@ -84,7 +86,7 @@ The best way to test Quart is with Tox,
 
 .. code-block:: console
 
-    $ pip install tox
+    $ pipenv install tox
     $ tox
 
 this will check the code style and run the tests.

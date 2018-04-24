@@ -42,26 +42,25 @@ the same convention.
 2: Installation
 ---------------
 
-It is always best to run python projects within a virtualenv, which
+It is always best to run python projects within a pipenv, which
 should be created and activated as follows, (Python 3.6 or better is
 required),
 
 .. code-block:: console
 
     $ cd blog
-    $ python -m venv venv
-    $ source venv/bin/activate
+    $ pipenv install quart
 
-for this blog we will only need Quart, which should be installed,
+for this blog we will only need Quart. Now pipenv can be activated,
 
 .. code-block:: console
 
-    (venv) $ pip install quart
+    $ pipenv shell
 
 .. Note::
 
    ``(venv)`` is used to indicate when the commands must be run within
-   the virtualenv.
+   the pipenv's virtualenv.
 
 3: Creating the app
 -------------------
@@ -461,11 +460,11 @@ and functionality to make this easy. Using the `pytest
 <https://docs.pytest.org/>`_ test framework rather than the stdlib
 unittest framework makes things easier still, and will be used
 here. pytest and pytest-asyncio (as required to test asyncio code) can
-be installed using pip,
+be installed using pipenv,
 
 .. code-block:: console
 
-    (venv) $ pip install pytest pytest-asyncio
+    (venv) $ pipenv install pytest pytest-asyncio
 
 A useful test would be to check that posts are created as expected,
 which means we need to test against the database. Fortunately pytest

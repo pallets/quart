@@ -50,19 +50,13 @@ required),
 .. code-block:: console
 
     $ cd broadcast
-    $ python -m venv venv
-    $ source venv/bin/activate
+    $ pipenv install quart
 
-for this broadcast we will only need Quart, which should be installed,
+for this broadcast we will only need Quart. Now pipenv can be activated,
 
 .. code-block:: console
 
-    (venv) $ pip install quart
-
-.. Note::
-
-   ``(venv)`` is used to indicate when the commands must be run within
-   the virtualenv.
+    $ pipenv shell
 
 3: Server Sent Events
 ---------------------
