@@ -38,7 +38,7 @@ class CIMultiDict(_WerkzeugMultidictMixin, AIOCIMultiDict):  # type: ignore
     pass
 
 
-class FileStorage(object):
+class FileStorage:
     """A thin wrapper over incoming files."""
 
     def __init__(
