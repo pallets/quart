@@ -58,11 +58,6 @@ for this we will only need Quart. Now pipenv can be activated,
 
     $ pipenv shell
 
-.. Note::
-
-   ``(venv)`` is used to indicate when the commands must be run within
-   the pipenv's virtualenv.
-
 3: Creating the app
 -------------------
 
