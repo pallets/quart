@@ -87,7 +87,7 @@ class JSONMixin:
         Arguments:
             error: The exception raised during parsing.
         """
-        from .exceptions import BadRequest  # noqa Avoiding circular import
+        from ..exceptions import BadRequest  # noqa Avoiding circular import
         raise BadRequest()
 
 
