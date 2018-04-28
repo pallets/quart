@@ -4,8 +4,8 @@ import pytest
 
 from quart.datastructures import (
     _CacheControl, Accept, AcceptOption, CharsetAccept, CIMultiDict, ContentRange, ETags,
-    HeaderSet, LanguageAccept, MIMEAccept, MultiDict, Range, RangeSet, RequestCacheControl,
-    ResponseCacheControl,
+    HeaderSet, LanguageAccept, MIMEAccept, MultiDict, Range, RangeSet, RequestAccessControl,
+    RequestCacheControl, ResponseAccessControl, ResponseCacheControl,
 )
 
 
@@ -142,3 +142,33 @@ def test_content_range() -> None:
     content_range.stop = 1233
     assert updated
     assert content_range.to_header() == 'bytes 734-1233/1234'
+
+
+def test_request_access_control() -> None:
+    access_control = RequestAccessControl.from_headers(
+        'http://quart.com', 'X-Special, X-Other', 'GET',
+    )
+    assert access_control.origin == 'http://quart.com'
+    assert access_control.request_method == 'GET'
+    assert access_control.request_headers == {'X-Special', 'X-Other'}
+
+
+def test_response_access_control() -> None:
+    updated = False
+
+    def on_update(_: HeaderSet) -> None:
+        nonlocal updated
+        updated = True
+
+    access_control = ResponseAccessControl.from_headers(
+        'true', 'Cookie, X-Special', 'GET, POST', '*', 'Set-Cookie', '5', on_update,
+    )
+    assert access_control.allow_credentials
+    assert access_control.allow_headers == {'Cookie', 'X-Special'}
+    assert access_control.allow_methods == {'GET', 'POST'}
+    assert access_control.allow_origin == {'*'}
+    assert access_control.expose_headers == {'Set-Cookie'}
+    assert access_control.max_age == 5
+    access_control.allow_methods.add('DELETE')
+    assert updated
+    assert access_control.allow_methods == {'GET', 'POST', 'DELETE'}

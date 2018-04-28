@@ -401,7 +401,8 @@ def _on_update(method: Callable) -> Callable:
     @wraps(method)
     def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
         result = method(self, *args, **kwargs)
-        self.on_update(self)
+        if self.on_update is not None:
+            self.on_update(self)
         return result
     return wrapper
 
@@ -510,3 +511,116 @@ class ContentRange:
             return f"{self.units} */{length}"
         else:
             return f"{self.units} {self.start}-{self.stop}/{length}"
+
+
+class RequestAccessControl:
+
+    def __init__(self, origin: str, request_headers: HeaderSet, request_method: str) -> None:
+        self.origin = origin
+        self.request_headers = request_headers
+        self.request_method = request_method
+
+    @classmethod
+    def from_headers(
+            cls: Type['RequestAccessControl'],
+            origin_header: str,
+            request_headers_header: str,
+            request_method_header: str,
+    ) -> 'RequestAccessControl':
+        request_headers = HeaderSet.from_header(request_headers_header)
+        return cls(origin_header, request_headers, request_method_header)
+
+
+class _AccessControlDescriptor:
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    def __get__(self, instance: object, owner: type=None) -> Any:
+        if instance is None:
+            return self
+        return instance._controls[self.name]  # type: ignore
+
+    def __set__(self, instance: object, value: Any) -> None:
+        header_set = HeaderSet(value, on_update=instance.on_update)  # type: ignore
+        instance._controls[self.name] = header_set  # type: ignore
+        if instance.on_update is not None:  # type: ignore
+            instance.on_update()  # type: ignore
+
+
+class ResponseAccessControl:
+    allow_headers = _AccessControlDescriptor('allow_headers')
+    allow_methods = _AccessControlDescriptor('allow_methods')
+    allow_origin = _AccessControlDescriptor('allow_origin')
+    expose_headers = _AccessControlDescriptor('expose_headers')
+
+    def __init__(
+            self,
+            allow_credentials: Optional[bool],
+            allow_headers: HeaderSet,
+            allow_methods: HeaderSet,
+            allow_origin: HeaderSet,
+            expose_headers: HeaderSet,
+            max_age: Optional[float],
+            on_update: Optional[Callable]=None,
+    ) -> None:
+        self._on_update = None
+        self._controls: Dict[str, Any] = {}
+        self.allow_credentials = allow_credentials
+        self.allow_headers = allow_headers
+        self.allow_methods = allow_methods
+        self.allow_origin = allow_origin
+        self.expose_headers = expose_headers
+        self.max_age = max_age
+        self._on_update = on_update
+
+    @property
+    def allow_credentials(self) -> bool:
+        return self._controls['allow_credentials'] is True
+
+    @allow_credentials.setter
+    def allow_credentials(self, value: Optional[bool]=None) -> None:
+        self._controls['allow_credentials'] = value
+        self.on_update()
+
+    @property
+    def max_age(self) -> Optional[float]:
+        return self._controls['max_age']
+
+    @max_age.setter
+    def max_age(self, value: Optional[float]=None) -> None:
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
+            value = None
+        self._controls['max_age'] = value
+        self.on_update()
+
+    @classmethod
+    def from_headers(
+            cls: Type['ResponseAccessControl'],
+            allow_credentials_header: str,
+            allow_headers_header: str,
+            allow_methods_header: str,
+            allow_origin_header: str,
+            expose_headers_header: str,
+            max_age_header: str,
+            on_update: Optional[Callable]=None,
+    ) -> 'ResponseAccessControl':
+        allow_credentials = allow_credentials_header == 'true'
+        allow_headers = HeaderSet.from_header(allow_headers_header)
+        allow_methods = HeaderSet.from_header(allow_methods_header)
+        allow_origin = HeaderSet.from_header(allow_origin_header)
+        expose_headers = HeaderSet.from_header(expose_headers_header)
+        try:
+            max_age = float(max_age_header)
+        except (ValueError, TypeError):
+            max_age = None
+        return cls(
+            allow_credentials, allow_headers, allow_methods, allow_origin, expose_headers, max_age,
+            on_update,
+        )
+
+    def on_update(self, _: Any=None) -> None:
+        if self._on_update is not None:
+            self._on_update(self)

@@ -9,7 +9,9 @@ from typing import (
 )
 
 from ._base import _BaseRequestResponse, JSONMixin
-from ..datastructures import CIMultiDict, ContentRange, HeaderSet, ResponseCacheControl
+from ..datastructures import (
+    CIMultiDict, ContentRange, HeaderSet, ResponseAccessControl, ResponseCacheControl,
+)
 from ..utils import create_cookie
 
 if TYPE_CHECKING:
@@ -166,6 +168,37 @@ class Response(_BaseRequestResponse, JSONMixin):
             self.headers['ETag'] = f"W/\"{etag}\""
         else:
             self.headers['ETag'] = f"\"{etag}\""
+
+    @property
+    def access_control(self) -> ResponseAccessControl:
+        def on_update(value: ResponseAccessControl) -> None:
+            self.access_control = value
+
+        return ResponseAccessControl.from_headers(
+            self.headers.get('Access-Control-Allow-Credentials', ''),
+            self.headers.get('Access-Control-Allow-Headers', ''),
+            self.headers.get('Access-Control-Allow-Methods', ''),
+            self.headers.get('Access-Control-Allow-Origin', ''),
+            self.headers.get('Access-Control-Expose-Headers', ''),
+            self.headers.get('Access-Control-Max-Age', ''),
+            on_update=on_update,
+        )
+
+    @access_control.setter
+    def access_control(self, value: ResponseAccessControl) -> None:
+        max_age = value.max_age
+        if max_age is None:
+            self.headers.pop('Access-Control-Max-Age', None)
+        else:
+            self.headers['Access-Control-Max-Age'] = max_age
+        if value.allow_credentials:
+            self.headers['Access-Control-Allow-Credentials'] = 'true'
+        else:
+            self.headers.pop('Access-Control-Allow-Credentials', None)
+        self.headers['Access-Control-Allow-Headers'] = value.allow_headers.to_header()
+        self.headers['Access-Control-Allow-Methods'] = value.allow_methods.to_header()
+        self.headers['Access-Control-Allow-Origin'] = value.allow_origin.to_header()
+        self.headers['Access-Control-Expose-Headers'] = value.expose_headers.to_header()
 
     @property
     def accept_ranges(self) -> Optional[str]:

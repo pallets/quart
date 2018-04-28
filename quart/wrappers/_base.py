@@ -9,7 +9,7 @@ from urllib.request import parse_http_list, parse_keqv_list
 
 from ..datastructures import (
     Accept, Authorization, CharsetAccept, CIMultiDict, ETags, IfRange, LanguageAccept, MIMEAccept,
-    MultiDict, Range, RequestCacheControl,
+    MultiDict, Range, RequestAccessControl, RequestCacheControl,
 )
 from ..json import loads
 
@@ -215,6 +215,13 @@ class BaseRequestWebsocket(_BaseRequestResponse):
     @property
     def accept_mimetypes(self) -> MIMEAccept:
         return MIMEAccept(self.headers.get('Accept', ''))
+
+    @property
+    def access_control(self) -> RequestAccessControl:
+        return RequestAccessControl(
+            self.headers.get('Origin', ''), self.headers.get('Access-Control-Request-Headers', ''),
+            self.headers.get('Access-Control-Request-Method', ''),
+        )
 
     @property
     def authorization(self) -> Optional[Authorization]:
