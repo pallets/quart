@@ -275,15 +275,19 @@ class BaseRequestWebsocket(_BaseRequestResponse):
     @property
     def url(self) -> str:
         """Returns the full url requested."""
-        return urlunparse(ParseResult(
-            self.scheme, self.host, self.path, '', self.query_string, self.fragment,
-        ))
+        return urlunparse(
+            ParseResult(
+                self.scheme, self.host, self.path, '', self.query_string, self.fragment,
+            ),
+        )
 
     @property
     def url_root(self) -> str:
-        return urlunparse(ParseResult(
-            self.scheme, self.host, self.path.rsplit('/', 1)[0] + '/', '', '', '',
-        ))
+        return urlunparse(
+            ParseResult(
+                self.scheme, self.host, self.path.rsplit('/', 1)[0] + '/', '', '', '',
+            ),
+        )
 
     @property
     def is_secure(self) -> bool:

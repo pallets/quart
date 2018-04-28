@@ -116,18 +116,20 @@ class WebsocketServer(HTTPServer):
                     ((key, value) for key, value in response.headers.items()),
                     self.response_headers(),
                 )
-                self.write(self.connection._upgrade_connection.send(
-                    h11.Response(status_code=response.status_code, headers=headers),
-                ))
+                self.write(
+                    self.connection._upgrade_connection.send(
+                        h11.Response(status_code=response.status_code, headers=headers),
+                    ),
+                )
                 if not suppress_body('GET', response.status_code):
                     async for data in response.response:
-                        self.write(self.connection._upgrade_connection.send(
-                            h11.Data(data=data),
-                        ))
+                        self.write(
+                            self.connection._upgrade_connection.send(h11.Data(data=data)),
+                        )
                         await self.drain()
-                self.write(self.connection._upgrade_connection.send(
-                    h11.EndOfMessage(),
-                ))
+                self.write(
+                    self.connection._upgrade_connection.send(h11.EndOfMessage()),
+                )
         self.close()
 
     def send_data(self, data: bytes) -> None:

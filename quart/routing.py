@@ -321,7 +321,7 @@ class Rule:
     def provides_defaults_for(self, rule: 'Rule', **values: Any) -> bool:
         """Returns true if this rule provides defaults for the argument and values."""
         defaults_match = all(
-            values[key] == self.defaults[key] for key in self.defaults if key in values
+            values[key] == self.defaults[key] for key in self.defaults if key in values  # noqa: S101, E501
         )
         return self != rule and bool(self.defaults) and defaults_match
 
@@ -349,7 +349,7 @@ class Rule:
         if method is not None and method not in self.methods:
             return False
         defaults_match = all(
-            values[key] == self.defaults[key] for key in self.defaults if key in values
+            values[key] == self.defaults[key] for key in self.defaults if key in values  # noqa: S101, E501
         )
         return defaults_match and set(values.keys()) >= set(self._converters.keys())
 

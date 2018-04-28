@@ -57,7 +57,7 @@ class Blueprint(PackageStatic):
             endpoint: Optional[str]=None,
             defaults: Optional[dict]=None,
             *,
-            provide_automatic_options: bool=True
+            provide_automatic_options: bool=True,
     ) -> Callable:
         """Add a route to the blueprint.
 
@@ -87,7 +87,7 @@ class Blueprint(PackageStatic):
             methods: List[str]=['GET'],
             defaults: Optional[dict]=None,
             *,
-            provide_automatic_options: bool=True
+            provide_automatic_options: bool=True,
     ) -> None:
         """Add a route/url rule to the blueprint.
 
@@ -539,7 +539,7 @@ class Blueprint(PackageStatic):
             app: 'Quart',
             first_registration: bool,
             *,
-            url_prefix: Optional[str]=None
+            url_prefix: Optional[str]=None,
     ) -> None:
         """Register this blueprint on the app given."""
         state = self.make_setup_state(app, first_registration, url_prefix=url_prefix)
@@ -551,7 +551,7 @@ class Blueprint(PackageStatic):
             app: 'Quart',
             first_registration: bool,
             *,
-            url_prefix: Optional[str]=None
+            url_prefix: Optional[str]=None,
     ) -> 'BlueprintSetupState':
         """Return a blueprint setup state instance.
 
@@ -581,7 +581,7 @@ class BlueprintSetupState:
             app: 'Quart',
             first_registration: bool,
             *,
-            url_prefix: Optional[str]=None
+            url_prefix: Optional[str]=None,
     ) -> None:
         self.blueprint = blueprint
         self.app = app
@@ -597,7 +597,7 @@ class BlueprintSetupState:
             defaults: Optional[dict]=None,
             subdomain: Optional[str]=None,
             *,
-            provide_automatic_options: bool=True
+            provide_automatic_options: bool=True,
     ) -> None:
         if self.url_prefix is not None:
             path = f"{self.url_prefix}{path}"

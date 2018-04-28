@@ -328,7 +328,7 @@ class Quart(PackageStatic):
             host: Optional[str]=None,
             subdomain: Optional[str]=None,
             *,
-            provide_automatic_options: bool=True
+            provide_automatic_options: bool=True,
     ) -> Callable:
         """Add a route to the application.
 
@@ -378,7 +378,7 @@ class Quart(PackageStatic):
             host: Optional[str]=None,
             subdomain: Optional[str]=None,
             *,
-            provide_automatic_options: bool=True
+            provide_automatic_options: bool=True,
     ) -> None:
         """Add a route/url rule to the application.
 

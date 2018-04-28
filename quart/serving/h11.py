@@ -60,9 +60,9 @@ class H11Server(RequestResponseServer):
     def _handle_events(self) -> None:
         while True:
             if self.connection.they_are_waiting_for_100_continue:
-                self._send(h11.InformationalResponse(
-                    status_code=100, headers=self.response_headers(),
-                ))
+                self._send(
+                    h11.InformationalResponse(status_code=100, headers=self.response_headers()),
+                )
             try:
                 event = self.connection.next_event()
             except h11.RemoteProtocolError:
@@ -110,9 +110,11 @@ class H11Server(RequestResponseServer):
                 headers.get('upgrade', '').lower() == 'h2c' and 'Content-Length' not in headers
                 and 'Transfer-Encoding' not in headers
         ):
-            self._send(h11.InformationalResponse(
-                status_code=101, headers=[('upgrade', 'h2c')] + self.response_headers(),
-            ))
+            self._send(
+                h11.InformationalResponse(
+                    status_code=101, headers=[('upgrade', 'h2c')] + self.response_headers(),
+                ),
+            )
             raise H2CProtocolRequired(event)
 
     def _after_request(self, stream_id: int, future: asyncio.Future) -> None:
@@ -134,12 +136,14 @@ class H11Server(RequestResponseServer):
         self._send(h11.EndOfMessage())
 
     def _handle_error(self) -> None:
-        self._send(h11.Response(
-            status_code=400, headers=chain(
-                [('content-length', '0'), ('connection', 'close')],
-                self.response_headers(),
+        self._send(
+            h11.Response(
+                status_code=400, headers=chain(
+                    [('content-length', '0'), ('connection', 'close')],
+                    self.response_headers(),
+                ),
             ),
-        ))
+        )
         self._send(h11.EndOfMessage())
 
     def _send(

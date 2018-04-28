@@ -191,7 +191,7 @@ variable. The QUART_APP variable follows the Gunicorn standard of
 {prefix}quart run
     """.format(
         cmd='export' if os.name == 'posix' else 'set',
-        prefix='$ ' if os.name == 'posix' else '> '
+        prefix='$ ' if os.name == 'posix' else '> ',
     ),
 )
 

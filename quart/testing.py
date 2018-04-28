@@ -55,10 +55,12 @@ def make_test_headers_and_path(
     headers.setdefault('User-Agent', 'Quart')
     headers.setdefault('host', app.config['SERVER_NAME'] or 'localhost')
     if query_string is not None:
-        path = urlunparse(ParseResult(
-            scheme='', netloc='', params='', path=path, query=urlencode(query_string),
-            fragment='',
-        ))
+        path = urlunparse(
+            ParseResult(
+                scheme='', netloc='', params='', path=path, query=urlencode(query_string),
+                fragment='',
+            ),
+        )
     return headers, path  # type: ignore
 
 
