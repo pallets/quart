@@ -14,10 +14,10 @@ from quart.routing import (
 @pytest.fixture()
 def basic_map() -> Map:
     map_ = Map()
-    map_.add(Rule('/', ['POST'], 'index'))
-    map_.add(Rule('/', ['DELETE'], 'delete_index'))
-    map_.add(Rule('/leaf', ['GET'], 'leaf'))
-    map_.add(Rule('/branch/', ['GET'], 'branch'))
+    map_.add(Rule('/', {'POST'}, 'index'))
+    map_.add(Rule('/', {'DELETE'}, 'delete_index'))
+    map_.add(Rule('/leaf', {'GET'}, 'leaf'))
+    map_.add(Rule('/branch/', {'GET'}, 'branch'))
     return map_
 
 
@@ -71,7 +71,7 @@ def test_basic_building(basic_map: Map) -> None:
 
 def test_value_building() -> None:
     map_ = Map()
-    map_.add(Rule('/book/<page>', ['GET'], 'book'))
+    map_.add(Rule('/book/<page>', {'GET'}, 'book'))
     adapter = map_.bind('http', '')
     assert adapter.build('book', values={'page': 1}) == '/book/1'
     assert adapter.build('book', values={'page': 1, 'line': 12}) == '/book/1?line=12'
@@ -85,13 +85,13 @@ def test_strict_slashes() -> None:
         _test_match_redirect(map_, '/path', 'GET', '/path/')
 
     map_ = Map()
-    map_.add(Rule('/path', ['POST'], 'leaf'))
-    map_.add(Rule('/path/', ['GET'], 'branch'))
+    map_.add(Rule('/path', {'POST'}, 'leaf'))
+    map_.add(Rule('/path/', {'GET'}, 'branch'))
     # Ensure that the matching is invariant under reveresed order of
     # addition to a Map.
     map_reveresed = Map()
-    map_reveresed.add(Rule('/path', ['POST'], 'leaf'))
-    map_reveresed.add(Rule('/path/', ['GET'], 'branch'))
+    map_reveresed.add(Rule('/path', {'POST'}, 'leaf'))
+    map_reveresed.add(Rule('/path/', {'GET'}, 'branch'))
 
     _test_strict_slashes(map_)
     _test_strict_slashes(map_reveresed)
@@ -99,9 +99,9 @@ def test_strict_slashes() -> None:
 
 def test_ordering() -> None:
     map_ = Map()
-    map_.add(Rule('/fixed', ['GET'], 'fixed'))
-    map_.add(Rule('/<path:path>', ['GET'], 'path'))
-    map_.add(Rule('/<path:left>/<path:right>', ['GET'], 'path'))
+    map_.add(Rule('/fixed', {'GET'}, 'fixed'))
+    map_.add(Rule('/<path:path>', {'GET'}, 'path'))
+    map_.add(Rule('/<path:left>/<path:right>', {'GET'}, 'path'))
     _test_match(map_, '/fixed', 'GET', (map_.endpoints['fixed'][0], {}))
     _test_match(map_, '/path', 'GET', (map_.endpoints['path'][1], {'path': 'path'}))
     _test_match(
@@ -111,8 +111,8 @@ def test_ordering() -> None:
 
 def test_defaults() -> None:
     map_ = Map()
-    map_.add(Rule('/book/', ['GET'], 'book', defaults={'page': 1}))
-    map_.add(Rule('/book/<int:page>/', ['GET'], 'book'))
+    map_.add(Rule('/book/', {'GET'}, 'book', defaults={'page': 1}))
+    map_.add(Rule('/book/<int:page>/', {'GET'}, 'book'))
     _test_match(map_, '/book/', 'GET', (map_.endpoints['book'][0], {'page': 1}))
     _test_match_redirect(map_, '/book/1/', 'GET', '/book/')
     _test_match(map_, '/book/2/', 'GET', (map_.endpoints['book'][1], {'page': 2}))
@@ -124,15 +124,15 @@ def test_defaults() -> None:
 
 def test_host() -> None:
     map_ = Map(host_matching=True)
-    map_.add(Rule('/', ['GET'], 'index'))
-    map_.add(Rule('/', ['GET'], 'subdomain', host='quart.com'))
+    map_.add(Rule('/', {'GET'}, 'index'))
+    map_.add(Rule('/', {'GET'}, 'subdomain', host='quart.com'))
     _test_match(map_, '/', 'GET', (map_.endpoints['index'][0], {}))
     _test_match(map_, '/', 'GET', (map_.endpoints['subdomain'][0], {}), host='quart.com')
 
 
 def test_any_converter() -> None:
     map_ = Map()
-    map_.add(Rule('/<any(about, "left,right", jeff):name>', ['GET'], 'any'))
+    map_.add(Rule('/<any(about, "left,right", jeff):name>', {'GET'}, 'any'))
     _test_match(map_, '/about', 'GET', (map_.endpoints['any'][0], {'name': 'about'}))
     _test_match(map_, '/left,right', 'GET', (map_.endpoints['any'][0], {'name': 'left,right'}))
     _test_no_match(map_, '/other', 'GET')
@@ -140,15 +140,15 @@ def test_any_converter() -> None:
 
 def test_path_converter() -> None:
     map_ = Map()
-    map_.add(Rule('/', ['GET'], 'index'))
-    map_.add(Rule('/constant', ['GET'], 'constant'))
-    map_.add(Rule('/<int:integer>', ['GET'], 'integer'))
-    map_.add(Rule('/<path:page>', ['GET'], 'page'))
-    map_.add(Rule('/<path:page>/constant', ['GET'], 'page_constant'))
-    map_.add(Rule('/<path:left>/middle/<path:right>', ['GET'], 'double_page'))
-    map_.add(Rule('/<path:left>/middle/<path:right>/constant', ['GET'], 'double_page_constant'))
-    map_.add(Rule('/Colon:<path:name>', ['GET'], 'colon_path'))
-    map_.add(Rule('/Colon:<name>', ['GET'], 'colon_base'))
+    map_.add(Rule('/', {'GET'}, 'index'))
+    map_.add(Rule('/constant', {'GET'}, 'constant'))
+    map_.add(Rule('/<int:integer>', {'GET'}, 'integer'))
+    map_.add(Rule('/<path:page>', {'GET'}, 'page'))
+    map_.add(Rule('/<path:page>/constant', {'GET'}, 'page_constant'))
+    map_.add(Rule('/<path:left>/middle/<path:right>', {'GET'}, 'double_page'))
+    map_.add(Rule('/<path:left>/middle/<path:right>/constant', {'GET'}, 'double_page_constant'))
+    map_.add(Rule('/Colon:<path:name>', {'GET'}, 'colon_path'))
+    map_.add(Rule('/Colon:<name>', {'GET'}, 'colon_base'))
     _test_match(map_, '/', 'GET', (map_.endpoints['index'][0], {}))
     _test_match(map_, '/constant', 'GET', (map_.endpoints['constant'][0], {}))
     _test_match(map_, '/20', 'GET', (map_.endpoints['integer'][0], {'integer': 20}))
@@ -181,7 +181,7 @@ def test_uuid_converter(value: uuid.UUID) -> None:
 
 def test_uuid_converter_match() -> None:
     map_ = Map()
-    map_.add(Rule('/<uuid:uuid>', ['GET'], 'uuid'))
+    map_.add(Rule('/<uuid:uuid>', {'GET'}, 'uuid'))
     _test_match(
         map_, '/a8098c1a-f86e-11da-bd1a-00112444be1e', 'GET',
         (map_.endpoints['uuid'][0], {'uuid': uuid.UUID('a8098c1a-f86e-11da-bd1a-00112444be1e')}),
@@ -196,8 +196,8 @@ def test_integer_converter(value: int) -> None:
 
 def test_int_converter_match() -> None:
     map_ = Map()
-    map_.add(Rule('/<int(min=5):value>', ['GET'], 'min'))
-    map_.add(Rule('/<int:value>', ['GET'], 'any'))
+    map_.add(Rule('/<int(min=5):value>', {'GET'}, 'min'))
+    map_.add(Rule('/<int:value>', {'GET'}, 'any'))
     _test_match(map_, '/4', 'GET', (map_.endpoints['any'][0], {'value': 4}))
     _test_match(map_, '/6', 'GET', (map_.endpoints['min'][0], {'value': 6}))
 
@@ -210,8 +210,8 @@ def test_float_converter(value: float) -> None:
 
 def test_float_converter_match() -> None:
     map_ = Map()
-    map_.add(Rule('/<float(max=1000.0):value>', ['GET'], 'max'))
-    map_.add(Rule('/<float:value>', ['GET'], 'any'))
+    map_.add(Rule('/<float(max=1000.0):value>', {'GET'}, 'max'))
+    map_.add(Rule('/<float:value>', {'GET'}, 'any'))
     _test_match(map_, '/1001.0', 'GET', (map_.endpoints['any'][0], {'value': 1001.0}))
     _test_match(map_, '/999.0', 'GET', (map_.endpoints['max'][0], {'value': 999.0}))
 
@@ -224,6 +224,6 @@ def test_string_converter(value: str) -> None:
 
 def test_string_converter_match() -> None:
     map_ = Map()
-    map_.add(Rule('/<string(length=2):value>', ['GET'], 'string'))
+    map_.add(Rule('/<string(length=2):value>', {'GET'}, 'string'))
     _test_match(map_, '/uk', 'GET', (map_.endpoints['string'][0], {'value': 'uk'}))
     _test_no_match(map_, '/usa', 'GET')

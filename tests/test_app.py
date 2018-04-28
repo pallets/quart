@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Set
 
 import pytest
 
@@ -14,6 +14,42 @@ def test_endpoint_overwrite() -> None:
     app.add_url_rule('/', 'index', route, ['GET'])
     with pytest.raises(AssertionError):
         app.add_url_rule('/a', 'index', route, ['GET'])
+
+
+@pytest.mark.parametrize(
+    'methods, required_methods, automatic_options',
+    [
+        ({}, {}, False),
+        ({}, {}, True),
+        ({'GET', 'PUT'}, {}, False),
+        ({'GET', 'PUT'}, {}, True),
+        ({}, {'GET', 'PUT'}, False),
+        ({}, {'GET', 'PUT'}, True),
+    ],
+)
+def test_add_url_rule_methods(
+        methods: Set[str], required_methods: Set[str], automatic_options: bool,
+) -> None:
+    app = Quart(__name__)
+
+    def route() -> str:
+        return ''
+
+    route.methods = methods  # type: ignore
+    route.required_methods = required_methods  # type: ignore
+
+    non_func_methods = {'PATCH'} if not methods else None
+    app.add_url_rule(
+        '/', 'end', route, non_func_methods, provide_automatic_options=automatic_options,
+    )
+    result = {'PATCH'} if not methods else set()
+    if automatic_options:
+        result.add('OPTIONS')
+    result.update(methods)
+    result.update(required_methods)
+    if 'GET' in result:
+        result.add('HEAD')
+    assert app.url_map.endpoints['end'][0].methods == result
 
 
 @pytest.mark.asyncio

@@ -8,7 +8,9 @@ from logging import Logger
 from pathlib import Path
 from ssl import SSLContext
 from types import TracebackType
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union, ValuesView  # noqa
+from typing import (
+    Any, Callable, cast, Dict, Iterable, List, Optional, Set, Tuple, Union, ValuesView,
+)
 
 from .blueprints import Blueprint
 from .cli import AppGroup
@@ -373,7 +375,7 @@ class Quart(PackageStatic):
             path: str,
             endpoint: Optional[str]=None,
             view_func: Optional[Callable]=None,
-            methods: Optional[List[str]]=None,
+            methods: Optional[Iterable[str]]=None,
             defaults: Optional[dict]=None,
             host: Optional[str]=None,
             subdomain: Optional[str]=None,
@@ -418,14 +420,19 @@ class Quart(PackageStatic):
         endpoint = endpoint or _endpoint_from_view_func(view_func)
         handler = ensure_coroutine(view_func)
         if methods is None:
-            methods = getattr(view_func, 'methods', None) or ['GET']
+            methods = getattr(view_func, 'methods', ['GET'])
+
+        methods = cast(Set[str], set(methods))
+        required_methods = set(getattr(view_func, 'required_methods', set()))
 
         automatic_options = getattr(
             view_func, 'provide_automatic_options',
             'OPTIONS' not in methods and provide_automatic_options,
         )
         if automatic_options:
-            methods.append('OPTIONS')
+            required_methods.add('OPTIONS')
+
+        methods.update(required_methods)
 
         if not self.url_map.host_matching and (host is not None or subdomain is not None):
             raise RuntimeError('Cannot use host or subdomain without host matching enabled.')
@@ -496,7 +503,7 @@ class Quart(PackageStatic):
         """
         endpoint = endpoint or _endpoint_from_view_func(view_func)
         handler = ensure_coroutine(view_func)
-        methods = ['GET']
+        methods = {'GET'}
 
         self.url_map.add(self.url_rule_class(path, methods, endpoint, is_websocket=True))
         if handler is not None:

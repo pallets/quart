@@ -258,7 +258,7 @@ class Rule:
     def __init__(
             self,
             rule: str,
-            methods: List[str],
+            methods: Set[str],
             endpoint: str,
             strict_slashes: bool=True,
             defaults: Optional[dict]=None,
@@ -272,7 +272,7 @@ class Rule:
         self.rule = rule
         self.is_leaf = not rule.endswith('/')
         if 'GET' in methods and 'HEAD' not in methods:
-            methods.append('HEAD')
+            methods.add('HEAD')
         self.is_websocket = is_websocket
         self.methods = frozenset(method.upper() for method in methods)
         if self.is_websocket and self.methods != {'GET', 'HEAD'}:

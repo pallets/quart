@@ -20,7 +20,7 @@ from quart.wrappers import Request, Websocket
 def test_request_context_match() -> None:
     app = Quart(__name__)
     url_adapter = Mock()
-    rule = Rule('/', ['GET'], 'index')
+    rule = Rule('/', {'GET'}, 'index')
     url_adapter.match.return_value = (rule, {'arg': 'value'})
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
     request = Request('GET', 'http', '/', CIMultiDict())
@@ -67,7 +67,7 @@ def test_bad_request_if_websocket_missmatch(
 ) -> None:
     app = Quart(__name__)
     url_adapter = Mock()
-    url_adapter.match.return_value = Rule('/', ['GET'], 'index', is_websocket=is_websocket), {}
+    url_adapter.match.return_value = Rule('/', {'GET'}, 'index', is_websocket=is_websocket), {}
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
     request_websocket = request_factory('GET', '/', CIMultiDict())  # type: ignore
     context_class(app, request_websocket)  # type: ignore
@@ -77,7 +77,7 @@ def test_bad_request_if_websocket_missmatch(
 def test_bad_request_if_websocket_route() -> None:
     app = Quart(__name__)
     url_adapter = Mock()
-    url_adapter.match.return_value = Rule('/', ['GET'], 'index', is_websocket=True), {}
+    url_adapter.match.return_value = Rule('/', {'GET'}, 'index', is_websocket=True), {}
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
     request = Request('GET', 'http', '/', CIMultiDict())
     RequestContext(app, request)
