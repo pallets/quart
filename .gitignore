@@ -6,5 +6,9 @@ Quart.egg-info/
 .tox/
 TODO
 .mypy_cache/
+.pytest_cache/
 .hypothesis/
 docs/_build/
+
+
+.coverage
