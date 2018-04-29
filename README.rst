@@ -4,7 +4,7 @@ Quart
 .. image:: https://assets.gitlab-static.net/pgjones/quart/raw/master/artwork/logo.png
    :alt: Quart logo
 
-|Build Status| |docs| |pypi| |http| |python| |license|
+|Build Status| |docs| |pypi| |http| |python| |license| |chat|
 
 Quart is a Python web microframework based on `Asyncio
 <https://docs.python.org/3/library/asyncio.html>`_. It is intended to
@@ -135,3 +135,6 @@ details.
 
 .. |license| image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://gitlab.com/pgjones/quart/blob/master/LICENSE
+
+.. |chat| image:: https://img.shields.io/badge/zulip-join_chat-brightgreen.svg
+   :target: https://quart.zulipchat.com
