@@ -195,10 +195,10 @@ class Response(_BaseRequestResponse, JSONMixin):
             self.headers['Access-Control-Allow-Credentials'] = 'true'
         else:
             self.headers.pop('Access-Control-Allow-Credentials', None)
-        self.headers['Access-Control-Allow-Headers'] = value.allow_headers.to_header()
-        self.headers['Access-Control-Allow-Methods'] = value.allow_methods.to_header()
-        self.headers['Access-Control-Allow-Origin'] = value.allow_origin.to_header()
-        self.headers['Access-Control-Expose-Headers'] = value.expose_headers.to_header()
+        self._set_or_pop_header('Access-Control-Allow-Headers', value.allow_headers.to_header())
+        self._set_or_pop_header('Access-Control-Allow-Methods', value.allow_methods.to_header())
+        self._set_or_pop_header('Access-Control-Allow-Origin', value.allow_origin.to_header())
+        self._set_or_pop_header('Access-Control-Expose-Headers', value.expose_headers.to_header())
 
     @property
     def accept_ranges(self) -> Optional[str]:
@@ -226,24 +226,24 @@ class Response(_BaseRequestResponse, JSONMixin):
     @property
     def allow(self) -> HeaderSet:
         def on_update(header_set: HeaderSet) -> None:
-            self.headers['Allow'] = header_set.to_header()
+            self.allow = header_set
 
         return HeaderSet.from_header(self.headers.get('Allow', ''), on_update=on_update)
 
     @allow.setter
     def allow(self, value: HeaderSet) -> None:
-        self.headers['Allow'] = value.to_header()
+        self._set_or_pop_header('Allow', value.to_header())
 
     @property
     def cache_control(self) -> ResponseCacheControl:
         def on_update(cache_control: ResponseCacheControl) -> None:
-            self.headers['Cache-Control'] = cache_control.to_header()
+            self.cache_control = cache_control
 
         return ResponseCacheControl.from_header(self.headers.get('Cache-Control', ''), on_update)  # type: ignore  # noqa: E501
 
     @cache_control.setter
     def cache_control(self, value: ResponseCacheControl) -> None:
-        self.headers['Cache-Control'] = value.to_header()
+        self._set_or_pop_header('Cache-Control', value.to_header())
 
     @property
     def content_encoding(self) -> Optional[str]:
@@ -256,13 +256,13 @@ class Response(_BaseRequestResponse, JSONMixin):
     @property
     def content_language(self) -> HeaderSet:
         def on_update(header_set: HeaderSet) -> None:
-            self.headers['Content-Language'] = header_set.to_header()
+            self.content_language = header_set
 
         return HeaderSet.from_header(self.headers.get('Content-Language', ''), on_update=on_update)
 
     @content_language.setter
     def content_language(self, value: HeaderSet) -> None:
-        self.headers['Content_Language'] = value.to_header()
+        self._set_or_pop_header('Content-Language', value.to_header())
 
     @property
     def content_length(self) -> Optional[int]:
@@ -294,13 +294,13 @@ class Response(_BaseRequestResponse, JSONMixin):
     @property
     def content_range(self) -> ContentRange:
         def on_update(cache_range: ContentRange) -> None:
-            self.headers['Content-Range'] = cache_range.to_header()
+            self.content_range = cache_range
 
         return ContentRange.from_header(self.headers.get('Content-Range', ''), on_update)  # type: ignore  # noqa: E501
 
     @content_range.setter
     def content_range(self, value: ContentRange) -> None:
-        self.headers['Content-Range'] = value.to_header()
+        self._set_or_pop_header('Content-Range', value.to_header())
 
     @property
     def content_type(self) -> Optional[str]:
@@ -380,17 +380,23 @@ class Response(_BaseRequestResponse, JSONMixin):
     @property
     def vary(self) -> HeaderSet:
         def on_update(header_set: HeaderSet) -> None:
-            self.headers['Vary'] = header_set.to_header()
+            self.vary = header_set
 
         return HeaderSet.from_header(self.headers.get('Vary', ''), on_update=on_update)
 
     @vary.setter
     def vary(self, value: HeaderSet) -> None:
-        self.headers['Vary'] = value.to_header()
+        self._set_or_pop_header('Vary', value.to_header())
 
     async def _load_json_data(self) -> str:
         """Return the data after decoding."""
         return await self.get_data(raw=False)
+
+    def _set_or_pop_header(self, key: str, value: str) -> None:
+        if value == '':
+            self.headers.pop(key, None)
+        else:
+            self.headers[key] = value
 
 
 def _ensure_aiter(
