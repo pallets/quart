@@ -170,5 +170,7 @@ def test_response_access_control() -> None:
     assert access_control.expose_headers == {'Set-Cookie'}
     assert access_control.max_age == 5
     access_control.allow_methods.add('DELETE')
+    access_control.allow_origin = HeaderSet(['https://quart.com'])
     assert updated
     assert access_control.allow_methods == {'GET', 'POST', 'DELETE'}
+    assert access_control.allow_origin == {'https://quart.com'}
