@@ -62,7 +62,7 @@ async def test_h2c_upgrade(
         b'HTTP/1.1 101 \r\nupgrade: h2c\r\n'
         b'date: Sat, 02 Dec 2017 15:43:15 GMT\r\nserver: quart-h11\r\n\r\n'
     )
-    server.connection_lost(None)
+    server.connection_lost(Exception())
     await transport.closed.wait()
 
 
