@@ -1408,10 +1408,10 @@ class Quart(PackageStatic):
         """
         request_ = (request_context or _request_ctx_stack.top).request
         functions = (request_context or _request_ctx_stack.top)._after_request_functions
-        functions = chain(functions, self.after_request_funcs[None])
         blueprint = request_.blueprint
         if blueprint is not None:
             functions = chain(functions, self.after_request_funcs[blueprint])  # type: ignore
+        functions = chain(functions, self.after_request_funcs[None])
 
         for function in functions:
             response = await function(response)
@@ -1525,10 +1525,10 @@ class Quart(PackageStatic):
         """
         websocket_ = (websocket_context or _websocket_ctx_stack.top).websocket
         functions = (websocket_context or _websocket_ctx_stack.top)._after_websocket_functions
-        functions = chain(functions, self.after_websocket_funcs[None])
         blueprint = websocket_.blueprint
         if blueprint is not None:
             functions = chain(functions, self.after_websocket_funcs[blueprint])  # type: ignore
+        functions = chain(functions, self.after_websocket_funcs[None])
 
         for function in functions:
             response = await function(response)
