@@ -218,7 +218,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
 
     @property
     def access_control(self) -> RequestAccessControl:
-        return RequestAccessControl(
+        return RequestAccessControl.from_headers(
             self.headers.get('Origin', ''), self.headers.get('Access-Control-Request-Headers', ''),
             self.headers.get('Access-Control-Request-Method', ''),
         )
