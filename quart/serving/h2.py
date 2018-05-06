@@ -128,7 +128,7 @@ class H2Server(RequestResponseServer):
         except h2.exceptions.ProtocolError:
             pass  # Client does not accept push promises
         else:
-            self.handle_request(push_stream_id, 'GET', path, CIMultiDict(request_headers))
+            self.handle_request(push_stream_id, 'GET', path, CIMultiDict(request_headers))  # type: ignore # noqa: E501
 
     async def _send_data(self, stream_id: int, data: bytes) -> None:
         while True:
