@@ -47,7 +47,33 @@ class ValidationError(Exception):
 
 
 class BuildError(Exception):
-    pass
+
+    def __init__(
+            self,
+            endpoint: str,
+            rules: List['Rule'],
+            values: Optional[Dict]=None,
+            method: Optional[str]=None,
+    ) -> None:
+        self.endpoint = endpoint
+        self.rules = rules
+        self.values = values
+        self.method = method
+
+    def __str__(self) -> str:
+        message = [f"Could not build rule for endpoint '{self.endpoint}'."]
+        if len(self.rules):
+            for rule in self.rules:
+                message.append(f"{rule.rule} Cannot be built")
+                if self.method is not None and self.method not in rule.methods:
+                    message.append(f"as {self.method} is not one of {rule.methods}.")
+                elif self.values is not None:
+                    message.append(
+                        f"as {self.values.keys()} do not match {rule._converters.keys()}.",
+                    )
+        else:
+            message.append('No endpoint found.')
+        return ' '.join(message)
 
 
 class BaseConverter:
@@ -206,7 +232,8 @@ class MapAdapter:
             external: bool=False,
     )-> str:
         values = values or {}
-        for rule in self.map.endpoints[endpoint]:
+        rules = self.map.endpoints[endpoint]
+        for rule in rules:
             if rule.buildable(values, method=method):
                 path = rule.build(**values)
                 if external:
@@ -215,7 +242,7 @@ class MapAdapter:
                     return f"{scheme}://{host}{path}"
                 else:
                     return path
-        raise BuildError()
+        raise BuildError(endpoint, rules, values, method)
 
     def match(self) -> Tuple['Rule', Dict[str, Any]]:
         allowed_methods: Set[str] = set()

@@ -7,7 +7,7 @@ from hypothesis import given
 
 from quart.exceptions import MethodNotAllowed, NotFound, RedirectRequired
 from quart.routing import (
-    FloatConverter, IntegerConverter, Map, Rule, StringConverter, UUIDConverter,
+    BuildError, FloatConverter, IntegerConverter, Map, Rule, StringConverter, UUIDConverter,
 )
 
 
@@ -75,6 +75,20 @@ def test_value_building() -> None:
     adapter = map_.bind('http', '')
     assert adapter.build('book', values={'page': 1}) == '/book/1'
     assert adapter.build('book', values={'page': 1, 'line': 12}) == '/book/1?line=12'
+
+
+def test_build_error(basic_map: Map) -> None:
+    basic_map.add(Rule('/values/<int:x>/', {'GET'}, 'values'))
+    adapter = basic_map.bind('http', '')
+    with pytest.raises(BuildError) as error:
+        adapter.build('bob')
+    assert 'No endpoint found' in str(error)
+    with pytest.raises(BuildError) as error:
+        adapter.build('values', values={'y': 2})
+    assert 'do not match' in str(error)
+    with pytest.raises(BuildError) as error:
+        adapter.build('values', method='POST')
+    assert 'not one of' in str(error)
 
 
 def test_strict_slashes() -> None:
