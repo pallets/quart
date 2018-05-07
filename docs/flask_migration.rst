@@ -91,8 +91,3 @@ Extensions
 
 To use a Flask extension with Quart see the :ref:`flask_extensions`
 documentation.
-
-Known differences
------------------
-
-* The Request and Response objects have limited header properties.
