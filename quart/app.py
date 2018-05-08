@@ -454,6 +454,7 @@ class Quart(PackageStatic):
         self.url_map.add(
             self.url_rule_class(
                 path, methods, endpoint, host=host, provide_automatic_options=automatic_options,
+                defaults=defaults,
             ),
         )
         if handler is not None:
