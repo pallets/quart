@@ -381,6 +381,7 @@ class Quart(PackageStatic):
             subdomain: Optional[str]=None,
             *,
             provide_automatic_options: bool=True,
+            is_websocket: bool=False,
     ) -> None:
         """Add a route/url rule to the application.
 
@@ -454,7 +455,7 @@ class Quart(PackageStatic):
         self.url_map.add(
             self.url_rule_class(
                 path, methods, endpoint, host=host, provide_automatic_options=automatic_options,
-                defaults=defaults,
+                defaults=defaults, is_websocket=is_websocket,
             ),
         )
         if handler is not None:
@@ -464,7 +465,14 @@ class Quart(PackageStatic):
 
         self.view_functions[endpoint] = handler
 
-    def websocket(self, path: str) -> Callable:
+    def websocket(
+            self,
+            path: str,
+            endpoint: Optional[str]=None,
+            defaults: Optional[dict]=None,
+            host: Optional[str]=None,
+            subdomain: Optional[str]=None,
+    ) -> Callable:
         """Add a websocket to the application.
 
         This is designed to be used as a decorator. An example usage,
@@ -477,13 +485,37 @@ class Quart(PackageStatic):
 
         Arguments:
             path: The path to route on, should start with a ``/``.
+            defaults: A dictionary of variables to provide automatically, use
+                to provide a simpler default path for a route, e.g. to allow
+                for ``/book`` rather than ``/book/0``,
+
+                .. code-block:: python
+
+                    @app.websocket('/book', defaults={'page': 0})
+                    @app.websocket('/book/<int:page>')
+                    def book(page):
+                        ...
+
+            host: The full host name for this route (should include subdomain
+                if needed) - cannot be used with subdomain.
+            subdomain: A subdomain for this specific route.
         """
         def decorator(func: Callable) -> Callable:
-            self.add_websocket(path, func)
+            self.add_websocket(
+                path, endpoint, func, defaults=defaults, host=host, subdomain=subdomain,
+            )
             return func
         return decorator
 
-    def add_websocket(self, path: str, view_func: Callable, endpoint: Optional[str]=None) -> None:
+    def add_websocket(
+            self,
+            path: str,
+            endpoint: Optional[str]=None,
+            view_func: Optional[Callable]=None,
+            defaults: Optional[dict]=None,
+            host: Optional[str]=None,
+            subdomain: Optional[str]=None,
+    ) -> None:
         """Add a websocket url rule to the application.
 
         This is designed to be used on the application directly. An
@@ -501,18 +533,25 @@ class Quart(PackageStatic):
             func: Callable that returns a reponse.
             endpoint: Optional endpoint name, if not present the
                 function name is used.
+            defaults: A dictionary of variables to provide automatically, use
+                to provide a simpler default path for a route, e.g. to allow
+                for ``/book`` rather than ``/book/0``,
+
+                .. code-block:: python
+
+                    @app.websocket('/book', defaults={'page': 0})
+                    @app.websocket('/book/<int:page>')
+                    def book(page):
+                        ...
+
+            host: The full host name for this route (should include subdomain
+                if needed) - cannot be used with subdomain.
+            subdomain: A subdomain for this specific route.
         """
-        endpoint = endpoint or _endpoint_from_view_func(view_func)
-        handler = ensure_coroutine(view_func)
-        methods = {'GET'}
-
-        self.url_map.add(self.url_rule_class(path, methods, endpoint, is_websocket=True))
-        if handler is not None:
-            old_handler = self.view_functions.get(endpoint)
-            if old_handler is not None and old_handler != handler:
-                raise AssertionError(f"Handler is overwriting existing for endpoint {endpoint}")
-
-        self.view_functions[endpoint] = handler
+        return self.add_url_rule(
+            path, endpoint, view_func, {'GET'}, defaults=defaults, host=host, subdomain=subdomain,
+            provide_automatic_options=False, is_websocket=True,
+        )
 
     def endpoint(self, endpoint: str) -> Callable:
         """Register a function as an endpoint.

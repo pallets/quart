@@ -298,11 +298,11 @@ class Rule:
             raise ValueError(f"Rule '{rule}' does not start with a slash")
         self.rule = rule
         self.is_leaf = not rule.endswith('/')
-        if 'GET' in methods and 'HEAD' not in methods:
-            methods.add('HEAD')
         self.is_websocket = is_websocket
+        if 'GET' in methods and 'HEAD' not in methods and not self.is_websocket:
+            methods.add('HEAD')
         self.methods = frozenset(method.upper() for method in methods)
-        if self.is_websocket and self.methods != {'GET', 'HEAD'}:
+        if self.is_websocket and self.methods != {'GET'}:
             raise ValueError(f"{methods} must only be GET for a websocket route")
         self.endpoint = endpoint
         self.strict_slashes = strict_slashes
