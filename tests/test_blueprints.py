@@ -1,6 +1,8 @@
 import pytest
 
-from quart import abort, Blueprint, Quart, render_template_string, request, ResponseReturnValue
+from quart import (
+    abort, Blueprint, Quart, render_template_string, request, ResponseReturnValue, websocket,
+)
 
 
 @pytest.mark.asyncio
@@ -16,6 +18,24 @@ async def test_blueprint_route() -> None:
 
     async with app.test_request_context('GET', '/page/'):
         assert request.blueprint == 'blueprint'
+
+
+@pytest.mark.asyncio
+async def test_blueprint_websocket() -> None:
+    app = Quart(__name__)
+    blueprint = Blueprint('blueprint', __name__)
+
+    @blueprint.websocket('/ws/')
+    async def ws() -> None:
+        while True:
+            await websocket.send(websocket.blueprint.encode())
+
+    app.register_blueprint(blueprint)
+
+    test_client = app.test_client()
+    with test_client.websocket('/ws/') as test_websocket:
+        result = await test_websocket.receive()
+    assert result == b'blueprint'
 
 
 @pytest.mark.asyncio

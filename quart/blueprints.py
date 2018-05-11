@@ -1,6 +1,6 @@
 from functools import update_wrapper
 from json import JSONDecoder, JSONEncoder
-from typing import Callable, List, Optional, TYPE_CHECKING, Union
+from typing import Callable, Iterable, List, Optional, TYPE_CHECKING, Union
 
 from .static import PackageStatic
 
@@ -56,6 +56,8 @@ class Blueprint(PackageStatic):
             methods: List[str]=['GET'],
             endpoint: Optional[str]=None,
             defaults: Optional[dict]=None,
+            host: Optional[str]=None,
+            subdomain: Optional[str]=None,
             *,
             provide_automatic_options: bool=True,
     ) -> Callable:
@@ -73,7 +75,7 @@ class Blueprint(PackageStatic):
         """
         def decorator(func: Callable) -> Callable:
             self.add_url_rule(
-                path, endpoint, func, methods, defaults=defaults,
+                path, endpoint, func, methods, defaults=defaults, host=host, subdomain=subdomain,
                 provide_automatic_options=provide_automatic_options,
             )
             return func
@@ -84,10 +86,13 @@ class Blueprint(PackageStatic):
             path: str,
             endpoint: Optional[str]=None,
             view_func: Optional[Callable]=None,
-            methods: List[str]=['GET'],
+            methods: Iterable[str]=['GET'],
             defaults: Optional[dict]=None,
+            host: Optional[str]=None,
+            subdomain: Optional[str]=None,
             *,
             provide_automatic_options: bool=True,
+            is_websocket: bool=False,
     ) -> None:
         """Add a route/url rule to the blueprint.
 
@@ -108,9 +113,64 @@ class Blueprint(PackageStatic):
             raise ValueError('Blueprint endpoints should not contain periods')
         self.record(
             lambda state: state.add_url_rule(
-                path, endpoint, view_func, methods, defaults, self.subdomain,
-                provide_automatic_options=provide_automatic_options,
+                path, endpoint, view_func, methods, defaults, host, self.subdomain,
+                provide_automatic_options=provide_automatic_options, is_websocket=is_websocket,
             ),
+        )
+
+    def websocket(
+            self,
+            path: str,
+            endpoint: Optional[str]=None,
+            defaults: Optional[dict]=None,
+            host: Optional[str]=None,
+            subdomain: Optional[str]=None,
+    ) -> Callable:
+        """Add a websocket to the blueprint.
+
+        This is designed to be used as a decorator, and has the same arguments
+        as :meth:`~quart.Quart.websocket`. An example usage,
+
+        .. code-block:: python
+
+            blueprint = Blueprint(__name__)
+            @blueprint.websocket('/')
+            async def route():
+                ...
+        """
+        def decorator(func: Callable) -> Callable:
+            self.add_websocket(
+                path, endpoint, func, defaults=defaults, host=host, subdomain=subdomain,
+            )
+            return func
+        return decorator
+
+    def add_websocket(
+            self,
+            path: str,
+            endpoint: Optional[str]=None,
+            view_func: Optional[Callable]=None,
+            defaults: Optional[dict]=None,
+            host: Optional[str]=None,
+            subdomain: Optional[str]=None,
+    ) -> None:
+        """Add a websocket rule to the blueprint.
+
+        This is designed to be used on the blueprint directly, and
+        has the same arguments as
+        :meth:`~quart.Quart.add_websocket`. An example usage,
+
+        .. code-block:: python
+
+            def route():
+                ...
+
+            blueprint = Blueprint(__name__)
+            blueprint.add_websocket('/', route)
+        """
+        return self.add_url_rule(
+            path, endpoint, view_func, {'GET'}, defaults=defaults, host=host, subdomain=subdomain,
+            provide_automatic_options=False, is_websocket=True,
         )
 
     def endpoint(self, endpoint: str) -> Callable:
@@ -253,6 +313,25 @@ class Blueprint(PackageStatic):
         self.record_once(lambda state: state.app.before_request(func, self.name))
         return func
 
+    def before_websocket(self, func: Callable) -> Callable:
+        """Add a before request websocket to the Blueprint.
+
+        This is designed to be used as a decorator, and has the same
+        arguments as :meth:`~quart.Quart.before_websocket`. It applies
+        only to requests that are routed to an endpoint in this
+        blueprint. An example usage,
+
+        .. code-block:: python
+
+            blueprint = Blueprint(__name__)
+            @blueprint.before_websocket
+            def before():
+                ...
+
+        """
+        self.record_once(lambda state: state.app.before_websocket(func, self.name))
+        return func
+
     def before_app_request(self, func: Callable) -> Callable:
         """Add a before request function to the app.
 
@@ -306,6 +385,24 @@ class Blueprint(PackageStatic):
         self.record_once(lambda state: state.app.after_request(func, self.name))
         return func
 
+    def after_websocket(self, func: Callable) -> Callable:
+        """Add an after websocket function to the Blueprint.
+
+        This is designed to be used as a decorator, and has the same
+        arguments as :meth:`~quart.Quart.after_websocket`. It applies
+        only to requests that are routed to an endpoint in this
+        blueprint. An example usage,
+
+        .. code-block:: python
+
+            blueprint = Blueprint(__name__)
+            @blueprint.after_websocket
+            def after():
+                ...
+        """
+        self.record_once(lambda state: state.app.after_websocket(func, self.name))
+        return func
+
     def after_app_request(self, func: Callable) -> Callable:
         """Add a after request function to the app.
 
@@ -338,6 +435,25 @@ class Blueprint(PackageStatic):
                 ...
         """
         self.record_once(lambda state: state.app.teardown_request(func, self.name))
+        return func
+
+    def teardown_websocket(self, func: Callable) -> Callable:
+        """Add a teardown websocket function to the Blueprint.
+
+        This is designed to be used as a decorator, and has the same
+        arguments as :meth:`~quart.Quart.teardown_websocket`. It
+        applies only to requests that are routed to an endpoint in
+        this blueprint. An example usage,
+
+        .. code-block:: python
+
+            blueprint = Blueprint(__name__)
+            @blueprint.teardown_websocket
+            def teardown():
+                ...
+
+        """
+        self.record_once(lambda state: state.app.teardown_websocket(func, self.name))
         return func
 
     def teardown_app_request(self, func: Callable) -> Callable:
@@ -593,18 +709,20 @@ class BlueprintSetupState:
             path: str,
             endpoint: Optional[str]=None,
             view_func: Optional[Callable]=None,
-            methods: List[str]=['GET'],
+            methods: Optional[Iterable[str]]=None,
             defaults: Optional[dict]=None,
+            host: Optional[str]=None,
             subdomain: Optional[str]=None,
             *,
             provide_automatic_options: bool=True,
+            is_websocket: bool=False,
     ) -> None:
         if self.url_prefix is not None:
             path = f"{self.url_prefix}{path}"
         endpoint = f"{self.blueprint.name}.{endpoint}"
         self.app.add_url_rule(
-            path, endpoint, view_func, methods, defaults, subdomain=subdomain,
-            provide_automatic_options=provide_automatic_options,
+            path, endpoint, view_func, methods, defaults, host=host, subdomain=subdomain,
+            provide_automatic_options=provide_automatic_options, is_websocket=is_websocket,
         )
 
     def register_endpoint(self, endpoint: str, func: Callable) -> None:
