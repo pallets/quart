@@ -1,5 +1,6 @@
 import asyncio
 import os
+import platform
 import sys
 from logging import Logger
 from pathlib import Path
@@ -104,6 +105,13 @@ async def _observe_changes() -> bool:
         await asyncio.sleep(1)
 
 
+async def _windows_signal_support() -> None:
+    # See https://bugs.python.org/issue23057, to catch signals on
+    # Windows it is necessary for an IO event to happen periodically.
+    while True:
+        await asyncio.sleep(1)
+
+
 def run_app(
         app: 'Quart',
         *,
@@ -140,6 +148,9 @@ def run_app(
 
     scheme = 'http' if ssl is None else 'https'
     print("Running on {}://{}:{} (CTRL + C to quit)".format(scheme, host, port))  # noqa: T001
+
+    if platform.system() == 'Windows':
+        asyncio.ensure_future(_windows_signal_support())
 
     try:
         if use_reloader:
