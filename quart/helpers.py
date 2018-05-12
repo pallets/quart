@@ -9,6 +9,8 @@ from .routing import BuildError
 from .signals import message_flashed
 from .wrappers import Response
 
+locked_cached_property = property
+
 
 def get_debug_flag(default: Optional[bool]=None) -> bool:
     value = os.environ.get('QUART_DEBUG')
