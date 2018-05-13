@@ -8,6 +8,7 @@ from ssl import SSLContext
 from types import ModuleType
 from typing import Dict, List, Optional, Tuple, TYPE_CHECKING  # noqa: F401
 
+from .asgi import ASGIServer  # noqa: F401
 from .h11 import H11Server, H2CProtocolRequired, WebsocketProtocolRequired
 from .h2 import H2Server
 from .websocket import WebsocketServer

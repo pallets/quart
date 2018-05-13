@@ -45,6 +45,7 @@ How-To Guides
 .. toctree::
    :maxdepth: 1
 
+   asgi_deployments.rst
    background_tasks.rst
    blueprints.rst
    command_line.rst

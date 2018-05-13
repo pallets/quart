@@ -66,9 +66,7 @@ class HTTPServer:
         self.transport.close()
 
     def response_headers(self) -> List[Tuple[str, str]]:
-        return [
-            ('date', formatdate(time(), usegmt=True)), ('server', f"quart-{self.protocol}"),
-        ]
+        return response_headers(self.protocol)
 
     def cleanup_task(self, future: asyncio.Future) -> None:
         """Call after a task (future) to clean up.
@@ -213,3 +211,9 @@ class RequestResponseServer(HTTPServer):
 
 def suppress_body(method: str, status_code: int) -> bool:
     return method == 'HEAD' or 100 <= status_code < 200 or status_code in {204, 304, 412}
+
+
+def response_headers(protocol: str) -> List[Tuple[str, str]]:
+    return [
+        ('date', formatdate(time(), usegmt=True)), ('server', f"quart-{protocol}"),
+    ]
