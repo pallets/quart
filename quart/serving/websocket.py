@@ -93,7 +93,7 @@ class WebsocketServer(HTTPServer):
             headers.add(name.decode().title(), value.decode())
         headers['Remote-Addr'] = self.remote_addr
         scheme = 'wss' if self.ssl_info is not None else 'ws'
-        websocket = Websocket(
+        websocket = self.app.websocket_class(
             event.h11request.target.decode(), scheme, headers, self.queue, self.send_data,
             partial(self.accept_connection, event),
         )

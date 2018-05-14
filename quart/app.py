@@ -82,6 +82,7 @@ class Quart(PackageStatic):
             data.
         session_interface: The class to use as the session interface.
         url_rule_class: The class to use for URL rules.
+        websocket_class: The class to use for websockets.
     """
     app_ctx_globals_class = _AppCtxGlobals
     config_class = Config
@@ -104,6 +105,7 @@ class Quart(PackageStatic):
     test_client_class = QuartClient
     testing = ConfigAttribute('TESTING')
     url_rule_class = Rule
+    websocket_class = Websocket
 
     def __init__(
             self,
