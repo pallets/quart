@@ -19,7 +19,7 @@ def serving_app() -> Quart:
 
     @app.websocket('/ws')
     async def ws() -> None:
-        websocket.accept()
+        await websocket.accept()
         return None
 
     return app

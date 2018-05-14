@@ -235,8 +235,12 @@ class QuartClient:
         headers, path = make_test_headers_and_path(self.app, path, headers, query_string)
         queue: asyncio.Queue = asyncio.Queue()
         websocket_client = _TestingWebsocket(queue)
+
+        async def accept() -> None:
+            pass
+
         websocket = Websocket(
-            path, scheme, headers, queue, websocket_client.local_queue.put_nowait, lambda: None,
+            path, scheme, headers, queue, websocket_client.local_queue.put, accept,
         )
         adapter = self.app.create_url_adapter(websocket)
         url_rule, _ = adapter.match()

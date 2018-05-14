@@ -100,7 +100,7 @@ class WebsocketServer(HTTPServer):
         self.task = asyncio.ensure_future(self._handle_websocket(websocket))
         self.task.add_done_callback(self.cleanup_task)
 
-    def accept_connection(self, event: wsproto.events.ConnectionRequested) -> None:
+    async def accept_connection(self, event: wsproto.events.ConnectionRequested) -> None:
         if not self.active:
             self.connection.accept(event)
             self.write(self.connection.bytes_to_send())
@@ -132,6 +132,6 @@ class WebsocketServer(HTTPServer):
                 )
         self.close()
 
-    def send_data(self, data: bytes) -> None:
+    async def send_data(self, data: bytes) -> None:
         self.connection.send_data(data)
         self.write(self.connection.bytes_to_send())

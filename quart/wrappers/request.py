@@ -255,7 +255,7 @@ class Websocket(BaseRequestWebsocket):
         self._accept = accept
 
     async def receive(self) -> bytes:
-        self._accept()
+        await self.accept()
         return await self._queue.get()
 
     async def send(self, data: bytes) -> None:
@@ -263,9 +263,9 @@ class Websocket(BaseRequestWebsocket):
         # setup a tight loop sending data over a websocket (as in the
         # example). So yield via the sleep.
         await asyncio.sleep(0)
-        self._accept()
-        self._send(data)
+        await self.accept()
+        await self._send(data)
 
-    def accept(self) -> None:
+    async def accept(self) -> None:
         """Manually chose to accept the websocket connection."""
-        self._accept()
+        await self._accept()
