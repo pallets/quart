@@ -147,7 +147,7 @@ them. The following snippet acheives this,
 
 .. code-block:: python
 
-    app.clients = {}
+    app.clients = set()
 
     @app.route('/', methods=['POST'])
     async def broadcast():
