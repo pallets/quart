@@ -1,0 +1,25 @@
+<html>
+   <head>
+      <title>PythonTiles</title>
+   </head>
+   <link rel="stylesheet" type="text/css" href="/static/style.css" />
+   <body>
+    <div class="container">
+      <h1>PythonTiles</h1>
+      <h2>{{ title }}</h2>
+      <p class="tiles">
+      {% for x in range(max_tiles) %}
+        {% for y in range(max_tiles) %}
+            <img src="/tile/{{ (x * max_tiles) + y }}" alt="Tile {{ (x * max_tiles) + y }}" />
+        {% endfor %}
+        <br />
+      {% endfor %}
+      </p>
+      {% if 'push' in title %}
+      <a href="/">Go to standard HTTP/2 version</a>
+      {% else %}
+      <a href="/push">Go to HTTP/2 push promise version</a>
+      {% endif %}
+    </div>
+   </body>
+ </html>

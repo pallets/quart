@@ -1,0 +1,2 @@
+quart
+pillow==5.1.0
