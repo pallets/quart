@@ -7,7 +7,7 @@ tox:
 
 pages:
   script:
-  - pip install sphinx
+  - pip install sphinx solar-theme
   - python setup.py install
   - rm -rf docs/source && sphinx-apidoc -e -f -o docs/source/ quart/
   - cd docs/ && make html && cd ../
