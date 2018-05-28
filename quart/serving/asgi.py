@@ -32,29 +32,33 @@ class ASGIHTTPConnection:
         self.stream: Optional[Stream] = None
 
     async def __call__(self, receive: Callable, send: Callable) -> None:
-        event = await receive()
-        if event['type'] == 'http.request':
-            if self.stream is None:
-                headers = CIMultiDict()
-                headers['Remote-Addr'] = self.scope['client'][0]
-                for name, value in self.scope['headers']:
-                    headers.add(name.decode().title(), value.decode())
+        while True:
+            event = await receive()
+            if event['type'] == 'http.request':
+                if self.stream is None:
+                    headers = CIMultiDict()
+                    headers['Remote-Addr'] = self.scope['client'][0]
+                    for name, value in self.scope['headers']:
+                        headers.add(name.decode().title(), value.decode())
 
-                request = self.app.request_class(
-                    self.scope['method'], self.scope['scheme'],
-                    f"{self.scope['path']}?{self.scope['query_string']}", headers,
-                    max_content_length=self.app.config['MAX_CONTENT_LENGTH'],
-                    body_timeout=self.app.config['BODY_TIMEOUT'],
-                )
-                self.stream = Stream(asyncio.get_event_loop(), request)
-                # It is important that the app handles the request in a unique
-                # task as the globals are task locals
-                self.stream.task = asyncio.ensure_future(self._handle_request(send))
-                self.stream.task.add_done_callback(_cleanup_task)
+                    request = self.app.request_class(
+                        self.scope['method'], self.scope['scheme'],
+                        f"{self.scope['path']}?{self.scope['query_string']}", headers,
+                        max_content_length=self.app.config['MAX_CONTENT_LENGTH'],
+                        body_timeout=self.app.config['BODY_TIMEOUT'],
+                    )
+                    self.stream = Stream(asyncio.get_event_loop(), request)
+                    # It is important that the app handles the request in a unique
+                    # task as the globals are task locals
+                    self.stream.task = asyncio.ensure_future(self._handle_request(send))
+                    self.stream.task.add_done_callback(_cleanup_task)
 
-            self.stream.append(event['body'])
-            if not event.get('more_body', False):
-                self.stream.complete()
+                self.stream.append(event['body'])
+                if not event.get('more_body', False):
+                    self.stream.complete()
+            elif event['type'] == 'http.disconnect':
+                self.stream.task.cancel()
+                break
 
     async def _handle_request(self, send: Callable) -> None:
         response = await self.app.handle_request(self.stream.request)
@@ -104,6 +108,7 @@ class ASGIWebsocketConnection:
         self.scope = scope
         self.queue: asyncio.Queue = asyncio.Queue()
         self.task: Optional[asyncio.Future] = None
+        self._accepted = False
 
     async def __call__(self, receive: Callable, send: Callable) -> None:
         while True:
@@ -139,9 +144,11 @@ class ASGIWebsocketConnection:
         })
 
     async def accept_connection(self, send: Callable) -> None:
-        await send({
-            'type': 'websocket.accept',
-        })
+        if not self._accepted:
+            await send({
+                'type': 'websocket.accept',
+            })
+            self._accepted = True
 
 
 def _cleanup_task(future: asyncio.Future) -> None:
