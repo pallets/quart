@@ -31,7 +31,7 @@ autobahn:
   image: python:2.7.14-alpine3.7
   script:
   - apk --update add build-base libressl libressl-dev ca-certificates libffi-dev python3
-  - pip install autobahntestsuite
+  - pip install autobahntestsuite==0.7.6
   - python3 setup.py install
   - cd compliance/autobahn && nohup python3 server.py &
   - while ! netstat -l -t | grep -q 5000; do sleep 1; done
