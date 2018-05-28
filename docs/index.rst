@@ -21,9 +21,10 @@ Flask API is however the main aim, which means that the `Flask
 documentation <http://flask.pocoo.org/docs/>`_ is an additional useful
 source of help.
 
-Quart is developed on `GitLab <https://gitlab.com/pgjones/quart>`.
-You are very welcome to open `issues <https://gitlab.com/pgjones/quart/issues>`
-or propose `merge requests <https://gitlab.com/pgjones/quart/merge_requests>`.
+Quart is developed on `GitLab <https://gitlab.com/pgjones/quart>`_.
+You are very welcome to open `issues
+<https://gitlab.com/pgjones/quart/issues>`_ or propose `merge requests
+<https://gitlab.com/pgjones/quart/merge_requests>`_.
 
 Tutorials
 ---------
