@@ -748,7 +748,7 @@ class Quart(PackageStatic):
         self.template_context_processors[name].append(ensure_coroutine(func))
         return func
 
-    def shell_context_processor(self, func: Callable, name: AppOrBlueprintKey=None) -> Callable:
+    def shell_context_processor(self, func: Callable) -> Callable:
         """Add a shell context processor.
 
         This is designed to be used as a decorator. An example usage,
@@ -760,7 +760,7 @@ class Quart(PackageStatic):
                 return context
 
         """
-        self.template_context_processors[name].append(func)
+        self.shell_context_processors.append(func)
         return func
 
     def url_defaults(self, func: Callable, name: AppOrBlueprintKey=None) -> Callable:
