@@ -291,7 +291,7 @@ class Quart(PackageStatic):
             return True
         return Path(filename).suffix in {'.htm', '.html', '.xhtml', '.xml'}
 
-    def update_template_context(self, context: dict) -> None:
+    async def update_template_context(self, context: dict) -> None:
         """Update the provided template context.
 
         This adds additional context from the various template context
@@ -307,7 +307,7 @@ class Quart(PackageStatic):
                 processors = chain(processors, self.template_context_processors[blueprint])  # type: ignore # noqa
         extra_context: dict = {}
         for processor in processors:
-            extra_context.update(processor())
+            extra_context.update(await processor())
         original = context.copy()
         context.update(extra_context)
         context.update(original)
@@ -745,7 +745,7 @@ class Quart(PackageStatic):
                 return context
 
         """
-        self.template_context_processors[name].append(func)
+        self.template_context_processors[name].append(ensure_coroutine(func))
         return func
 
     def shell_context_processor(self, func: Callable, name: AppOrBlueprintKey=None) -> Callable:

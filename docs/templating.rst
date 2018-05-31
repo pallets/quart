@@ -83,9 +83,9 @@ information to all requests to the app. An example,
 .. code-block:: python
 
     @blueprint.context_processor
-    def blueprint_only():
+    async def blueprint_only():
         return {'context': 'value'}
 
     @blueprint.app_context_processor
-    def app_wide():
+    async def app_wide():
         return {'context': 'value'}

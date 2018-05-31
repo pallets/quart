@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 from quart import Blueprint, g, Quart, render_template_string, session
@@ -47,7 +49,8 @@ async def test_default_template_context(app: Quart) -> None:
 async def test_template_context_processors(app: Quart, blueprint: Blueprint) -> None:
 
     @blueprint.context_processor
-    def blueprint_context() -> dict:
+    async def blueprint_context() -> dict:
+        await asyncio.sleep(0.01)  # Test the ability to await
         return {'context': 'foo'}
 
     @blueprint.app_context_processor

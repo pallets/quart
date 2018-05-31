@@ -73,7 +73,7 @@ async def render_template(template_name_or_list: Union[str, List[str]], **contex
             possible template names.
         context: The variables to pass to the template.
     """
-    current_app.update_template_context(context)
+    await current_app.update_template_context(context)
     template = current_app.jinja_env.get_or_select_template(template_name_or_list)
     return await _render(template, context)
 
@@ -85,7 +85,7 @@ async def render_template_string(source: str, **context: Any) -> str:
         source: The template source code.
         context: The variables to pass to the template.
     """
-    current_app.update_template_context(context)
+    await current_app.update_template_context(context)
     template = current_app.jinja_env.from_string(source)
     return await _render(template, context)
 
@@ -98,7 +98,7 @@ async def _render(template: Template, context: dict) -> str:
     return rendered_template
 
 
-def _default_template_context_processor() -> Dict[str, Any]:
+async def _default_template_context_processor() -> Dict[str, Any]:
     context = {}
     if has_app_context():
         context['g'] = _app_ctx_stack.top.g
