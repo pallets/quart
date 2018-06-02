@@ -3,7 +3,7 @@ PythonTiles
 
 This is an example inspired by `GopherTiles <https://http2.golang.org/gophertiles>`_ demonstrating Quart's HTTP/2 push promise capabilities.
 
-This example requires the `Pillow <https://pypi.org>`_
+This example requires the `Pillow library <https://pypi.org>`_
 
 - `pip install -r requirements.txt`
 - `QUART_APP=http2_push quart run`

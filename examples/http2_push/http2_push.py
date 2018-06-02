@@ -6,7 +6,7 @@ import ssl
 import click
 from PIL import Image
 from quart import (
-    make_response, Quart, render_template, url_for
+    make_response, Quart, render_template, url_for, abort
 )
 
 
@@ -78,7 +78,7 @@ async def tile(tile_number):
     try:
         tile = get_tile(tile_number)
     except TileOutOfBoundsError:
-        return 'Not found', 404
+        abort(404)
 
     buf = BytesIO(tile.tobytes())
     tile.save(buf, 'JPEG')
