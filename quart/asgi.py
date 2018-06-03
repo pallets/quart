@@ -114,10 +114,36 @@ class ASGIWebsocketConnection:
                 self.task.cancel()
 
     async def handle_websocket(self, websocket: Websocket, send: Callable) -> None:
-        await self.app.handle_websocket(websocket)
-        await send({
-            'type': 'websocket.close',
-        })
+        response = await self.app.handle_websocket(websocket)
+        if (
+                response is not None and not self._accepted
+                and 'websocket.http.response' in self.scope.get('extensions', {})
+        ):
+            headers = [
+                (key.lower().encode(), value.lower().encode())
+                for key, value in response.headers.items()
+            ]
+            await send({
+                'type': 'websocket.http.response.start',
+                'status': response.status_code,
+                'headers': headers,
+            })
+            async for data in response.response:
+                await send({
+                    'type': 'websocket.http.response.body',
+                    'body': data,
+                    'more_body': True,
+                })
+            await send({
+                'type': 'websocket.http.response.body',
+                'body': b'',
+                'more_body': False,
+            })
+        elif self._accepted:
+            await send({
+                'type': 'websocket.close',
+                'code': 1000,
+            })
 
     async def send_data(self, send: Callable, data: bytes) -> None:
         await send({
