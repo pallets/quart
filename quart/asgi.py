@@ -62,6 +62,15 @@ class ASGIHTTPConnection:
             'status': response.status_code,
             'headers': headers,
         })
+
+        if 'http.response.push' in self.scope.get('extensions', {}):
+            for path in response.push_promises:
+                await send({
+                    'type': 'http.response.push',
+                    'path': path,
+                    'headers': [],
+                })
+
         async for data in response.response:
             await send({
                 'type': 'http.response.body',
