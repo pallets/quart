@@ -1538,7 +1538,7 @@ class Quart(PackageStatic):
             raise websocket_.routing_exception
 
         handler = self.view_functions[websocket_.url_rule.endpoint]
-        await handler(**websocket_.view_args)
+        return await handler(**websocket_.view_args)
 
     async def finalize_websocket(
         self,
