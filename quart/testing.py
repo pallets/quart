@@ -17,18 +17,36 @@ if TYPE_CHECKING:
 sentinel = object()
 
 
+class WebsocketResponse(Exception):
+
+    def __init__(self, response: Response) -> None:
+        super().__init__()
+        self.response = response
+
+
 class _TestingWebsocket:
 
     def __init__(self, remote_queue: asyncio.Queue) -> None:
         self.remote_queue = remote_queue
         self.local_queue: asyncio.Queue = asyncio.Queue()
+        self.accepted = False
+        self.task: Optional[asyncio.Future] = None
 
     async def receive(self) -> bytes:
+        await self._check_for_response()
         return await self.local_queue.get()
 
     async def send(self, data: bytes) -> None:
+        await self._check_for_response()
         await self.remote_queue.put(data)
-        await asyncio.sleep(0)
+
+    async def accept(self) -> None:
+        self.accepted = True
+
+    async def _check_for_response(self) -> None:
+        await asyncio.sleep(0)  # Give serving task an opportunity to respond
+        if self.task.done() and self.task.result() is not None:
+            raise WebsocketResponse(self.task.result())
 
 
 def make_test_headers_and_path(
@@ -236,20 +254,18 @@ class QuartClient:
         queue: asyncio.Queue = asyncio.Queue()
         websocket_client = _TestingWebsocket(queue)
 
-        async def accept() -> None:
-            pass
-
         websocket = Websocket(
-            path, scheme, headers, queue, websocket_client.local_queue.put, accept,
+            path, scheme, headers, queue, websocket_client.local_queue.put,
+            websocket_client.accept,
         )
         adapter = self.app.create_url_adapter(websocket)
         url_rule, _ = adapter.match()
         if not url_rule.is_websocket:
             raise BadRequest()
 
-        task = asyncio.ensure_future(self.app.handle_websocket(websocket))
+        websocket_client.task = asyncio.ensure_future(self.app.handle_websocket(websocket))
 
         try:
             yield websocket_client
         finally:
-            task.cancel()
+            websocket_client.task.cancel()

@@ -1,6 +1,7 @@
 import pytest
 
 from quart import abort, jsonify, Quart, request, Response, ResponseReturnValue, websocket
+from quart.testing import WebsocketResponse
 
 
 @pytest.fixture
@@ -35,6 +36,10 @@ def app() -> Quart:
         while True:
             message = await websocket.receive()
             await websocket.send(message)
+
+    @app.websocket('/ws/abort/')
+    async def ws_abort() -> None:
+        abort(401)
 
     return app
 
@@ -123,3 +128,13 @@ async def test_websocket(app: Quart) -> None:
         await test_websocket.send(data)
         result = await test_websocket.receive()
     assert result == data
+
+
+@pytest.mark.asyncio
+async def test_websocket_abort(app: Quart) -> None:
+    test_client = app.test_client()
+    with test_client.websocket('/ws/abort/') as test_websocket:
+        try:
+            await test_websocket.receive()
+        except WebsocketResponse as error:
+            assert error.response.status_code == 401
