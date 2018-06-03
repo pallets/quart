@@ -6,11 +6,11 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, List, Optional, TYPE_CHECKING
 
 import click
+from hypercorn import Config, run_single
 
 from .__about__ import __version__
 from .helpers import get_debug_flag
 from .logging import create_serving_logger
-from .serving import run_app
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa: F401
@@ -157,13 +157,15 @@ class QuartGroup(AppGroup):
 @click.option('--port', '-p', default=5000, help='The port to serve on.')
 @pass_script_info
 def run_command(info: ScriptInfo, host: str, port: int) -> None:
-    debug = True
-    access_log_format = "%(h)s %(r)s %(s)s %(b)s %(D)s"
-    run_app(
-        info.load_app(), host=host, port=port, logger=create_serving_logger(),
-        access_log_format=access_log_format, keep_alive_timeout=5, debug=debug,
-        use_reloader=debug,
-    )
+    config = Config()
+    config.access_log_format = "%(h)s %(r)s %(s)s %(b)s %(D)s"
+    config.access_logger = create_serving_logger()
+    config.debug = True
+    config.error_logger = config.access_logger
+    config.host = host
+    config.port = port
+    config.use_reloader = True
+    run_single(info.load_app(), config)
 
 
 @click.command('shell', short_help='Open a shell within the app context.')

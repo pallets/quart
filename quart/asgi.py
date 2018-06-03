@@ -2,26 +2,11 @@ import asyncio
 from functools import partial
 from typing import Callable, Optional, TYPE_CHECKING
 
-from ._base import response_headers, Stream, suppress_body
-from ..datastructures import CIMultiDict
-from ..wrappers import Response, Websocket  # noqa: F401
+from .datastructures import CIMultiDict
+from .wrappers import Request, Response, Websocket  # noqa: F401
 
 if TYPE_CHECKING:
-    from ..app import Quart  # noqa: F401
-
-
-class ASGIServer:
-
-    def __init__(self, app: 'Quart') -> None:
-        self.app = app
-
-    def __call__(self, scope: dict) -> Callable:
-        if scope['type'] == 'http':
-            return ASGIHTTPConnection(self.app, scope)
-        elif scope['type'] == 'websocket':
-            return ASGIWebsocketConnection(self.app, scope)
-        else:
-            raise RuntimeError('ASGI Scope type is unknown')
+    from .app import Quart  # noqa: F401
 
 
 class ASGIHTTPConnection:
@@ -29,71 +14,60 @@ class ASGIHTTPConnection:
     def __init__(self, app: 'Quart', scope: dict) -> None:
         self.app = app
         self.scope = scope
-        self.stream: Optional[Stream] = None
+        self.request: Optional[Request] = None
+        self.task: Optional[asyncio.Future] = None
 
     async def __call__(self, receive: Callable, send: Callable) -> None:
         while True:
             event = await receive()
             if event['type'] == 'http.request':
-                if self.stream is None:
+                if self.request is None:
                     headers = CIMultiDict()
                     headers['Remote-Addr'] = self.scope['client'][0]
+                    if self.scope['http_version'] < '1.1':
+                        headers.setdefault('host', self.app.config['SERVER_NAME'] or '')
                     for name, value in self.scope['headers']:
                         headers.add(name.decode().title(), value.decode())
 
-                    request = self.app.request_class(
+                    self.request = self.app.request_class(
                         self.scope['method'], self.scope['scheme'],
-                        f"{self.scope['path']}?{self.scope['query_string']}", headers,
+                        f"{self.scope['path']}?{self.scope['query_string'].decode()}", headers,
                         max_content_length=self.app.config['MAX_CONTENT_LENGTH'],
                         body_timeout=self.app.config['BODY_TIMEOUT'],
                     )
-                    self.stream = Stream(asyncio.get_event_loop(), request)
                     # It is important that the app handles the request in a unique
                     # task as the globals are task locals
-                    self.stream.task = asyncio.ensure_future(self._handle_request(send))
-                    self.stream.task.add_done_callback(_cleanup_task)
-
-                self.stream.append(event['body'])
+                    self.task = asyncio.ensure_future(self._handle_request(send))
+                self.request.body.append(event['body'])
                 if not event.get('more_body', False):
-                    self.stream.complete()
+                    self.request.body.set_complete()
             elif event['type'] == 'http.disconnect':
-                self.stream.task.cancel()
+                self.task.cancel()
                 break
 
     async def _handle_request(self, send: Callable) -> None:
-        response = await self.app.handle_request(self.stream.request)
-        suppress_body_ = suppress_body(self.stream.request.method, response.status_code)
+        response = await self.app.handle_request(self.request)
         try:
-            await asyncio.wait_for(
-                self._send_response(send, response, suppress_body_),
-                timeout=response.timeout,
-            )
+            await asyncio.wait_for(self._send_response(send, response), timeout=response.timeout)
         except asyncio.TimeoutError:
             pass
 
-    async def _send_response(
-            self, send: Callable, response: Response, suppress_body: bool,
-    ) -> None:
+    async def _send_response(self, send: Callable, response: Response) -> None:
         headers = [
-            [key.lower().encode(), value.lower().encode()]
+            (key.lower().encode(), value.lower().encode())
             for key, value in response.headers.items()
         ]
-        headers.extend((
-            [key.lower().encode(), value.lower().encode()]
-            for key, value in response_headers('asgi')
-        ))
         await send({
             'type': 'http.response.start',
             'status': response.status_code,
             'headers': headers,
         })
-        if not suppress_body:
-            async for data in response.response:
-                await send({
-                    'type': 'http.response.body',
-                    'body': data,
-                    'more_body': True,
-                })
+        async for data in response.response:
+            await send({
+                'type': 'http.response.body',
+                'body': data,
+                'more_body': True,
+            })
         await send({
             'type': 'http.response.body',
             'body': b'',
@@ -125,7 +99,6 @@ class ASGIWebsocketConnection:
                     partial(self.accept_connection, send),
                 )
                 self.task = asyncio.ensure_future(self.handle_websocket(websocket, send))
-                self.task.add_done_callback(_cleanup_task)
             elif event['type'] == 'websocket.receive':
                 await self.queue.put(event.get('bytes') or event['text'])
             elif event['type'] == 'websocket.disconnect':
@@ -149,18 +122,3 @@ class ASGIWebsocketConnection:
                 'type': 'websocket.accept',
             })
             self._accepted = True
-
-
-def _cleanup_task(future: asyncio.Future) -> None:
-    """Call after a task (future) to clean up.
-
-    This should be added as a add_done_callback for any protocol task
-    to ensure that the proper cleanup is handled on cancellation
-    i.e. early connection closing.
-    """
-    # Fetch the exception (if exists) from the future, without
-    # this asyncio will print annoying warnings.
-    try:
-        future.exception()
-    except Exception as error:
-        pass

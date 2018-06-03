@@ -53,7 +53,7 @@ def test_shell_command(app: Mock, monkeypatch: MonkeyPatch) -> None:
 def test_run_command(app: Mock, monkeypatch: MonkeyPatch) -> None:
     runner = CliRunner()
     run_app = Mock()
-    monkeypatch.setattr(quart.cli, 'run_app', run_app)
+    monkeypatch.setattr(quart.cli, 'run_single', run_app)
     os.environ['QUART_APP'] = 'module:app'
     runner.invoke(cli, ['run'])
     run_app.assert_called_once()

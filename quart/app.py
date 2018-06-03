@@ -12,6 +12,9 @@ from typing import (
     Any, Callable, cast, Dict, Iterable, List, Optional, Set, Tuple, Union, ValuesView,
 )
 
+from hypercorn import Config as HyperConfig, run_single
+
+from .asgi import ASGIHTTPConnection, ASGIWebsocketConnection
 from .blueprints import Blueprint
 from .cli import AppGroup
 from .config import Config, ConfigAttribute, DEFAULT_CONFIG
@@ -26,7 +29,6 @@ from .helpers import _endpoint_from_view_func, get_flashed_messages, url_for
 from .json import JSONDecoder, JSONEncoder, tojson_filter
 from .logging import create_logger, create_serving_logger
 from .routing import Map, MapAdapter, Rule
-from .serving import run_app
 from .sessions import SecureCookieSessionInterface, Session
 from .signals import (
     appcontext_tearing_down, got_request_exception, got_websocket_exception, request_finished,
@@ -1241,15 +1243,20 @@ class Quart(PackageStatic):
                 "Additional arguments, {}, are not yet supported".format(','.join(kwargs.keys())),
             )
 
+        config = HyperConfig()
+        config.access_log_format = access_log_format
+        config.access_logger = create_serving_logger()
         if debug is not None:
-            self.debug = debug
+            config.debug = debug
+        config.error_logger = config.access_logger
+        config.host = host
+        config.keep_alive_timeout = keep_alive_timeout
+        config.port = port
+        config.ssl = ssl
+        config.use_reloader = use_reloader
 
         try:
-            run_app(
-                self, host=host, port=port, ssl=ssl, logger=create_serving_logger(),
-                access_log_format=access_log_format, keep_alive_timeout=keep_alive_timeout,
-                debug=debug, use_reloader=use_reloader, loop=loop,
-            )
+            run_single(self, config, loop=loop)
         finally:
             # Reset the first request, so as to enable reuse.
             self._got_first_request = False
@@ -1577,9 +1584,16 @@ class Quart(PackageStatic):
 
         return response
 
-    def __call__(self) -> 'Quart':
-        # Required for Gunicorn compatibility.
-        return self
+    def __call__(self, scope: dict) -> Union[Callable, 'Quart']:
+        if scope is None:  # Required for (deprecated) Gunicorn compatibility.
+            return self
+        else:
+            if scope['type'] == 'http':
+                return ASGIHTTPConnection(self, scope)
+            elif scope['type'] == 'websocket':
+                return ASGIWebsocketConnection(self, scope)
+            else:
+                raise RuntimeError('ASGI Scope type is unknown')
 
 
 def _find_exception_handler(

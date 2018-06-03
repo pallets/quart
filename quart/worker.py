@@ -5,8 +5,8 @@ from ssl import SSLContext
 from typing import Any, List, Optional  # noqa: F401
 
 from gunicorn.workers.base import Worker
-
-from .serving import Server
+from hypercorn import Config
+from hypercorn.run import Server
 
 
 class GunicornWorker(Worker):
@@ -36,15 +36,18 @@ class GunicornWorker(Worker):
 
     async def _run(self) -> None:
         ssl_context = self._create_ssl_context()
-        access_logger = self.log.access_log if self.cfg.accesslog else None
+        config = Config()
+        if self.cfg.accesslog:
+            config.access_logger = self.log.access_log
+        config.access_log_format = self.cfg.access_log_format
+        if self.cfg.errorlog:
+            config.error_logger = self.log.error_log
+        config.keep_alive_timeout = self.cfg.keepalive
+        max_fields_size = self.cfg.limit_request_fields * self.cfg.limit_request_field_size
+        config.h11_max_incomplete_size = self.cfg.limit_request_line + max_fields_size
         for sock in self.sockets:
-            max_fields_size = self.cfg.limit_request_fields * self.cfg.limit_request_field_size
-            h11_max_incomplete_size = self.cfg.limit_request_line + max_fields_size
             server = await self.loop.create_server(
-                lambda: Server(
-                    self.wsgi, self.loop, access_logger, self.cfg.access_log_format,
-                    self.cfg.keepalive, h11_max_incomplete_size=h11_max_incomplete_size,
-                ),
+                lambda: Server(self.wsgi, self.loop, config),
                 sock=sock.sock, ssl=ssl_context,
             )
             self.servers.append(server)
