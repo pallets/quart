@@ -1,5 +1,6 @@
 import asyncio
 import os
+import warnings
 from asyncio.base_events import Server as AIOServer  # noqa: F401
 from ssl import SSLContext
 from typing import Any, List, Optional  # noqa: F401
@@ -12,6 +13,10 @@ from hypercorn.run import Server
 class GunicornWorker(Worker):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        warnings.warn(
+            'Gunicorn is deprecated, please use an ASGI server. Hypercorn is recommended',
+            DeprecationWarning,
+        )
         super().__init__(*args, **kwargs)
         self.loop: Optional[asyncio.AbstractEventLoop] = None
         self.servers: List[AIOServer] = []
