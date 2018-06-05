@@ -96,9 +96,9 @@ html_theme_path = [solar_theme.theme_path]
 # html_theme_options = {}
 
 html_sidebars = {
-    'index': ['localtoc.html', 'searchbox.html', 'relations.html'],
+    'index': ['localtoc.html', 'searchbox.html', 'relations.html', 'source.html'],
     '**': [
-        'sidebar.html', 'localtoc.html', 'searchbox.html', 'relations.html',
+        'sidebar.html', 'localtoc.html', 'searchbox.html', 'relations.html', 'source.html',
     ],
 }
 
