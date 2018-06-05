@@ -1334,6 +1334,9 @@ class Quart(PackageStatic):
         else:
             value = result
 
+        if value is None:
+            raise TypeError('The response value returned by the view function cannot be None')
+
         if isinstance(status_or_headers, (dict, list)):
             headers = status_or_headers
             status = None

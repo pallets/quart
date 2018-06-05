@@ -3,6 +3,10 @@ from typing import Optional, Set
 import pytest
 
 from quart.app import Quart
+from quart.typing import ResponseReturnValue
+from quart.wrappers import Response
+
+TEST_RESPONSE = Response('')
 
 
 def test_endpoint_overwrite() -> None:
@@ -113,3 +117,34 @@ def test_add_url_rule_host_and_subdomain_errors(
 
     with pytest.raises(error):
         app.add_url_rule('/', view_func=route, subdomain=subdomain, host=host)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    'result, expected, raises',
+    [
+        (None, None, True),
+        ((None, 201), None, True),
+        (TEST_RESPONSE, TEST_RESPONSE, False),
+        (('hello', {'X-Header': 'bob'}), Response('hello', headers={'X-Header': 'bob'}), False),
+        (('hello', 201), Response('hello', 201), False),
+        (
+            ('hello', 201, {'X-Header': 'bob'}),
+            Response('hello', 201, headers={'X-Header': 'bob'}), False,
+        ),
+    ],
+)
+async def test_make_response(
+        result: ResponseReturnValue, expected: Response, raises: bool,
+) -> None:
+    app = Quart(__name__)
+    app.config['RESPONSE_TIMEOUT'] = None
+    try:
+        response = await app.make_response(result)
+    except TypeError:
+        if not raises:
+            raise
+    else:
+        assert response.headers.keys() == expected.headers.keys()
+        assert response.status_code == expected.status_code
+        assert (await response.get_data()) == (await expected.get_data())  # type: ignore
