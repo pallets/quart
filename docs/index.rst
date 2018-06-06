@@ -50,7 +50,6 @@ How-To Guides
 .. toctree::
    :maxdepth: 1
 
-   asgi_deployments.rst
    background_tasks.rst
    blueprints.rst
    command_line.rst
@@ -58,7 +57,6 @@ How-To Guides
    factory_pattern.rst
    flask_extensions.rst
    flask_migration.rst
-   serving_http2.rst
    json_encoding.rst
    logging.rst
    request_body.rst
@@ -67,6 +65,7 @@ How-To Guides
    streaming_response.rst
    templating.rst
    testing.rst
+   using_http2.rst
    websockets.rst
 
 Discussion Points
@@ -81,7 +80,6 @@ Discussion Points
    dos_mitigations.rst
    flask_evolution.rst
    globals.rst
-   http2_discussion.rst
    timeout.rst
    websockets_discussion.rst
 

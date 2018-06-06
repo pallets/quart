@@ -3,16 +3,16 @@
 Deploying Quart
 ===============
 
-It is not recommended to run Quart directly (via the
+It is not recommended to run Quart directly (via
 :meth:`~quart.app.Quart.run`) in production. Instead it is recommended
-that Quart be run via `Gunicorn <http://gunicorn.org/>`_.
+that Quart be run using `Hypercorn
+<https://gitlab.com/pgjones/hypercorn>`_ or an alternative ASGI
+server. Hypercorn is installed with Quart and is used to serve
+requests by default (e.g. with :meth:`~quart.app.Quart.run`).
 
-To use Gunicorn you must configure it to use a Quart Worker, is is
-done by setting the ``worker-class`` to either
-:class:`~quart.worker.GunicornWorker` or
-:class:`~quart.worker.GunicornUVLoopWorker` and then informing
-Gunicorn of the Quart app instance. For example for a file called,
-``example.py``, containing
+To use Quart with an ASGI server simply point the server at the Quart
+application, for example for a simple application in a file called
+``example.py``,
 
 .. code-block:: python
 
@@ -24,7 +24,48 @@ Gunicorn of the Quart app instance. For example for a file called,
     async def hello():
         return 'Hello World'
 
-you can deploy via,
+you can run with Hypercorn using,
+
+.. code-block:: bash
+
+    hypercorn example:app
+
+See the `Hypercorn docs <https://pgjones.gitlab.io/hypercorn/>`_.
+
+Alternative ASGI Servers
+------------------------
+
+==================================================== ====== =========== ==================
+Server name                                          HTTP/2 Server Push Websocket Response
+==================================================== ====== =========== ==================
+`Hypercorn <https://gitlab.com/pgjones/hypercorn>`_  ✓      ✓           ✓
+`Uvicorn <https://github.com/encode/uvicorn>`_       ✗      ✗           ✗
+`Daphne <https://https://github.com/django/daphne>`_ ✓      ✗           ✗
+==================================================== ====== =========== ==================
+
+HTTP/2 deployment
+-----------------
+
+Most web browsers only support HTTP/2 over a TLS connection with
+TLSv1.2 or better and certain ciphers. So to use these features with
+Quart you must chose an ASGI server that implements HTTP/2 and use
+SSL.
+
+Gunicorn deployment
+-------------------
+
+.. note::
+
+    The Gunicorn workers are deprecated in 0.6.0 and will be removed
+    in 0.7.0. Please switch to Hypercorn or an alternative ASGI
+    Server. This section is kept for reference.
+
+To use Gunicorn you must configure it to use a Quart Worker, is is
+done by setting the ``worker-class`` to either
+:class:`~quart.worker.GunicornWorker` or
+:class:`~quart.worker.GunicornUVLoopWorker` and then informing
+Gunicorn of the Quart app instance. For example with the code given
+above you can deploy via,
 
 .. code-block:: bash
 
@@ -32,18 +73,3 @@ you can deploy via,
 
 All the standard Gunicorn settings apply and can be used, including
 access log formatting.
-
-HTTP/2 deployment
------------------
-
-Quart only serves HTTP/2 over a TLS connection with TLSv1.2 or better
-and certain ciphers, see :ref:`http2_discussion`. Additionally SSL
-certificates are required, see :ref:`ssl`. With this in mind the
-recommended gunicorn command is,
-
-.. code-block:: bash
-
-    gunicorn --worker-class quart.worker.GunicornWorker example:app --keyfile key.pem --certfile cert.pem --ciphers 'ECDHE+AESGCM'
-
-Note that this can also placed into a `gunicorn settings
-<http://docs.gunicorn.org/en/stable/settings.html>`_ file.

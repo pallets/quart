@@ -55,3 +55,11 @@ unauthorised usage of the websocket.
 Quart also allows for the acceptance response (101) to be manually
 sent via :meth:`~quart.wrappers.Websocket.accept` as this gives the
 framework user full control.
+
+.. note::
+
+    This functionality is only useable with ASGI servers that
+    implement the ``Websocket Denial Response`` extension. If the
+    server does not support this extension Quart will instruct the
+    server to close the connection without a response. Hypercorn, the
+    recommended ASGI server, supports this extension.

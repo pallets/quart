@@ -31,20 +31,8 @@ doing nothing with the connection. A poorly configured server would
 simply wait for the client to do something therefore holding the
 connection open.
 
-To mitigate this Quart has a keep alive timeout that will keep an
-inactive connection alive for this time. It can be configured when
-starting the application (:func:`~quart.serving.run_app`) or as the
-Gunicorn ``keep_alive`` setting.
-
-The default value for the keep alive timeout is 5 seconds which is the
-max recommended default in the Gunicorn settings.
-
-.. note::
-
-   Connections are not considered inactive whilst the request is being
-   processed. So this will only timeout connections inactive before a
-   request, or after a response and before the next request. This does
-   not affect websocket connections.
+It is up to the ASGI server to guard against this attack, typically
+via a configurable keep alive or timeout setting.
 
 Large request body
 ------------------
@@ -112,8 +100,7 @@ server would ignore the backpressure and exhaust its memory. (Note
 this requires a route that respondes with a lot of data, e.g. video
 streaming).
 
-To mitigate this Quart responds to the backpressure and pauses
-(blocks) the coroutine writing the response.
+It is up to the ASGI server to guard against this attack.
 
 Slow response consumption
 -------------------------
@@ -150,9 +137,4 @@ memory by inviting it to receive very large websocket messages. A
 poorly configured server would have no limit on the message size
 and potentially allow a single message to exhaust the server.
 
-To mitigate this Quart limits the message size to the value set in the
-application config['MAX_CONTENT_LENGTH']. Any message larger than this
-limit will trigger the websocket to be closed abruptly.
-
-The default value for MAX_CONTENT_LENGTH is 16 MB, which is chosen as
-it is the limit discussed in the Flask documentation.
+It is up to teh ASGI server to guard against the attack.
