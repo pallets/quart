@@ -60,3 +60,13 @@ async def test_send_file_last_modified_override(tmpdir: LocalPath) -> None:
     async with app.app_context():
         response = await send_file(file_.realpath(), last_modified=last_modified)
     assert response.last_modified == last_modified
+
+
+@pytest.mark.asyncio
+async def test_send_file_max_age(tmpdir: LocalPath) -> None:
+    app = Quart(__name__)
+    file_ = tmpdir.join('send.img')
+    file_.write('something')
+    async with app.app_context():
+        response = await send_file(file_.realpath())
+    assert response.cache_control.max_age == app.send_file_max_age_default.total_seconds()

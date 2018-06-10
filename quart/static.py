@@ -2,7 +2,7 @@ import mimetypes
 import os
 import pkgutil
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import AnyStr, Optional
 from typing.io import IO
@@ -70,6 +70,9 @@ class PackageStatic:
         else:
             return None
 
+    def get_send_file_max_age(self, filename: str) -> int:
+        return current_app.send_file_max_age_default.total_seconds()
+
     async def send_static_file(self, filename: str) -> Response:
         if not self.has_static_folder:
             raise RuntimeError('No static folder for this object')
@@ -128,6 +131,7 @@ async def send_from_directory(directory: str, file_name: str) -> Response:
 
 async def send_file(
         filename: str,
+        cache_timeout: Optional[int]=None,
         last_modified: Optional[datetime]=None,
 ) -> Response:
     """Return a Reponse to send the filename given.
@@ -135,6 +139,7 @@ async def send_file(
     Arguments:
         filename: The filename (path) to send, remember to use
             :func:`safe_join`.
+        cache_timeout: Time in seconds for the response to be cached.
         last_modified: Used to override the last modified value.
     """
     mimetype = mimetypes.guess_type(os.path.basename(filename))[0] or DEFAULT_MIMETYPE
@@ -146,4 +151,10 @@ async def send_file(
         response.last_modified = last_modified
     else:
         response.last_modified = datetime.fromtimestamp(os.path.getmtime(filename))
+
+    response.cache_control.public = True
+    cache_timeout = cache_timeout or current_app.get_send_file_max_age(filename)
+    if cache_timeout is not None:
+        response.cache_control.max_age = cache_timeout
+        response.expires = datetime.utcnow() + timedelta(seconds=cache_timeout)
     return response

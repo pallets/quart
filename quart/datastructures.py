@@ -237,7 +237,7 @@ class _CacheDirective:
         return self.converter(result)
 
     def __set__(self, instance: object, value: Any) -> None:
-        instance._directives[self.name] = value  # type: ignore
+        instance._directives[self.name] = self.converter(value)  # type: ignore
         if instance._on_update is not None:  # type: ignore
             instance._on_update(instance)  # type: ignore
 

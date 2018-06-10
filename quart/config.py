@@ -24,6 +24,7 @@ DEFAULT_CONFIG = {
     'PROPAGATE_EXCEPTIONS': None,
     'RESPONSE_TIMEOUT': 60,  # Second
     'SECRET_KEY': None,
+    'SEND_FILE_MAX_AGE_DEFAULT': timedelta(hours=12),
     'SERVER_NAME': None,
     'SESSION_COOKIE_DOMAIN': None,
     'SESSION_COOKIE_HTTPONLY': True,

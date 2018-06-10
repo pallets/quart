@@ -102,6 +102,9 @@ class Quart(PackageStatic):
     request_class = Request
     response_class = Response
     secret_key = ConfigAttribute('SECRET_KEY')
+    send_file_max_age_default = ConfigAttribute(
+        'SEND_FILE_MAX_AGE_DEFAULT', converter=_convert_timedelta,
+    )
     session_cookie_name = ConfigAttribute('SESSION_COOKIE_NAME')
     session_interface = SecureCookieSessionInterface()
     test_client_class = QuartClient
