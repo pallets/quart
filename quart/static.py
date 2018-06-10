@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import AnyStr, Optional
 from typing.io import IO
+from zlib import adler32
 
 from aiofiles import open as async_open
 from jinja2 import FileSystemLoader
@@ -131,6 +132,7 @@ async def send_from_directory(directory: str, file_name: str) -> Response:
 
 async def send_file(
         filename: str,
+        add_etags: bool=True,
         cache_timeout: Optional[int]=None,
         last_modified: Optional[datetime]=None,
 ) -> Response:
@@ -139,8 +141,11 @@ async def send_file(
     Arguments:
         filename: The filename (path) to send, remember to use
             :func:`safe_join`.
+        add_etags: Set etags based on the filename, size and
+            modification time.
         cache_timeout: Time in seconds for the response to be cached.
         last_modified: Used to override the last modified value.
+
     """
     mimetype = mimetypes.guess_type(os.path.basename(filename))[0] or DEFAULT_MIMETYPE
     async with async_open(filename, mode='rb') as file_:
@@ -157,4 +162,12 @@ async def send_file(
     if cache_timeout is not None:
         response.cache_control.max_age = cache_timeout
         response.expires = datetime.utcnow() + timedelta(seconds=cache_timeout)
+
+    if add_etags:
+        response.set_etag(
+            '{}-{}-{}'.format(
+                os.path.getmtime(filename), os.path.getsize(filename),
+                adler32(filename.encode('utf-8')),
+            ),
+        )
     return response

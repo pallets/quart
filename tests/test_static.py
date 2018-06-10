@@ -45,7 +45,7 @@ async def test_send_file_last_modified(tmpdir: LocalPath) -> None:
     file_ = tmpdir.join('send.img')
     file_.write('something')
     async with app.app_context():
-        response = await send_file(file_.realpath())
+        response = await send_file(str(file_.realpath()))
     mtime = datetime.fromtimestamp(file_.mtime(), tz=timezone.utc)
     mtime = mtime.replace(microsecond=0)
     assert response.last_modified == mtime
@@ -58,7 +58,7 @@ async def test_send_file_last_modified_override(tmpdir: LocalPath) -> None:
     file_.write('something')
     last_modified = datetime(2015, 10, 10, tzinfo=timezone.utc)
     async with app.app_context():
-        response = await send_file(file_.realpath(), last_modified=last_modified)
+        response = await send_file(str(file_.realpath()), last_modified=last_modified)
     assert response.last_modified == last_modified
 
 
@@ -68,5 +68,5 @@ async def test_send_file_max_age(tmpdir: LocalPath) -> None:
     file_ = tmpdir.join('send.img')
     file_.write('something')
     async with app.app_context():
-        response = await send_file(file_.realpath())
+        response = await send_file(str(file_.realpath()))
     assert response.cache_control.max_age == app.send_file_max_age_default.total_seconds()
