@@ -2,6 +2,7 @@ import mimetypes
 import os
 import pkgutil
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import AnyStr, Optional
 from typing.io import IO
@@ -125,8 +126,24 @@ async def send_from_directory(directory: str, file_name: str) -> Response:
     return await send_file(file_path)  # type: ignore
 
 
-async def send_file(filename: str) -> Response:
+async def send_file(
+        filename: str,
+        last_modified: Optional[datetime]=None,
+) -> Response:
+    """Return a Reponse to send the filename given.
+
+    Arguments:
+        filename: The filename (path) to send, remember to use
+            :func:`safe_join`.
+        last_modified: Used to override the last modified value.
+    """
     mimetype = mimetypes.guess_type(os.path.basename(filename))[0] or DEFAULT_MIMETYPE
     async with async_open(filename, mode='rb') as file_:
         data = await file_.read()
-    return current_app.response_class(data, mimetype=mimetype)
+    response = current_app.response_class(data, mimetype=mimetype)
+
+    if last_modified is not None:
+        response.last_modified = last_modified
+    else:
+        response.last_modified = datetime.fromtimestamp(os.path.getmtime(filename))
+    return response

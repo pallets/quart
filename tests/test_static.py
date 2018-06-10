@@ -1,10 +1,13 @@
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
 
 import pytest
+from py._path.local import LocalPath
 
+from quart import Quart
 from quart.exceptions import NotFound
-from quart.static import safe_join, send_from_directory
+from quart.static import safe_join, send_file, send_from_directory
 
 ROOT_PATH = Path(__file__).parents[0]
 
@@ -34,3 +37,26 @@ def test_safe_join_raises(directory: str, paths: List[str]) -> None:
 async def test_send_from_directory_raises() -> None:
     with pytest.raises(NotFound):
         await send_from_directory(str(ROOT_PATH), 'no_file.no')
+
+
+@pytest.mark.asyncio
+async def test_send_file_last_modified(tmpdir: LocalPath) -> None:
+    app = Quart(__name__)
+    file_ = tmpdir.join('send.img')
+    file_.write('something')
+    async with app.app_context():
+        response = await send_file(file_.realpath())
+    mtime = datetime.fromtimestamp(file_.mtime(), tz=timezone.utc)
+    mtime = mtime.replace(microsecond=0)
+    assert response.last_modified == mtime
+
+
+@pytest.mark.asyncio
+async def test_send_file_last_modified_override(tmpdir: LocalPath) -> None:
+    app = Quart(__name__)
+    file_ = tmpdir.join('send.img')
+    file_.write('something')
+    last_modified = datetime(2015, 10, 10, tzinfo=timezone.utc)
+    async with app.app_context():
+        response = await send_file(file_.realpath(), last_modified=last_modified)
+    assert response.last_modified == last_modified
