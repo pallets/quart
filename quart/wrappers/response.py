@@ -1,12 +1,12 @@
 from datetime import datetime, timedelta
-from email.utils import formatdate, parsedate_to_datetime
+from email.utils import parsedate_to_datetime
 from hashlib import md5
 from inspect import isasyncgen  # type: ignore
-from time import mktime
 from typing import (
     Any, AnyStr, AsyncGenerator, AsyncIterable, Iterable, Optional, Set, Tuple, TYPE_CHECKING,
     Union,
 )
+from wsgiref.handlers import format_date_time
 
 from ._base import _BaseRequestResponse, JSONMixin
 from ..datastructures import (
@@ -319,7 +319,7 @@ class Response(_BaseRequestResponse, JSONMixin):
 
     @date.setter
     def date(self, value: datetime) -> None:
-        self.headers['Date'] = formatdate(timeval=mktime((self.date.timetuple())), localtime=False, usegmt=True)  # type: ignore # noqa
+        self.headers['Date'] = format_date_time(value.timestamp())
 
     @property
     def expires(self) -> Optional[datetime]:
@@ -330,7 +330,7 @@ class Response(_BaseRequestResponse, JSONMixin):
 
     @expires.setter
     def expires(self, value: datetime) -> None:
-        self.headers['Expires'] = formatdate(timeval=mktime((self.date.timetuple())), localtime=False, usegmt=True)  # type: ignore # noqa
+        self.headers['Expires'] = format_date_time(value.timestamp())
 
     @property
     def last_modified(self) -> Optional[datetime]:
@@ -341,7 +341,7 @@ class Response(_BaseRequestResponse, JSONMixin):
 
     @last_modified.setter
     def last_modified(self, value: datetime) -> None:
-        self.headers['Last-Modified'] = formatdate(timeval=mktime((self.date.timetuple())), localtime=False, usegmt=True)  # type: ignore # noqa
+        self.headers['Last-Modified'] = format_date_time(value.timestamp())
 
     @property
     def location(self) -> Optional[str]:
@@ -373,7 +373,7 @@ class Response(_BaseRequestResponse, JSONMixin):
     @retry_after.setter
     def retry_after(self, value: Union[datetime, int]) -> None:
         if isinstance(value, datetime):
-            self.headers['Retry-After'] = formatdate(timeval=mktime((self.date.timetuple())), localtime=False, usegmt=True)  # type: ignore # noqa
+            self.headers['Retry-After'] = format_date_time(value.timestamp())
         else:
             self.headers['Retry-After'] = str(value)
 

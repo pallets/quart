@@ -3,14 +3,14 @@ import io
 import re
 from cgi import parse_header
 from datetime import datetime
-from email.utils import formatdate, parsedate_to_datetime
+from email.utils import parsedate_to_datetime
 from functools import wraps
 from shutil import copyfileobj
-from time import mktime
 from typing import (
     Any, BinaryIO, Callable, Dict, Iterable, List, NamedTuple, Optional, Set, Type, Union,
 )
 from urllib.request import parse_http_list, parse_keqv_list
+from wsgiref.handlers import format_date_time
 
 from multidict import CIMultiDict as AIOCIMultiDict, MultiDict as AIOMultiDict
 
@@ -352,7 +352,7 @@ class IfRange:
         if self.etag is not None:
             return f"\"{self.etag}\""
         elif self.date is not None:
-            return formatdate(timeval=mktime((self.date.timetuple())), localtime=False, usegmt=True)  # type: ignore # noqa
+            return format_date_time(self.date.timestamp())
         else:
             return ''
 
