@@ -151,9 +151,11 @@ class Quart(PackageStatic):
         self.config = self.make_config()
 
         self.after_request_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
+        self.after_serving_funcs: List[Callable] = []
         self.after_websocket_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
         self.before_first_request_funcs: List[Callable] = []
         self.before_request_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
+        self.before_serving_funcs: List[Callable] = []
         self.before_websocket_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
         self.blueprints: Dict[str, Blueprint] = OrderedDict()
         self.error_handler_spec: Dict[AppOrBlueprintKey, Dict[Exception, Callable]] = defaultdict(dict)  # noqa: E501
@@ -986,6 +988,30 @@ class Quart(PackageStatic):
         self.before_first_request_funcs.append(handler)
         return func
 
+    def before_serving(self, func: Callable) -> Callable:
+        """Add a before serving function.
+
+        This will allow the function provided to be called once before
+        anything is served (before any byte is received).
+
+        This is a provisional API and may change, see the ASGI spec
+        for details.
+
+        This is designed to be used as a decorator. An example usage,
+
+        .. code-block:: python
+
+            @app.before_serving
+            def func():
+                ...
+
+        Arguments:
+            func: The function itself.
+        """
+        handler = ensure_coroutine(func)
+        self.before_serving_funcs.append(handler)
+        return func
+
     def after_request(self, func: Callable, name: AppOrBlueprintKey=None) -> Callable:
         """Add an after request function.
 
@@ -1022,6 +1048,31 @@ class Quart(PackageStatic):
         """
         handler = ensure_coroutine(func)
         self.after_websocket_funcs[name].append(handler)
+        return func
+
+    def after_serving(self, func: Callable) -> Callable:
+        """Add a after serving function.
+
+        This will allow the function provided to be called once after
+        anything is served (after last byte is sent).
+
+        This is a provisional API and may change, see the ASGI spec
+        for details.
+
+        This is designed to be used as a decorator. An example usage,
+
+        .. code-block:: python
+
+            @app.after_serving
+            def func():
+                ...
+
+        Arguments:
+            func: The function itself.
+
+        """
+        handler = ensure_coroutine(func)
+        self.after_serving_funcs.append(handler)
         return func
 
     def teardown_request(self, func: Callable, name: AppOrBlueprintKey=None) -> Callable:
@@ -1600,6 +1651,16 @@ class Quart(PackageStatic):
                 return ASGIWebsocketConnection(self, scope)
             else:
                 raise RuntimeError('ASGI Scope type is unknown')
+
+    async def startup(self) -> None:
+        async with self.app_context():
+            for func in self.before_serving_funcs:
+                await func()
+
+    async def cleanup(self) -> None:
+        async with self.app_context():
+            for func in self.after_serving_funcs:
+                await func()
 
 
 def _find_exception_handler(
