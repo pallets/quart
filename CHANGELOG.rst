@@ -1,3 +1,33 @@
+0.6.0 2018-06-11
+----------------
+
+* Quart is now an ASGI framework, and requires an ASGI server to serve
+  requests. `Hypercorn <https://gitlab.com/pgjones/hypercorn>`_ is
+  used in development and is recommended for production. Hypercorn
+  is a continuation of the Quart serving code.
+* Add before and after serving functionality, this is provisional.
+* Add caching, last modified and etag information to static files
+  served via send_file.
+* Bugfix date formatting in response headers.
+* Bugfix make_response should error if response is None.
+* Deprecate the Gunicorn workers, see ASGI servers (e.g. Uvicorn).
+* Bugfix ensure shell context processors work.
+* Change template context processors to be async, this is backwards
+  incompatible.
+* Change websocket API to be async, this is backwards incompatible.
+* Allow the websocket class to be configurable by users.
+* Bugfix catch signals on Windows.
+* Perserve context in Flask-Patch system.
+* Add the websocket API to blueprints.
+* Add host, subdomain, and default options to websocket routes.
+* Bugfix support defaults on route or add_url_rule usage.
+* Introduce a more useful BuildError
+* Bugfix match Flask after request function execution order.
+* Support ``required_methods`` on view functions.
+* Added CORS, Access Control, datastructures to request and response
+  objects.
+* Allow type conversion in (CI)MultiDict get.
+
 0.5.0 2018-04-13
 ----------------
 
