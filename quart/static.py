@@ -4,7 +4,7 @@ import pkgutil
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import AnyStr, Optional
+from typing import AnyStr, Optional, Union
 from typing.io import IO
 from zlib import adler32
 
@@ -16,6 +16,7 @@ from .globals import current_app
 from .wrappers import Response
 
 DEFAULT_MIMETYPE = 'application/octet-stream'
+FilePath = Union[AnyStr, os.PathLike]
 
 
 class PackageStatic:
@@ -131,7 +132,7 @@ async def send_from_directory(directory: str, file_name: str) -> Response:
 
 
 async def send_file(
-        filename: str,
+        filename: FilePath,
         add_etags: bool=True,
         cache_timeout: Optional[int]=None,
         last_modified: Optional[datetime]=None,
@@ -147,27 +148,29 @@ async def send_file(
         last_modified: Used to override the last modified value.
 
     """
-    mimetype = mimetypes.guess_type(os.path.basename(filename))[0] or DEFAULT_MIMETYPE
-    async with async_open(filename, mode='rb') as file_:
+    file_path = os.fspath(filename)
+    mimetype = mimetypes.guess_type(os.path.basename(file_path))[0] or DEFAULT_MIMETYPE
+    async with async_open(file_path, mode='rb') as file_:
         data = await file_.read()
     response = current_app.response_class(data, mimetype=mimetype)
 
     if last_modified is not None:
         response.last_modified = last_modified
     else:
-        response.last_modified = datetime.fromtimestamp(os.path.getmtime(filename))
+        response.last_modified = datetime.fromtimestamp(os.path.getmtime(file_path))
 
     response.cache_control.public = True
-    cache_timeout = cache_timeout or current_app.get_send_file_max_age(filename)
+    cache_timeout = cache_timeout or current_app.get_send_file_max_age(file_path)
     if cache_timeout is not None:
         response.cache_control.max_age = cache_timeout
         response.expires = datetime.utcnow() + timedelta(seconds=cache_timeout)
 
     if add_etags:
+        file_tag = file_path.encode('utf-8') if isinstance(file_path, str) else file_path
         response.set_etag(
             '{}-{}-{}'.format(
-                os.path.getmtime(filename), os.path.getsize(filename),
-                adler32(filename.encode('utf-8')),
+                os.path.getmtime(file_path), os.path.getsize(file_path),
+                adler32(file_tag),
             ),
         )
     return response

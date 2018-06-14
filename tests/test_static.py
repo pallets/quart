@@ -40,6 +40,16 @@ async def test_send_from_directory_raises() -> None:
 
 
 @pytest.mark.asyncio
+async def test_send_file_path(tmpdir: LocalPath) -> None:
+    app = Quart(__name__)
+    file_ = tmpdir.join('send.img')
+    file_.write('something')
+    async with app.app_context():
+        response = await send_file(Path(file_.realpath()))
+    assert (await response.get_data(raw=True)) == file_.read_binary()
+
+
+@pytest.mark.asyncio
 async def test_send_file_last_modified(tmpdir: LocalPath) -> None:
     app = Quart(__name__)
     file_ = tmpdir.join('send.img')
