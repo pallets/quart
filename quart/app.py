@@ -333,7 +333,7 @@ class Quart(PackageStatic):
     def route(
             self,
             path: str,
-            methods: List[str]=None,
+            methods: Optional[List[str]]=None,
             endpoint: Optional[str]=None,
             defaults: Optional[dict]=None,
             host: Optional[str]=None,

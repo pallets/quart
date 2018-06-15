@@ -3,6 +3,7 @@ import pytest
 from quart import (
     abort, Blueprint, Quart, render_template_string, request, ResponseReturnValue, websocket,
 )
+from quart.views import MethodView
 
 
 @pytest.mark.asyncio
@@ -101,3 +102,27 @@ async def test_blueprint_error_handler() -> None:
     response = await app.test_client().get('/error/')
     assert response.status_code == 409
     assert b'Something Unique' in (await response.get_data())
+
+
+@pytest.mark.asyncio
+async def test_blueprint_method_view() -> None:
+    app = Quart(__name__)
+    blueprint = Blueprint('blueprint', __name__)
+
+    class Views(MethodView):
+
+        async def get(self) -> ResponseReturnValue:
+            return 'GET'
+
+        async def post(self) -> ResponseReturnValue:
+            return 'POST'
+
+    blueprint.add_url_rule('/', view_func=Views.as_view('simple'))
+
+    app.register_blueprint(blueprint)
+
+    test_client = app.test_client()
+    response = await test_client.get('/')
+    assert 'GET' == (await response.get_data(raw=False))  # type: ignore
+    response = await test_client.post('/')
+    assert 'POST' == (await response.get_data(raw=False))  # type: ignore

@@ -53,7 +53,7 @@ class Blueprint(PackageStatic):
     def route(
             self,
             path: str,
-            methods: List[str]=['GET'],
+            methods: Optional[List[str]]=None,
             endpoint: Optional[str]=None,
             defaults: Optional[dict]=None,
             host: Optional[str]=None,
@@ -86,7 +86,7 @@ class Blueprint(PackageStatic):
             path: str,
             endpoint: Optional[str]=None,
             view_func: Optional[Callable]=None,
-            methods: Iterable[str]=['GET'],
+            methods: Optional[Iterable[str]]=None,
             defaults: Optional[dict]=None,
             host: Optional[str]=None,
             subdomain: Optional[str]=None,
