@@ -70,7 +70,9 @@ The following flask extensions have been tested are known not to work
 with quart,
 
 - `Flask-CORS <https://github.com/corydolphin/flask-cors>`_, as it
-  uses ``app.make_response`` which must be awaited.
+  uses ``app.make_response`` which must be awaited. Try `Quart-CORS
+  <https://gitlab.com/pgjones/quart-cors>`_ instead.
 - `Flask-Restful <https://github.com/flask-restful/flask-restful/>`_
   as it subclasses the Quart (app) class with synchronous methods
-  overidding asynchronous methods.
+  overidding asynchronous methods. Try `Quart-OpenApi
+  <https://github.com/factset/quart-openapi/>`_ instead.

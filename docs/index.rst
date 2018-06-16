@@ -66,6 +66,7 @@ How-To Guides
    streaming_response.rst
    templating.rst
    testing.rst
+   quart_extensions.rst
    using_http2.rst
    websockets.rst
 

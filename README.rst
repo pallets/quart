@@ -14,10 +14,11 @@ apps. This is possible as the Quart API is a superset of the `Flask
 <https://github.com/pallets/flask>`_ API.
 
 Quart aims to be a complete web microframework, as it supports
-HTTP/1.1, HTTP/2 and websockets. Quart also aims to be very extendable
-and works with many of the `Flask extensions
-<https://pgjones.gitlab.io/quart/flask_extensions.html>`_, (hopefully
-Quart specific extensions will be written soon).
+HTTP/1.1, HTTP/2 and websockets. Quart is very extendable and has a
+number of known `extensions
+<https://pgjones.gitlab.io/quart/quart_extensions.html>`_ and works
+with many of the `Flask extensions
+<https://pgjones.gitlab.io/quart/flask_extensions.html>`_.
 
 Quickstart
 ----------
