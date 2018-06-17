@@ -59,6 +59,8 @@ class Body:
         return self._body.__await__()
 
     def append(self, data: bytes) -> None:
+        if data == b'':
+            return
         self._stream.put_nowait(data)
         self._size += len(data)
         if self._max_content_length is not None and self._size > self._max_content_length:
