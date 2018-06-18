@@ -54,7 +54,7 @@ class ASGIHTTPConnection:
 
     async def _send_response(self, send: Callable, response: Response) -> None:
         headers = [
-            (key.lower().encode(), value.lower().encode())
+            (key.lower().encode(), value.encode())
             for key, value in response.headers.items()
         ]
         await send({
@@ -120,7 +120,7 @@ class ASGIWebsocketConnection:
                 and 'websocket.http.response' in self.scope.get('extensions', {})
         ):
             headers = [
-                (key.lower().encode(), value.lower().encode())
+                (key.lower().encode(), value.encode())
                 for key, value in response.headers.items()
             ]
             await send({
