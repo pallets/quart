@@ -1,3 +1,11 @@
+0.6.1 2018-06-18
+----------------
+
+* Bugfix accept PathLike objects to the ``send_file`` function.
+* Bugfix mutable methods in blueprint routes or url rule addition.
+* Bugfix don't lowercase header values.
+* Bugfix support automatic options on View classes.
+
 0.6.0 2018-06-11
 ----------------
 
