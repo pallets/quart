@@ -435,10 +435,11 @@ class Quart(PackageStatic):
         methods = cast(Set[str], set(methods))
         required_methods = set(getattr(view_func, 'required_methods', set()))
 
-        automatic_options = getattr(
-            view_func, 'provide_automatic_options',
-            'OPTIONS' not in methods and provide_automatic_options,
+        automatic_options = (
+            getattr(view_func, 'provide_automatic_options', None)
+            or ('OPTIONS' not in methods and provide_automatic_options)
         )
+
         if automatic_options:
             required_methods.add('OPTIONS')
 
