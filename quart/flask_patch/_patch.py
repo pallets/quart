@@ -5,7 +5,7 @@ import types
 from typing import Any, Callable
 
 from quart.local import LocalStack, TaskLocal
-from ._synchronise import maybe_sync, sync_with_context
+from ._synchronise import sync_with_context
 
 
 def _patch_asyncio() -> None:
@@ -53,14 +53,6 @@ def _convert_module(new_name, module):  # type: ignore
     return new_module
 
 
-def _patch_class_members(module) -> None:  # type: ignore
-    for name, member in inspect.getmembers(module):
-        if inspect.isclass(member):
-            for class_name, class_member in inspect.getmembers(member):
-                if inspect.iscoroutinefunction(class_member):
-                    setattr(member, class_name, maybe_sync(class_member))
-
-
 def _patch_modules() -> None:
     if 'flask' in sys.modules:
         raise ImportError('Cannot mock flask, already imported')
@@ -74,12 +66,10 @@ def _patch_modules() -> None:
             continue
         elif name.startswith('quart.flask_patch'):
             flask_modules[name.replace('quart.flask_patch', 'flask')] = module
-            _patch_class_members(module)
         elif name.startswith('quart.') and not name.startswith('quart.serving'):
             flask_name = name.replace('quart.', 'flask.')
             if flask_name not in flask_modules:
                 flask_modules[flask_name] = _convert_module(flask_name, module)
-            _patch_class_members(module)
 
     sys.modules.update(flask_modules)
 
