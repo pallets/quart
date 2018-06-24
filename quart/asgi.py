@@ -23,7 +23,7 @@ class ASGIHTTPConnection:
             if event['type'] == 'http.request':
                 if self.request is None:
                     headers = CIMultiDict()
-                    headers['Remote-Addr'] = self.scope['client'][0]
+                    headers['Remote-Addr'] = self.scope.get('client', ['<local>'])[0]
                     if self.scope['http_version'] < '1.1':
                         headers.setdefault('host', self.app.config['SERVER_NAME'] or '')
                     for name, value in self.scope['headers']:
@@ -98,7 +98,7 @@ class ASGIWebsocketConnection:
             event = await receive()
             if event['type'] == 'websocket.connect':
                 headers = CIMultiDict()
-                headers['Remote-Addr'] = self.scope['client'][0]
+                headers['Remote-Addr'] = self.scope.get('client', ['<local>'])[0]
                 for name, value in self.scope['headers']:
                     headers.add(name.decode().title(), value.decode())
 
