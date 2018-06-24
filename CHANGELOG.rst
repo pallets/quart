@@ -1,3 +1,11 @@
+0.6.2 2018-06-24
+----------------
+
+* Bugfix remove class member patching from flask-patch system, as was
+  unreliable.
+* Bugfix ensure ASGI websocket handler closes on disconnect.
+* Bugfix cope with optional client values in ASGI scope.
+
 0.6.1 2018-06-18
 ----------------
 
