@@ -112,6 +112,7 @@ class ASGIWebsocketConnection:
                 await self.queue.put(event.get('bytes') or event['text'])
             elif event['type'] == 'websocket.disconnect':
                 self.task.cancel()
+                break
 
     async def handle_websocket(self, websocket: Websocket, send: Callable) -> None:
         response = await self.app.handle_websocket(websocket)
