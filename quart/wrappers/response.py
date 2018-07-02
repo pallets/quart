@@ -418,7 +418,7 @@ class _AsyncList(list):
         super().__init__(*args, **kwargs)
         self.iter_ = iter(self)
 
-    async def __aiter__(self) -> '_AsyncList':
+    def __aiter__(self) -> '_AsyncList':
         return _AsyncList(self)
 
     async def __anext__(self) -> Any:
