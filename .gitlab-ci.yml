@@ -7,7 +7,7 @@ py36:
   - tox -e py36
 
 py37:
-  image: python:3.7-rc
+  image: python:3.7
   script:
   - pip install tox
   - tox -e mypy,py37,pep8,setuppy,manifest
