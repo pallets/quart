@@ -64,7 +64,7 @@ def test_secure_cookie_session_interface_open_session() -> None:
     app.secret_key = 'secret'
     response = Response('')
     interface.save_session(app, session, response)
-    request = Request('GET', 'http', '/', CIMultiDict())
+    request = Request('GET', 'http', '/', b'', CIMultiDict())
     request.headers['Cookie'] = response.headers['Set-Cookie']
     new_session = interface.open_session(app, request)
     assert new_session == session

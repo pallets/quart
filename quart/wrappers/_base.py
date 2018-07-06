@@ -4,7 +4,7 @@ from datetime import datetime
 from email.utils import parsedate_to_datetime
 from http.cookies import SimpleCookie
 from typing import Any, AnyStr, Dict, List, Optional, TYPE_CHECKING, Union
-from urllib.parse import parse_qs, ParseResult, unquote, urlparse, urlunparse
+from urllib.parse import parse_qs, ParseResult, urlunparse
 from urllib.request import parse_http_list, parse_keqv_list
 
 from ..datastructures import (
@@ -150,13 +150,21 @@ class BaseRequestWebsocket(_BaseRequestResponse):
     url_rule: Optional['Rule'] = None
     view_args: Optional[Dict[str, Any]] = None
 
-    def __init__(self, method: str, scheme: str, path: str, headers: CIMultiDict) -> None:
+    def __init__(
+            self,
+            method: str,
+            scheme: str,
+            path: str,
+            query_string: bytes,
+            headers: CIMultiDict,
+    ) -> None:
         """Create a request or websocket base object.
 
         Arguments:
             method: The HTTP verb.
             scheme: The scheme used for the request.
-            path: The full URL of the request.
+            path: The full unquoted path of the request.
+            query_string: The raw bytes for the query string part.
             headers: The request headers.
 
         Attributes:
@@ -164,15 +172,12 @@ class BaseRequestWebsocket(_BaseRequestResponse):
             scheme: The URL scheme, http or https.
         """
         super().__init__(headers)
-        self.full_path = path
-        parsed_url = urlparse(path)
         self.args = MultiDict()
-        for key, values in parse_qs(parsed_url.query, keep_blank_values=True).items():
+        for key, values in parse_qs(query_string.decode('ascii'), keep_blank_values=True).items():
             for value in values:
                 self.args.add(key, value)
-        self.path = unquote(parsed_url.path)
-        self.query_string = parsed_url.query
-        self.fragment = parsed_url.fragment
+        self.path = path
+        self.query_string = query_string
         self.scheme = scheme
         self.method = method
 
@@ -265,6 +270,13 @@ class BaseRequestWebsocket(_BaseRequestResponse):
         return urlunparse(ParseResult(self.scheme, self.host, self.path, '', '', ''))
 
     @property
+    def full_path(self) -> str:
+        if self.query_string:
+            return f"{self.path}?{self.query_string.decode('ascii')}"
+        else:
+            return self.path
+
+    @property
     def host(self) -> str:
         return self.headers.get('host') or self.headers.get(':authority')
 
@@ -277,7 +289,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
         """Returns the full url requested."""
         return urlunparse(
             ParseResult(
-                self.scheme, self.host, self.path, '', self.query_string, self.fragment,
+                self.scheme, self.host, self.path, '', self.query_string.decode('ascii'), '',
             ),
         )
 

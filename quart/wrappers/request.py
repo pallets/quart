@@ -93,6 +93,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
             method: str,
             scheme: str,
             path: str,
+            query_string: bytes,
             headers: CIMultiDict,
             *,
             max_content_length: Optional[int]=None,
@@ -103,7 +104,8 @@ class Request(BaseRequestWebsocket, JSONMixin):
         Arguments:
             method: The HTTP verb.
             scheme: The scheme used for the request.
-            path: The full URL of the request.
+            path: The full unquoted path of the request.
+            query_string: The raw bytes for the query string part.
             headers: The request headers.
             body: An awaitable future for the body data i.e.
                 ``data = await body``
@@ -112,7 +114,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
             body_timeout: The maximum time (seconds) to wait for the
                 body before timing out.
         """
-        super().__init__(method, scheme, path, headers)
+        super().__init__(method, scheme, path, query_string, headers)
         self.max_content_length = max_content_length
         self.body_timeout = body_timeout
         if (
@@ -235,6 +237,7 @@ class Websocket(BaseRequestWebsocket):
     def __init__(
             self,
             path: str,
+            query_string: bytes,
             scheme: str,
             headers: CIMultiDict,
             queue: asyncio.Queue,
@@ -244,14 +247,14 @@ class Websocket(BaseRequestWebsocket):
         """Create a request object.
 
         Arguments:
-            method: The HTTP verb.
+            path: The full unquoted path of the request.
+            query_string: The raw bytes for the query string part.
             scheme: The scheme used for the request.
-            path: The full URL of the request.
             headers: The request headers.
             websocket: The actual websocket with the data.
             accept: Idempotent callable to accept the websocket connection.
         """
-        super().__init__('GET', scheme, path, headers)
+        super().__init__('GET', scheme, path, query_string, headers)
         self._queue = queue
         self._send = send
         self._accept = accept

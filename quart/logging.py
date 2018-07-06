@@ -3,7 +3,6 @@ import sys
 import time
 from logging import DEBUG, Formatter, getLogger, INFO, Logger, NOTSET, StreamHandler
 from typing import TYPE_CHECKING
-from urllib.parse import urlparse
 
 from .wrappers import Request, Response
 
@@ -55,7 +54,6 @@ class AccessLogAtoms(dict):
             protocol: str,
             request_time: float,
     ) -> None:
-        parsed_url = urlparse(request.full_path)
         self.update({
             'h': request.remote_addr,
             'l': '-',
@@ -64,7 +62,7 @@ class AccessLogAtoms(dict):
             's': response.status_code,
             'm': request.method,
             'U': request.path,
-            'q': parsed_url.query,
+            'q': request.query_string.decode('ascii'),
             'H': protocol,
             'b': response.headers.get('Content-Length', '-'),
             'B': response.headers.get('Content-Length'),

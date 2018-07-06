@@ -30,8 +30,8 @@ class ASGIHTTPConnection:
                         headers.add(name.decode().title(), value.decode())
 
                     self.request = self.app.request_class(
-                        self.scope['method'], self.scope['scheme'],
-                        f"{self.scope['path']}?{self.scope['query_string'].decode()}", headers,
+                        self.scope['method'], self.scope['scheme'], self.scope['path'],
+                        self.scope['query_string'], headers,
                         max_content_length=self.app.config['MAX_CONTENT_LENGTH'],
                         body_timeout=self.app.config['BODY_TIMEOUT'],
                     )
@@ -103,7 +103,7 @@ class ASGIWebsocketConnection:
                     headers.add(name.decode().title(), value.decode())
 
                 websocket = self.app.websocket_class(
-                    f"{self.scope['path']}?{self.scope['query_string']}", self.scope['scheme'],
+                    self.scope['path'], self.scope['query_string'], self.scope['scheme'],
                     headers, self.queue, partial(self.send_data, send),
                     partial(self.accept_connection, send),
                 )

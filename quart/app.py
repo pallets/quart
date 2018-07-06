@@ -37,7 +37,7 @@ from .signals import (
 )
 from .static import PackageStatic
 from .templating import _default_template_context_processor, DispatchingJinjaLoader, Environment
-from .testing import make_test_headers_and_path, QuartClient
+from .testing import make_test_headers_path_and_query_string, QuartClient
 from .typing import ResponseReturnValue
 from .utils import ensure_coroutine
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
@@ -1343,8 +1343,8 @@ class Quart(PackageStatic):
             path: Request path.
             scheme: Scheme for the request, default http.
         """
-        headers, path = make_test_headers_and_path(self, path)
-        request = self.request_class(method, scheme, path, headers)
+        headers, path, query_string = make_test_headers_path_and_query_string(self, path)
+        request = self.request_class(method, scheme, path, query_string, headers)
         request.body.set_result(b'')
         return self.request_context(request)
 

@@ -12,7 +12,7 @@ def test_access_log_standard_atoms() -> None:
         'Remote-Addr': '127.0.0.1',
         'User-Agent': 'quart',
     })
-    request = Request('GET', 'http', '/?x=y', request_headers)
+    request = Request('GET', 'http', '/', b'x=y', request_headers)
     response = Response('Hello', 202)
     atoms = AccessLogAtoms(request, response, 'h2', 0.000023)
     assert atoms['h'] == '127.0.0.1'
@@ -39,7 +39,7 @@ def test_access_log_header_atoms() -> None:
         'Random': 'Request',
         'Remote-Addr': '127.0.0.1',
     })
-    request = Request('GET', 'http', '/', request_headers)
+    request = Request('GET', 'http', '/', b'', request_headers)
     response_headers = CIMultiDict({
         'Random': 'Response',
     })
@@ -57,7 +57,7 @@ def test_access_log_environ_atoms() -> None:
     request_headers = CIMultiDict({
         'Remote-Addr': '127.0.0.1',
     })
-    request = Request('GET', 'http', '/', request_headers)
+    request = Request('GET', 'http', '/', b'', request_headers)
     response = Response('Hello', 200)
     atoms = AccessLogAtoms(request, response, 'h2', 0)
     assert atoms['{random}e'] == 'Environ'

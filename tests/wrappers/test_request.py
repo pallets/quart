@@ -60,12 +60,12 @@ def test_request_exceeds_max_content_length() -> None:
     headers = CIMultiDict()
     headers['Content-Length'] = str(max_content_length + 1)
     with pytest.raises(RequestEntityTooLarge):
-        Request('POST', 'http', '/', headers, max_content_length=max_content_length)
+        Request('POST', 'http', '/', b'', headers, max_content_length=max_content_length)
 
 
 @pytest.mark.asyncio
 async def test_request_get_data_timeout() -> None:
-    request = Request('POST', 'http', '/', CIMultiDict(), body_timeout=1)
+    request = Request('POST', 'http', '/', b'', CIMultiDict(), body_timeout=1)
     with pytest.raises(RequestTimeout):
         await request.get_data()
 
@@ -73,7 +73,7 @@ async def test_request_get_data_timeout() -> None:
 @pytest.mark.asyncio
 async def test_request_values() -> None:
     request = Request(
-        'GET', 'http', '/?a=b&a=c',
+        'GET', 'http', '/', b'a=b&a=c',
         CIMultiDict({'host': 'quart.com', 'Content-Type': 'application/x-www-form-urlencoded'}),
     )
     request.body.append(urlencode({'a': 'd'}).encode())

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
 from json import dumps
 from typing import Any, AnyStr, Generator, Optional, Tuple, TYPE_CHECKING, Union
-from urllib.parse import ParseResult, urlencode, urlunparse
+from urllib.parse import urlencode
 
 from .datastructures import CIMultiDict
 from .exceptions import BadRequest
@@ -49,12 +49,12 @@ class _TestingWebsocket:
             raise WebsocketResponse(self.task.result())
 
 
-def make_test_headers_and_path(
+def make_test_headers_path_and_query_string(
         app: 'Quart',
         path: str,
         headers: Optional[Union[dict, CIMultiDict]]=None,
         query_string: Optional[dict]=None,
-) -> Tuple[CIMultiDict, str]:
+) -> Tuple[CIMultiDict, str, bytes]:
     """Make the headers and path with defaults for testing.
 
     Arguments:
@@ -73,13 +73,10 @@ def make_test_headers_and_path(
     headers.setdefault('User-Agent', 'Quart')
     headers.setdefault('host', app.config['SERVER_NAME'] or 'localhost')
     if query_string is not None:
-        path = urlunparse(
-            ParseResult(
-                scheme='', netloc='', params='', path=path, query=urlencode(query_string),
-                fragment='',
-            ),
-        )
-    return headers, path  # type: ignore
+        query_string_bytes = urlencode(query_string).encode('ascii')
+    else:
+        query_string_bytes = b''
+    return headers, path, query_string_bytes  # type: ignore
 
 
 class QuartClient:
@@ -124,7 +121,9 @@ class QuartClient:
         Returns:
             The response from the app handling the request.
         """
-        headers, path = make_test_headers_and_path(self.app, path, headers, query_string)
+        headers, path, query_string_bytes = make_test_headers_path_and_query_string(
+            self.app, path, headers, query_string,
+        )
 
         if [json is not sentinel, form is not None, data is not None].count(True) > 1:
             raise ValueError("Quart test args 'json', 'form', and 'data' are mutually exclusive")
@@ -147,7 +146,7 @@ class QuartClient:
         if self.cookie_jar is not None:
             headers.add('Cookie', self.cookie_jar.output(header=''))  # type: ignore
 
-        request = Request(method, scheme, path, headers)  # type: ignore
+        request = Request(method, scheme, path, query_string_bytes, headers)  # type: ignore
         request.body.set_result(request_data)
         response = await asyncio.ensure_future(self.app.handle_request(request))
         if self.cookie_jar is not None and 'Set-Cookie' in response.headers:
@@ -250,12 +249,14 @@ class QuartClient:
             query_string: Optional[dict]=None,
             scheme: str='http',
     ) -> Generator[_TestingWebsocket, None, None]:
-        headers, path = make_test_headers_and_path(self.app, path, headers, query_string)
+        headers, path, query_string_bytes = make_test_headers_path_and_query_string(
+            self.app, path, headers, query_string,
+        )
         queue: asyncio.Queue = asyncio.Queue()
         websocket_client = _TestingWebsocket(queue)
 
         websocket = Websocket(
-            path, scheme, headers, queue, websocket_client.local_queue.put,
+            path, query_string_bytes, scheme, headers, queue, websocket_client.local_queue.put,
             websocket_client.accept,
         )
         adapter = self.app.create_url_adapter(websocket)
