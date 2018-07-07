@@ -14,7 +14,7 @@ def redirect(location: str, status_code: int=301) -> 'Response':
 <!doctype html>
 <title>Redirect</title>
 <h1>Redirect</h1>
-You should be redirected to <a href="{location}">{location}</a>, it not please click the link
+You should be redirected to <a href="{location}">{location}</a>, if not please click the link
     """
 
     return current_app.response_class(

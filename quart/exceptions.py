@@ -95,7 +95,7 @@ class RedirectRequired(HTTPStatusException):
 <title>Redirect</title>
 <h1>Redirect</h1>
 You should be redirected to <a href="{self.redirect_path}">{self.redirect_path}</a>,
-it not please click the link
+if not please click the link
     """
 
     def get_headers(self) -> dict:
