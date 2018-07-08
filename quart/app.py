@@ -1310,6 +1310,8 @@ class Quart(PackageStatic):
         config.ssl = ssl
         config.use_reloader = use_reloader
 
+        scheme = 'http' if config.ssl is None else 'https'
+        print("Running on {}://{}:{} (CTRL + C to quit)".format(scheme, config.host, config.port))  # noqa: T001, E501
         try:
             run_single(self, config, loop=loop)
         finally:
