@@ -75,6 +75,7 @@ def test_value_building() -> None:
     adapter = map_.bind('http', '')
     assert adapter.build('book', values={'page': 1}) == '/book/1'
     assert adapter.build('book', values={'page': 1, 'line': 12}) == '/book/1?line=12'
+    assert adapter.build('book', values={'page': 1, 'line': [1, 2]}) == '/book/1?line=1&line=2'
 
 
 def test_build_error(basic_map: Map) -> None:

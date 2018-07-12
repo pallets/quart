@@ -366,6 +366,7 @@ class Rule:
                 for key, value in values.items()
                 if key not in self._converters and key not in self.defaults
             },
+            doseq=True,
         )
         if query_string:
             result = "{}?{}".format(result, query_string)
