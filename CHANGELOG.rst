@@ -1,3 +1,12 @@
+0.6.4 2018-07-15
+----------------
+
+* Bugfix correctly handle request query strings.
+* Restore log output when running in development mode.
+* Bugfix allow for multiple query string values when building urls,
+  e.g. ``a=1&a=2``.
+* Bugfix ensure the Flask Patch system works with Python 3.7.
+
 0.6.3 2018-07-05
 ----------------
 
