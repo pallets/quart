@@ -201,7 +201,7 @@ def test_copy_current_request_context_error() -> None:
 
 
 @pytest.mark.asyncio
-async def test_fails_without_copy_current_request_context() -> None:
+async def test_works_without_copy_current_request_context() -> None:
     app = Quart(__name__)
 
     @app.route('/')
@@ -214,7 +214,7 @@ async def test_fails_without_copy_current_request_context() -> None:
 
     test_client = app.test_client()
     response = await test_client.get('/')
-    assert response.status_code == 500
+    assert response.status_code == 200
 
 
 @pytest.mark.asyncio

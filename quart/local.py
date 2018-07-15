@@ -1,7 +1,7 @@
 import asyncio
 import copy
-from collections import defaultdict
-from typing import Any, Callable, Dict
+from contextvars import ContextVar  # noqa # contextvars not understood as stdlib
+from typing import Any, Callable, Dict  # noqa # contextvars not understood as stdlib
 
 
 class TaskLocal:
@@ -11,20 +11,25 @@ class TaskLocal:
 
     def __init__(self) -> None:
         # Note as __setattr__ is overidden below, use the object __setattr__
-        object.__setattr__(self, '_storage', defaultdict(dict))
+        object.__setattr__(self, '_storage', ContextVar('storage'))
 
     def __getattr__(self, name: str) -> Any:
+        values = self._storage.get({})
         try:
-            return self._storage[TaskLocal._task_identity()][name]
+            return values[name]
         except KeyError:
             raise AttributeError(name)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        self._storage[TaskLocal._task_identity()][name] = value
+        values = self._storage.get({})
+        values[name] = value
+        self._storage.set(values)
 
     def __delattr__(self, name: str) -> None:
+        values = self._storage.get({})
         try:
-            del self._storage[TaskLocal._task_identity()][name]
+            del values[name]
+            self._storage.set(values)
         except KeyError:
             raise AttributeError(name)
 
