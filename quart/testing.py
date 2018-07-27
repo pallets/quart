@@ -232,7 +232,7 @@ class QuartClient:
             key: str,
             value: str='',
             max_age: Optional[Union[int, timedelta]]=None,
-            expires: Optional[datetime]=None,
+            expires: Optional[Union[int, float, datetime]]=None,
             path: str='/',
             domain: Optional[str]=None,
             secure: bool=False,

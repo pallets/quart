@@ -26,7 +26,7 @@ def create_cookie(
         key: str,
         value: str='',
         max_age: Optional[Union[int, timedelta]]=None,
-        expires: Optional[datetime]=None,
+        expires: Optional[Union[int, float, datetime]]=None,
         path: str='/',
         domain: Optional[str]=None,
         secure: bool=False,
@@ -46,7 +46,9 @@ def create_cookie(
         cookie[key]['max-age'] = f"{max_age.total_seconds():d}"  # type: ignore
     if isinstance(max_age, int):
         cookie[key]['max-age'] = str(max_age)
-    if expires is not None:
+    if expires is not None and isinstance(expires, (int, float)):
+        cookie[key]['expires'] = datetime.utcfromtimestamp(int(expires)).strftime("%a, %d-%b-%Y %T")
+    elif expires is not None and isinstance(expires, datetime):
         cookie[key]['expires'] = expires.astimezone(timezone.utc).strftime("%a, %d-%b-%Y %T")
     if domain is not None:
         cookie[key]['domain'] = domain
