@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from .wrappers.response import Response  # noqa: F401
 
 
-def redirect(location: str, status_code: int=301) -> 'Response':
+def redirect(location: str, status_code: int=302) -> 'Response':
     body = f"""
 <!doctype html>
 <title>Redirect</title>
