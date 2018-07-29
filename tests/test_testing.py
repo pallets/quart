@@ -1,3 +1,5 @@
+from typing import Optional
+
 import pytest
 
 from quart import jsonify, Quart, request, Response, session
@@ -24,15 +26,33 @@ async def test_methods() -> None:
         assert method in (await response.get_data(raw=False))
 
 
-def test_build_headers_path_and_query_string() -> None:
-    headers, path, query_string = make_test_headers_path_and_query_string(
-        Quart(__name__), '/path', None, {'a': 'b'},
+@pytest.mark.parametrize(
+    'path, query_string, expected_path, expected_query_string',
+    [
+        ('/path', {'a': 'b'}, '/path', b'a=b'),
+        ('/path', {'a': ['b', 'c']}, '/path', b'a=b&a=c'),
+        ('/path?b=c', None, '/path', b'b=c'),
+    ],
+)
+def test_build_headers_path_and_query_string(
+        path: str,
+        query_string: Optional[dict],
+        expected_path: str,
+        expected_query_string: bytes,
+) -> None:
+    headers, result_path, result_qs = make_test_headers_path_and_query_string(
+        Quart(__name__), path, None, query_string,
     )
-    assert path == '/path'
+    assert result_path == expected_path
     assert headers['Remote-Addr'] == '127.0.0.1'
     assert headers['User-Agent'] == 'Quart'
     assert headers['host'] == 'localhost'
-    assert query_string == b'a=b'
+    assert result_qs == expected_query_string
+
+
+def test_build_headers_path_and_query_string_with_query_string_error() -> None:
+    with pytest.raises(ValueError):
+        make_test_headers_path_and_query_string(Quart(__name__), '/?a=b', None, {'c': 'd'})
 
 
 @pytest.mark.parametrize(

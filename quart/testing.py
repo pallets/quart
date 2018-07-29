@@ -59,9 +59,12 @@ def make_test_headers_path_and_query_string(
 
     Arguments:
         app: The application to test against.
-        path: The path to request.
+        path: The path to request. If the query_string argument is not
+            defined this argument will be partitioned on a '?' with
+            the following part being considered the query_string.
         headers: Initial headers to send.
-        query_string: To send as a dictionary.
+        query_string: To send as a dictionary, alternatively the
+            query_string can be determined from the path.
     """
     if headers is None:
         headers = CIMultiDict()
@@ -72,10 +75,13 @@ def make_test_headers_path_and_query_string(
     headers.setdefault('Remote-Addr', '127.0.0.1')
     headers.setdefault('User-Agent', 'Quart')
     headers.setdefault('host', app.config['SERVER_NAME'] or 'localhost')
-    if query_string is not None:
-        query_string_bytes = urlencode(query_string).encode('ascii')
+    if '?' in path and query_string is not None:
+        raise ValueError('Query string is defined in the path and as an argument')
+    if query_string is None:
+        path, _, query_string_raw = path.partition('?')
     else:
-        query_string_bytes = b''
+        query_string_raw = urlencode(query_string, doseq=True)
+    query_string_bytes = query_string_raw.encode('ascii')
     return headers, path, query_string_bytes  # type: ignore
 
 
@@ -109,12 +115,16 @@ class QuartClient:
         """Open a request to the app associated with this client.
 
         Arguemnts:
-            path: The path to make the request too.
+            path: The path to request. If the query_string argument is
+                not defined this argument will be partitioned on a '?'
+                with the following part being considered the
+                query_string.
             method: The method to make the request with, defaults GET.
             headers: Headers to include in the request.
             data: Raw data to send in the request body.
             form: Data to send form encoded in the request body.
-            query_string: Data to send via query string.
+            query_string: To send as a dictionary, alternatively the
+                query_string can be determined from the path.
             json: Data to send json encoded in the request body.
             scheme: The scheme to use in the request, default http.
 
