@@ -29,55 +29,45 @@ class Body:
     """
 
     def __init__(self, max_content_length: Optional[int]) -> None:
-        self._body: asyncio.Future = asyncio.Future()
-        self._stream: asyncio.Queue = asyncio.Queue()
-        self._size = 0
+        self._data = bytearray()
+        self._complete: asyncio.Event = asyncio.Event()
+        self._has_data: asyncio.Event = asyncio.Event()
         self._max_content_length = max_content_length
 
     def __aiter__(self) -> 'Body':
         return self
 
     async def __anext__(self) -> bytes:
-        # The iterator should return whenever there is any data, but
-        # quit if the body future is done i.e. there is no more data.
-        stream_future = asyncio.ensure_future(self._stream.get())
-        done, _ = await asyncio.wait(  # type: ignore
-            [self._body, stream_future], return_when=asyncio.FIRST_COMPLETED,  # type: ignore
-        )
-        if self._body.done():
-            stream_future.cancel()
+        await self._has_data.wait()
+        if self._complete.is_set() and len(self._data) == 0:
             raise StopAsyncIteration()
-        else:
-            result = bytearray()
-            for future in done:
-                data = future.result()
-                result.extend(data)
-                self._size -= len(data)
-            return result
+
+        data = bytes(self._data)
+        self._data.clear()
+        self._has_data.clear()
+        return data
 
     def __await__(self) -> Generator[Any, None, Any]:
-        return self._body.__await__()
+        yield from self._complete.wait().__await__()
+        return bytes(self._data)
 
     def append(self, data: bytes) -> None:
         if data == b'':
             return
-        self._stream.put_nowait(data)
-        self._size += len(data)
-        if self._max_content_length is not None and self._size > self._max_content_length:
+        self._data.extend(data)
+        self._has_data.set()
+        if self._max_content_length is not None and len(self._data) > self._max_content_length:
             from ..exceptions import RequestEntityTooLarge  # noqa Avoiding circular import
             raise RequestEntityTooLarge()
 
     def set_complete(self) -> None:
-        buffer_ = bytearray()
-        try:
-            while True:
-                buffer_.extend(self._stream.get_nowait())
-        except asyncio.QueueEmpty:
-            self._body.set_result(buffer_)
+        self._complete.set()
+        self._has_data.set()
 
     def set_result(self, data: bytes) -> None:
         """Convienience method, mainly for testing."""
-        self._body.set_result(data)
+        self.append(data)
+        self.set_complete()
 
 
 class Request(BaseRequestWebsocket, JSONMixin):
