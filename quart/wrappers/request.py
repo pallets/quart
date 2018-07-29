@@ -48,7 +48,10 @@ class Body:
         return data
 
     def __await__(self) -> Generator[Any, None, Any]:
-        yield from self._complete.wait().__await__()
+        try:
+            yield from self._complete.wait().__await__()
+        except AttributeError:  # Python 3.7 moved to async/await throughout, 3.6 breaks here
+            yield from self._complete.wait()
         return bytes(self._data)
 
     def append(self, data: bytes) -> None:
