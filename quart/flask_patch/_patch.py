@@ -69,7 +69,7 @@ def _patch_modules() -> None:
     # flask_patch namespace over simple references to the Quart
     # versions.
     flask_modules = {}
-    for name, module in sys.modules.items():
+    for name, module in list(sys.modules.items()):
         if name.startswith('quart.flask_patch._'):
             continue
         elif name.startswith('quart.flask_patch'):
