@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 from http.cookies import SimpleCookie
 from typing import Callable, Optional, TYPE_CHECKING, Union
+from wsgiref.handlers import format_date_time
 
 from .globals import current_app
 
@@ -47,9 +48,9 @@ def create_cookie(
     if isinstance(max_age, int):
         cookie[key]['max-age'] = str(max_age)
     if expires is not None and isinstance(expires, (int, float)):
-        cookie[key]['expires'] = datetime.utcfromtimestamp(int(expires)).strftime("%a, %d-%b-%Y %T")
+        cookie[key]['expires'] = format_date_time(int(expires))
     elif expires is not None and isinstance(expires, datetime):
-        cookie[key]['expires'] = expires.astimezone(timezone.utc).strftime("%a, %d-%b-%Y %T")
+        cookie[key]['expires'] = format_date_time(expires.replace(tzinfo=timezone.utc).timestamp())
     if domain is not None:
         cookie[key]['domain'] = domain
     return cookie
