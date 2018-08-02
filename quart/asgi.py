@@ -22,19 +22,7 @@ class ASGIHTTPConnection:
             event = await receive()
             if event['type'] == 'http.request':
                 if self.request is None:
-                    headers = CIMultiDict()
-                    headers['Remote-Addr'] = self.scope.get('client', ['<local>'])[0]
-                    if self.scope['http_version'] < '1.1':
-                        headers.setdefault('host', self.app.config['SERVER_NAME'] or '')
-                    for name, value in self.scope['headers']:
-                        headers.add(name.decode().title(), value.decode())
-
-                    self.request = self.app.request_class(
-                        self.scope['method'], self.scope['scheme'], self.scope['path'],
-                        self.scope['query_string'], headers,
-                        max_content_length=self.app.config['MAX_CONTENT_LENGTH'],
-                        body_timeout=self.app.config['BODY_TIMEOUT'],
-                    )
+                    self._create_request_from_scope()
                     # It is important that the app handles the request in a unique
                     # task as the globals are task locals
                     self.task = asyncio.ensure_future(self._handle_request(send))
@@ -44,6 +32,21 @@ class ASGIHTTPConnection:
             elif event['type'] == 'http.disconnect':
                 self.task.cancel()
                 break
+
+    def _create_request_from_scope(self) -> None:
+        headers = CIMultiDict()
+        headers['Remote-Addr'] = self.scope.get('client', ['<local>'])[0]
+        for name, value in self.scope['headers']:
+            headers.add(name.decode().title(), value.decode())
+        if self.scope['http_version'] < '1.1':
+            headers.setdefault('Host', self.app.config['SERVER_NAME'] or '')
+
+        self.request = self.app.request_class(
+            self.scope['method'], self.scope['scheme'], self.scope['path'],
+            self.scope['query_string'], headers,
+            max_content_length=self.app.config['MAX_CONTENT_LENGTH'],
+            body_timeout=self.app.config['BODY_TIMEOUT'],
+        )
 
     async def _handle_request(self, send: Callable) -> None:
         response = await self.app.handle_request(self.request)
