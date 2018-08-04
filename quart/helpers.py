@@ -112,7 +112,7 @@ def url_for(
         endpoint: str,
         *,
         _anchor: Optional[str]=None,
-        _external: bool=False,
+        _external: Optional[bool]=None,
         _method: Optional[str]=None,
         _scheme: Optional[str]=None,
         **values: Any,
@@ -142,9 +142,12 @@ def url_for(
                 endpoint = request.blueprint + endpoint
             else:
                 endpoint = endpoint[1:]
+        if _external is None:
+            _external = False
     elif app_context is not None:
         url_adapter = app_context.url_adapter
-        _external = True
+        if _external is None:
+            _external = True
     else:
         raise RuntimeError('Cannot create a url outside of an application context')
 

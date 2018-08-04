@@ -98,8 +98,14 @@ async def test_url_for_host_matching(host_matched_app: Quart) -> None:
 @pytest.mark.asyncio
 async def test_url_for_external(app: Quart) -> None:
     async with app.test_request_context('GET', '/'):
+        assert url_for('index') == '/'
         assert url_for('index', _external=True) == 'http://localhost/'
         assert url_for('resource', id=5, _external=True) == 'http://localhost/resource/5'
+        assert url_for('resource', id=5, _external=False) == '/resource/5'
+
+    async with app.app_context():
+        assert url_for('index') == 'http://localhost/'
+        assert url_for('index', _external=False) == '/'
 
 
 @pytest.mark.asyncio
