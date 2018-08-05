@@ -1,3 +1,15 @@
+0.6.5 2018-08-05
+----------------
+
+* Bugfix change default redirect status code to 302.
+* Bugfix support query string parsing from test client paths.
+* Bugfix support int/float cookie expires values.
+* Bugfix correct the cookie date format to RFC 822.
+* Bugfix copy sys.modules to prevent dictionary changed errors.
+* Bugfix ensure request body iteration returns all data.
+* Bugfix correct set host header (if missing) for HTTP/1.0.
+* Bugfix set the correct defaults for _external in url_for.
+
 0.6.4 2018-07-15
 ----------------
 
