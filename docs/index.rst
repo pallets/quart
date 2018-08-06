@@ -59,6 +59,7 @@ How-To Guides
    flask_migration.rst
    json_encoding.rst
    logging.rst
+   middleware.rst
    request_body.rst
    routing.rst
    session_storage.rst
