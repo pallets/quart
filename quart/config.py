@@ -7,13 +7,12 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any, Callable, Dict, Mapping, Optional, Union
 
-from .helpers import get_debug_flag
-
 
 DEFAULT_CONFIG = {
     'APPLICATION_ROOT': None,
     'BODY_TIMEOUT': 60,  # Second
-    'DEBUG': get_debug_flag(default=False),
+    'DEBUG': None,
+    'ENV': None,
     'JSON_AS_ASCII': True,
     'JSON_SORT_KEYS': True,
     'JSONIFY_MIMETYPE': 'application/json',
@@ -168,7 +167,7 @@ class Config(dict):
                 path, config = instance.rsplit('.', 1)
             except ValueError:
                 path = instance
-                instance = importlib.import_module(instance)
+                instance = importlib.import_module(path)
             else:
                 module = importlib.import_module(path)
                 instance = getattr(module, config)

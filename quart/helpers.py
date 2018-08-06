@@ -12,11 +12,24 @@ from .wrappers import Response
 locked_cached_property = property
 
 
-def get_debug_flag(default: Optional[bool]=None) -> bool:
-    value = os.environ.get('QUART_DEBUG')
+def get_debug_flag() -> bool:
+    """ Reads QUART_DEBUG environment variable to determine whether to run
+        the app in debug mode. If unset, and development mode has been
+        configured, it will be enabled automatically.
+    """
+    value = os.getenv('QUART_DEBUG', None)
+
     if value is None:
-        return default
+        return 'development' == get_env()
+
     return value.lower() not in {'0', 'false', 'no'}
+
+
+def get_env(default: Optional[str]= 'production') -> str:
+    """Reads QUART_ENV environment variable to determine in which environment
+    the app is running on. Defaults to 'production' when unset.
+    """
+    return os.getenv('QUART_ENV', default)
 
 
 async def make_response(*args: Any) -> Response:
@@ -70,7 +83,7 @@ def get_flashed_messages(
         with_categories: bool=False,
         category_filter: List[str]=[],
 ) -> Union[List[str], List[Tuple[str, str]]]:
-    """Retrieve the flahshed messages stored in the session.
+    """Retrieve the flashed messages stored in the session.
 
     This is mostly useful in templates where it is exposed as a global
     function, for example

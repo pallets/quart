@@ -25,7 +25,10 @@ from .ctx import (
 from .debug import traceback_response
 from .exceptions import all_http_exceptions, HTTPException
 from .globals import g, request, session
-from .helpers import _endpoint_from_view_func, get_flashed_messages, url_for
+from .helpers import (
+    _endpoint_from_view_func, get_debug_flag, get_env,
+    get_flashed_messages, url_for,
+)
 from .json import JSONDecoder, JSONEncoder, tojson_filter
 from .logging import create_logger, create_serving_logger
 from .routing import Map, MapAdapter, Rule
@@ -65,8 +68,10 @@ class Quart(PackageStatic):
     Attributes:
         app_ctx_globals_class: The class to use for the ``g`` object
         config_class: The class to use for the configuration.
+        env: The name of the environment the app is running on.
         debug: Wrapper around configuration DEBUG value, in many places
-            this will result in more output if True.
+            this will result in more output if True. If unset, debug
+            mode will be activated if environ is set to 'development'.
         jinja_environment: The class to use for the jinja environment.
         jinja_options: The default options to set when creating the jinja
             environment.
@@ -89,6 +94,7 @@ class Quart(PackageStatic):
     app_ctx_globals_class = _AppCtxGlobals
     config_class = Config
     debug = ConfigAttribute('DEBUG')
+    env = ConfigAttribute('ENV')
     jinja_environment = Environment
     jinja_options = {
         'autoescape': True,
@@ -244,7 +250,10 @@ class Quart(PackageStatic):
 
     def make_config(self) -> Config:
         """Create and return the configuration with appropriate defaults."""
-        return self.config_class(self.root_path, DEFAULT_CONFIG)
+        config = self.config_class(self.root_path, DEFAULT_CONFIG)
+        config['ENV'] = get_env()
+        config['DEBUG'] = get_debug_flag()
+        return config
 
     def create_url_adapter(self, request: Optional[BaseRequestWebsocket]) -> Optional[MapAdapter]:
         """Create and return a URL adapter.
