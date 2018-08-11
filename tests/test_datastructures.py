@@ -15,6 +15,7 @@ def test_multidict_getlist(dict_class: Union[CIMultiDict, MultiDict]) -> None:
     data.add('x', 'y')
     data.add('x', 'z')
     assert data.getlist('x') == ['y', 'z']
+    assert data.getlist('z') == []
 
 
 @pytest.mark.parametrize('dict_class', [CIMultiDict, MultiDict])
@@ -22,8 +23,11 @@ def test_multidict_type_conversion(dict_class: Union[CIMultiDict, MultiDict]) ->
     data = CIMultiDict()
     data['x'] = '2'
     data['y'] = 'b'
+    data.add('z', '2')
+    data.add('z', 'b')
     assert data.get('x', type=int) == 2
     assert data.get('y', default=None, type=int) is None
+    assert data.getlist('z', type=int) == [2]
 
 
 def test_accept() -> None:

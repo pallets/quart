@@ -26,8 +26,18 @@ class _WerkzeugMultidictMixin:
                 value = default
         return value
 
-    def getlist(self, key: str) -> List[Any]:
-        return self.getall(key)  # type: ignore
+    def getlist(self, key: str, type: Any=None) -> List[Any]:
+        values = self.getall(key, [])  # type: ignore
+        if type is not None:
+            result = []
+            for value in values:
+                try:
+                    result.append(type(value))
+                except ValueError:
+                    pass
+            return result
+        else:
+            return values
 
 
 class MultiDict(_WerkzeugMultidictMixin, AIOMultiDict):  # type: ignore
