@@ -1,3 +1,4 @@
+import os
 from typing import Optional, Set
 
 import pytest
@@ -148,3 +149,30 @@ async def test_make_response(
         assert response.headers.keys() == expected.headers.keys()
         assert response.status_code == expected.status_code
         assert (await response.get_data()) == (await expected.get_data())  # type: ignore
+
+
+@pytest.mark.parametrize(
+    'quart_env, quart_debug, expected_env, expected_debug',
+    [
+        (None, None, 'production', False),
+        ('development', None, 'development', True),
+        ('development', False, 'development', False),
+    ],
+)
+def test_env_and_debug_environments(
+        quart_env: Optional[str], quart_debug: Optional[bool],
+        expected_env: bool, expected_debug: bool,
+) -> None:
+    if quart_env is None:
+        os.environ.pop('QUART_ENV', None)
+    else:
+        os.environ['QUART_ENV'] = quart_env
+
+    if quart_debug is None:
+        os.environ.pop('QUART_DEBUG', None)
+    else:
+        os.environ['QUART_DEBUG'] = str(quart_debug)
+
+    app = Quart(__name__)
+    assert app.env == expected_env
+    assert app.debug is expected_debug
