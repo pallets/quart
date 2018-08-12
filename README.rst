@@ -32,7 +32,7 @@ Quart can be installed via `pipenv
     $ pipenv install quart
     $ pip install quart
 
-and requires Python 3.6.1 or higher.
+and requires Python 3.7.0 or higher.
 
 A minimal Quart example is,
 

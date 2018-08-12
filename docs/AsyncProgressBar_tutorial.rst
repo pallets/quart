@@ -58,7 +58,7 @@ Instructions on how to do that can be found here `https://redis.io/download
 ---------------
 
 It is always best to run python projects within a virtualenv, which should be
-created and activated as follows, (Python 3.6 or better is required),
+created and activated as follows,
 
 .. code-block:: console
 

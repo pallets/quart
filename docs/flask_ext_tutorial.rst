@@ -27,8 +27,7 @@ this example is then available at `http://localhost:5000/
 ---------------
 
 It is always best to run python projects within a pipenv, which
-should be created and activated as follows, (Python 3.6 or better is
-required),
+should be created and activated as follows,
 
 .. code-block:: console
 

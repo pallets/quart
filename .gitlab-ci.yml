@@ -1,10 +1,4 @@
-image: python:3.6.4-stretch
-
-py36:
-  image: python:3.6
-  script:
-  - pip install tox
-  - tox -e py36
+image: python:3.7
 
 py37:
   image: python:3.7

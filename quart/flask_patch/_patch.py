@@ -7,15 +7,6 @@ from typing import Any, Callable
 from quart.local import LocalStack, TaskLocal
 from ._synchronise import sync_with_context
 
-try:
-    from asyncio import _enter_task, _leave_task  # type: ignore
-except ImportError:
-    def _enter_task(loop: asyncio.AbstractEventLoop, task: asyncio.Task) -> None:
-        task.__class__._current_tasks[loop] = task  # type: ignore
-
-    def _leave_task(loop: asyncio.AbstractEventLoop, task: asyncio.Task) -> None:
-        task.__class__._current_tasks.pop(loop, task)  # type: ignore
-
 
 def _patch_asyncio() -> None:
     # This patches asyncio to add a sync_wait method to the event
@@ -31,14 +22,14 @@ def _patch_asyncio() -> None:
         self._ready.clear()
         future = asyncio.tasks.ensure_future(future, loop=self)
         preserved_task = future.current_task(self)
-        _leave_task(self, preserved_task)
+        asyncio._leave_task(self, preserved_task)
         while not future.done() and not future.cancelled():
             self._run_once()
             if self._stopping:
                 break
         self._ready.extendleft(preserved_ready)
         if preserved_task is not None:
-            _enter_task(self, preserved_task)
+            asyncio._enter_task(self, preserved_task)
         return future.result()
 
     asyncio.BaseEventLoop.sync_wait = _sync_wait  # type: ignore
