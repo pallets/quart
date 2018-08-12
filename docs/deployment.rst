@@ -50,26 +50,3 @@ Most web browsers only support HTTP/2 over a TLS connection with
 TLSv1.2 or better and certain ciphers. So to use these features with
 Quart you must chose an ASGI server that implements HTTP/2 and use
 SSL.
-
-Gunicorn deployment
--------------------
-
-.. note::
-
-    The Gunicorn workers are deprecated in 0.6.0 and will be removed
-    in 0.7.0. Please switch to Hypercorn or an alternative ASGI
-    Server. This section is kept for reference.
-
-To use Gunicorn you must configure it to use a Quart Worker, is is
-done by setting the ``worker-class`` to either
-:class:`~quart.worker.GunicornWorker` or
-:class:`~quart.worker.GunicornUVLoopWorker` and then informing
-Gunicorn of the Quart app instance. For example with the code given
-above you can deploy via,
-
-.. code-block:: bash
-
-    gunicorn --worker-class quart.worker.GunicornWorker example:app
-
-All the standard Gunicorn settings apply and can be used, including
-access log formatting.
