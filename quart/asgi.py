@@ -35,7 +35,7 @@ class ASGIHTTPConnection:
 
     def _create_request_from_scope(self) -> None:
         headers = CIMultiDict()
-        headers['Remote-Addr'] = self.scope.get('client', ['<local>'])[0]
+        headers['Remote-Addr'] = (self.scope.get('client') or ['<local>'])[0]
         for name, value in self.scope['headers']:
             headers.add(name.decode().title(), value.decode())
         if self.scope['http_version'] < '1.1':
