@@ -239,3 +239,17 @@ async def test_copy_current_websocket_context() -> None:
 def test_copy_current_websocket_context_error() -> None:
     with pytest.raises(RuntimeError):
         copy_current_websocket_context(lambda: None)()
+
+
+@pytest.mark.asyncio
+async def test_overlapping_request_ctx() -> None:
+    app = Quart(__name__)
+
+    request = Request('GET', 'http', '/', b'', CIMultiDict())
+    ctx1 = app.request_context(request)
+    await ctx1.__aenter__()
+    ctx2 = app.request_context(request)
+    await ctx2.__aenter__()
+    await ctx1.__aexit__(None, None, None)
+    assert has_app_context()  # Ensure the app context still exists for ctx2
+    await ctx2.__aexit__(None, None, None)

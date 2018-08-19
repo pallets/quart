@@ -47,9 +47,10 @@ class _BaseRequestWebsocketContext:
             self.request_websocket.routing_exception = error
 
     async def __aenter__(self) -> '_BaseRequestWebsocketContext':
-        if _app_ctx_stack.top is None:
+        app_ctx = _app_ctx_stack.top
+        if app_ctx is None:
             app_ctx = self.app.app_context()
-            await app_ctx.push()
+        await app_ctx.push()
 
         self.session = self.app.open_session(self.request_websocket)
         if self.session is None:
@@ -57,7 +58,7 @@ class _BaseRequestWebsocketContext:
         return self
 
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
-        await self.app.app_context().pop(exc_value)
+        await _app_ctx_stack.top.pop(exc_value)
 
 
 class RequestContext(_BaseRequestWebsocketContext):
