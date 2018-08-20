@@ -75,9 +75,13 @@ class Response(_BaseRequestResponse, JSONMixin):
         """
         super().__init__(headers)
         self.timeout = timeout
-        if status is not None and not isinstance(status, int):
-            raise ValueError('Quart does not support non-integer status values')
-        self.status_code: int = status or self.default_status
+
+        if status is None:
+            status = self.default_status
+        try:
+            self.status_code = int(status)
+        except ValueError as error:
+            raise ValueError('Quart  does not support non-integer status values') from error
 
         if content_type is None:
             if mimetype is None and 'content-type' not in self.headers:
