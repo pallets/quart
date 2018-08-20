@@ -1,10 +1,27 @@
 from datetime import datetime, timezone
+from http import HTTPStatus
+from typing import Any
 
 import hypothesis.strategies as strategies
 import pytest
 from hypothesis import given
 
 from quart.wrappers.response import Response
+
+
+@pytest.mark.parametrize(
+    'status, expected',
+    [(201, 201), (None, 200), (HTTPStatus.PARTIAL_CONTENT, 206)],
+)
+def test_response_status(status: Any, expected: int) -> None:
+    response = Response(b'Body', status=status)
+    assert response.status_code == expected
+
+
+def test_response_status_error() -> None:
+    with pytest.raises(ValueError) as error_info:
+        Response(b'Body', '200 OK')
+    assert str(error_info.value) == 'Quart  does not support non-integer status values'
 
 
 @pytest.mark.asyncio
