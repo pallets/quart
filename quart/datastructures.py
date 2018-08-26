@@ -7,7 +7,7 @@ from email.utils import parsedate_to_datetime
 from functools import wraps
 from shutil import copyfileobj
 from typing import (
-    Any, BinaryIO, Callable, Dict, Iterable, List, NamedTuple, Optional, Set, Type, Union,
+    Any, AnyStr, BinaryIO, Callable, Dict, Iterable, List, NamedTuple, Optional, Set, Type, Union,
 )
 from urllib.request import parse_http_list, parse_keqv_list
 from wsgiref.handlers import format_date_time
@@ -46,6 +46,28 @@ class MultiDict(_WerkzeugMultidictMixin, AIOMultiDict):  # type: ignore
 
 class CIMultiDict(_WerkzeugMultidictMixin, AIOCIMultiDict):  # type: ignore
     pass
+
+
+def _unicodify(value: AnyStr) -> str:
+    try:
+        return value.decode()  # type: ignore
+    except AttributeError:
+        return value  # type: ignore
+
+
+class Headers(CIMultiDict):
+    # Headers should accept byte keys and values but convert them to
+    # unicode whilst stored. Note only a select few methods do this,
+    # the others will error if presented with byte keys.
+
+    def add(self, key: AnyStr, value: AnyStr) -> None:
+        super().add(_unicodify(key), _unicodify(value))
+
+    def __setitem__(self, key: AnyStr, value: AnyStr) -> None:
+        super().__setitem__(_unicodify(key), _unicodify(value))
+
+    def setdefault(self, key: AnyStr, default: Optional[AnyStr]=None) -> Optional[str]:
+        return super().setdefault(_unicodify(key), _unicodify(default))
 
 
 class FileStorage:

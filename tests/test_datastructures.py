@@ -4,8 +4,8 @@ import pytest
 
 from quart.datastructures import (
     _CacheControl, Accept, AcceptOption, CharsetAccept, CIMultiDict, ContentRange, ETags,
-    HeaderSet, LanguageAccept, MIMEAccept, MultiDict, Range, RangeSet, RequestAccessControl,
-    RequestCacheControl, ResponseAccessControl, ResponseCacheControl,
+    Headers, HeaderSet, LanguageAccept, MIMEAccept, MultiDict, Range, RangeSet,
+    RequestAccessControl, RequestCacheControl, ResponseAccessControl, ResponseCacheControl,
 )
 
 
@@ -28,6 +28,19 @@ def test_multidict_type_conversion(dict_class: Union[CIMultiDict, MultiDict]) ->
     assert data.get('x', type=int) == 2
     assert data.get('y', default=None, type=int) is None
     assert data.getlist('z', type=int) == [2]
+
+
+def test_headers_bytes() -> None:
+    headers = Headers()
+    headers[b'X-Foo'] = b'something'
+    headers.add(b'X-Bar', b'something')
+    headers.setdefault(b'X-Bob')
+
+    assert headers['x-foo'] == 'something'
+    assert headers['x-bar'] == 'something'
+    assert headers['x-bob'] is None
+    headers.add('X-Foo', 'different')
+    assert headers.getlist('X-Foo') == ['something', 'different']
 
 
 def test_accept() -> None:
