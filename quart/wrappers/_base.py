@@ -8,8 +8,8 @@ from urllib.parse import parse_qs, ParseResult, urlunparse
 from urllib.request import parse_http_list, parse_keqv_list
 
 from ..datastructures import (
-    Accept, Authorization, CharsetAccept, CIMultiDict, ETags, IfRange, LanguageAccept, MIMEAccept,
-    MultiDict, Range, RequestAccessControl, RequestCacheControl,
+    Accept, Authorization, CharsetAccept, CIMultiDict, ETags, Headers, IfRange, LanguageAccept,
+    MIMEAccept, MultiDict, Range, RequestAccessControl, RequestCacheControl,
 )
 from ..json import loads
 
@@ -101,14 +101,12 @@ class _BaseRequestResponse:
     """
     charset = url_charset = 'utf-8'
 
-    def __init__(self, headers: Optional[Union[dict, CIMultiDict]]) -> None:
-        self.headers: CIMultiDict
+    def __init__(self, headers: Optional[Union[dict, CIMultiDict, Headers]]) -> None:
+        self.headers: Headers
         if headers is None:
-            self.headers = CIMultiDict()
-        elif isinstance(headers, CIMultiDict):
-            self.headers = headers
-        elif headers is not None:
-            self.headers = CIMultiDict(headers)
+            self.headers = Headers()
+        else:
+            self.headers = Headers(headers)
 
     @property
     def mimetype(self) -> str:

@@ -10,7 +10,7 @@ from wsgiref.handlers import format_date_time
 
 from ._base import _BaseRequestResponse, JSONMixin
 from ..datastructures import (
-    CIMultiDict, ContentRange, HeaderSet, ResponseAccessControl, ResponseCacheControl,
+    CIMultiDict, ContentRange, Headers, HeaderSet, ResponseAccessControl, ResponseCacheControl,
 )
 from ..utils import create_cookie
 
@@ -44,7 +44,7 @@ class Response(_BaseRequestResponse, JSONMixin):
             self,
             response: Union[AnyStr, Iterable],
             status: Optional[int]=None,
-            headers: Optional[Union[dict, CIMultiDict]]=None,
+            headers: Optional[Union[dict, CIMultiDict, Headers]]=None,
             mimetype: Optional[str]=None,
             content_type: Optional[str]=None,
             *,
@@ -194,7 +194,7 @@ class Response(_BaseRequestResponse, JSONMixin):
         if max_age is None:
             self.headers.pop('Access-Control-Max-Age', None)
         else:
-            self.headers['Access-Control-Max-Age'] = max_age
+            self.headers['Access-Control-Max-Age'] = max_age  # type: ignore
         if value.allow_credentials:
             self.headers['Access-Control-Allow-Credentials'] = 'true'
         else:
