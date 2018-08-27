@@ -1,3 +1,12 @@
+0.6.6 2018-08-27
+----------------
+
+* Bugfix add type conversion to getlist (on multidicts)
+* Bugfix correct ASGI client usage (allows for None)
+* Bugfix ensure overlapping requests work without destroying the
+  others context.
+* Bugfix ensure only integer status codes are accepted.
+
 0.6.5 2018-08-05
 ----------------
 
