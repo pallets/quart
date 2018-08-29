@@ -479,7 +479,9 @@ class Quart(PackageStatic):
         )
         if handler is not None:
             old_handler = self.view_functions.get(endpoint)
-            if old_handler is not None and old_handler != handler:
+            if getattr(old_handler, '_quart_async_wrapper', False):
+                old_handler = old_handler.__wrapped__  # type: ignore
+            if old_handler is not None and old_handler != view_func:
                 raise AssertionError(f"Handler is overwriting existing for endpoint {endpoint}")
 
         self.view_functions[endpoint] = handler

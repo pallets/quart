@@ -16,9 +16,20 @@ def test_endpoint_overwrite() -> None:
     def route() -> str:
         return ''
 
-    app.add_url_rule('/', 'index', route, ['GET'])
+    def route2() -> str:
+        return ''
+
+    async def route3() -> str:
+        return ''
+
+    app.add_url_rule('/a', 'index', route, ['GET'])
+    app.add_url_rule('/a/a', 'index', route, ['GET'])  # Should not assert, as same view func
     with pytest.raises(AssertionError):
-        app.add_url_rule('/a', 'index', route, ['GET'])
+        app.add_url_rule('/a/b', 'index', route2, ['GET'])
+    app.add_url_rule('/b', 'async', route3, ['GET'])
+    app.add_url_rule('/b/a', 'async', route3, ['GET'])  # Should not assert, as same view func
+    with pytest.raises(AssertionError):
+        app.add_url_rule('/b/b', 'async', route2, ['GET'])
 
 
 @pytest.mark.parametrize(
