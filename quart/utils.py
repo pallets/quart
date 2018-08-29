@@ -57,4 +57,9 @@ def create_cookie(
 
 
 def ensure_coroutine(func: Callable) -> Callable:
-    return func if asyncio.iscoroutinefunction(func) else asyncio.coroutine(func)
+    if asyncio.iscoroutinefunction(func):
+        return func
+    else:
+        async_func = asyncio.coroutine(func)
+        async_func._quart_async_wrapper = True  # type: ignore
+        return async_func
