@@ -340,6 +340,7 @@ class Quart(PackageStatic):
             subdomain: Optional[str]=None,
             *,
             provide_automatic_options: bool=True,
+            strict_slashes: bool=True,
     ) -> Callable:
         """Add a route to the application.
 
@@ -370,11 +371,13 @@ class Quart(PackageStatic):
             subdomain: A subdomain for this specific route.
             provide_automatic_options: Optionally False to prevent
                 OPTION handling.
+            strict_slashes: Strictly match the trailing slash present in the
+                path. Will redirect a leaf (no slash) to a branch (with slash).
         """
         def decorator(func: Callable) -> Callable:
             self.add_url_rule(
                 path, endpoint, func, methods, defaults=defaults, host=host, subdomain=subdomain,
-                provide_automatic_options=provide_automatic_options,
+                provide_automatic_options=provide_automatic_options, strict_slashes=strict_slashes,
             )
             return func
         return decorator
@@ -391,6 +394,7 @@ class Quart(PackageStatic):
             *,
             provide_automatic_options: bool=True,
             is_websocket: bool=False,
+            strict_slashes: bool=True,
     ) -> None:
         """Add a route/url rule to the application.
 
@@ -426,6 +430,8 @@ class Quart(PackageStatic):
             subdomain: A subdomain for this specific route.
             provide_automatic_options: Optionally False to prevent
                 OPTION handling.
+            strict_slashes: Strictly match the trailing slash present in the
+                path. Will redirect a leaf (no slash) to a branch (with slash).
         """
         endpoint = endpoint or _endpoint_from_view_func(view_func)
         handler = ensure_coroutine(view_func)
@@ -465,7 +471,7 @@ class Quart(PackageStatic):
         self.url_map.add(
             self.url_rule_class(
                 path, methods, endpoint, host=host, provide_automatic_options=automatic_options,
-                defaults=defaults, is_websocket=is_websocket,
+                defaults=defaults, is_websocket=is_websocket, strict_slashes=strict_slashes,
             ),
         )
         if handler is not None:
@@ -484,6 +490,8 @@ class Quart(PackageStatic):
             defaults: Optional[dict]=None,
             host: Optional[str]=None,
             subdomain: Optional[str]=None,
+            *,
+            strict_slashes: bool=True,
     ) -> Callable:
         """Add a websocket to the application.
 
@@ -511,10 +519,13 @@ class Quart(PackageStatic):
             host: The full host name for this route (should include subdomain
                 if needed) - cannot be used with subdomain.
             subdomain: A subdomain for this specific route.
+            strict_slashes: Strictly match the trailing slash present in the
+                path. Will redirect a leaf (no slash) to a branch (with slash).
         """
         def decorator(func: Callable) -> Callable:
             self.add_websocket(
                 path, endpoint, func, defaults=defaults, host=host, subdomain=subdomain,
+                strict_slashes=strict_slashes,
             )
             return func
         return decorator
@@ -527,6 +538,8 @@ class Quart(PackageStatic):
             defaults: Optional[dict]=None,
             host: Optional[str]=None,
             subdomain: Optional[str]=None,
+            *,
+            strict_slashes: bool=True,
     ) -> None:
         """Add a websocket url rule to the application.
 
@@ -559,10 +572,12 @@ class Quart(PackageStatic):
             host: The full host name for this route (should include subdomain
                 if needed) - cannot be used with subdomain.
             subdomain: A subdomain for this specific route.
+            strict_slashes: Strictly match the trailing slash present in the
+                path. Will redirect a leaf (no slash) to a branch (with slash).
         """
         return self.add_url_rule(
             path, endpoint, view_func, {'GET'}, defaults=defaults, host=host, subdomain=subdomain,
-            provide_automatic_options=False, is_websocket=True,
+            provide_automatic_options=False, is_websocket=True, strict_slashes=strict_slashes,
         )
 
     def endpoint(self, endpoint: str) -> Callable:

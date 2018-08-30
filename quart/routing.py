@@ -404,7 +404,7 @@ class Rule:
                 builder += part
                 pattern += part
                 self._weights.append(WeightedPart(False, -len(part)))
-        if not self.is_leaf and self.strict_slashes:
+        if not self.is_leaf or not self.strict_slashes:
             # Pattern should match with or without a trailing slash
             pattern = f"{pattern.rstrip('/')}(?<!/)(?P<__slash__>/?)$"
         else:
