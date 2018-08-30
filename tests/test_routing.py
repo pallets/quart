@@ -112,6 +112,16 @@ def test_strict_slashes() -> None:
     _test_strict_slashes(map_reveresed)
 
 
+def test_disabled_strict_slashes() -> None:
+    map_ = Map()
+    map_.add(Rule('/foo', {'GET'}, 'foo', strict_slashes=False))
+    _test_match(map_, '/foo', 'GET', (map_.endpoints['foo'][0], {}))
+    _test_match(map_, '/foo/', 'GET', (map_.endpoints['foo'][0], {}))
+    map_.add(Rule('/bar/', {'GET'}, 'bar', strict_slashes=False))
+    _test_match(map_, '/bar', 'GET', (map_.endpoints['bar'][0], {}))
+    _test_match(map_, '/bar/', 'GET', (map_.endpoints['bar'][0], {}))
+
+
 def test_ordering() -> None:
     map_ = Map()
     map_.add(Rule('/fixed', {'GET'}, 'fixed'))

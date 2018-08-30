@@ -60,6 +60,7 @@ class Blueprint(PackageStatic):
             subdomain: Optional[str]=None,
             *,
             provide_automatic_options: bool=True,
+            strict_slashes: bool=True,
     ) -> Callable:
         """Add a route to the blueprint.
 
@@ -76,7 +77,7 @@ class Blueprint(PackageStatic):
         def decorator(func: Callable) -> Callable:
             self.add_url_rule(
                 path, endpoint, func, methods, defaults=defaults, host=host, subdomain=subdomain,
-                provide_automatic_options=provide_automatic_options,
+                provide_automatic_options=provide_automatic_options, strict_slashes=strict_slashes,
             )
             return func
         return decorator
@@ -93,6 +94,7 @@ class Blueprint(PackageStatic):
             *,
             provide_automatic_options: bool=True,
             is_websocket: bool=False,
+            strict_slashes: bool=True,
     ) -> None:
         """Add a route/url rule to the blueprint.
 
@@ -115,6 +117,7 @@ class Blueprint(PackageStatic):
             lambda state: state.add_url_rule(
                 path, endpoint, view_func, methods, defaults, host, self.subdomain,
                 provide_automatic_options=provide_automatic_options, is_websocket=is_websocket,
+                strict_slashes=strict_slashes,
             ),
         )
 
@@ -125,6 +128,8 @@ class Blueprint(PackageStatic):
             defaults: Optional[dict]=None,
             host: Optional[str]=None,
             subdomain: Optional[str]=None,
+            *,
+            strict_slashes: bool=True,
     ) -> Callable:
         """Add a websocket to the blueprint.
 
@@ -141,6 +146,7 @@ class Blueprint(PackageStatic):
         def decorator(func: Callable) -> Callable:
             self.add_websocket(
                 path, endpoint, func, defaults=defaults, host=host, subdomain=subdomain,
+                strict_slashes=strict_slashes,
             )
             return func
         return decorator
@@ -153,6 +159,8 @@ class Blueprint(PackageStatic):
             defaults: Optional[dict]=None,
             host: Optional[str]=None,
             subdomain: Optional[str]=None,
+            *,
+            strict_slashes: bool=True,
     ) -> None:
         """Add a websocket rule to the blueprint.
 
@@ -170,7 +178,7 @@ class Blueprint(PackageStatic):
         """
         return self.add_url_rule(
             path, endpoint, view_func, {'GET'}, defaults=defaults, host=host, subdomain=subdomain,
-            provide_automatic_options=False, is_websocket=True,
+            provide_automatic_options=False, is_websocket=True, strict_slashes=strict_slashes,
         )
 
     def endpoint(self, endpoint: str) -> Callable:
@@ -716,6 +724,7 @@ class BlueprintSetupState:
             *,
             provide_automatic_options: bool=True,
             is_websocket: bool=False,
+            strict_slashes: bool=True,
     ) -> None:
         if self.url_prefix is not None:
             path = f"{self.url_prefix}{path}"
@@ -723,6 +732,7 @@ class BlueprintSetupState:
         self.app.add_url_rule(
             path, endpoint, view_func, methods, defaults, host=host, subdomain=subdomain,
             provide_automatic_options=provide_automatic_options, is_websocket=is_websocket,
+            strict_slashes=strict_slashes,
         )
 
     def register_endpoint(self, endpoint: str, func: Callable) -> None:
