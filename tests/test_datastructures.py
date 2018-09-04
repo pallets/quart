@@ -34,13 +34,21 @@ def test_headers_bytes() -> None:
     headers = Headers()
     headers[b'X-Foo'] = b'something'
     headers.add(b'X-Bar', b'something')
-    headers.setdefault(b'X-Bob')
+    headers.setdefault(b'X-Bob', 'something')
 
     assert headers['x-foo'] == 'something'
     assert headers['x-bar'] == 'something'
-    assert headers['x-bob'] is None
+    assert headers['x-bob'] == 'something'
     headers.add('X-Foo', 'different')
     assert headers.getlist('X-Foo') == ['something', 'different']
+
+
+def test_headers_non_strings() -> None:
+    headers = Headers()
+    headers['X-Foo'] = 12
+    headers['X-Bar'] = True
+    assert headers['x-foo'] == '12'
+    assert headers['x-bar'] == 'True'
 
 
 def test_accept() -> None:
