@@ -1,4 +1,4 @@
-.. broadcast_tutorial:
+.. _broadcast_tutorial:
 
 Tutorial: Broadcast Server Side Events
 ======================================
@@ -117,6 +117,34 @@ correct headers, as so,
 
 the asynchronous generator then yields server sent events.
 
+Timeout
+'''''''
+
+Quart by default will timeout long responses to protect against
+possible denial of service attacks, see :ref:`dos_mitigations`. For
+this example this timeout incorrectly closes the SSE stream, and so it
+should be disabled. This can be done gloablly, however that could make
+other routes DOS vulnerable, therefore the recommendation is to set
+the timeout attribute on the specific response to ``None``,
+
+.. code-block:: python
+
+    from quart import make_response
+
+    @app.route('/sse')
+    async def sse():
+        ...
+        response = await make_response(
+            send_events(),
+            {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Transfer-Encoding': 'chunked',
+            },
+        )
+        response.timeout = None  # No timeout for this route
+        return response
+
 4: Javascript equivalent
 ------------------------
 
@@ -165,11 +193,16 @@ them. The following snippet acheives this,
                 event = ServerSentEvent(data)
                 yield event.encode()
 
-        return send_events(), {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Transfer-Encoding': 'chunked',
-        }
+        response = await make_response(
+            send_events(),
+            {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Transfer-Encoding': 'chunked',
+            },
+        )
+        response.timeout = None
+        return response
 
 6: Conclusion
 -------------

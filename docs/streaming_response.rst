@@ -22,6 +22,27 @@ every second,
             yield time.encode()
         return async_generator(), 200, {'X-Something': 'value'}
 
+Timeout
+'''''''
+
+Quart by default will timeout long responses to protect against
+possible denial of service attacks, see :ref:`dos_mitigations`. This
+may be undesired for streaming responses, e.g. an indefinite
+stream. The timeout can be disabled gloablly, however this could make
+other routes DOS vulnerable, therefore the recommendation is to set
+the timeout attribute on a specific response to ``None``,
+
+.. code-block:: python
+
+    from quart import make_response
+
+    @app.route('/sse')
+    async def stream_time():
+        ...
+        response = await make_response(async_generator())
+        response.timeout = None  # No timeout for this route
+        return response
+
 Server Sent Events
 ''''''''''''''''''
 

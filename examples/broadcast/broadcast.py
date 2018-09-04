@@ -1,7 +1,7 @@
 import asyncio
 from typing import Optional
 
-from quart import jsonify, Quart, render_template, request
+from quart import jsonify, make_response, Quart, render_template, request
 
 
 app = Quart(__name__)
@@ -62,8 +62,13 @@ async def sse():
             except asyncio.CancelledError as error:
                 app.clients.remove(queue)
 
-    return send_events(), {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Transfer-Encoding': 'chunked',
-    }
+    response = await make_response(
+        send_events(),
+        {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Transfer-Encoding': 'chunked',
+        },
+    )
+    response.timeout = None
+    return response
