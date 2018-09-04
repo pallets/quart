@@ -7,7 +7,7 @@ from email.utils import parsedate_to_datetime
 from functools import wraps
 from shutil import copyfileobj
 from typing import (
-    Any, AnyStr, BinaryIO, Callable, Dict, Iterable, List, NamedTuple, Optional, Set, Type, Union,
+    Any, BinaryIO, Callable, Dict, Iterable, List, NamedTuple, Optional, Set, Type, Union,
 )
 from urllib.request import parse_http_list, parse_keqv_list
 from wsgiref.handlers import format_date_time
@@ -48,11 +48,11 @@ class CIMultiDict(_WerkzeugMultidictMixin, AIOCIMultiDict):  # type: ignore
     pass
 
 
-def _unicodify(value: AnyStr) -> str:
+def _unicodify(value: Any) -> str:
     try:
         return value.decode()  # type: ignore
     except AttributeError:
-        return value  # type: ignore
+        return str(value)
 
 
 class Headers(CIMultiDict):
@@ -60,13 +60,13 @@ class Headers(CIMultiDict):
     # unicode whilst stored. Note only a select few methods do this,
     # the others will error if presented with byte keys.
 
-    def add(self, key: AnyStr, value: AnyStr) -> None:
+    def add(self, key: Any, value: Any) -> None:
         super().add(_unicodify(key), _unicodify(value))
 
-    def __setitem__(self, key: AnyStr, value: AnyStr) -> None:
+    def __setitem__(self, key: Any, value: Any) -> None:
         super().__setitem__(_unicodify(key), _unicodify(value))
 
-    def setdefault(self, key: AnyStr, default: Optional[AnyStr]=None) -> Optional[str]:
+    def setdefault(self, key: Any, default: Optional[Any]=None) -> Optional[str]:
         return super().setdefault(_unicodify(key), _unicodify(default))
 
 
