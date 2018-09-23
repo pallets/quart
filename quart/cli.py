@@ -139,7 +139,7 @@ class QuartGroup(AppGroup):
             command = super().get_command(ctx, name)
         return command
 
-    def list_commands(self, ctx: click.Context) -> Iterable[click.Command]:
+    def list_commands(self, ctx: click.Context) -> Iterable[str]:
         commands = set(click.Group.list_commands(self, ctx))
         info = ctx.ensure_object(ScriptInfo)
         commands.update(info.load_app().cli.list_commands(ctx))
