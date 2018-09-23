@@ -1,3 +1,13 @@
+0.6.7 2018-09-23
+----------------
+
+* Bugfix ASGI conversion of websocket data (str or bytes).
+* Bugfix ensure redirect url includes host when host matching.
+* Bugfix ensure query strings are present in redirect urls.
+* Bugfix ensure header values are string types.
+* Bugfix incorrect endpoint override error for synchronous view
+  functions.
+
 0.6.6 2018-08-27
 ----------------
 
