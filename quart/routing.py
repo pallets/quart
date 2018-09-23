@@ -200,8 +200,9 @@ class Map:
             server_name: str,
             method: str,
             path: str,
+            query_string: bytes,
     ) -> 'MapAdapter':
-        return MapAdapter(self, scheme, server_name, method, path)
+        return MapAdapter(self, scheme, server_name, method, path, query_string)
 
     def bind(self, scheme: str, server_name: str) -> 'MapAdapter':
         return MapAdapter(self, scheme, server_name)
@@ -216,12 +217,14 @@ class MapAdapter:
             server_name: str,
             method: Optional[str]=None,
             path: Optional[str]=None,
+            query_string: Optional[bytes]=None,
     ) -> None:
         self.map = map
         self.scheme = scheme
         self.server_name = server_name
         self.path = path
         self.method = method
+        self.query_string = query_string
 
     def build(
             self,
@@ -249,12 +252,12 @@ class MapAdapter:
         for rule, variables, needs_slash in self._matches():
             if self.method in rule.methods:
                 if needs_slash:
-                    raise RedirectRequired(rule.build(**variables))
+                    raise RedirectRequired(self._make_redirect_url(rule, variables))
 
                 # Check if there is a default rule that can be used instead
                 for potential_rule in self.map.endpoints[rule.endpoint]:
                     if potential_rule.provides_defaults_for(rule, **variables):
-                        raise RedirectRequired(potential_rule.build(**variables))
+                        raise RedirectRequired(self._make_redirect_url(potential_rule, variables))
 
                 return rule, variables
             else:
@@ -262,6 +265,14 @@ class MapAdapter:
         if allowed_methods:
             raise MethodNotAllowed(allowed_methods=allowed_methods)
         raise NotFound()
+
+    def _make_redirect_url(self, rule: 'Rule', variables: Dict[str, Any]) -> str:
+        path = rule.build(**variables)
+        query_args = self.query_string.decode('ascii')
+        if query_args:
+            return f"{path}?{query_args}"
+        else:
+            return path
 
     def allowed_methods(self) -> Set[str]:
         allowed_methods: Set[str] = set()

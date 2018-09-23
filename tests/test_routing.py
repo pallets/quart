@@ -31,12 +31,14 @@ def _test_match(
         map_: Map, path: str, method: str, expected: Tuple[Rule, Dict[str, Any]],
         host: str='',
 ) -> None:
-    adapter = map_.bind_to_request('http', host, method, path)
+    adapter = map_.bind_to_request('http', host, method, path, b'')
     assert adapter.match() == expected
 
 
-def _test_match_redirect(map_: Map, path: str, method: str, redirect_path: str) -> None:
-    adapter = map_.bind_to_request('http', '', method, path)
+def _test_match_redirect(
+        map_: Map, path: str, method: str, redirect_path: str, query_string: bytes=b'',
+) -> None:
+    adapter = map_.bind_to_request('http', '', method, path, query_string)
     with pytest.raises(RedirectRequired) as error:
         adapter.match()
     assert error.value.redirect_path == redirect_path
@@ -47,13 +49,13 @@ def test_no_match_error(basic_map: Map) -> None:
 
 
 def _test_no_match(map_: Map, path: str, method: str) -> None:
-    adapter = map_.bind_to_request('http', '', method, path)
+    adapter = map_.bind_to_request('http', '', method, path, b'')
     with pytest.raises(NotFound):
         adapter.match()
 
 
 def test_method_not_allowed_error(basic_map: Map) -> None:
-    adapter = basic_map.bind_to_request('http', '', 'GET', '/')
+    adapter = basic_map.bind_to_request('http', '', 'GET', '/', b'')
     try:
         adapter.match()
     except Exception as error:
@@ -94,7 +96,7 @@ def test_build_error(basic_map: Map) -> None:
 
 def test_strict_slashes() -> None:
     def _test_strict_slashes(map_: Map) -> None:
-        adapter = map_.bind_to_request('http', '', 'POST', '/path/')
+        adapter = map_.bind_to_request('http', '', 'POST', '/path/', b'')
         with pytest.raises(MethodNotAllowed):
             adapter.match()
         _test_match_redirect(map_, '/path', 'GET', '/path/')
@@ -120,6 +122,12 @@ def test_disabled_strict_slashes() -> None:
     map_.add(Rule('/bar/', {'GET'}, 'bar', strict_slashes=False))
     _test_match(map_, '/bar', 'GET', (map_.endpoints['bar'][0], {}))
     _test_match(map_, '/bar/', 'GET', (map_.endpoints['bar'][0], {}))
+
+
+def test_redirect_url_query_string() -> None:
+    map_ = Map()
+    map_.add(Rule('/path/', {'GET'}, 'branch'))
+    _test_match_redirect(map_, '/path', 'GET', '/path/?a=b', b'a=b')
 
 
 def test_ordering() -> None:

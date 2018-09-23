@@ -264,7 +264,7 @@ class Quart(PackageStatic):
         if request is not None:
             host = request.host
             return self.url_map.bind_to_request(
-                request.scheme, host, request.method, request.path,
+                request.scheme, host, request.method, request.path, request.query_string,
             )
 
         if self.config['SERVER_NAME'] is not None:
