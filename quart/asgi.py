@@ -1,6 +1,6 @@
 import asyncio
 from functools import partial
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import AnyStr, Callable, Optional, TYPE_CHECKING
 
 from .datastructures import CIMultiDict
 from .wrappers import Request, Response, Websocket  # noqa: F401
@@ -149,11 +149,17 @@ class ASGIWebsocketConnection:
                 'code': 1000,
             })
 
-    async def send_data(self, send: Callable, data: bytes) -> None:
-        await send({
-            'type': 'websocket.send',
-            'bytes': data,
-        })
+    async def send_data(self, send: Callable, data: AnyStr) -> None:
+        if isinstance(data, str):
+            await send({
+                'type': 'websocket.send',
+                'text': data,
+            })
+        else:
+            await send({
+                'type': 'websocket.send',
+                'bytes': data,
+            })
 
     async def accept_connection(self, send: Callable) -> None:
         if not self._accepted:
