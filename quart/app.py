@@ -1388,7 +1388,7 @@ class Quart(PackageStatic):
         for key, value in self.teardown_websocket_funcs.items():
             self.teardown_websocket_funcs[key] = list(reversed(value))
 
-        with await self._first_request_lock:
+        async with self._first_request_lock:
             if self._got_first_request:
                 return
             for function in self.before_first_request_funcs:
