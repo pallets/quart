@@ -4,7 +4,7 @@ from ast import literal_eval
 from collections import defaultdict
 from typing import Any, Dict, Generator, List, NamedTuple, Optional, Set, Tuple, Union  # noqa
 from typing.re import Pattern  # noqa
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlunsplit
 
 from sortedcontainers import SortedListWithKey
 
@@ -268,9 +268,11 @@ class MapAdapter:
 
     def _make_redirect_url(self, rule: 'Rule', variables: Dict[str, Any]) -> str:
         path = rule.build(**variables)
-        query_args = self.query_string.decode('ascii')
-        if query_args:
-            return f"{path}?{query_args}"
+        suffix = self.query_string.decode('ascii')
+        if self.map.host_matching:
+            return urlunsplit((self.scheme, self.server_name, path, suffix, ''))
+        elif suffix:
+            return f"{path}?{suffix}"
         else:
             return path
 
