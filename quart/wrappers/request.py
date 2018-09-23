@@ -249,11 +249,11 @@ class Websocket(BaseRequestWebsocket):
         self._send = send
         self._accept = accept
 
-    async def receive(self) -> bytes:
+    async def receive(self) -> AnyStr:
         await self.accept()
         return await self._queue.get()
 
-    async def send(self, data: bytes) -> None:
+    async def send(self, data: AnyStr) -> None:
         # Must allow for the event loop to act if the user has say
         # setup a tight loop sending data over a websocket (as in the
         # example). So yield via the sleep.
