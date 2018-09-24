@@ -37,7 +37,7 @@ class TaskLocal:
     def _task_identity() -> int:
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            task = asyncio.Task.current_task()
+            task = asyncio.current_task()
             task_id = id(task)
             return task_id
         else:
