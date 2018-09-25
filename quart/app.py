@@ -1329,6 +1329,10 @@ class Quart(PackageStatic):
 
         scheme = 'http' if config.ssl is None else 'https'
         print("Running on {}://{}:{} (CTRL + C to quit)".format(scheme, config.host, config.port))  # noqa: T001, E501
+
+        if loop is None:
+            loop = asyncio.get_event_loop()
+
         try:
             run_single(self, config, loop=loop)
         finally:
