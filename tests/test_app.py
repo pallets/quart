@@ -159,3 +159,58 @@ async def test_make_response(
         assert response.headers.keys() == expected.headers.keys()
         assert response.status_code == expected.status_code
         assert (await response.get_data()) == (await expected.get_data())  # type: ignore
+
+
+@pytest.fixture(name='basic_app')
+def _basic_app() -> Quart:
+    app = Quart(__name__)
+
+    @app.route('/')
+    def route() -> str:
+        return ''
+
+    @app.route('/exception/')
+    def exception() -> str:
+        raise Exception()
+
+    return app
+
+
+@pytest.mark.asyncio
+async def test_app_route_exception(basic_app: Quart) -> None:
+    test_client = basic_app.test_client()
+    response = await test_client.get('/exception/')
+    assert response.status_code == 500
+
+
+@pytest.mark.asyncio
+async def test_app_before_request_exception(basic_app: Quart) -> None:
+    @basic_app.before_request
+    def before() -> None:
+        raise Exception()
+
+    test_client = basic_app.test_client()
+    response = await test_client.get('/')
+    assert response.status_code == 500
+
+
+@pytest.mark.asyncio
+async def test_app_after_request_exception(basic_app: Quart) -> None:
+    @basic_app.after_request
+    def after(_: Response) -> None:
+        raise Exception()
+
+    test_client = basic_app.test_client()
+    response = await test_client.get('/')
+    assert response.status_code == 500
+
+
+@pytest.mark.asyncio
+async def test_app_after_request_handler_exception(basic_app: Quart) -> None:
+    @basic_app.after_request
+    def after(_: Response) -> None:
+        raise Exception()
+
+    test_client = basic_app.test_client()
+    response = await test_client.get('/exception/')
+    assert response.status_code == 500
