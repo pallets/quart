@@ -921,9 +921,9 @@ class Quart(PackageStatic):
         if handler is None:
             return internal_server_error.get_response()
         else:
-            return await handler(error)
+            return await self.finalize_request(await handler(error), from_error_handler=True)
 
-    async def handle_websocket_exception(self, error: Exception) -> None:
+    async def handle_websocket_exception(self, error: Exception) -> Optional[Response]:
         """Handle an uncaught exception.
 
         By default this logs the exception and then re-raises it.
@@ -938,7 +938,7 @@ class Quart(PackageStatic):
         if handler is None:
             return internal_server_error.get_response()
         else:
-            return await handler(error)
+            return await self.finalize_websocket(await handler(error), from_error_handler=True)
 
     def log_exception(self, exception_info: Tuple[type, BaseException, TracebackType]) -> None:
         """Log a exception to the :attr:`logger`.
@@ -1520,6 +1520,7 @@ class Quart(PackageStatic):
         self,
         result: ResponseReturnValue,
         request_context: Optional[RequestContext]=None,
+        from_error_handler: bool=False,
     ) -> Response:
         """Turns the view response return value into a response.
 
@@ -1529,8 +1530,13 @@ class Quart(PackageStatic):
                 omits this argument.
         """
         response = await self.make_response(result)
-        response = await self.process_response(response, request_context)
-        await request_finished.send(self, response=response)
+        try:
+            response = await self.process_response(response, request_context)
+            await request_finished.send(self, response=response)
+        except Exception:
+            if not from_error_handler:
+                raise
+            self.logger.exception('Request finalizing errored')
         return response
 
     async def process_response(
@@ -1634,6 +1640,7 @@ class Quart(PackageStatic):
         self,
         result: ResponseReturnValue,
         websocket_context: Optional[WebsocketContext]=None,
+        from_error_handler: bool=False,
     ) -> Optional[Response]:
         """Turns the view response return value into a response.
 
@@ -1646,8 +1653,13 @@ class Quart(PackageStatic):
             response = await self.make_response(result)
         else:
             response = None
-        response = await self.postprocess_websocket(response, websocket_context)
-        await websocket_finished.send(self, response=response)
+        try:
+            response = await self.postprocess_websocket(response, websocket_context)
+            await websocket_finished.send(self, response=response)
+        except Exception:
+            if not from_error_handler:
+                raise
+            self.logger.exception('Request finalizing errored')
         return response
 
     async def postprocess_websocket(
