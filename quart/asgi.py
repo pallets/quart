@@ -1,6 +1,6 @@
 import asyncio
 from functools import partial
-from typing import AnyStr, Callable, Optional, TYPE_CHECKING
+from typing import AnyStr, Callable, TYPE_CHECKING
 
 from .datastructures import CIMultiDict
 from .wrappers import Request, Response, Websocket  # noqa: F401
@@ -14,26 +14,33 @@ class ASGIHTTPConnection:
     def __init__(self, app: 'Quart', scope: dict) -> None:
         self.app = app
         self.scope = scope
-        self.request: Optional[Request] = None
-        self.task: Optional[asyncio.Future] = None
 
     async def __call__(self, receive: Callable, send: Callable) -> None:
+        request = self._create_request_from_scope()
+        # It is important that the app handles the request in a unique
+        # task as the globals are task locals
+        task = asyncio.ensure_future(self._handle_request(request, send))
         while True:
-            event = await receive()
-            if event['type'] == 'http.request':
-                if self.request is None:
-                    self._create_request_from_scope()
-                    # It is important that the app handles the request in a unique
-                    # task as the globals are task locals
-                    self.task = asyncio.ensure_future(self._handle_request(send))
-                self.request.body.append(event['body'])
-                if not event.get('more_body', False):
-                    self.request.body.set_complete()
-            elif event['type'] == 'http.disconnect':
-                self.task.cancel()
-                break
+            # This is optimised for the most likely case whereby the
+            # connection isn't closed by the client. This is possible
+            # as the send calls become noops on client closure and
+            # hence the task need not be cancelled immediately. Which
+            # is important as the disconnect message will never be
+            # acted on after the body is complete. See the
+            # ASGIWebsocketConnection for a necessary, but slower,
+            # solution.
+            message = await receive()
+            if message['type'] == 'http.request':
+                request.body.append(message['body'])
+                if not message.get('more_body', False):
+                    request.body.set_complete()
+                    await task
+                    return
+                elif message['type'] == 'http.disconnect':
+                    task.cancel()
+                    return
 
-    def _create_request_from_scope(self) -> None:
+    def _create_request_from_scope(self) -> Request:
         headers = CIMultiDict()
         headers['Remote-Addr'] = (self.scope.get('client') or ['<local>'])[0]
         for name, value in self.scope['headers']:
@@ -41,15 +48,15 @@ class ASGIHTTPConnection:
         if self.scope['http_version'] < '1.1':
             headers.setdefault('Host', self.app.config['SERVER_NAME'] or '')
 
-        self.request = self.app.request_class(
+        return self.app.request_class(
             self.scope['method'], self.scope['scheme'], self.scope['path'],
             self.scope['query_string'], headers,
             max_content_length=self.app.config['MAX_CONTENT_LENGTH'],
             body_timeout=self.app.config['BODY_TIMEOUT'],
         )
 
-    async def _handle_request(self, send: Callable) -> None:
-        response = await self.app.handle_request(self.request)
+    async def _handle_request(self, request: Request, send: Callable) -> None:
+        response = await self.app.handle_request(request)
         try:
             await asyncio.wait_for(self._send_response(send, response), timeout=response.timeout)
         except asyncio.TimeoutError:
@@ -93,29 +100,37 @@ class ASGIWebsocketConnection:
         self.app = app
         self.scope = scope
         self.queue: asyncio.Queue = asyncio.Queue()
-        self.task: Optional[asyncio.Future] = None
         self._accepted = False
 
     async def __call__(self, receive: Callable, send: Callable) -> None:
+        websocket = self._create_websocket_from_scope(send)
+        handler_task = asyncio.ensure_future(self.handle_websocket(websocket, send))
+        receiver_task = asyncio.ensure_future(self.handle_messages(receive))
+        _, pending = await asyncio.wait(
+            [handler_task, receiver_task], return_when=asyncio.FIRST_COMPLETED,
+        )
+        for task in pending:
+            task.cancel()
+
+    async def handle_messages(self, receive: Callable) -> None:
         while True:
             event = await receive()
-            if event['type'] == 'websocket.connect':
-                headers = CIMultiDict()
-                headers['Remote-Addr'] = self.scope.get('client', ['<local>'])[0]
-                for name, value in self.scope['headers']:
-                    headers.add(name.decode().title(), value.decode())
-
-                websocket = self.app.websocket_class(
-                    self.scope['path'], self.scope['query_string'], self.scope['scheme'],
-                    headers, self.queue, partial(self.send_data, send),
-                    partial(self.accept_connection, send),
-                )
-                self.task = asyncio.ensure_future(self.handle_websocket(websocket, send))
-            elif event['type'] == 'websocket.receive':
+            if event['type'] == 'websocket.receive':
                 await self.queue.put(event.get('bytes') or event['text'])
             elif event['type'] == 'websocket.disconnect':
-                self.task.cancel()
-                break
+                return
+
+    def _create_websocket_from_scope(self, send: Callable) -> Websocket:
+        headers = CIMultiDict()
+        headers['Remote-Addr'] = (self.scope.get('client') or ['<local>'])[0]
+        for name, value in self.scope['headers']:
+            headers.add(name.decode().title(), value.decode())
+
+        return self.app.websocket_class(
+            self.scope['path'], self.scope['query_string'], self.scope['scheme'],
+            headers, self.queue, partial(self.send_data, send),
+            partial(self.accept_connection, send),
+        )
 
     async def handle_websocket(self, websocket: Websocket, send: Callable) -> None:
         response = await self.app.handle_websocket(websocket)
