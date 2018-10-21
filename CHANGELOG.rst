@@ -1,3 +1,11 @@
+0.6.8 2018-10-21
+----------------
+
+* Ensure an event loop is specified on app.run.
+* Bugfix ensure handler responses are finalized.
+* Bugfix ensure the ASGI callable returns on completion.
+
+
 0.6.7 2018-09-23
 ----------------
 
