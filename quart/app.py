@@ -1268,7 +1268,7 @@ class Quart(PackageStatic):
         """
         return RequestContext(self, request)
 
-    def websocket_context(self,  websocket: Websocket) -> WebsocketContext:
+    def websocket_context(self, websocket: Websocket) -> WebsocketContext:
         """Create and return a websocket context.
 
         Use the :meth:`test_websocket_context` whilst testing. This is

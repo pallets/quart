@@ -60,7 +60,7 @@ def test_build_headers_path_and_query_string_with_query_string_error() -> None:
     [
         (
             None,
-            CIMultiDict({'Remote-Addr': '127.0.0.1', 'User-Agent': 'Quart',  'host': 'localhost'}),
+            CIMultiDict({'Remote-Addr': '127.0.0.1', 'User-Agent': 'Quart', 'host': 'localhost'}),
         ),
         (
             CIMultiDict({'Remote-Addr': '1.2.3.4', 'User-Agent': 'Quarty', 'host': 'quart.com'}),

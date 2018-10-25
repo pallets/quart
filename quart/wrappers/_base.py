@@ -30,11 +30,11 @@ class JSONMixin:
     @property
     def mimetype(self) -> str:
         """Return the mimetype of the associated data."""
-        raise NotImplemented()
+        raise NotImplementedError()
 
     async def _load_json_data(self) -> str:
         """Return the data after decoding."""
-        raise NotImplemented()
+        raise NotImplementedError()
 
     @property
     def is_json(self) -> bool:
@@ -131,7 +131,7 @@ class _BaseRequestResponse:
         return parse_header(self.headers.get('Content-Type', ''))[1]
 
     async def get_data(self, raw: bool=True) -> AnyStr:
-        raise NotImplemented()
+        raise NotImplementedError()
 
 
 class BaseRequestWebsocket(_BaseRequestResponse):
