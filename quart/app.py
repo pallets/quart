@@ -1680,18 +1680,15 @@ class Quart(PackageStatic):
 
         return response
 
-    def __call__(self, scope: dict) -> Union[Callable, 'Quart']:
-        if scope is None:  # Required for (deprecated) Gunicorn compatibility.
-            return self
+    def __call__(self, scope: dict) -> Callable:
+        if scope['type'] == 'http':
+            return ASGIHTTPConnection(self, scope)
+        elif scope['type'] == 'websocket':
+            return ASGIWebsocketConnection(self, scope)
+        elif scope['type'] == 'lifespan':
+            return ASGILifespan(self, scope)
         else:
-            if scope['type'] == 'http':
-                return ASGIHTTPConnection(self, scope)
-            elif scope['type'] == 'websocket':
-                return ASGIWebsocketConnection(self, scope)
-            elif scope['type'] == 'lifespan':
-                return ASGILifespan(self, scope)
-            else:
-                raise RuntimeError('ASGI Scope type is unknown')
+            raise RuntimeError('ASGI Scope type is unknown')
 
     async def startup(self) -> None:
         async with self.app_context():
