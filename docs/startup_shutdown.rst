@@ -1,11 +1,11 @@
-.. _startup_cleanup:
+.. _startup_shutdown:
 
-Startup and Cleanup
+Startup and Shutdown
 ===================
 
 A provisional addition to the ASGI specification adds the ability for
 coroutines to be awaited before a byte is received, ``startup`` and
-after the final byte is sent ``cleanup``. This is particularly useful
+after the final byte is sent ``shutdown``. This is particularly useful
 for creating and destroying connection pools. Quart provisionally
 supports this via :func:`~quart.app.Quart.before_serving` and
 :func:`~quart.app.Quart.after_serving` decorators which in the same
@@ -25,7 +25,3 @@ To use this functionality simply do the following,
     @app.after_serving
     async def create_db_pool():
         await g.db_pool.close()
-
-.. note::
-
-    This API is provisional and may change in future releases.

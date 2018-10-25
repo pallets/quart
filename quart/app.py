@@ -14,7 +14,7 @@ from typing import (
 
 from hypercorn import Config as HyperConfig, run_single
 
-from .asgi import ASGIHTTPConnection, ASGIWebsocketConnection
+from .asgi import ASGIHTTPConnection, ASGILifespan, ASGIWebsocketConnection
 from .blueprints import Blueprint
 from .cli import AppGroup
 from .config import Config, ConfigAttribute, DEFAULT_CONFIG
@@ -1021,9 +1021,6 @@ class Quart(PackageStatic):
         This will allow the function provided to be called once before
         anything is served (before any byte is received).
 
-        This is a provisional API and may change, see the ASGI spec
-        for details.
-
         This is designed to be used as a decorator. An example usage,
 
         .. code-block:: python
@@ -1082,9 +1079,6 @@ class Quart(PackageStatic):
 
         This will allow the function provided to be called once after
         anything is served (after last byte is sent).
-
-        This is a provisional API and may change, see the ASGI spec
-        for details.
 
         This is designed to be used as a decorator. An example usage,
 
@@ -1694,6 +1688,8 @@ class Quart(PackageStatic):
                 return ASGIHTTPConnection(self, scope)
             elif scope['type'] == 'websocket':
                 return ASGIWebsocketConnection(self, scope)
+            elif scope['type'] == 'lifespan':
+                return ASGILifespan(self, scope)
             else:
                 raise RuntimeError('ASGI Scope type is unknown')
 
@@ -1702,7 +1698,7 @@ class Quart(PackageStatic):
             for func in self.before_serving_funcs:
                 await func()
 
-    async def cleanup(self) -> None:
+    async def shutdown(self) -> None:
         async with self.app_context():
             for func in self.after_serving_funcs:
                 await func()

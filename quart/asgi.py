@@ -182,3 +182,19 @@ class ASGIWebsocketConnection:
                 'type': 'websocket.accept',
             })
             self._accepted = True
+
+
+class ASGILifespan:
+
+    def __init__(self, app: 'Quart', scope: dict) -> None:
+        self.app = app
+
+    async def __call__(self, receive: Callable, send: Callable) -> None:
+        while True:
+            event = await receive()
+            if event['type'] == 'lifespan.startup':
+                await self.app.startup()
+                await send({'type': 'lifespan.startup.complete'})
+            elif event['type'] == 'lifespan.shutdown':
+                await self.app.shutdown()
+                await send({'type': 'lifespan.shutdown.complete'})

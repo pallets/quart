@@ -63,7 +63,7 @@ How-To Guides
    request_body.rst
    routing.rst
    session_storage.rst
-   startup_cleanup.rst
+   startup_shutdown.rst
    streaming_response.rst
    templating.rst
    testing.rst
