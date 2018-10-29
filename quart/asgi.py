@@ -198,3 +198,4 @@ class ASGILifespan:
             elif event['type'] == 'lifespan.shutdown':
                 await self.app.shutdown()
                 await send({'type': 'lifespan.shutdown.complete'})
+                break
