@@ -11,9 +11,58 @@ function, like so,
     @app.websocket('/ws')
     async def ws():
         while True:
-            await websocket.receive()
+            data = await websocket.receive()
+            await websocket.send(data)
 
-``websocket`` is a global.
+``websocket`` is a global like ``request`` and shares many of the same
+attribtues such as ``headers``.
+
+Manually rejecting or accepting websockets
+------------------------------------------
+
+A websocket connection is created by accepting a HTTP upgrade request,
+however a server can choose to reject a websocket request. To do so
+just return from the websocket function as you would with a route function,
+
+.. code-block:: python
+
+    @app.websocket('/ws')
+    async def ws():
+        if (
+            websocket.authorization.username != USERNAME or
+            websocket.authorization.password != PASSWORD
+        ):
+            return 'Invalid password', 403  # or abort(403)
+        else:
+            websocket.accept()  # Automatically invoked by receive or send
+            ...
+
+Sending and receiving independently
+-----------------------------------
+
+The first example given requires the client to send a message for the
+server to respond. To send and receive independently requires
+independent tasks,
+
+.. code-block:: python
+
+    async def sending():
+        while True:
+            await websocket.send(...)
+
+    async def receiving():
+        while True:
+            data = await websocket.receive()
+            ...
+
+    @app.websocket('/ws')
+    async def ws():
+        producer = asyncio.create_task(sending())
+        consumer = asyncio.create_task(receiving())
+        await asyncio.gather(producer, consumer)
+
+The gather line is critical, as without it the websocket function
+would return triggering Quart to send a HTTP response.
 
 Testing websockets
 ------------------
