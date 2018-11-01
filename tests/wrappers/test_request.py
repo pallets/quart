@@ -39,6 +39,19 @@ async def test_body_streaming() -> None:
 
 
 @pytest.mark.asyncio
+async def test_body_stream_single_chunk() -> None:
+    body = Body(None)
+    body.append(b"data")
+    body.set_complete()
+
+    async def _check_data() -> None:
+        async for data in body:
+            assert data == b"data"
+
+    await asyncio.wait_for(_check_data(), 1)
+
+
+@pytest.mark.asyncio
 async def test_body_streaming_no_data() -> None:
     body = Body(None)
     semaphore = asyncio.Semaphore(0)
