@@ -111,6 +111,7 @@ class QuartClient:
             query_string: Optional[dict]=None,
             json: Any=sentinel,
             scheme: str='http',
+            follow_redirects: bool=False
     ) -> Response:
         """Open a request to the app associated with this client.
 
@@ -127,6 +128,8 @@ class QuartClient:
                 query_string can be determined from the path.
             json: Data to send json encoded in the request body.
             scheme: The scheme to use in the request, default http.
+            follow_redirects: Whether or not a redirect response should
+                be followed, defaults to False.
 
         Returns:
             The response from the app handling the request.
@@ -161,6 +164,10 @@ class QuartClient:
         response = await asyncio.ensure_future(self.app.handle_request(request))
         if self.cookie_jar is not None and 'Set-Cookie' in response.headers:
             self.cookie_jar.load(";".join(response.headers.getall('Set-Cookie')))
+
+        while response.status_code >= 300 and response.status_code <= 399:
+            request = Request(method, scheme, response.location, query_string_bytes, headers)
+            response = await asyncio.ensure_future(self.app.handle_request(request))
         return response
 
     async def delete(self, *args: Any, **kwargs: Any) -> Response:
