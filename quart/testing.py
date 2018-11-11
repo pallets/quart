@@ -111,7 +111,7 @@ class QuartClient:
             query_string: Optional[dict]=None,
             json: Any=sentinel,
             scheme: str='http',
-            follow_redirects: bool=False
+            follow_redirects: bool=False,
     ) -> Response:
         """Open a request to the app associated with this client.
 

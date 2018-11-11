@@ -135,6 +135,7 @@ async def test_query_string() -> None:
     response = await client.get('/', query_string={'a': 'b'})
     assert (await response.get_json()) == {'a': 'b'}
 
+
 @pytest.mark.asyncio
 async def test_redirect() -> None:
     app = Quart(__name__)
@@ -144,11 +145,12 @@ async def test_redirect() -> None:
         return request.method
 
     @app.route('/redirect', methods=['GET'])
-    async def redir() -> int:
+    async def redir() -> Response:
         return redirect('/')
 
     client = Client(app)
     assert (await client.get('/redirect', follow_redirects=True)).status_code == 200
+
 
 @pytest.mark.asyncio
 async def test_cookie_jar() -> None:
