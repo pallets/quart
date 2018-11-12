@@ -165,9 +165,15 @@ class QuartClient:
         if self.cookie_jar is not None and 'Set-Cookie' in response.headers:
             self.cookie_jar.load(";".join(response.headers.getall('Set-Cookie')))
 
-        while response.status_code >= 300 and response.status_code <= 399:
-            request = Request(method, scheme, response.location, query_string_bytes, headers)
-            response = await asyncio.ensure_future(self.app.handle_request(request))
+        if follow_redirects:
+            while response.status_code >= 300 and response.status_code <= 399:
+                # Most browsers respond to an HTTP 302 with a GET request to the new location,
+                # despite what the HTTP spec says. HTTP 303 should always be responded to with
+                # a GET request.
+                if response.status_code == 302 or response.status_code == 303:
+                    method = 'GET'
+                request = Request(method, scheme, response.location, query_string_bytes, headers)
+                response = await asyncio.ensure_future(self.app.handle_request(request))
         return response
 
     async def delete(self, *args: Any, **kwargs: Any) -> Response:
