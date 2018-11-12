@@ -38,13 +38,12 @@ class Body:
         return self
 
     async def __anext__(self) -> bytes:
-        # If the first time through was the entirety of the data,
-        # set_complete was already called so we have to wait on both
-        # _has_data and _complete otherwise we'll hang indefinitely
-        # waiting for _has_data since it will never get set again
-        await asyncio.wait(
-            [self._has_data.wait(), self._complete.wait()], return_when=asyncio.FIRST_COMPLETED,
-        )
+        # if we got all of the data in the first shot, then self._complete is
+        # set and self._has_data will not get set again, so skip the await
+        # if we already have completed everything
+        if not self._complete.is_set():
+            await self._has_data.wait()
+
         if self._complete.is_set() and len(self._data) == 0:
             raise StopAsyncIteration()
 
