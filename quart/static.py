@@ -26,6 +26,8 @@ class PackageStatic:
             import_name: str,
             template_folder: Optional[str]=None,
             root_path: Optional[str]=None,
+            static_folder: Optional[str]=None,
+            static_url_path: Optional[str]=None,
     ) -> None:
         self.import_name = import_name
         self.template_folder = template_folder
@@ -34,6 +36,8 @@ class PackageStatic:
 
         self._static_folder: Optional[str] = None
         self._static_url_path: Optional[str] = None
+        self.static_folder = static_folder
+        self.static_url_path = static_url_path
 
     @property
     def static_folder(self) -> Optional[str]:

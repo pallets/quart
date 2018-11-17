@@ -152,7 +152,7 @@ class Quart(PackageStatic):
             before_websocket_funcs: The functions to execute before handling
                 a websocket.
         """
-        super().__init__(import_name, template_folder, root_path)
+        super().__init__(import_name, template_folder, root_path, static_folder, static_url_path)
 
         self.config = self.make_config()
 
@@ -167,8 +167,6 @@ class Quart(PackageStatic):
         self.error_handler_spec: Dict[AppOrBlueprintKey, Dict[Exception, Callable]] = defaultdict(dict)  # noqa: E501
         self.extensions: Dict[str, Any] = {}
         self.shell_context_processors: List[Callable] = []
-        self.static_folder = static_folder
-        self.static_url_path = static_url_path
         self.teardown_appcontext_funcs: List[Callable] = []
         self.teardown_request_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)  # noqa: E501
         self.teardown_websocket_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)  # noqa: E501

@@ -44,7 +44,7 @@ class Blueprint(PackageStatic):
             subdomain: Optional[str]=None,
             root_path: Optional[str]=None,
     ) -> None:
-        super().__init__(import_name, template_folder, root_path)
+        super().__init__(import_name, template_folder, root_path, static_folder, static_url_path)
         self.name = name
         self.url_prefix = url_prefix
         self.deferred_functions: List[DeferedSetupFunction] = []
@@ -667,6 +667,13 @@ class Blueprint(PackageStatic):
     ) -> None:
         """Register this blueprint on the app given."""
         state = self.make_setup_state(app, first_registration, url_prefix=url_prefix)
+
+        if self.has_static_folder:
+            state.add_url_rule(
+                self.static_url_path + '/<path:filename>',
+                view_func=self.send_static_file, endpoint='static',
+            )
+
         for func in self.deferred_functions:
             func(state)
 
