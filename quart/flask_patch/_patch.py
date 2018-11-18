@@ -17,6 +17,15 @@ def _patch_asyncio() -> None:
     asyncio.Task = asyncio.tasks._CTask = asyncio.tasks.Task = asyncio.tasks._PyTask  # type: ignore
     asyncio.Future = asyncio.futures._CFuture = asyncio.futures.Future = asyncio.futures._PyFuture  # type: ignore # noqa
 
+    current_policy = asyncio.get_event_loop_policy()
+    if hasattr(asyncio, 'unix_events'):
+        target_policy = asyncio.unix_events._UnixDefaultEventLoopPolicy  # type: ignore
+    else:
+        target_policy = object()
+
+    if not isinstance(current_policy, target_policy):
+        raise RuntimeError("Flask Patching only works with the default event loop policy")
+
     def _sync_wait(self, future):  # type: ignore
         preserved_ready = list(self._ready)
         self._ready.clear()
