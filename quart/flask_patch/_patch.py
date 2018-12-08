@@ -26,22 +26,49 @@ def _patch_asyncio() -> None:
     if not isinstance(current_policy, target_policy):
         raise RuntimeError("Flask Patching only works with the default event loop policy")
 
+    _patch_loop()
+    _patch_task()
+
+
+def _patch_loop() -> None:
     def _sync_wait(self, future):  # type: ignore
         preserved_ready = list(self._ready)
         self._ready.clear()
         future = asyncio.tasks.ensure_future(future, loop=self)
-        preserved_task = future.current_task(self)
-        asyncio._leave_task(self, preserved_task)
         while not future.done() and not future.cancelled():
             self._run_once()
             if self._stopping:
                 break
         self._ready.extendleft(preserved_ready)
-        if preserved_task is not None:
-            asyncio._enter_task(self, preserved_task)
         return future.result()
 
     asyncio.BaseEventLoop.sync_wait = _sync_wait  # type: ignore
+
+
+def _patch_task() -> None:
+    # Patch the asyncio task to allow it to be re-entered.
+    def enter_task(loop, task):  # type: ignore
+        asyncio.tasks._current_tasks[loop] = task  # type: ignore
+
+    asyncio.tasks._enter_task = enter_task  # type: ignore
+
+    def leave_task(loop, task):  # type: ignore
+        del asyncio.tasks._current_tasks[loop]  # type: ignore
+
+    asyncio.tasks._leave_task = leave_task  # type: ignore
+
+    def step(self, exception):  # type: ignore
+        current_task = asyncio.tasks._current_tasks.get(self._loop)  # type: ignore
+        try:
+            self.__step_orig(self, exception)  # type: ignore
+        finally:
+            if current_task is None:
+                asyncio.tasks._current_tasks.pop(self._loop, None)  # type: ignore
+            else:
+                asyncio.tasks._current_tasks[self._loop] = current_task  # type: ignore
+
+    asyncio.Task._Task__step_orig = asyncio.Task._Task__step  # type: ignore
+    asyncio.Task._Task__step = step  # type: ignore
 
 
 def _context_decorator(func: Callable) -> Callable:
