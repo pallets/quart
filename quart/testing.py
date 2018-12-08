@@ -9,7 +9,7 @@ from urllib.parse import urlencode
 from .datastructures import CIMultiDict
 from .exceptions import BadRequest
 from .utils import create_cookie
-from .wrappers import Request, Response, Websocket
+from .wrappers import Response, Websocket
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa
@@ -159,7 +159,9 @@ class QuartClient:
         if self.cookie_jar is not None:
             headers.add('Cookie', self.cookie_jar.output(header=''))  # type: ignore
 
-        request = Request(method, scheme, path, query_string_bytes, headers)  # type: ignore
+        request = self.app.request_class(
+            method, scheme, path, query_string_bytes, headers,
+        )
         request.body.set_result(request_data)
         response = await asyncio.ensure_future(self.app.handle_request(request))
         if self.cookie_jar is not None and 'Set-Cookie' in response.headers:
@@ -172,7 +174,9 @@ class QuartClient:
                 # a GET request.
                 if response.status_code == 302 or response.status_code == 303:
                     method = 'GET'
-                request = Request(method, scheme, response.location, query_string_bytes, headers)
+                request = self.app.request_class(
+                    method, scheme, response.location, query_string_bytes, headers,
+                )
                 response = await asyncio.ensure_future(self.app.handle_request(request))
         return response
 
