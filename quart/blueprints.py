@@ -59,7 +59,7 @@ class Blueprint(PackageStatic):
             host: Optional[str]=None,
             subdomain: Optional[str]=None,
             *,
-            provide_automatic_options: bool=True,
+            provide_automatic_options: Optional[bool]=None,
             strict_slashes: bool=True,
     ) -> Callable:
         """Add a route to the blueprint.
@@ -92,7 +92,7 @@ class Blueprint(PackageStatic):
             host: Optional[str]=None,
             subdomain: Optional[str]=None,
             *,
-            provide_automatic_options: bool=True,
+            provide_automatic_options: Optional[bool]=None,
             is_websocket: bool=False,
             strict_slashes: bool=True,
     ) -> None:
@@ -729,7 +729,7 @@ class BlueprintSetupState:
             host: Optional[str]=None,
             subdomain: Optional[str]=None,
             *,
-            provide_automatic_options: bool=True,
+            provide_automatic_options: Optional[bool]=None,
             is_websocket: bool=False,
             strict_slashes: bool=True,
     ) -> None:
