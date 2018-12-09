@@ -6,7 +6,6 @@ from datetime import timedelta
 from itertools import chain
 from logging import Logger
 from pathlib import Path
-from ssl import SSLContext
 from types import TracebackType
 from typing import (
     Any, Callable, cast, Dict, Iterable, List, Optional, Set, Tuple, Union, ValuesView,
@@ -1288,12 +1287,15 @@ class Quart(PackageStatic):
             self,
             host: str='127.0.0.1',
             port: int=5000,
-            ssl: Optional[SSLContext]=None,
             debug: Optional[bool]=None,
             access_log_format: str="%(h)s %(r)s %(s)s %(b)s %(D)s",
             keep_alive_timeout: int=5,
             use_reloader: bool=False,
             loop: Optional[asyncio.AbstractEventLoop]=None,
+            ca_certs: Optional[str]=None,
+            certfile: Optional[str]=None,
+            ciphers: Optional[str]=None,
+            keyfile: Optional[str]=None,
             **kwargs: Any,
     ) -> None:
         """Run this application.
@@ -1305,13 +1307,16 @@ class Quart(PackageStatic):
             host: Hostname to listen on. By default this is loopback
                 only, use 0.0.0.0 to have the server listen externally.
             port: Port number to listen on.
-            ssl: Optional SSL context (required for HTTP2).
             access_log_format: The format to use for the access log,
                 by default this is %(h)s %(r)s %(s)s %(b)s %(D)s.
             keep_alive_timeout: Timeout in seconds to keep an inactive
                 connection before closing.
             use_reloader: Automatically reload on code changes.
             loop: Asyncio loop to create the server in, if None, take default one.
+            ca_certs: Path to the SSL CA certificate file.
+            certfile: Path to the SSL certificate file.
+            ciphers: Ciphers to use for the SSL setup.
+            keyfile: Path to the SSL key file.
         """
         if kwargs:
             warnings.warn(
@@ -1321,16 +1326,20 @@ class Quart(PackageStatic):
         config = HyperConfig()
         config.access_log_format = access_log_format
         config.access_logger = create_serving_logger()
+        config.ca_certs = ca_certs
+        config.certfile = certfile
+        if ciphers is not None:
+            config.ciphers = ciphers
         if debug is not None:
             config.debug = debug
         config.error_logger = config.access_logger
         config.host = host
         config.keep_alive_timeout = keep_alive_timeout
+        config.keyfile = keyfile
         config.port = port
-        config.ssl = ssl
         config.use_reloader = use_reloader
 
-        scheme = 'http' if config.ssl is None else 'https'
+        scheme = 'http' if config.ssl_enabled is None else 'https'
         print("Running on {}://{}:{} (CTRL + C to quit)".format(scheme, config.host, config.port))  # noqa: T001, E501
 
         if loop is None:

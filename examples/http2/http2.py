@@ -1,5 +1,3 @@
-import ssl
-
 from quart import (
     abort, jsonify, make_response, Quart, render_template, request, url_for,
 )
@@ -39,9 +37,4 @@ async def calculate():
 
 @app.cli.command('run')
 def run():
-    ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    ssl_context.options |= ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1 | ssl.OP_NO_COMPRESSION
-    ssl_context.set_ciphers('ECDHE+AESGCM')
-    ssl_context.load_cert_chain(certfile='cert.pem', keyfile='key.pem')
-    ssl_context.set_alpn_protocols(['h2', 'http/1.1'])
-    app.run(port=5000, ssl=ssl_context)
+    app.run(port=5000, certfile='cert.pem', keyfile='key.pem')
