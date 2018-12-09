@@ -68,6 +68,33 @@ def test_add_url_rule_methods(
     assert app.url_map.endpoints['end'][0].methods == result
 
 
+@pytest.mark.parametrize(
+    'methods, arg_automatic, func_automatic, expected_methods, expected_automatic',
+    [
+        ({'GET'}, True, None, {'HEAD', 'GET', 'OPTIONS'}, True),
+        ({'GET'}, None, None, {'HEAD', 'GET', 'OPTIONS'}, True),
+        ({'GET'}, None, True, {'HEAD', 'GET', 'OPTIONS'}, True),
+        ({'GET', 'OPTIONS'}, None, None, {'HEAD', 'GET', 'OPTIONS'}, False),
+        ({'GET'}, False, True, {'HEAD', 'GET'}, False),
+        ({'GET'}, None, False, {'HEAD', 'GET'}, False),
+    ],
+)
+def test_add_url_rule_automatic_options(
+        methods: Set[str], arg_automatic: Optional[bool], func_automatic: Optional[bool],
+        expected_methods: Set[str], expected_automatic: bool,
+) -> None:
+    app = Quart(__name__)
+
+    def route() -> str:
+        return ''
+
+    route.provide_automatic_options = func_automatic  # type: ignore
+
+    app.add_url_rule('/', 'end', route, methods, provide_automatic_options=arg_automatic)
+    assert app.url_map.endpoints['end'][0].methods == expected_methods
+    assert app.url_map.endpoints['end'][0].provide_automatic_options == expected_automatic
+
+
 @pytest.mark.asyncio
 async def test_host_matching() -> None:
     app = Quart(__name__, static_host='quart.com', host_matching=True)

@@ -346,7 +346,7 @@ class Quart(PackageStatic):
             host: Optional[str]=None,
             subdomain: Optional[str]=None,
             *,
-            provide_automatic_options: bool=True,
+            provide_automatic_options: Optional[bool]=None,
             strict_slashes: bool=True,
     ) -> Callable:
         """Add a route to the application.
@@ -399,7 +399,7 @@ class Quart(PackageStatic):
             host: Optional[str]=None,
             subdomain: Optional[str]=None,
             *,
-            provide_automatic_options: bool=True,
+            provide_automatic_options: Optional[bool]=None,
             is_websocket: bool=False,
             strict_slashes: bool=True,
     ) -> None:
@@ -448,10 +448,12 @@ class Quart(PackageStatic):
         methods = cast(Set[str], set(methods))
         required_methods = set(getattr(view_func, 'required_methods', set()))
 
-        automatic_options = (
-            getattr(view_func, 'provide_automatic_options', None)
-            or ('OPTIONS' not in methods and provide_automatic_options)
-        )
+        if provide_automatic_options is None:
+            automatic_options = getattr(view_func, 'provide_automatic_options', None)
+            if automatic_options is None:
+                automatic_options = 'OPTIONS' not in methods
+        else:
+            automatic_options = provide_automatic_options
 
         if automatic_options:
             required_methods.add('OPTIONS')
