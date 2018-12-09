@@ -1,7 +1,6 @@
 from collections import namedtuple
 from io import BytesIO
 import os
-import ssl
 
 import click
 from PIL import Image
@@ -100,10 +99,4 @@ def run(image_name, max_tiles):
     app.img = Image.open(path_to_image)
     app.max_tiles = max_tiles
 
-    ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    ssl_context.options |= (
-        ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1 | ssl.OP_NO_COMPRESSION)
-    ssl_context.set_ciphers('ECDHE+AESGCM')
-    ssl_context.load_cert_chain(certfile='cert.pem', keyfile='key.pem')
-    ssl_context.set_alpn_protocols(['h2', 'http/1.1'])
-    app.run(port=5000, ssl=ssl_context)
+    app.run(port=5000, certfile='cert.pem', keyfile='key.pem')
