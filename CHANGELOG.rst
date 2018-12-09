@@ -1,3 +1,10 @@
+0.6.11 2018-12-09
+-----------------
+
+* Bugfix support static files in blueprints.
+* Bugfix ensure automatic options API matches Flask and works.
+* Bugfix app.run SSL usage and Hypercorn compatibility.
+
 0.6.10 2018-11-12
 -----------------
 
