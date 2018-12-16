@@ -231,7 +231,7 @@ async def test_copy_current_websocket_context() -> None:
         await websocket.send(data.encode())
 
     test_client = app.test_client()
-    with test_client.websocket('/') as test_websocket:
+    async with test_client.websocket('/') as test_websocket:
         data = await test_websocket.receive()
     assert data == b'/'
 

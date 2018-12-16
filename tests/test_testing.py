@@ -197,5 +197,5 @@ async def test_websocket_bad_request() -> None:
 
     test_client = app.test_client()
     with pytest.raises(BadRequest):
-        with test_client.websocket('/'):
+        async with test_client.websocket('/'):
             pass

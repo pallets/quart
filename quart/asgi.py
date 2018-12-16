@@ -121,7 +121,7 @@ class ASGIWebsocketConnection:
 
         return self.app.websocket_class(
             self.scope['path'], self.scope['query_string'], self.scope['scheme'],
-            headers, self.queue, partial(self.send_data, send),
+            headers, self.queue.get, partial(self.send_data, send),
             partial(self.accept_connection, send),
         )
 

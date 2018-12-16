@@ -86,7 +86,7 @@ Quart also makes testing websockets easy, as so,
     async def test_websocket(app):
         test_client = app.test_client()
         data = b'bob'
-        with test_client.websocket('/ws') as test_websocket:
+        async with test_client.websocket('/ws') as test_websocket:
             await test_websocket.send(data)
             result = await test_websocket.receive()
         assert result == data

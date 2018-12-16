@@ -72,7 +72,7 @@ To test a websocket route use the test_client like so,
 .. code-block:: python
 
     test_client = app.test_client()
-    with test_client.websocket('/ws/') as test_websocket:
+    async with test_client.websocket('/ws/') as test_websocket:
         await test_websocket.send(data)
         result = await test_websocket.receive()
 
@@ -84,8 +84,8 @@ example,
 .. code-block:: python
 
     test_client = app.test_client()
-    with test_client.websocket('/ws/') as test_websocket:
-        try:
+    try:
+        async with test_client.websocket('/ws/') as test_websocket:
             await test_websocket.send(data)
-        except WebsocketResponse as error:
-            assert error.response.status_code == 401
+    except WebsocketResponse as error:
+        assert error.response.status_code == 401

@@ -66,6 +66,12 @@ class Quart(PackageStatic):
 
     Attributes:
         app_ctx_globals_class: The class to use for the ``g`` object
+        asgi_http_class: The class to use to handle the ASGI HTTP
+            protocol.
+        asgi_lifespan_class: The class to use to handle the ASGI
+            lifespan protocol.
+        asgi_websocket_class: The class to use to handle the ASGI
+            websocket protocol.
         config_class: The class to use for the configuration.
         env: The name of the environment the app is running on.
         debug: Wrapper around configuration DEBUG value, in many places
@@ -89,8 +95,12 @@ class Quart(PackageStatic):
         session_interface: The class to use as the session interface.
         url_rule_class: The class to use for URL rules.
         websocket_class: The class to use for websockets.
+
     """
     app_ctx_globals_class = _AppCtxGlobals
+    asgi_http_class = ASGIHTTPConnection
+    asgi_lifespan_class = ASGILifespan
+    asgi_websocket_class = ASGIWebsocketConnection
     config_class = Config
     debug = ConfigAttribute('DEBUG')
     env = ConfigAttribute('ENV')
@@ -1691,11 +1701,11 @@ class Quart(PackageStatic):
 
     def __call__(self, scope: dict) -> Callable:
         if scope['type'] == 'http':
-            return ASGIHTTPConnection(self, scope)
+            return self.asgi_http_class(self, scope)
         elif scope['type'] == 'websocket':
-            return ASGIWebsocketConnection(self, scope)
+            return self.asgi_websocket_class(self, scope)
         elif scope['type'] == 'lifespan':
-            return ASGILifespan(self, scope)
+            return self.asgi_lifespan_class(self, scope)
         else:
             raise RuntimeError('ASGI Scope type is unknown')
 

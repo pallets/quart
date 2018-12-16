@@ -124,7 +124,7 @@ async def test_make_response_response(app: Quart) -> None:
 async def test_websocket(app: Quart) -> None:
     test_client = app.test_client()
     data = b'bob'
-    with test_client.websocket('/ws/') as test_websocket:
+    async with test_client.websocket('/ws/') as test_websocket:
         await test_websocket.send(data)
         result = await test_websocket.receive()
     assert result == data
@@ -133,8 +133,8 @@ async def test_websocket(app: Quart) -> None:
 @pytest.mark.asyncio
 async def test_websocket_abort(app: Quart) -> None:
     test_client = app.test_client()
-    with test_client.websocket('/ws/abort/') as test_websocket:
-        try:
+    try:
+        async with test_client.websocket('/ws/abort/') as test_websocket:
             await test_websocket.receive()
-        except WebsocketResponse as error:
-            assert error.response.status_code == 401
+    except WebsocketResponse as error:
+        assert error.response.status_code == 401

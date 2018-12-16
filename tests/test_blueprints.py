@@ -34,7 +34,7 @@ async def test_blueprint_websocket() -> None:
     app.register_blueprint(blueprint)
 
     test_client = app.test_client()
-    with test_client.websocket('/ws/') as test_websocket:
+    async with test_client.websocket('/ws/') as test_websocket:
         result = await test_websocket.receive()
     assert result == b'blueprint'
 

@@ -1,15 +1,15 @@
 import asyncio
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
 from json import dumps
-from typing import Any, AnyStr, Generator, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Any, AnyStr, AsyncGenerator, Optional, Tuple, TYPE_CHECKING, Union
 from urllib.parse import urlencode
 
 from .datastructures import CIMultiDict
 from .exceptions import BadRequest
 from .utils import create_cookie
-from .wrappers import Response, Websocket
+from .wrappers import Request, Response
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa
@@ -163,7 +163,7 @@ class QuartClient:
             method, scheme, path, query_string_bytes, headers,
         )
         request.body.set_result(request_data)
-        response = await asyncio.ensure_future(self.app.handle_request(request))
+        response = await self._handle_request(request)
         if self.cookie_jar is not None and 'Set-Cookie' in response.headers:
             self.cookie_jar.load(";".join(response.headers.getall('Set-Cookie')))
 
@@ -177,8 +177,11 @@ class QuartClient:
                 request = self.app.request_class(
                     method, scheme, response.location, query_string_bytes, headers,
                 )
-                response = await asyncio.ensure_future(self.app.handle_request(request))
+                response = await self._handle_request(request)
         return response
+
+    async def _handle_request(self, request: Request) -> Response:
+        return await asyncio.ensure_future(self.app.handle_request(request))
 
     async def delete(self, *args: Any, **kwargs: Any) -> Response:
         """Make a DELETE request.
@@ -267,23 +270,23 @@ class QuartClient:
         """Delete a cookie (set to expire immediately)."""
         self.set_cookie(key, expires=datetime.utcnow(), max_age=0, path=path, domain=domain)
 
-    @contextmanager
-    def websocket(
+    @asynccontextmanager
+    async def websocket(
             self,
             path: str,
             *,
             headers: Optional[Union[dict, CIMultiDict]]=None,
             query_string: Optional[dict]=None,
             scheme: str='http',
-    ) -> Generator[_TestingWebsocket, None, None]:
+    ) -> AsyncGenerator[_TestingWebsocket, None]:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self.app, path, headers, query_string,
         )
         queue: asyncio.Queue = asyncio.Queue()
         websocket_client = _TestingWebsocket(queue)
 
-        websocket = Websocket(
-            path, query_string_bytes, scheme, headers, queue, websocket_client.local_queue.put,
+        websocket = self.app.websocket_class(
+            path, query_string_bytes, scheme, headers, queue.get, websocket_client.local_queue.put,
             websocket_client.accept,
         )
         adapter = self.app.create_url_adapter(websocket)

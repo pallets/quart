@@ -81,7 +81,11 @@ class Request(BaseRequestWebsocket, JSONMixin):
     It can be subclassed and the subclassed used in preference by
     replacing the :attr:`~quart.Quart.request_class` with your
     subclass.
+
+    Attributes:
+        body_class: The class to store the body data within.
     """
+    body_class = Body
 
     def __init__(
             self,
@@ -118,7 +122,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
         ):
             from ..exceptions import RequestEntityTooLarge  # noqa Avoiding circular import
             raise RequestEntityTooLarge()
-        self.body = Body(self.max_content_length)
+        self.body = self.body_class(self.max_content_length)
         self._form: Optional[MultiDict] = None
         self._files: Optional[MultiDict] = None
 
@@ -235,7 +239,7 @@ class Websocket(BaseRequestWebsocket):
             query_string: bytes,
             scheme: str,
             headers: CIMultiDict,
-            queue: asyncio.Queue,
+            receive: Callable,
             send: Callable,
             accept: Callable,
     ) -> None:
@@ -246,17 +250,18 @@ class Websocket(BaseRequestWebsocket):
             query_string: The raw bytes for the query string part.
             scheme: The scheme used for the request.
             headers: The request headers.
-            websocket: The actual websocket with the data.
+            receive: Returns an awaitable of the current data
+
             accept: Idempotent callable to accept the websocket connection.
         """
         super().__init__('GET', scheme, path, query_string, headers)
-        self._queue = queue
+        self._receive = receive
         self._send = send
         self._accept = accept
 
     async def receive(self) -> AnyStr:
         await self.accept()
-        return await self._queue.get()
+        return await self._receive()
 
     async def send(self, data: AnyStr) -> None:
         # Must allow for the event loop to act if the user has say
