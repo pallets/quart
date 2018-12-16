@@ -1,3 +1,18 @@
+0.7.0 2018-12-16
+----------------
+
+* Support only Python 3.7, see the 0.6.X releases for continued Python
+  3.6 support.
+* Introduce ContextVars for local storage.
+* Change default redirect status code to 302.
+* Support integer/float cookie expires.
+* Specify cookie date format (differs to Flask).
+* Remove the Gunicorn workers, please use a ASGI server instead.
+* Remove Gunicorn compatibility.
+* Introduce a Headers data structure.
+* Implement follow_redirects in Quart test client.
+* Adopt the ASGI lifespan protocol.
+
 0.6.11 2018-12-09
 -----------------
 
