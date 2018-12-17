@@ -57,10 +57,10 @@ def _patch_task() -> None:
 
     asyncio.tasks._leave_task = leave_task  # type: ignore
 
-    def step(self, exception):  # type: ignore
+    def step(self, exception=None):  # type: ignore
         current_task = asyncio.tasks._current_tasks.get(self._loop)  # type: ignore
         try:
-            self.__step_orig(self, exception)  # type: ignore
+            self._Task__step_orig(exception)  # type: ignore
         finally:
             if current_task is None:
                 asyncio.tasks._current_tasks.pop(self._loop, None)  # type: ignore
