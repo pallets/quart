@@ -253,3 +253,17 @@ async def test_overlapping_request_ctx() -> None:
     await ctx1.__aexit__(None, None, None)
     assert has_app_context()  # Ensure the app context still exists for ctx2
     await ctx2.__aexit__(None, None, None)
+
+
+@pytest.mark.asyncio
+async def test_overlapping_websocket_ctx() -> None:
+    app = Quart(__name__)
+
+    websocket = Websocket('/', b'', 'ws', CIMultiDict(), None, None, None)
+    ctx1 = app.websocket_context(websocket)
+    await ctx1.__aenter__()
+    ctx2 = app.websocket_context(websocket)
+    await ctx2.__aenter__()
+    await ctx1.__aexit__(None, None, None)
+    assert has_app_context()  # Ensure the app context still exists for ctx2
+    await ctx2.__aexit__(None, None, None)
