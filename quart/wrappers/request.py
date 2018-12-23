@@ -176,7 +176,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
         return self._files
 
     async def _load_form_data(self) -> None:
-        data = await self.body  # type: ignore
+        data = await self.body
         self._form = MultiDict()
         self._files = MultiDict()
         content_header = self.content_type

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from hashlib import md5
-from inspect import isasyncgen  # type: ignore
+from inspect import isasyncgen
 from typing import (
     Any, AnyStr, AsyncGenerator, AsyncIterable, Iterable, Optional, Set, Tuple, TYPE_CHECKING,
     Union,
@@ -96,19 +96,19 @@ class Response(_BaseRequestResponse, JSONMixin):
         if isinstance(response, (str, bytes)):
             self.set_data(response)  # type: ignore
         else:
-            self.response = _ensure_aiter(response)  # type: ignore
+            self.response = _ensure_aiter(response)
         self.push_promises: Set[str] = set()
 
     async def get_data(self, raw: bool=True) -> AnyStr:
         """Return the body data."""
         if not isinstance(self.response, _AsyncList) and self.implicit_sequence_conversion:
-            self.response = _AsyncList([data async for data in self.response])  # type: ignore
+            self.response = _AsyncList([data async for data in self.response])
         result = b'' if raw else ''
         async for data in self.response:  # type: ignore
             if raw:
-                result += data  # type: ignore
+                result += data
             else:
-                result += data.decode(self.charset)  # type: ignore
+                result += data.decode(self.charset)
         return result  # type: ignore
 
     def set_data(self, data: AnyStr) -> None:
@@ -194,7 +194,7 @@ class Response(_BaseRequestResponse, JSONMixin):
         if max_age is None:
             self.headers.pop('Access-Control-Max-Age', None)
         else:
-            self.headers['Access-Control-Max-Age'] = max_age  # type: ignore
+            self.headers['Access-Control-Max-Age'] = max_age
         if value.allow_credentials:
             self.headers['Access-Control-Allow-Credentials'] = 'true'
         else:
@@ -300,7 +300,7 @@ class Response(_BaseRequestResponse, JSONMixin):
         def on_update(cache_range: ContentRange) -> None:
             self.content_range = cache_range
 
-        return ContentRange.from_header(self.headers.get('Content-Range', ''), on_update)  # type: ignore  # noqa: E501
+        return ContentRange.from_header(self.headers.get('Content-Range', ''), on_update)
 
     @content_range.setter
     def content_range(self, value: ContentRange) -> None:

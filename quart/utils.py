@@ -38,13 +38,13 @@ def create_cookie(
     The arguments are the standard cookie morsels and this is a
     wrapper around the stdlib SimpleCookie code.
     """
-    cookie = SimpleCookie()  # type: ignore
+    cookie = SimpleCookie()
     cookie[key] = value
     cookie[key]['path'] = path
     cookie[key]['httponly'] = httponly  # type: ignore
     cookie[key]['secure'] = secure  # type: ignore
     if isinstance(max_age, timedelta):
-        cookie[key]['max-age'] = f"{max_age.total_seconds():d}"  # type: ignore
+        cookie[key]['max-age'] = f"{max_age.total_seconds():d}"
     if isinstance(max_age, int):
         cookie[key]['max-age'] = str(max_age)
     if expires is not None and isinstance(expires, (int, float)):

@@ -19,8 +19,8 @@ _app_ctx_stack = LocalStack()
 _request_ctx_stack = LocalStack()
 _websocket_ctx_stack = LocalStack()
 
-current_app = LocalProxy(partial(_ctx_lookup, [_app_ctx_stack], 'app'))  # type: ignore
-g = LocalProxy(partial(_ctx_lookup, [_app_ctx_stack], 'g'))  # type: ignore
-request = LocalProxy(partial(_ctx_lookup, [_request_ctx_stack], 'request'))  # type: ignore
-session = LocalProxy(partial(_ctx_lookup, [_request_ctx_stack, _websocket_ctx_stack], 'session'))  # type: ignore # noqa
-websocket = LocalProxy(partial(_ctx_lookup, [_websocket_ctx_stack], 'websocket'))  # type: ignore
+current_app = LocalProxy(partial(_ctx_lookup, [_app_ctx_stack], 'app'))
+g = LocalProxy(partial(_ctx_lookup, [_app_ctx_stack], 'g'))
+request = LocalProxy(partial(_ctx_lookup, [_request_ctx_stack], 'request'))
+session = LocalProxy(partial(_ctx_lookup, [_request_ctx_stack, _websocket_ctx_stack], 'session'))
+websocket = LocalProxy(partial(_ctx_lookup, [_websocket_ctx_stack], 'websocket'))

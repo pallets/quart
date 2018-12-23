@@ -195,7 +195,7 @@ class SecureCookieSessionInterface(SessionInterface):
     signature to prevent modification.
     """
 
-    digest_method = staticmethod(hashlib.sha1)  # type: ignore
+    digest_method = staticmethod(hashlib.sha1)
     key_derivation = 'hmac'
     salt = 'cookie-session'
     serializer = TaggedJSONSerializer()
@@ -260,7 +260,7 @@ class SecureCookieSessionInterface(SessionInterface):
             return
 
         data = self.get_signing_serializer(app).dumps(dict(session))
-        response.set_cookie(  # type: ignore
+        response.set_cookie(
             app.session_cookie_name,
             data,
             expires=self.get_expiration_time(app, session),

@@ -135,7 +135,7 @@ class IntegerConverter(BaseConverter):
 
     def to_url(self, value: int) -> str:
         if self.fixed_digits is not None:
-            return f"{value:0{self.fixed_digits}d}"  # type: ignore
+            return f"{value:0{self.fixed_digits}d}"
         else:
             return str(value)
 
@@ -474,7 +474,7 @@ def _parse_rule(rule: str) -> Generator[Union[str, VariablePart], None, None]:
         else:
             variable_names.add(variable)
         arguments = _parse_converter_args(named_groups['args'] or '')
-        yield VariablePart(named_groups['converter'] or 'default', arguments, variable)  # type: ignore  # noqa
+        yield VariablePart(named_groups['converter'] or 'default', arguments, variable)
         final_match = match.span()[-1]
     yield rule[final_match:]
 

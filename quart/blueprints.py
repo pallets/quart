@@ -656,7 +656,7 @@ class Blueprint(PackageStatic):
         def wrapper(state: 'BlueprintSetupState') -> None:
             if state.first_registration:
                 func(state)
-        self.record(update_wrapper(wrapper, func))  # type: ignore
+        self.record(update_wrapper(wrapper, func))
 
     def register(
             self,

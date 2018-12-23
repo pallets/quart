@@ -82,7 +82,7 @@ def make_test_headers_path_and_query_string(
     else:
         query_string_raw = urlencode(query_string, doseq=True)
     query_string_bytes = query_string_raw.encode('ascii')
-    return headers, path, query_string_bytes  # type: ignore
+    return headers, path, query_string_bytes
 
 
 class QuartClient:
@@ -95,7 +95,7 @@ class QuartClient:
 
     def __init__(self, app: 'Quart', use_cookies: bool=True) -> None:
         if use_cookies:
-            self.cookie_jar = SimpleCookie()  # type: ignore
+            self.cookie_jar = SimpleCookie()
         else:
             self.cookie_jar = None
         self.app = app
@@ -157,7 +157,7 @@ class QuartClient:
             headers['Content-Type'] = 'application/x-www-form-urlencoded'
 
         if self.cookie_jar is not None:
-            headers.add('Cookie', self.cookie_jar.output(header=''))  # type: ignore
+            headers.add('Cookie', self.cookie_jar.output(header=''))
 
         request = self.app.request_class(
             method, scheme, path, query_string_bytes, headers,

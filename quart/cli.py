@@ -58,7 +58,7 @@ class ScriptInfo:
                 try:
                     module = import_module(import_name)
                 except ModuleNotFoundError as error:
-                    if error.name == import_name:  # type: ignore
+                    if error.name == import_name:
                         raise NoAppException()
                     else:
                         raise

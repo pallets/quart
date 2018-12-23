@@ -123,6 +123,6 @@ async def test_blueprint_method_view() -> None:
 
     test_client = app.test_client()
     response = await test_client.get('/')
-    assert 'GET' == (await response.get_data(raw=False))  # type: ignore
+    assert 'GET' == (await response.get_data(raw=False))
     response = await test_client.post('/')
-    assert 'POST' == (await response.get_data(raw=False))  # type: ignore
+    assert 'POST' == (await response.get_data(raw=False))

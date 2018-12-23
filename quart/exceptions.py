@@ -114,7 +114,7 @@ def abort(status_code: int) -> None:
 
 all_http_exceptions = {
     status.value: type(f"{status.name}Error", (HTTPStatusException,), {'status': status})
-    for status in HTTPStatus  # type: ignore
+    for status in HTTPStatus
 }
 
 # Ensure that the specified exceptions take priority over

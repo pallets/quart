@@ -1568,7 +1568,7 @@ class Quart(PackageStatic):
         functions = (request_context or _request_ctx_stack.top)._after_request_functions
         blueprint = request_.blueprint
         if blueprint is not None:
-            functions = chain(functions, self.after_request_funcs[blueprint])  # type: ignore
+            functions = chain(functions, self.after_request_funcs[blueprint])
         functions = chain(functions, self.after_request_funcs[None])
 
         for function in functions:
@@ -1576,7 +1576,7 @@ class Quart(PackageStatic):
 
         session_ = (request_context or _request_ctx_stack.top).session
         if not self.session_interface.is_null_session(session_):
-            self.save_session(session_, response)  # type: ignore
+            self.save_session(session_, response)
         return response
 
     async def handle_websocket(self, websocket: Websocket) -> Optional[Response]:
@@ -1691,7 +1691,7 @@ class Quart(PackageStatic):
         functions = (websocket_context or _websocket_ctx_stack.top)._after_websocket_functions
         blueprint = websocket_.blueprint
         if blueprint is not None:
-            functions = chain(functions, self.after_websocket_funcs[blueprint])  # type: ignore
+            functions = chain(functions, self.after_websocket_funcs[blueprint])
         functions = chain(functions, self.after_websocket_funcs[None])
 
         for function in functions:

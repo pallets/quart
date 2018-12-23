@@ -50,7 +50,7 @@ class CIMultiDict(_WerkzeugMultidictMixin, AIOCIMultiDict):  # type: ignore
 
 def _unicodify(value: Any) -> str:
     try:
-        return value.decode()  # type: ignore
+        return value.decode()
     except AttributeError:
         return str(value)
 

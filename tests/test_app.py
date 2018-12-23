@@ -186,7 +186,7 @@ async def test_make_response(
     else:
         assert response.headers.keys() == expected.headers.keys()
         assert response.status_code == expected.status_code
-        assert (await response.get_data()) == (await expected.get_data())  # type: ignore
+        assert (await response.get_data()) == (await expected.get_data())
 
 
 @pytest.mark.parametrize(

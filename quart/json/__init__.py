@@ -75,7 +75,7 @@ class JSONEncoder(json.JSONEncoder):
 
     def default(self, object_: Any) -> Any:
         if isinstance(object_, date):
-            return formatdate(timeval=mktime((object_.timetuple())), localtime=False, usegmt=True)  # type: ignore  # noqa
+            return formatdate(timeval=mktime((object_.timetuple())), localtime=False, usegmt=True)
         if isinstance(object_, UUID):
             return str(object_)
         if hasattr(object_, '__html__'):

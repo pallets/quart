@@ -25,7 +25,7 @@ async def test_view(app: Quart) -> None:
 
     test_client = app.test_client()
     response = await test_client.get('/')
-    assert 'GET' == (await response.get_data(raw=False))  # type: ignore
+    assert 'GET' == (await response.get_data(raw=False))
     response = await test_client.put('/')
     assert response.status_code == 405
 
@@ -45,9 +45,9 @@ async def test_method_view(app: Quart) -> None:
 
     test_client = app.test_client()
     response = await test_client.get('/')
-    assert 'GET' == (await response.get_data(raw=False))  # type: ignore
+    assert 'GET' == (await response.get_data(raw=False))
     response = await test_client.post('/')
-    assert 'POST' == (await response.get_data(raw=False))  # type: ignore
+    assert 'POST' == (await response.get_data(raw=False))
 
 
 @pytest.mark.asyncio

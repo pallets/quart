@@ -51,7 +51,7 @@ def test_request_context_matching_error(
 
 @pytest.mark.parametrize(
     'request_factory, context_class, is_websocket',
-    [  # type: ignore
+    [
         (
             lambda method, path, headers: Request(method, 'http', path, b'', headers),
             RequestContext, True,
@@ -149,7 +149,7 @@ def test_app_ctx_globals_iter() -> None:
     g = _AppCtxGlobals()
     g.foo = 'bar'  # type: ignore
     g.bar = 'foo'  # type: ignore
-    assert sorted(iter(g)) == ['bar', 'foo']  # type: ignore
+    assert sorted(iter(g)) == ['bar', 'foo']
 
 
 @pytest.mark.asyncio
