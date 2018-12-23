@@ -59,4 +59,5 @@ setup(
     entry_points={
         'console_scripts': ['quart=quart.cli:main'],
     },
+    include_package_data=True,
 )
