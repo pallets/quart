@@ -1349,7 +1349,7 @@ class Quart(PackageStatic):
         config.port = port
         config.use_reloader = use_reloader
 
-        scheme = 'http' if config.ssl_enabled is None else 'https'
+        scheme = 'https' if config.ssl_enabled else 'http'
         print("Running on {}://{}:{} (CTRL + C to quit)".format(scheme, config.host, config.port))  # noqa: T001, E501
 
         if loop is None:
