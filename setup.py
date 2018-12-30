@@ -56,6 +56,9 @@ setup(
         'pytest',
         'pytest-asyncio',
     ],
+    extras_require={
+        'dotenv': ['python-dotenv'],
+    },
     entry_points={
         'console_scripts': ['quart=quart.cli:main'],
     },
