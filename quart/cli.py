@@ -7,6 +7,12 @@ from typing import Any, Callable, Iterable, List, Optional, TYPE_CHECKING
 
 import click
 
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+
+
 from .__about__ import __version__
 from .helpers import get_debug_flag
 
@@ -32,6 +38,7 @@ class ScriptInfo:
             app_import_path: Optional[str]=None,
             create_app: Optional[Callable]=None,
     ) -> None:
+        self.load_dotenv_if_exists()
         self.app_import_path = app_import_path or os.environ.get('QUART_APP')
         self.create_app = create_app
         self.data: dict = {}
@@ -75,6 +82,20 @@ class ScriptInfo:
 
         return self._app
 
+    def load_dotenv_if_exists(self):
+        if os.environ.get('QUART_SKIP_DOTENV') == '1':
+            return
+        
+        if not Path(".env").is_file() and not Path(".quartenv").is_file():
+            return
+
+        try:
+            if Path(".env").is_file():
+                load_dotenv()
+            if Path(".quartenv").is_file():
+                load_dotenv(dotenv_path=Path(".") / ".quartenv")
+        except NameError:
+            print("* Tip: There are .env files present. Do \"pip install python-dotenv\" to use them.")
 
 pass_script_info = click.make_pass_decorator(ScriptInfo, ensure=True)
 
