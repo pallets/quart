@@ -1,6 +1,7 @@
 import asyncio
 from functools import partial
 from typing import AnyStr, Callable, Set, TYPE_CHECKING
+from urllib.parse import urlparse
 
 from .datastructures import CIMultiDict
 from .wrappers import Request, Response, Websocket  # noqa: F401
@@ -42,8 +43,11 @@ class ASGIHTTPConnection:
         if self.scope['http_version'] < '1.1':
             headers.setdefault('Host', self.app.config['SERVER_NAME'] or '')
 
+        path = self.scope["path"]
+        path = path if path[0] == "/" else urlparse(path).path
+
         return self.app.request_class(
-            self.scope['method'], self.scope['scheme'], self.scope['path'],
+            self.scope['method'], self.scope['scheme'], path,
             self.scope['query_string'], headers,
             max_content_length=self.app.config['MAX_CONTENT_LENGTH'],
             body_timeout=self.app.config['BODY_TIMEOUT'],
@@ -119,8 +123,11 @@ class ASGIWebsocketConnection:
         for name, value in self.scope['headers']:
             headers.add(name.decode().title(), value.decode())
 
+        path = self.scope["path"]
+        path = path if path[0] == "/" else urlparse(path).path
+
         return self.app.websocket_class(
-            self.scope['path'], self.scope['query_string'], self.scope['scheme'],
+            path, self.scope['query_string'], self.scope['scheme'],
             headers, self.queue.get, partial(self.send_data, send),
             partial(self.accept_connection, send),
         )

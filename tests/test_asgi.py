@@ -81,3 +81,34 @@ async def test_websocket_completion() -> None:
 
     # This test fails if a timeout error is raised here
     await asyncio.wait_for(connection(receive, send), timeout=1)
+
+
+def test_http_path_from_absolute_target() -> None:
+    app = Quart(__name__)
+    scope = {
+        'headers': [(b'host', b'quart')],
+        'http_version': '1.1',
+        'method': 'GET',
+        'scheme': 'https',
+        'path': 'http://quart/path',
+        'query_string': b'',
+    }
+    connection = ASGIHTTPConnection(app, scope)
+    request = connection._create_request_from_scope()
+    assert request.path == '/path'
+
+
+def test_websocket_path_from_absolute_target() -> None:
+    app = Quart(__name__)
+    scope = {
+        'headers': [(b'host', b'quart')],
+        'http_version': '1.1',
+        'method': 'GET',
+        'scheme': 'wss',
+        'path': 'ws://quart/path',
+        'query_string': b'',
+        'extensions': {'websocket.http.response': {}},
+    }
+    connection = ASGIWebsocketConnection(app, scope)
+    websocket = connection._create_websocket_from_scope(lambda: None)
+    assert websocket.path == '/path'
