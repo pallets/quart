@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Type, Union
 
 import pytest
 
@@ -10,8 +10,8 @@ from quart.datastructures import (
 
 
 @pytest.mark.parametrize('dict_class', [CIMultiDict, MultiDict])
-def test_multidict_getlist(dict_class: Union[CIMultiDict, MultiDict]) -> None:
-    data = CIMultiDict()
+def test_multidict_getlist(dict_class: Union[Type[CIMultiDict], Type[MultiDict]]) -> None:
+    data = dict_class()
     data.add('x', 'y')
     data.add('x', 'z')
     assert data.getlist('x') == ['y', 'z']
@@ -19,8 +19,8 @@ def test_multidict_getlist(dict_class: Union[CIMultiDict, MultiDict]) -> None:
 
 
 @pytest.mark.parametrize('dict_class', [CIMultiDict, MultiDict])
-def test_multidict_type_conversion(dict_class: Union[CIMultiDict, MultiDict]) -> None:
-    data = CIMultiDict()
+def test_multidict_type_conversion(dict_class: Union[Type[CIMultiDict], Type[MultiDict]]) -> None:
+    data = dict_class()
     data['x'] = '2'
     data['y'] = 'b'
     data.add('z', '2')
