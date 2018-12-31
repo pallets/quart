@@ -82,10 +82,10 @@ class ScriptInfo:
 
         return self._app
 
-    def load_dotenv_if_exists(self):
+    def load_dotenv_if_exists(self) -> None:
         if os.environ.get('QUART_SKIP_DOTENV') == '1':
             return
-        
+
         if not Path(".env").is_file() and not Path(".quartenv").is_file():
             return
 
@@ -95,7 +95,11 @@ class ScriptInfo:
             if Path(".quartenv").is_file():
                 load_dotenv(dotenv_path=Path(".") / ".quartenv")
         except NameError:
-            print("* Tip: There are .env files present. Do \"pip install python-dotenv\" to use them.")
+            print(  # noqa: T001
+                "* Tip: There are .env files present. "
+                "Do \"pip install python-dotenv\" to use them."
+            )
+
 
 pass_script_info = click.make_pass_decorator(ScriptInfo, ensure=True)
 
