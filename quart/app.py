@@ -6,6 +6,7 @@ from datetime import timedelta
 from itertools import chain
 from logging import Logger
 from pathlib import Path
+from ssl import VerifyMode
 from types import TracebackType
 from typing import (
     Any, Callable, cast, Dict, Iterable, List, Optional, Set, Tuple, Union, ValuesView,
@@ -1306,6 +1307,7 @@ class Quart(PackageStatic):
             certfile: Optional[str]=None,
             ciphers: Optional[str]=None,
             keyfile: Optional[str]=None,
+            verify_mode: Optional[VerifyMode]=None,
             **kwargs: Any,
     ) -> None:
         """Run this application.
@@ -1327,6 +1329,7 @@ class Quart(PackageStatic):
             certfile: Path to the SSL certificate file.
             ciphers: Ciphers to use for the SSL setup.
             keyfile: Path to the SSL key file.
+            verify_mode: SSL verify mode; CERT_NONE (default), CERT_OPTIONAL, CERT_REQUIRED
         """
         if kwargs:
             warnings.warn(
@@ -1348,6 +1351,7 @@ class Quart(PackageStatic):
         config.keyfile = keyfile
         config.port = port
         config.use_reloader = use_reloader
+        config.verify_mode = verify_mode
 
         scheme = 'https' if config.ssl_enabled else 'http'
         print("Running on {}://{}:{} (CTRL + C to quit)".format(scheme, config.host, config.port))  # noqa: T001, E501
