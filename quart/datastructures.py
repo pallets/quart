@@ -39,6 +39,19 @@ class _WerkzeugMultidictMixin:
         else:
             return values
 
+    def to_dict(self, flat: bool=True) -> Dict[Any, Any]:
+        """Convert the multidict to a plain dictionary.
+
+        Arguments:
+
+            flat: If True only return the a value for each key, if
+                False return all values as lists.
+        """
+        if flat:
+            return {key: value for key, value in self.items()}  # type: ignore
+        else:
+            return {key: self.getall(key) for key in self}  # type: ignore
+
 
 class MultiDict(_WerkzeugMultidictMixin, AIOMultiDict):  # type: ignore
     pass

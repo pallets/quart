@@ -30,6 +30,16 @@ def test_multidict_type_conversion(dict_class: Union[Type[CIMultiDict], Type[Mul
     assert data.getlist('z', type=int) == [2]
 
 
+@pytest.mark.parametrize('dict_class', [CIMultiDict, MultiDict])
+def test_multidict_to_dict(dict_class: Union[Type[CIMultiDict], Type[MultiDict]]) -> None:
+    data = dict_class()
+    data['x'] = '2'
+    data.add('z', '2')
+    data.add('z', 'b')
+    assert data.to_dict() == {'x': '2', 'z': 'b'}
+    assert data.to_dict(flat=False) == {'x': ['2'], 'z': ['2', 'b']}
+
+
 def test_headers_bytes() -> None:
     headers = Headers()
     headers[b'X-Foo'] = b'something'
