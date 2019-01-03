@@ -1,3 +1,10 @@
+0.7.2 2019-01-03
+----------------
+
+* Fix the url display bug.
+* Avoid crash in flask_patch isinstance.
+* Cope with absolute paths sent in the scope.
+
 0.7.1 2018-12-18
 ----------------
 
