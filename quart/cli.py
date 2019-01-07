@@ -27,7 +27,8 @@ class NoAppException(click.UsageError):
             'Could not locate a Quart application as the QUART_APP environment '
             'variable has either not been set or provided or does not point to '
             'a valid application.\n'
-            'Please set it to module_name:app_name or module_name:factory_function()'
+            'Please set it to module_name:app_name or module_name:factory_function()\n'
+            'Note `quart` is not a valid module_name.'
         )
 
 
@@ -73,6 +74,11 @@ class ScriptInfo:
                 try:
                     self._app = eval(app_name, vars(module))
                 except NameError:
+                    raise NoAppException()
+
+                from .app import Quart
+                if not isinstance(self._app, Quart):
+                    self._app = None
                     raise NoAppException()
 
         if self._app is None:

@@ -8,12 +8,13 @@ from click.testing import CliRunner
 
 import quart.cli
 from quart.__about__ import __version__
+from quart.app import Quart
 from quart.cli import AppGroup, cli, NoAppException, ScriptInfo
 
 
 @pytest.fixture(name='app')
 def loadable_app(monkeypatch: MonkeyPatch) -> Mock:
-    app = Mock()
+    app = Mock(spec=Quart)
     app.cli = AppGroup()
     module = Mock()
     module.app = app
@@ -44,6 +45,7 @@ def test_shell_command(app: Mock, monkeypatch: MonkeyPatch) -> None:
     interact = Mock()
     monkeypatch.setattr(code, 'interact', interact)
     app.make_shell_context.return_value = {}
+    app.import_name = "test"
     os.environ['QUART_APP'] = 'module:app'
     runner.invoke(cli, ['shell'])
     app.make_shell_context.assert_called_once()
