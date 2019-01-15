@@ -1355,11 +1355,7 @@ class Quart(PackageStatic):
         if loop is None:
             loop = asyncio.get_event_loop()
 
-        try:
-            run_single(self, config, loop=loop)  # type: ignore
-        finally:
-            # Reset the first request, so as to enable reuse.
-            self._got_first_request = False
+        run_single(self, config, loop=loop)  # type: ignore
 
     def test_client(self) -> QuartClient:
         """Creates and returns a test client."""
@@ -1710,6 +1706,8 @@ class Quart(PackageStatic):
             raise RuntimeError('ASGI Scope type is unknown')
 
     async def startup(self) -> None:
+        self._got_first_request = False
+
         async with self.app_context():
             for func in self.before_serving_funcs:
                 await func()
