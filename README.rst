@@ -144,5 +144,5 @@ details.
 .. |license| image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://gitlab.com/pgjones/quart/blob/master/LICENSE
 
-.. |chat| image:: https://img.shields.io/badge/zulip-join_chat-brightgreen.svg
-   :target: https://quart.zulipchat.com
+.. |chat| image:: https://img.shields.io/badge/chat-join_now-brightgreen.svg
+   :target: https://gitter.im/python-quart/lobby
