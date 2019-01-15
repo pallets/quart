@@ -1,10 +1,6 @@
-import os
 import sys
-import time
 from logging import DEBUG, Formatter, getLogger, INFO, Logger, NOTSET, StreamHandler
 from typing import TYPE_CHECKING
-
-from .wrappers import Request, Response
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa
@@ -43,48 +39,3 @@ def create_serving_logger() -> Logger:
 
     logger.addHandler(serving_handler)
     return logger
-
-
-class AccessLogAtoms(dict):
-
-    def __init__(
-            self,
-            request: Request,
-            response: Response,
-            protocol: str,
-            request_time: float,
-    ) -> None:
-        self.update({
-            'h': request.remote_addr,
-            'l': '-',
-            't': time.strftime('[%d/%b/%Y:%H:%M:%S %z]'),
-            'r': f"{request.method} {request.path} {protocol}",
-            's': response.status_code,
-            'm': request.method,
-            'U': request.path,
-            'q': request.query_string.decode('ascii'),
-            'H': protocol,
-            'b': response.headers.get('Content-Length', '-'),
-            'B': response.headers.get('Content-Length'),
-            'f': request.headers.get('Referer', '-'),
-            'a': request.headers.get('User-Agent', '-'),
-            'T': int(request_time),
-            'D': int(request_time * 1000000),
-            'L': f"{request_time:.6f}",
-            'p': f"<{os.getpid()}>",
-        })
-        for name, value in request.headers.items():
-            self[f"{{{name.lower()}}}i"] = value
-        for name, value in response.headers.items():
-            self[f"{{{name.lower()}}}o"] = value
-        for name, value in os.environ.items():
-            self[f"{{{name.lower()}}}e"] = value
-
-    def __getitem__(self, key: str) -> str:
-        try:
-            if key.startswith('{'):
-                return super().__getitem__(key.lower())
-            else:
-                return super().__getitem__(key)
-        except KeyError:
-            return '-'
