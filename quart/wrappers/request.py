@@ -132,7 +132,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
             raw_data = await asyncio.wait_for(body_future, timeout=self.body_timeout)
         except asyncio.TimeoutError:
             body_future.cancel()
-            from ..exceptions import RequestTimeout
+            from ..exceptions import RequestTimeout  # noqa Avoiding circular import
             raise RequestTimeout()
 
         if raw:
@@ -175,7 +175,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
         return self._files
 
     async def _load_form_data(self) -> None:
-        data = await self.body  # type: ignore
+        raw_data = await self.body
         self._form = MultiDict()
         self._files = MultiDict()
         content_header = self.content_type
@@ -183,12 +183,17 @@ class Request(BaseRequestWebsocket, JSONMixin):
             return
         content_type, parameters = parse_header(content_header)
         if content_type == 'application/x-www-form-urlencoded':
-            for key, values in parse_qs(data.decode(), keep_blank_values=True).items():
+            try:
+                data = raw_data.decode(parameters.get("charset", "utf-8"))
+            except UnicodeDecodeError:
+                from ..exceptions import BadRequest  # noqa Avoiding circular import
+                raise BadRequest()
+            for key, values in parse_qs(data, keep_blank_values=True).items():
                 for value in values:
                     self._form.add(key, value)
         elif content_type == 'multipart/form-data':
             field_storage = FieldStorage(
-                io.BytesIO(data), headers=self.headers, environ={'REQUEST_METHOD': 'POST'},
+                io.BytesIO(raw_data), headers=self.headers, environ={'REQUEST_METHOD': 'POST'},
             )
             for key in field_storage:  # type: ignore
                 field_storage_key = field_storage[key]
