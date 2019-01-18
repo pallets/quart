@@ -7,7 +7,7 @@ from typing import Any, List, Optional  # noqa: F401
 
 from gunicorn.workers.base import Worker
 from hypercorn import Config
-from hypercorn.run import Server
+from hypercorn.run import Server  # type: ignore
 
 
 class GunicornWorker(Worker):

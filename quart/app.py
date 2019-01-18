@@ -1343,7 +1343,7 @@ class Quart(PackageStatic):
             loop = asyncio.get_event_loop()
 
         try:
-            run_single(self, config, loop=loop)
+            run_single(self, config, loop=loop)  # type: ignore
         finally:
             # Reset the first request, so as to enable reuse.
             self._got_first_request = False
