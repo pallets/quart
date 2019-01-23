@@ -64,6 +64,17 @@ class DispatchingJinjaLoader(BaseLoader):
             if loader is not None:
                 yield loader
 
+    def list_templates(self) -> List[str]:
+        """Returns a list of all avilable templates in environment.
+
+        This considers the loaders on the :attr:`app` and blueprints.
+        """
+        result = set()
+        for loader in self._loaders():
+            for template in loader.list_templates():
+                result.add(str(template))
+        return list(result)
+
 
 async def render_template(template_name_or_list: Union[str, List[str]], **context: Any) -> str:
     """Render the template with the context given.
