@@ -163,3 +163,6 @@ texinfo_documents = [
      author, 'Quart', 'One line description of project.',
      'Miscellaneous'),
 ]
+
+def setup(app):
+    app.add_stylesheet('css/quart.css')
