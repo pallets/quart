@@ -8,7 +8,6 @@ from typing import AnyStr, Optional, Union
 from typing.io import IO
 from zlib import adler32
 
-from aiofiles import open as async_open
 from jinja2 import FileSystemLoader
 
 from .exceptions import NotFound
@@ -154,7 +153,7 @@ async def send_file(
     """
     file_path = os.fspath(filename)
     mimetype = mimetypes.guess_type(os.path.basename(file_path))[0] or DEFAULT_MIMETYPE
-    async with async_open(file_path, mode='rb') as file_:
+    async with current_app.async_open(file_path, mode='rb') as file_:
         data = await file_.read()
     response = current_app.response_class(data, mimetype=mimetype)
 
