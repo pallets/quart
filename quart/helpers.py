@@ -1,4 +1,6 @@
 import os
+import pkgutil
+import sys
 from functools import wraps
 from typing import Any, Callable, List, Optional, Tuple, Union
 from urllib.parse import quote
@@ -226,3 +228,27 @@ def stream_with_context(func: Callable) -> Callable:
 
 def _endpoint_from_view_func(view_func: Callable) -> str:
     return view_func.__name__
+
+
+def find_package(name: str) -> Tuple[Optional[str], str]:
+    """Finds packages install prefix (or None) and it's containing Folder
+    """
+    module = name.split(".")[0]
+    loader = pkgutil.get_loader(module)
+    if name == "__main__" or loader is None:
+        package_path = os.getcwd()
+    else:
+        if hasattr(loader, 'get_filename'):
+            filename = loader.get_filename(module)  # type: ignore
+        else:
+            __import__(name)
+            filename = sys.modules[name].__file__
+        package_path = os.path.abspath(os.path.dirname(filename))
+        if hasattr(loader, 'is_package'):
+            is_package = loader.is_package(module)  # type: ignore
+            if is_package:
+                package_path = os.path.dirname(package_path)
+    if package_path.startswith(os.path.abspath(sys.prefix)):
+        return os.path.abspath(sys.prefix), package_path
+    else:
+        return None, package_path

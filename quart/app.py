@@ -28,7 +28,7 @@ from .debug import traceback_response
 from .exceptions import all_http_exceptions, HTTPException
 from .globals import g, request, session
 from .helpers import (
-    _endpoint_from_view_func, get_debug_flag, get_env,
+    _endpoint_from_view_func, find_package, get_debug_flag, get_env,
     get_flashed_messages, url_for,
 )
 from .json import JSONDecoder, JSONEncoder, tojson_filter
@@ -172,10 +172,12 @@ class Quart(PackageStatic):
         """
         super().__init__(import_name, template_folder, root_path, static_folder, static_url_path)
 
+        if instance_path is None:
+            instance_path = self.auto_find_instance_path()
         self.instance_path = instance_path
         if instance_path is not None and not os.path.isabs(instance_path):
             raise ValueError("The instance_path must be an absolute path.")
-        self.config = self.make_config(False if instance_path is None else instance_relative_config)
+        self.config = self.make_config(instance_relative_config)
 
         self.after_request_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
         self.after_serving_funcs: List[Callable] = []
@@ -267,7 +269,15 @@ class Quart(PackageStatic):
         """Return if the app has received a request."""
         return self._got_first_request
 
-    def make_config(self, instance_relative: bool=False) -> Config:
+    def auto_find_instance_path(self) -> str:
+        """Locates the instace_path if it was not provided
+        """
+        prefix, package_path = find_package(self.import_name)
+        if prefix is None:
+            return os.path.join(package_path, 'instance')
+        return os.path.join(prefix, 'var', self.name + '-instance')
+
+    def make_config(self, instance_relative: bool = False) -> Config:
         """Create and return the configuration with appropriate defaults."""
         config = self.config_class(
             self.instance_path if instance_relative else self.root_path,
