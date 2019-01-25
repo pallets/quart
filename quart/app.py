@@ -137,6 +137,8 @@ class Quart(PackageStatic):
             host_matching: bool=False,
             template_folder: Optional[str]='templates',
             root_path: Optional[str]=None,
+            instance_path: Optional[str]=None,
+            instance_relative_config: Optional[bool]=None,
     ) -> None:
         """Construct a Quart web application.
 
@@ -164,7 +166,8 @@ class Quart(PackageStatic):
         """
         super().__init__(import_name, template_folder, root_path, static_folder, static_url_path)
 
-        self.config = self.make_config()
+        self.instance_path = instance_path
+        self.config = self.make_config(False if instance_path is None else instance_relative_config)
 
         self.after_request_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
         self.after_serving_funcs: List[Callable] = []
@@ -256,9 +259,12 @@ class Quart(PackageStatic):
         """Return if the app has received a request."""
         return self._got_first_request
 
-    def make_config(self) -> Config:
+    def make_config(self, instance_relative: bool=False,) -> Config:
         """Create and return the configuration with appropriate defaults."""
-        config = self.config_class(self.root_path, DEFAULT_CONFIG)
+        config = self.config_class(
+            self.instance_path if instance_relative else self.root_path,
+            DEFAULT_CONFIG,
+        )
         config['ENV'] = get_env()
         config['DEBUG'] = get_debug_flag()
         return config
