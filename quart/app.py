@@ -1322,14 +1322,14 @@ class Quart(PackageStatic):
 
         config = HyperConfig()
         config.access_log_format = access_log_format
-        config.access_logger = create_serving_logger()
+        config.access_logger = create_serving_logger()  # type: ignore
         config.ca_certs = ca_certs
         config.certfile = certfile
         if ciphers is not None:
             config.ciphers = ciphers
         if debug is not None:
             config.debug = debug
-        config.error_logger = config.access_logger
+        config.error_logger = config.access_logger  # type: ignore
         config.host = host
         config.keep_alive_timeout = keep_alive_timeout
         config.keyfile = keyfile
