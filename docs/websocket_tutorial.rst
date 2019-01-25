@@ -5,7 +5,7 @@ Tutorial: Websockets
 
 This tutorial will guide you through building the websocket server
 present in the ``examples/websocket`` directory. This is a very simple
-app that simply echos back all messages recieved over the websocket.
+app that simply echos back all messages received over the websocket.
 
 Running the example
 '''''''''''''''''''

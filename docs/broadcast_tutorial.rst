@@ -123,7 +123,7 @@ Timeout
 Quart by default will timeout long responses to protect against
 possible denial of service attacks, see :ref:`dos_mitigations`. For
 this example this timeout incorrectly closes the SSE stream, and so it
-should be disabled. This can be done gloablly, however that could make
+should be disabled. This can be done globally, however that could make
 other routes DOS vulnerable, therefore the recommendation is to set
 the timeout attribute on the specific response to ``None``,
 
@@ -148,7 +148,7 @@ the timeout attribute on the specific response to ``None``,
 4: Javascript equivalent
 ------------------------
 
-In order to recieve server sent events in the browser the Javascript
+In order to receive server sent events in the browser the Javascript
 must declare and use an ``EventSource`` object, like so,
 
 .. code-block:: javascript
@@ -170,7 +170,7 @@ with the above adding each new message as a list item.
 To complete the app we need to accept messages and then broadcast them
 to every client. The latter part is best achieved by each client
 having its own Queue which it receives messages on before broadcasting
-them. The following snippet acheives this,
+them. The following snippet achieves this,
 
 .. code-block:: python
 

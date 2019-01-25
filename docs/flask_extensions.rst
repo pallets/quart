@@ -5,7 +5,7 @@ Using Flask Extensions
 
 Flask extensions can be used with Quart, with some caveats. To do so
 the very first import in your code must be ``import quart.flask_patch``
-as this will add modules proporting to be Flask modules for later use
+as this will add modules purporting to be Flask modules for later use
 by the extension. For example,
 
 .. code-block:: python
@@ -74,5 +74,5 @@ with quart,
   <https://gitlab.com/pgjones/quart-cors>`_ instead.
 - `Flask-Restful <https://github.com/flask-restful/flask-restful/>`_
   as it subclasses the Quart (app) class with synchronous methods
-  overidding asynchronous methods. Try `Quart-OpenApi
+  overriding asynchronous methods. Try `Quart-OpenApi
   <https://github.com/factset/quart-openapi/>`_ instead.

@@ -78,7 +78,7 @@ To mitigate this Quart by default will not wait for the request body,
 allowing the route handler to response if possible, for example if the
 request does not have the correct authorisation. If the body is
 needed, then the application config['BODY_TIMEOUT'] defines the number
-of seconds to wait for the body to be completly received. If the
+of seconds to wait for the body to be completely received. If the
 timeout is exhausted Quart would respond with RequestTimeout, 408.
 
 The default value is 60 seconds, which is chosen as it is the typical
@@ -97,7 +97,7 @@ memory by failing to consume the data sent to the client. This failure
 results in backpressure on the server that leads to the response being
 written to memory rather than the connection. A poorly configured
 server would ignore the backpressure and exhaust its memory. (Note
-this requires a route that respondes with a lot of data, e.g. video
+this requires a route that responds with a lot of data, e.g. video
 streaming).
 
 It is up to the ASGI server to guard against this attack.
@@ -107,8 +107,8 @@ Slow response consumption
 
 This attack is of the first type and aims to exhaust the server's
 connections by inviting the server to take a long time sending the
-response, for example by applying backpressure indefinetly. A poorly
-configured server would simply wait indefinetly trying to send the
+response, for example by applying backpressure indefinitely. A poorly
+configured server would simply wait indefinitely trying to send the
 response.
 
 To mitigate this Quart will limit the time it will try to send the
@@ -137,4 +137,4 @@ memory by inviting it to receive very large websocket messages. A
 poorly configured server would have no limit on the message size
 and potentially allow a single message to exhaust the server.
 
-It is up to teh ASGI server to guard against the attack.
+It is up to the ASGI server to guard against the attack.

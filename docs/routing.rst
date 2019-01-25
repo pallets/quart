@@ -44,7 +44,7 @@ Converters
 It is often necessary and useful to specify how the variable should
 convert and by implication match paths. This works by adding the
 converter name before the variable name separated by a colon,
-``<converter:variable>``. Adpting the example above to,
+``<converter:variable>``. Adapting the example above to,
 
 .. code-block:: python
 

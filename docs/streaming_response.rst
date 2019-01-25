@@ -28,7 +28,7 @@ Timeout
 Quart by default will timeout long responses to protect against
 possible denial of service attacks, see :ref:`dos_mitigations`. This
 may be undesired for streaming responses, e.g. an indefinite
-stream. The timeout can be disabled gloablly, however this could make
+stream. The timeout can be disabled globally, however this could make
 other routes DOS vulnerable, therefore the recommendation is to set
 the timeout attribute on a specific response to ``None``,
 

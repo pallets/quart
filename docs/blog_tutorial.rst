@@ -153,7 +153,7 @@ to run the init_db function, creating a blank database.
 -----------------------------------
 
 With the database existing we can display the posts present in it. To
-do so we have to query the database and retreive the messages, this is
+do so we have to query the database and retrieve the messages, this is
 best done in the view-function, with the following code (which replaces
 the existing ``/`` view-function in ``blog.py``),
 
@@ -199,7 +199,7 @@ in order to nicely render HTML displaying the posts.
 ----------------------
 
 To allow a visitor to create a blog-post we should accept a POST
-request from the browser. This POST request should contian all the
+request from the browser. This POST request should contain all the
 information we need to create a blog-post, namely the title and
 text. With this the blog-post can be created with the following
 view-function addition to ``blog.py``,
@@ -302,7 +302,7 @@ we can also check in the templates if the user is logged in,
 ---------------
 
 Now that visitors can be authenticated the app needs to offer login
-and logout view functions alongside checking the the authentication
+and logout view functions alongside checking the authentication
 status when creating posts. This combined is,
 
 .. code-block:: python

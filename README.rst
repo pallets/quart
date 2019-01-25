@@ -69,7 +69,7 @@ Features
 
 Quart supports the full ASGI 2.0 specification as well as the
 websocket response and HTTP/2 server push extensions. For those of you
-familar with Flask, Quart extends the Flask-API by adding support for,
+familiar with Flask, Quart extends the Flask-API by adding support for,
 
 - HTTP/1.1 request streaming.
 - Websockets.

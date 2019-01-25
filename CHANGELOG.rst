@@ -184,7 +184,7 @@
 ----------------
 
 * Change to async signals and context management. This allows the
-  signal recievers to be async (which is much more useful) but
+  signal receivers to be async (which is much more useful) but
   requires changes to any current usage (notably test contexts).
 * Add initial support of websockets.
 * Support HTTP/1.1 to HTTP/2 (h2c) upgrades, includes supporting
