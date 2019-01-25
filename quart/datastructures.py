@@ -263,7 +263,7 @@ class MIMEAccept(Accept):
         )
         wildcard_allowed = (
             lhs_normalised[0] == rhs_normalised[0] and
-            lhs_normalised[1] == '*' or rhs_normalised[1] == '*'
+            (lhs_normalised[1] == '*' or rhs_normalised[1] == '*')
         )
         match_allowed = lhs_normalised == rhs_normalised
         return full_wildcard_allowed or wildcard_allowed or match_allowed

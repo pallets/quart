@@ -97,6 +97,9 @@ def test_mime_accept_best_match() -> None:
     assert accept.best_match(['application/jpg']) == 'application/jpg'
     assert accept.best_match(['bizarre/other']) == 'bizarre/other'
 
+    accept = MIMEAccept('text/*')
+    assert accept.best_match(['application/xml', 'text/html']) == 'text/html'
+
 
 def test_cache_control() -> None:
     cache_control = _CacheControl()
