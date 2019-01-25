@@ -1298,13 +1298,10 @@ class Quart(PackageStatic):
             host: str='127.0.0.1',
             port: int=5000,
             debug: Optional[bool]=None,
-            access_log_format: str="%(h)s %(r)s %(s)s %(b)s %(D)s",
-            keep_alive_timeout: int=5,
-            use_reloader: bool=False,
+            use_reloader: bool=True,
             loop: Optional[asyncio.AbstractEventLoop]=None,
             ca_certs: Optional[str]=None,
             certfile: Optional[str]=None,
-            ciphers: Optional[str]=None,
             keyfile: Optional[str]=None,
             **kwargs: Any,
     ) -> None:
@@ -1317,10 +1314,7 @@ class Quart(PackageStatic):
             host: Hostname to listen on. By default this is loopback
                 only, use 0.0.0.0 to have the server listen externally.
             port: Port number to listen on.
-            access_log_format: The format to use for the access log,
-                by default this is %(h)s %(r)s %(s)s %(b)s %(D)s.
-            keep_alive_timeout: Timeout in seconds to keep an inactive
-                connection before closing.
+            debug: If set enable (or disable) debug mode and debug output.
             use_reloader: Automatically reload on code changes.
             loop: Asyncio loop to create the server in, if None, take default one.
             ca_certs: Path to the SSL CA certificate file.
@@ -1330,21 +1324,20 @@ class Quart(PackageStatic):
         """
         if kwargs:
             warnings.warn(
-                "Additional arguments, {}, are not yet supported".format(','.join(kwargs.keys())),
+                f"Additional arguments, {','.join(kwargs.keys())}, are not supported.\n"
+                "They may be supported by Hypercorn, which is the ASGI server Quart "
+                "uses by default. This method is meant for development and debugging."
             )
 
         config = HyperConfig()
-        config.access_log_format = access_log_format
+        config.access_log_format = "%(h)s %(r)s %(s)s %(b)s %(D)s"
         config.access_logger = create_serving_logger()
         config.ca_certs = ca_certs
         config.certfile = certfile
-        if ciphers is not None:
-            config.ciphers = ciphers
         if debug is not None:
             config.debug = debug
         config.error_logger = config.access_logger
         config.host = host
-        config.keep_alive_timeout = keep_alive_timeout
         config.keyfile = keyfile
         config.port = port
         config.use_reloader = use_reloader

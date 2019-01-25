@@ -187,10 +187,7 @@ class QuartGroup(AppGroup):
 @pass_script_info
 def run_command(info: ScriptInfo, host: str, port: int) -> None:
     app = info.load_app()
-    app.run(
-        debug=True, access_log_format="%(h)s %(r)s %(s)s %(b)s %(D)s", host=host, port=port,
-        use_reloader=True,
-    )
+    app.run(debug=True, host=host, port=port, use_reloader=True)
 
 
 @click.command('shell', short_help='Open a shell within the app context.')

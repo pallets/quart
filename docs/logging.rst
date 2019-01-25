@@ -59,8 +59,7 @@ Configuring access logs
 
 The access log format can be configured by specifying the atoms (see
 below) to include in a specific format. By default quart will choose
-``%(h)s %(r)s %(s)s %(b)s %(D)s`` as the format. To choose a different
-format specify when running the app, e.g. ``app.run(..., access_log_format=...)``.
+``%(h)s %(r)s %(s)s %(b)s %(D)s`` as the format.
 
 The default Flask (Werkzeug) access log format is ``%(h)s - - %(t)s
 "%(r)s" %(s)s %(b)s``. Which should be combined with a
