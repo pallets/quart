@@ -11,7 +11,8 @@ from typing import (
     Any, Callable, cast, Dict, Iterable, List, Optional, Set, Tuple, Union, ValuesView,
 )
 
-from hypercorn import Config as HyperConfig, run_single
+from hypercorn.asyncio import serve
+from hypercorn.config import Config as HyperConfig
 
 from .asgi import ASGIHTTPConnection, ASGILifespan, ASGIWebsocketConnection
 from .blueprints import Blueprint
@@ -1317,6 +1318,8 @@ class Quart(PackageStatic):
             debug: If set enable (or disable) debug mode and debug output.
             use_reloader: Automatically reload on code changes.
             loop: Asyncio loop to create the server in, if None, take default one.
+                If specified it is the caller's responsibility to close and cleanup the
+                loop.
             ca_certs: Path to the SSL CA certificate file.
             certfile: Path to the SSL certificate file.
             ciphers: Ciphers to use for the SSL setup.
@@ -1331,24 +1334,24 @@ class Quart(PackageStatic):
 
         config = HyperConfig()
         config.access_log_format = "%(h)s %(r)s %(s)s %(b)s %(D)s"
-        config.access_logger = create_serving_logger()
+        config.access_logger = create_serving_logger()  # type: ignore
+        config.bind = [f"{host}:{port}"]
         config.ca_certs = ca_certs
         config.certfile = certfile
         if debug is not None:
             config.debug = debug
-        config.error_logger = config.access_logger
-        config.host = host
+        config.error_logger = config.access_logger  # type: ignore
         config.keyfile = keyfile
-        config.port = port
         config.use_reloader = use_reloader
 
         scheme = 'https' if config.ssl_enabled else 'http'
-        print("Running on {}://{}:{} (CTRL + C to quit)".format(scheme, config.host, config.port))  # noqa: T001, E501
+        print("Running on {}://{} (CTRL + C to quit)".format(scheme, config.bind[0]))  # noqa: T001
 
-        if loop is None:
-            loop = asyncio.get_event_loop()
-
-        run_single(self, config, loop=loop)  # type: ignore
+        if loop is not None:
+            loop.set_debug(config.debug)
+            loop.run_until_complete(serve(self, config))  # type: ignore
+        else:
+            asyncio.run(serve(self, config), debug=config.debug)  # type: ignore
 
     def test_client(self) -> QuartClient:
         """Creates and returns a test client."""

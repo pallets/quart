@@ -19,7 +19,7 @@ INSTALL_REQUIRES = [
     'aiofiles',
     'blinker',
     'click',
-    'hypercorn >= 0.4',
+    'hypercorn >= 0.5.0',
     'itsdangerous',
     'jinja2',
     'multidict',
