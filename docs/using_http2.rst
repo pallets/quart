@@ -3,7 +3,7 @@
 Using HTTP/2
 ============
 
-`HTTP/2 <https://http2.github.io/>`_ is the second major version of
+`HTTP/2 <https://http2.github.io/>`__ is the second major version of
 the Hyper Text Transfer Protocol used to transfer web data.
 
 .. note::
@@ -12,12 +12,12 @@ the Hyper Text Transfer Protocol used to transfer web data.
     Hypercorn, does.
 
 To use HTTP/2 in development you will need to create some SSL
-certificates and run Quart with SSL. See the :ref:`http2_tutorial`.
+certificates and run Quart with SSL. See the :doc:`http2_tutorial`.
 
 Server push or push promises
 ----------------------------
 
-With `HTTP/2 <http://httpwg.org/specs/rfc7540.html#PushResources>`_
+With `HTTP/2 <http://httpwg.org/specs/rfc7540.html#PushResources>`__
 the server can choose to pre-emptively push additional responses to
 the client, this is termed a server push and the response itself is
 called a push promise. Server push is very useful when the server

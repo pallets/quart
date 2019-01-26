@@ -20,8 +20,7 @@ for example,
     class Production(Config):
         SECRET_KEY = 'an actually secret key'
 
-This can then be loaded in say a create_app function
-(factory_pattern_), for example,
+This can then be loaded in say a ``create_app`` function, for example:
 
 .. code-block:: python
 

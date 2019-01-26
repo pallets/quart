@@ -72,10 +72,10 @@ adds SSL. To create the certificates run and accept the defaults,
 
 .. warning::
 
-   You shouldn't use these certificates in production, see :ref:`ssl`
-   for details.
+   You shouldn't use these certificates in production, see `ssl
+   <https://docs.python.org/library/ssl.html>`_ for details.
 
-The command itself and app code is then, see :ref:`http2` full
+The command itself and app code is then, see :ref:`using_http2` full
 details,
 
 .. code-block:: python

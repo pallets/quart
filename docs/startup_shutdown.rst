@@ -1,7 +1,7 @@
 .. _startup_shutdown:
 
 Startup and Shutdown
-===================
+====================
 
 A provisional addition to the ASGI specification adds the ability for
 coroutines to be awaited before a byte is received, ``startup`` and

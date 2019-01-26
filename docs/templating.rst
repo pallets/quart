@@ -29,7 +29,7 @@ Quart standard extras
 
 The standard context includes the ``config``, ``request``,
 ``session``, and ``g`` with these objects referencing the
-``current_app.config`` and those defined in :module:`~quart.globals`
+``current_app.config`` and those defined in :mod:`~quart.globals`
 respectively. The can be accessed as expected,
 
 .. code-block:: python
@@ -53,7 +53,7 @@ Adding filters, tests, globals and context
 To add a filter for usage in tempates, make use of
 :meth:`~quart.app.Quart.template_filter` or
 :meth:`~quart.blueprints.Blueprint.app_template_filter` as decorators,
-or :meth:`~qurt.app.Quart.add_template_filter` or
+or :meth:`~quart.app.Quart.add_template_filter` or
 :meth:`~quart.blueprints.Blueprint.add_app_template_filter` as
 functions. These expect the filter to take in Any value and return a
 str, e.g.

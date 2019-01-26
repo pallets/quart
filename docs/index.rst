@@ -54,7 +54,6 @@ How-To Guides
    blueprints.rst
    command_line.rst
    configuration.rst
-   factory_pattern.rst
    flask_extensions.rst
    flask_migration.rst
    json_encoding.rst
@@ -84,7 +83,6 @@ Discussion Points
    flask_evolution.rst
    globals.rst
    python_versions.rst
-   timeout.rst
    websockets_discussion.rst
 
 Reference

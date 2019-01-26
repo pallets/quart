@@ -42,12 +42,13 @@ More information can be found at `https://redis.io/ <https://redis.io/>`_.
 
 Using Redis opens up a whole host of possible use cases which are beyond the
 scope of this tutorial, but can include:
+
     - Interacting with information across multiple servers and / or applications
     - Atomic data operations to avoid race conditions
     - Real time analysis
     - Caching / Queueing
     - Storage of data along with a pre-defined Time To Live, which comes in
-    handy for user sessions and auto log-out
+      handy for user sessions and auto log-out
     - more...
 
 Redis is separate from Quart and does need to be installed to utilize it.
@@ -63,7 +64,7 @@ created and activated as follows,
 .. code-block:: console
 
     $ cd AsyncProgressBar
-    $ pipenv install quart, aioredis, redis
+    $ pipenv install quart aioredis redis
 
 for this blog we will need Quart, aioredis, and redis libraries. Now
 pipenv can be activated,
