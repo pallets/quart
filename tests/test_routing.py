@@ -117,6 +117,9 @@ def test_strict_slashes() -> None:
 
 def test_disabled_strict_slashes() -> None:
     map_ = Map()
+    map_.add(Rule('/', {'GET'}, 'index', strict_slashes=False))
+    _test_match(map_, '/', 'GET', (map_.endpoints['index'][0], {}))
+    _test_match(map_, '//', 'GET', (map_.endpoints['index'][0], {}))
     map_.add(Rule('/foo', {'GET'}, 'foo', strict_slashes=False))
     _test_match(map_, '/foo', 'GET', (map_.endpoints['foo'][0], {}))
     _test_match(map_, '/foo/', 'GET', (map_.endpoints['foo'][0], {}))
