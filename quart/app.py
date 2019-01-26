@@ -1417,9 +1417,10 @@ class Quart(PackageStatic):
         """Make a Response from the result of the route handler.
 
         The result itself can either be:
-          - A Response object (or subclass) .
+          - A Response object (or subclass).
           - A tuple of a ResponseValue and a header dictionary.
           - A tuple of a ResponseValue, status code and a header dictionary.
+
         A ResponseValue is either a Response object (or subclass) or a str.
         """
         status_or_headers = None

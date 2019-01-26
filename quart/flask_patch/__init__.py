@@ -32,12 +32,12 @@ from flask.wrappers import Request, Response  # noqa: E402
 from jinja2 import escape, Markup  # noqa: E402
 
 __all__ = (
-    '__version__', '_app_ctx_stack', '_request_ctx_stack', 'abort', 'after_this_request',
+    '_app_ctx_stack', '_request_ctx_stack', 'abort', 'after_this_request',
     'appcontext_popped', 'appcontext_pushed', 'appcontext_tearing_down',
     'before_render_template', 'Blueprint', 'Config', 'copy_current_request_context',
     'current_app', 'escape', 'flash', 'Flask', 'g', 'get_flashed_messages',
     'get_template_attribute', 'got_request_exception', 'has_app_context', 'has_request_context',
-    'htmlsafe_dumps', 'jsonify', 'make_response', 'Markup', 'message_flashed', 'redirect',
+    'jsonify', 'make_response', 'Markup', 'message_flashed', 'redirect',
     'render_template', 'render_template_string', 'request', 'Request', 'request_finished',
     'request_started', 'request_tearing_down', 'Response', 'ResponseReturnValue', 'safe_join',
     'send_file', 'send_from_directory', 'session', 'signals_available', 'stream_with_context',

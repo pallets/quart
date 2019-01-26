@@ -115,21 +115,37 @@ class QuartClient:
     ) -> Response:
         """Open a request to the app associated with this client.
 
-        Arguemnts:
-            path: The path to request. If the query_string argument is
-                not defined this argument will be partitioned on a '?'
-                with the following part being considered the
-                query_string.
-            method: The method to make the request with, defaults GET.
-            headers: Headers to include in the request.
-            data: Raw data to send in the request body.
-            form: Data to send form encoded in the request body.
-            query_string: To send as a dictionary, alternatively the
-                query_string can be determined from the path.
-            json: Data to send json encoded in the request body.
-            scheme: The scheme to use in the request, default http.
-            follow_redirects: Whether or not a redirect response should
-                be followed, defaults to False.
+        Arguments:
+            path
+                The path to request. If the query_string argument is not
+                defined this argument will be partitioned on a '?' with the
+                following part being considered the query_string.
+
+            method
+                The method to make the request with, defaults to 'GET'.
+
+            headers
+                Headers to include in the request.
+
+            data
+                Raw data to send in the request body.
+
+            form
+                Data to send form encoded in the request body.
+
+            query_string
+                To send as a dictionary, alternatively the query_string can be
+                determined from the path.
+
+            json
+                Data to send json encoded in the request body.
+
+            scheme
+                The scheme to use in the request, default http.
+
+            follow_redirects
+                Whether or not a redirect response should be followed, defaults
+                to False.
 
         Returns:
             The response from the app handling the request.

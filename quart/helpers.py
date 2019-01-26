@@ -88,7 +88,7 @@ def get_flashed_messages(
     This is mostly useful in templates where it is exposed as a global
     function, for example
 
-    .. code-block:: jinja2
+    .. code-block:: html+jinja
 
         <ul>
         {% for message in get_flashed_messages() %}

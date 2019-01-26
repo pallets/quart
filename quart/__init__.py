@@ -37,7 +37,7 @@ __all__ = (
     'copy_current_websocket_context', 'current_app', 'escape', 'flash', 'g',
     'get_flashed_messages', 'get_template_attribute', 'got_request_exception',
     'got_websocket_exception', 'has_app_context', 'has_request_context', 'has_websocket_context',
-    'htmlsafe_dumps', 'jsonify', 'make_response', 'Markup', 'message_flashed', 'Quart', 'redirect',
+    'jsonify', 'make_response', 'Markup', 'message_flashed', 'Quart', 'redirect',
     'render_template', 'render_template_string', 'request', 'Request', 'request_finished',
     'request_started', 'request_tearing_down', 'Response', 'ResponseReturnValue', 'safe_join',
     'send_file', 'send_from_directory', 'session', 'signals_available', 'stream_with_context',
