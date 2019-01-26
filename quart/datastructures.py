@@ -213,8 +213,23 @@ class Accept:
                     best_match = AcceptOption(possible_match, option.quality, {})
         return best_match.value
 
+    def quality(self, key: str) -> float:
+        for option in self.options:
+            if self._values_match(key, option.value):
+                return option.quality
+        return 0.0
+
     def _values_match(self, lhs: str, rhs: str) -> bool:
         return rhs == '*' or lhs.lower() == rhs.lower()
+
+    def __getitem__(self, key: str) -> float:
+        return self.quality(key)
+
+    def __contains__(self, key: str) -> bool:
+        for option in self.options:
+            if self._values_match(key, option.value):
+                return True
+        return False
 
 
 class CharsetAccept(Accept):

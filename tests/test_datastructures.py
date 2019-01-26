@@ -79,6 +79,24 @@ def test_accept_best_match() -> None:
     assert accept.best_match(['bizarre']) == 'bizarre'
 
 
+def test_accept_quality() -> None:
+    accept = Accept('gzip, deflate, br;q=0.9')
+    assert accept.quality("gzip") == 1.0
+    assert accept.quality("bizarre") == 0.0
+
+
+def test_accept___getitem__() -> None:  # noqa: N807
+    accept = Accept('gzip, deflate, br;q=0.9, *;q=0.8')
+    assert accept["gzip"] == 1.0
+    assert accept["bizarre"] == 0.8
+
+
+def test_accept___contains__() -> None:  # noqa: N807
+    accept = Accept('gzip, deflate, br;q=0.9, *;q=0.8')
+    assert "gzip" in accept
+    assert "bizzare" in accept
+
+
 def test_charset_accept_best_match() -> None:
     accept = CharsetAccept('ISO-8859-1')
     assert accept.best_match(['ISO-8859-1']) == 'ISO-8859-1'
