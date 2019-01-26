@@ -105,14 +105,14 @@ def test_strict_slashes() -> None:
     map_ = Map()
     map_.add(Rule('/path', {'POST'}, 'leaf'))
     map_.add(Rule('/path/', {'GET'}, 'branch'))
-    # Ensure that the matching is invariant under reveresed order of
+    # Ensure that the matching is invariant under reversed order of
     # addition to a Map.
-    map_reveresed = Map()
-    map_reveresed.add(Rule('/path', {'POST'}, 'leaf'))
-    map_reveresed.add(Rule('/path/', {'GET'}, 'branch'))
+    map_reversed = Map()
+    map_reversed.add(Rule('/path', {'POST'}, 'leaf'))
+    map_reversed.add(Rule('/path/', {'GET'}, 'branch'))
 
     _test_strict_slashes(map_)
-    _test_strict_slashes(map_reveresed)
+    _test_strict_slashes(map_reversed)
 
 
 def test_disabled_strict_slashes() -> None:
