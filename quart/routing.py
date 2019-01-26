@@ -222,7 +222,7 @@ class MapAdapter:
         self.map = map
         self.scheme = scheme
         self.server_name = server_name
-        self.path = path
+        self.path = f"/{path.lstrip('/')}" if path is not None else path
         self.method = method
         self.query_string = query_string
 
