@@ -17,7 +17,7 @@ class ASGIHTTPConnection:
         self.scope = scope
 
     async def __call__(self, receive: Callable, send: Callable) -> None:
-        request = self._create_request_from_scope()
+        request = self._create_request_from_scope(send)
         receiver_task = asyncio.ensure_future(self.handle_messages(request, receive))
         handler_task = asyncio.ensure_future(self.handle_request(request, send))
         _, pending = await asyncio.wait(
@@ -35,7 +35,7 @@ class ASGIHTTPConnection:
             elif message['type'] == 'http.disconnect':
                 return
 
-    def _create_request_from_scope(self) -> Request:
+    def _create_request_from_scope(self, send: Callable) -> Request:
         headers = CIMultiDict()
         headers['Remote-Addr'] = (self.scope.get('client') or ['<local>'])[0]
         for name, value in self.scope['headers']:
@@ -51,6 +51,7 @@ class ASGIHTTPConnection:
             self.scope['query_string'], headers,
             max_content_length=self.app.config['MAX_CONTENT_LENGTH'],
             body_timeout=self.app.config['BODY_TIMEOUT'],
+            send_push_promise=partial(self._send_push_promise, send),
         )
 
     async def handle_request(self, request: Request, send: Callable) -> None:
@@ -71,13 +72,8 @@ class ASGIHTTPConnection:
             'headers': headers,
         })
 
-        if 'http.response.push' in self.scope.get('extensions', {}):
-            for path in response.push_promises:
-                await send({
-                    'type': 'http.response.push',
-                    'path': path,
-                    'headers': [],
-                })
+        for path in response.push_promises:
+            self._send_push_promise(send, path)
 
         async for data in response.response:
             await send({
@@ -90,6 +86,14 @@ class ASGIHTTPConnection:
             'body': b'',
             'more_body': False,
         })
+
+    async def _send_push_promise(self, send: Callable, path: str) -> None:
+        if 'http.response.push' in self.scope.get('extensions', {}):
+            await send({
+                'type': 'http.response.push',
+                'path': path,
+                'headers': [],
+            })
 
 
 class ASGIWebsocketConnection:

@@ -14,8 +14,8 @@ from .globals import (
     websocket,
 )
 from .helpers import (
-    flash, get_flashed_messages, get_template_attribute, make_response, stream_with_context,
-    url_for,
+    flash, get_flashed_messages, get_template_attribute, make_push_promise, make_response,
+    stream_with_context, url_for,
 )
 from .json import jsonify
 from .signals import (
@@ -37,10 +37,10 @@ __all__ = (
     'copy_current_websocket_context', 'current_app', 'escape', 'flash', 'g',
     'get_flashed_messages', 'get_template_attribute', 'got_request_exception',
     'got_websocket_exception', 'has_app_context', 'has_request_context', 'has_websocket_context',
-    'jsonify', 'make_response', 'Markup', 'message_flashed', 'Quart', 'redirect',
-    'render_template', 'render_template_string', 'request', 'Request', 'request_finished',
-    'request_started', 'request_tearing_down', 'Response', 'ResponseReturnValue', 'safe_join',
-    'send_file', 'send_from_directory', 'session', 'signals_available', 'stream_with_context',
-    'template_rendered', 'url_for', 'websocket', 'websocket_finished', 'websocket_started',
-    'websocket_tearing_down',
+    'jsonify', 'make_push_promise', 'make_response', 'Markup', 'message_flashed', 'Quart',
+    'redirect', 'render_template', 'render_template_string', 'request', 'Request',
+    'request_finished', 'request_started', 'request_tearing_down', 'Response',
+    'ResponseReturnValue', 'safe_join', 'send_file', 'send_from_directory', 'session',
+    'signals_available', 'stream_with_context', 'template_rendered', 'url_for', 'websocket',
+    'websocket_finished', 'websocket_started', 'websocket_tearing_down',
 )

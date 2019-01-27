@@ -24,12 +24,14 @@ called a push promise. Server push is very useful when the server
 knows the client will likely initiate a request, say for the css or js
 referenced in a html response.
 
-In Quart server push can be initiated by adding the paths to push to
-any response, for example,
+In Quart server push can be initiated during a request via the
+function :func:`~quart.helpers.make_push_promise` or by adding the
+paths to push to any response, for example,
 
 .. code-block:: python
 
     async def index():
+        await make_push_promise(url_for('static', filename='css/minimal.css'))
         result = await render_template('index.html')
         response = await make_response(result)
         response.push_promises.add(url_for('static', filename='css/base.css'))

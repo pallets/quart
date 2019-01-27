@@ -75,6 +75,10 @@ class Body:
         self.set_complete()
 
 
+async def _no_op() -> None:
+    pass
+
+
 class Request(BaseRequestWebsocket, JSONMixin):
     """This class represents a request.
 
@@ -97,6 +101,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
             *,
             max_content_length: Optional[int]=None,
             body_timeout: Optional[int]=None,
+            send_push_promise: Optional[Callable]=None,
     ) -> None:
         """Create a request object.
 
@@ -112,6 +117,8 @@ class Request(BaseRequestWebsocket, JSONMixin):
                 body (None implies no limit in Quart).
             body_timeout: The maximum time (seconds) to wait for the
                 body before timing out.
+            send_push_promise: An awaitable to send a push promise based
+                off of this request (HTTP/2 feature).
         """
         super().__init__(method, scheme, path, query_string, headers)
         self.max_content_length = max_content_length
@@ -125,6 +132,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
         self.body = self.body_class(self.max_content_length)
         self._form: Optional[MultiDict] = None
         self._files: Optional[MultiDict] = None
+        self.send_push_promise = send_push_promise or _no_op
 
     async def get_data(self, raw: bool=True) -> AnyStr:
         """The request body data."""

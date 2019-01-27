@@ -52,6 +52,16 @@ async def make_response(*args: Any) -> Response:
     return await current_app.make_response(args)
 
 
+async def make_push_promise(path: str) -> None:
+    """Create a push promise, a simple wrapper function.
+
+    This takes a path that should be pushed to the client if the
+    protocol is HTTP/2.
+
+    """
+    return await request.send_push_promise(path)
+
+
 async def flash(message: str, category: str='message') -> None:
     """Add a message (with optional category) to the session store.
 

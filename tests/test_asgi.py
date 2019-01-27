@@ -22,7 +22,7 @@ async def test_http_1_0_host_header(headers: list, expected: str) -> None:
         'query_string': b'',
     }
     connection = ASGIHTTPConnection(app, scope)
-    request = connection._create_request_from_scope()
+    request = connection._create_request_from_scope(lambda: None)
     assert request.headers['host'] == expected
 
 
@@ -94,7 +94,7 @@ def test_http_path_from_absolute_target() -> None:
         'query_string': b'',
     }
     connection = ASGIHTTPConnection(app, scope)
-    request = connection._create_request_from_scope()
+    request = connection._create_request_from_scope(lambda: None)
     assert request.path == '/path'
 
 
