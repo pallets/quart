@@ -10,6 +10,12 @@ def test_abort() -> None:
         abort(400)
 
 
+def test_abort_with_arguments() -> None:
+    with pytest.raises(HTTPException) as exc_info:
+        abort(400, "A description", "A name")
+    assert exc_info.value.description == "A description"
+
+
 @pytest.mark.asyncio
 async def test_http_exception() -> None:
     error = HTTPException(205, 'Description', 'Name')

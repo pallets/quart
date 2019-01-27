@@ -104,12 +104,17 @@ if not please click the link
         return headers
 
 
-def abort(status_code: int) -> None:
+def abort(status_code: int, description: Optional[str] = None, name: Optional[str] = None) -> None:
     error_class = all_http_exceptions.get(status_code)
     if error_class is None:
-        raise HTTPException(status_code, 'Unknown', 'Unknown')
+        raise HTTPException(status_code, description or 'Unknown', name or 'Unknown')
     else:
-        raise error_class()
+        error = error_class()
+        if description is not None:
+            error.description = description
+        if name is not None:
+            error.name = name
+        raise error
 
 
 all_http_exceptions = {
