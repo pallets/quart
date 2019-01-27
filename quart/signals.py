@@ -22,6 +22,13 @@ class AsyncNamedSignal(NamedSignal):
 
     def connect(self, receiver: Callable, *args: Any, **kwargs: Any) -> Callable:
         handler = ensure_coroutine(receiver)
+        if handler is not receiver and kwargs.get("weak", True):
+            # Blinker will take a weakref to handler, which goes out
+            # of scope with this method as it is a wrapper around the
+            # receiver. Whereas we'd want it to go out of scope when
+            # receiver does. Therefore we can place it on the receiver
+            # function. (Ideally I'll think of a better way).
+            receiver._quart_wrapper_func = handler  # type: ignore
         return super().connect(handler, *args, **kwargs)
 
 
