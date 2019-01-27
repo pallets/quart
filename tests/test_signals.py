@@ -6,20 +6,32 @@ from quart.signals import AsyncNamedSignal
 
 
 @pytest.mark.asyncio
-async def test_async_signal() -> None:
+@pytest.mark.parametrize("weak", [True, False])
+async def test_sync_signal(weak: bool) -> None:
     signal = AsyncNamedSignal('name')
-    fired = [False, False]
+    fired = False
 
     def sync_fired(*_: Any) -> None:
         nonlocal fired
-        fired[0] = True
+        fired = True
+
+    signal.connect(sync_fired, weak=weak)
+
+    await signal.send()
+    assert fired
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("weak", [True, False])
+async def test_async_signal(weak: bool) -> None:
+    signal = AsyncNamedSignal('name')
+    fired = False
 
     async def async_fired(*_: Any) -> None:
         nonlocal fired
-        fired[1] = True
+        fired = True
 
-    signal.connect(sync_fired, weak=False)
-    signal.connect(async_fired, weak=False)
+    signal.connect(async_fired, weak=weak)
 
     await signal.send()
-    assert fired == [True, True]
+    assert fired
