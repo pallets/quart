@@ -42,7 +42,7 @@ def _test_match_redirect(
     adapter = map_.bind_to_request('http', host, method, path, query_string)
     with pytest.raises(RedirectRequired) as error:
         adapter.match()
-    assert error.value.redirect_path == redirect_path
+    assert error.value.redirect_path == f"http://{host}{redirect_path}"
 
 
 def test_no_match_error(basic_map: Map) -> None:
@@ -138,8 +138,8 @@ def test_redirect_url_host() -> None:
     map_ = Map(host_matching=True)
     map_.add(Rule('/path/', {'GET'}, 'branch', host='quart.com'))
     map_.add(Rule('/path/', {'GET'}, 'branch', host='flask.com'))
-    _test_match_redirect(map_, '/path', 'GET', 'http://quart.com/path/', host='quart.com')
-    _test_match_redirect(map_, '/path', 'GET', 'http://flask.com/path/', host='flask.com')
+    _test_match_redirect(map_, '/path', 'GET', '/path/', host='quart.com')
+    _test_match_redirect(map_, '/path', 'GET', '/path/', host='flask.com')
 
 
 def test_ordering() -> None:

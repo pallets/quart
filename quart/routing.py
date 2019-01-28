@@ -269,12 +269,7 @@ class MapAdapter:
     def _make_redirect_url(self, rule: 'Rule', variables: Dict[str, Any]) -> str:
         path = rule.build(**variables)
         suffix = self.query_string.decode('ascii')
-        if self.map.host_matching:
-            return urlunsplit((self.scheme, self.server_name, path, suffix, ''))
-        elif suffix:
-            return f"{path}?{suffix}"
-        else:
-            return path
+        return urlunsplit((self.scheme, self.server_name, path, suffix, ''))
 
     def allowed_methods(self) -> Set[str]:
         allowed_methods: Set[str] = set()
