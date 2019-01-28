@@ -1,4 +1,4 @@
-from typing import Union
+from typing import List, Union
 
 import pytest
 
@@ -129,15 +129,19 @@ def test_etags() -> None:
     assert etags.to_header() == 'W/"67ab43","54ed21"'
 
 
-def test_range() -> None:
-    range_ = Range.from_header('bytes=500-600,601-999')
+@pytest.mark.parametrize(
+    "header, expected_ranges",
+    [
+        ("bytes=500-600,601-999", [RangeSet(500, 600), RangeSet(601, 999)]),
+        ("bytes=-999", [RangeSet(-999, None)]),
+        ("bytes=0-", [RangeSet(0, None)]),
+    ],
+)
+def test_range(header: str, expected_ranges: List[RangeSet]) -> None:
+    range_ = Range.from_header(header)
     assert range_.units == 'bytes'
-    assert range_.ranges == [RangeSet(500, 600), RangeSet(601, 999)]
-    assert range_.to_header() == 'bytes=500-600,601-999'
-    range_ = Range.from_header('bytes=-999')
-    assert range_.units == 'bytes'
-    assert range_.ranges == [RangeSet(-999, None)]
-    assert range_.to_header() == 'bytes=-999'
+    assert range_.ranges == expected_ranges
+    assert range_.to_header() == header
 
 
 def test_header_set() -> None:
