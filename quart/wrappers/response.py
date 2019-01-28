@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
@@ -9,6 +10,8 @@ from typing import (
     TYPE_CHECKING, Union,
 )
 from wsgiref.handlers import format_date_time
+
+from aiofiles import open as async_open
 
 from ._base import _BaseRequestResponse, JSONMixin
 from ..datastructures import (
@@ -95,6 +98,55 @@ class IterableBody(ResponseBody):
         return bytes(result)
 
 
+class FileBody(ResponseBody):
+    """Provides an async file accessor with range setting.
+
+    The :attr:`Response.response` attribute must be async-iterable and
+    yield bytes, which this wrapper does for a file. In addition it
+    allows a range to be set on the file, thereby supporting
+    conditional requests.
+
+    Attributes:
+        buffer_size: Size in bytes to load per iteration.
+    """
+    buffer_size = 8192
+
+    def __init__(
+            self, file_path: Union[str, bytes, os.PathLike], *, buffer_size: Optional[int] = None,
+    ) -> None:
+        self.file_path = file_path
+        if buffer_size is not None:
+            self.buffer_size = buffer_size
+        self.file: Optional[AsyncFileIO] = None
+        self.file_manager: Optional[AiofilesContextManager] = None
+
+    async def __aenter__(self) -> "FileBody":
+        self.file_manager = async_open(self.file_path, mode="rb")
+        self.file = await self.file_manager.__aenter__()
+        return self
+
+    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+        await self.file_manager.__aexit__(exc_type, exc_value, tb)
+
+    def __aiter__(self) -> 'FileBody':
+        return self
+
+    async def __anext__(self) -> bytes:
+        chunk = await self.file.read(self.buffer_size)
+
+        if chunk:
+            return chunk
+        else:
+            raise StopAsyncIteration()
+
+    async def convert_to_sequence(self) -> bytes:
+        result = bytearray()
+        async with self as response:
+            async for data in response:
+                result.extend(data)
+        return bytes(result)
+
+
 class Response(_BaseRequestResponse, JSONMixin):
     """This class represents a response.
 
@@ -116,6 +168,7 @@ class Response(_BaseRequestResponse, JSONMixin):
     default_status = 200
     default_mimetype = 'text/html'
     data_body_class = DataBody
+    file_body_class = FileBody
     implicit_sequence_conversion = True
     iterable_body_class = IterableBody
 

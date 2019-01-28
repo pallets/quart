@@ -11,7 +11,6 @@ from typing import (
     Any, Callable, cast, Dict, Iterable, List, Optional, Set, Tuple, Union, ValuesView,
 )
 
-from aiofiles import open as async_open
 from hypercorn.asyncio import serve
 from hypercorn.config import Config as HyperConfig
 
@@ -74,8 +73,6 @@ class Quart(PackageStatic):
             lifespan protocol.
         asgi_websocket_class: The class to use to handle the ASGI
             websocket protocol.
-        async_open: The async callable used to open a file, will depend
-            on the event loop implementation.
         config_class: The class to use for the configuration.
         env: The name of the environment the app is running on.
         debug: Wrapper around configuration DEBUG value, in many places
@@ -105,7 +102,6 @@ class Quart(PackageStatic):
     asgi_http_class = ASGIHTTPConnection
     asgi_lifespan_class = ASGILifespan
     asgi_websocket_class = ASGIWebsocketConnection
-    async_open = staticmethod(async_open)
     config_class = Config
     debug = ConfigAttribute('DEBUG')
     env = ConfigAttribute('ENV')

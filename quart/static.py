@@ -153,9 +153,8 @@ async def send_file(
     """
     file_path = os.fspath(filename)
     mimetype = mimetypes.guess_type(os.path.basename(file_path))[0] or DEFAULT_MIMETYPE
-    async with current_app.async_open(file_path, mode='rb') as file_:
-        data = await file_.read()
-    response = current_app.response_class(data, mimetype=mimetype)
+    file_body = current_app.response_class.file_body_class(file_path)
+    response = current_app.response_class(file_body, mimetype=mimetype)
 
     if last_modified is not None:
         response.last_modified = last_modified

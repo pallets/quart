@@ -1,12 +1,14 @@
 from datetime import datetime, timezone
 from http import HTTPStatus
+from pathlib import Path
 from typing import Any, AsyncGenerator
 
 import hypothesis.strategies as strategies
 import pytest
 from hypothesis import given
+from py._path.local import LocalPath
 
-from quart.wrappers.response import DataBody, IterableBody, Response
+from quart.wrappers.response import DataBody, FileBody, IterableBody, Response
 
 
 @pytest.mark.asyncio
@@ -51,6 +53,26 @@ async def test_iterable_wrapper(iterable: Any) -> None:
 )
 async def test_iterable_wrapper_sequence_conversion(iterable: Any) -> None:
     wrapper = IterableBody(iterable)
+    assert (await wrapper.convert_to_sequence()) == b"abcdef"
+
+
+@pytest.mark.asyncio
+async def test_file_wrapper(tmpdir: LocalPath) -> None:
+    file_ = tmpdir.join('file_wrapper')
+    file_.write('abcdef')
+    wrapper = FileBody(Path(file_.realpath()), buffer_size=3)
+    results = []
+    async with wrapper as response:
+        async for data in response:
+            results.append(data)
+    assert results == [b"abc", b"def"]
+
+
+@pytest.mark.asyncio
+async def test_file_wrapper_sequence_conversion(tmpdir: LocalPath) -> None:
+    file_ = tmpdir.join('file_wrapper')
+    file_.write('abcdef')
+    wrapper = FileBody(Path(file_.realpath()), buffer_size=3)
     assert (await wrapper.convert_to_sequence()) == b"abcdef"
 
 
