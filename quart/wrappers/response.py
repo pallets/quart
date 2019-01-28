@@ -1,10 +1,12 @@
+from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from hashlib import md5
 from inspect import isasyncgen
+from types import TracebackType
 from typing import (
-    Any, AnyStr, AsyncGenerator, AsyncIterable, Iterable, Optional, Set, Tuple, TYPE_CHECKING,
-    Union,
+    AnyStr, AsyncGenerator, AsyncIterable, AsyncIterator, Iterable, Optional, Set, Tuple,
+    TYPE_CHECKING, Union,
 )
 from wsgiref.handlers import format_date_time
 
@@ -16,6 +18,81 @@ from ..utils import create_cookie
 
 if TYPE_CHECKING:
     from .routing import Rule  # noqa
+
+
+class ResponseBody(ABC):
+    """Base class wrapper for response body data.
+
+    This ensures that the following is possible (as Quart assumes so
+    when returning the body to the ASGI server
+
+        async with wrapper as response:
+            async for data in response:
+                send(data)
+
+    """
+    @abstractmethod
+    async def __aenter__(self) -> AsyncIterable:
+        pass
+
+    @abstractmethod
+    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+        pass
+
+    @abstractmethod
+    async def convert_to_sequence(self) -> bytes:
+        pass
+
+
+class DataBody(ResponseBody):
+
+    def __init__(self, data: bytes) -> None:
+        self.data = data
+
+    async def __aenter__(self) -> "DataBody":
+        return self
+
+    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+        pass
+
+    def __aiter__(self) -> AsyncIterator:
+
+        async def _aiter() -> AsyncGenerator[bytes, None]:
+            yield self.data
+
+        return _aiter()
+
+    async def convert_to_sequence(self) -> bytes:
+        return self.data
+
+
+class IterableBody(ResponseBody):
+
+    def __init__(self, iterable: Union[AsyncGenerator[bytes, None], Iterable]) -> None:
+        self.iter: AsyncGenerator[bytes, None]
+        if isasyncgen(iterable):
+            self.iter = iterable  # type: ignore
+        else:
+            async def _aiter() -> AsyncGenerator[bytes, None]:
+                for data in iterable:  # type: ignore
+                    yield data
+
+            self.iter = _aiter()
+
+    async def __aenter__(self) -> "IterableBody":
+        return self
+
+    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+        pass
+
+    def __aiter__(self) -> AsyncIterator:
+        return self.iter
+
+    async def convert_to_sequence(self) -> bytes:
+        result = bytearray()
+        async for data in self.iter:
+            result.extend(data)
+        return bytes(result)
 
 
 class Response(_BaseRequestResponse, JSONMixin):
@@ -38,11 +115,13 @@ class Response(_BaseRequestResponse, JSONMixin):
     automatically_set_content_length = True
     default_status = 200
     default_mimetype = 'text/html'
+    data_body_class = DataBody
     implicit_sequence_conversion = True
+    iterable_body_class = IterableBody
 
     def __init__(
             self,
-            response: Union[AnyStr, Iterable],
+            response: Union[ResponseBody, AnyStr, Iterable],
             status: Optional[int]=None,
             headers: Optional[Union[dict, CIMultiDict, Headers]]=None,
             mimetype: Optional[str]=None,
@@ -92,23 +171,26 @@ class Response(_BaseRequestResponse, JSONMixin):
         if content_type is not None:
             self.headers['Content-Type'] = content_type
 
-        self.response: AsyncIterable[bytes]
-        if isinstance(response, (str, bytes)):
+        self.response: ResponseBody
+        if isinstance(response, ResponseBody):
+            self.response = response
+        elif isinstance(response, (str, bytes)):
             self.set_data(response)  # type: ignore
         else:
-            self.response = _ensure_aiter(response)
+            self.response = self.iterable_body_class(response)
         self.push_promises: Set[str] = set()
 
     async def get_data(self, raw: bool=True) -> AnyStr:
         """Return the body data."""
-        if not isinstance(self.response, _AsyncList) and self.implicit_sequence_conversion:
-            self.response = _AsyncList([data async for data in self.response])
+        if self.implicit_sequence_conversion:
+            self.response = self.data_body_class(await self.response.convert_to_sequence())
         result = b'' if raw else ''
-        async for data in self.response:  # type: ignore
-            if raw:
-                result += data
-            else:
-                result += data.decode(self.charset)
+        async with self.response as body:  # type: ignore
+            async for data in body:
+                if raw:
+                    result += data
+                else:
+                    result += data.decode(self.charset)
         return result  # type: ignore
 
     def set_data(self, data: AnyStr) -> None:
@@ -120,9 +202,9 @@ class Response(_BaseRequestResponse, JSONMixin):
             bytes_data = data.encode(self.charset)
         else:
             bytes_data = data
-        self.response = _ensure_aiter([bytes_data])
+        self.response = self.data_body_class(bytes_data)
         if self.automatically_set_content_length:
-            self.headers['Content-Length'] = str(len(bytes_data))
+            self.content_length = len(bytes_data)
 
     async def freeze(self) -> None:
         """Freeze this object ready for pickling."""
@@ -401,32 +483,3 @@ class Response(_BaseRequestResponse, JSONMixin):
             self.headers.pop(key, None)
         else:
             self.headers[key] = value
-
-
-def _ensure_aiter(
-        iter_: Union[AsyncGenerator[bytes, None], Iterable],
-) -> AsyncGenerator[bytes, None]:
-    if isasyncgen(iter_):
-        return iter_  # type: ignore
-    else:
-        async def aiter() -> AsyncGenerator[bytes, None]:
-            for data in iter_:  # type: ignore
-                yield data
-
-        return aiter()
-
-
-class _AsyncList(list):
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.iter_ = iter(self)
-
-    def __aiter__(self) -> '_AsyncList':
-        return _AsyncList(self)
-
-    async def __anext__(self) -> Any:
-        try:
-            return next(self.iter_)
-        except StopIteration as error:
-            raise StopAsyncIteration() from error

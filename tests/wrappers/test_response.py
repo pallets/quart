@@ -1,12 +1,57 @@
 from datetime import datetime, timezone
 from http import HTTPStatus
-from typing import Any
+from typing import Any, AsyncGenerator
 
 import hypothesis.strategies as strategies
 import pytest
 from hypothesis import given
 
-from quart.wrappers.response import Response
+from quart.wrappers.response import DataBody, IterableBody, Response
+
+
+@pytest.mark.asyncio
+async def test_data_wrapper() -> None:
+    wrapper = DataBody(b"abcdef")
+    results = []
+    async with wrapper as response:
+        async for data in response:
+            results.append(data)
+    assert results == [b"abcdef"]
+
+
+@pytest.mark.asyncio
+async def test_data_wrapper_sequence_conversion() -> None:
+    wrapper = DataBody(b"abcdef")
+    assert (await wrapper.convert_to_sequence()) == b"abcdef"
+
+
+async def _simple_async_generator() -> AsyncGenerator[bytes, None]:
+    yield b"abc"
+    yield b"def"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "iterable",
+    [[b"abc", b"def"], (data for data in [b"abc", b"def"]), _simple_async_generator()],
+)
+async def test_iterable_wrapper(iterable: Any) -> None:
+    wrapper = IterableBody(iterable)
+    results = []
+    async with wrapper as response:
+        async for data in response:
+            results.append(data)
+    assert results == [b"abc", b"def"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "iterable",
+    [[b"abc", b"def"], (data for data in [b"abc", b"def"]), _simple_async_generator()],
+)
+async def test_iterable_wrapper_sequence_conversion(iterable: Any) -> None:
+    wrapper = IterableBody(iterable)
+    assert (await wrapper.convert_to_sequence()) == b"abcdef"
 
 
 @pytest.mark.parametrize(

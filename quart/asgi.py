@@ -75,12 +75,13 @@ class ASGIHTTPConnection:
         for path in response.push_promises:
             self._send_push_promise(send, path)
 
-        async for data in response.response:
-            await send({
-                'type': 'http.response.body',
-                'body': data,
-                'more_body': True,
-            })
+        async with response.response as body:
+            async for data in body:
+                await send({
+                    'type': 'http.response.body',
+                    'body': data,
+                    'more_body': True,
+                })
         await send({
             'type': 'http.response.body',
             'body': b'',
@@ -151,12 +152,13 @@ class ASGIWebsocketConnection:
                 'status': response.status_code,
                 'headers': headers,
             })
-            async for data in response.response:
-                await send({
-                    'type': 'websocket.http.response.body',
-                    'body': data,
-                    'more_body': True,
-                })
+            async with response.response as body:
+                async for data in body:
+                    await send({
+                        'type': 'websocket.http.response.body',
+                        'body': data,
+                        'more_body': True,
+                    })
             await send({
                 'type': 'websocket.http.response.body',
                 'body': b'',
