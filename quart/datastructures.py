@@ -440,6 +440,8 @@ class Range:
         for range_set in parse_http_list(raw_ranges):
             if range_set.startswith('-'):
                 ranges.append(RangeSet(int(range_set), None))
+            elif range_set.endswith('-'):
+                ranges.append(RangeSet(int(range_set[:-1]), None))
             elif '-' in range_set:
                 begin, end = range_set.split('-')
                 ranges.append(RangeSet(int(begin), int(end)))
@@ -451,8 +453,10 @@ class Range:
         header = f"{self.units}="
         for range_set in self.ranges:
             header += f"{range_set.begin}"
+            if range_set.begin >= 0:
+                header += "-"
             if range_set.end is not None:
-                header += f"-{range_set.end}"
+                header += f"{range_set.end}"
             header += ','
         return header.strip(',')
 
