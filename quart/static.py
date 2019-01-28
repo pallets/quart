@@ -11,7 +11,7 @@ from zlib import adler32
 from jinja2 import FileSystemLoader
 
 from .exceptions import NotFound
-from .globals import current_app
+from .globals import current_app, request
 from .wrappers import Response
 
 DEFAULT_MIMETYPE = 'application/octet-stream'
@@ -127,11 +127,11 @@ def safe_join(directory: str, *paths: str) -> Path:
     return full_path
 
 
-async def send_from_directory(directory: str, file_name: str) -> Response:
+async def send_from_directory(directory: str, file_name: str, conditional: bool=False) -> Response:
     file_path = safe_join(directory, file_name)
     if not os.path.isfile(file_path):
         raise NotFound()
-    return await send_file(file_path)
+    return await send_file(file_path, conditional=conditional)
 
 
 async def send_file(
@@ -139,6 +139,7 @@ async def send_file(
         add_etags: bool=True,
         cache_timeout: Optional[int]=None,
         last_modified: Optional[datetime]=None,
+        conditional: bool=False,
 ) -> Response:
     """Return a Reponse to send the filename given.
 
@@ -175,4 +176,7 @@ async def send_file(
                 adler32(file_tag),
             ),
         )
+
+    if conditional:
+        await response.make_conditional(request.range)
     return response

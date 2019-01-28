@@ -12,10 +12,13 @@ from typing import (
 from wsgiref.handlers import format_date_time
 
 from aiofiles import open as async_open
+from aiofiles.base import AiofilesContextManager
+from aiofiles.threadpool import AsyncFileIO
 
 from ._base import _BaseRequestResponse, JSONMixin
 from ..datastructures import (
-    CIMultiDict, ContentRange, Headers, HeaderSet, ResponseAccessControl, ResponseCacheControl,
+    CIMultiDict, ContentRange, Headers, HeaderSet, Range, ResponseAccessControl,
+    ResponseCacheControl,
 )
 from ..utils import create_cookie
 
@@ -47,10 +50,18 @@ class ResponseBody(ABC):
         pass
 
 
+def _raise_if_invalid_range(begin: int, end: int, size: int) -> None:
+    if begin >= end or abs(begin) > size or end > size:
+        from ..exceptions import RequestRangeNotSatisfiable
+        raise RequestRangeNotSatisfiable()
+
+
 class DataBody(ResponseBody):
 
     def __init__(self, data: bytes) -> None:
         self.data = data
+        self.begin = 0
+        self.end = len(self.data)
 
     async def __aenter__(self) -> "DataBody":
         return self
@@ -61,12 +72,22 @@ class DataBody(ResponseBody):
     def __aiter__(self) -> AsyncIterator:
 
         async def _aiter() -> AsyncGenerator[bytes, None]:
-            yield self.data
+            yield self.data[self.begin:self.end]
 
         return _aiter()
 
     async def convert_to_sequence(self) -> bytes:
-        return self.data
+        return self.data[self.begin:self.end]
+
+    async def make_conditional(
+            self, begin: int, end: Optional[int], max_partial_size: Optional[int]=None,
+    ) -> int:
+        self.begin = begin
+        self.end = len(self.data) if end is None else end
+        if max_partial_size is not None:
+            self.end = min(self.begin + max_partial_size, self.end)
+        _raise_if_invalid_range(self.begin, self.end, len(self.data))
+        return len(self.data)
 
 
 class IterableBody(ResponseBody):
@@ -115,6 +136,9 @@ class FileBody(ResponseBody):
             self, file_path: Union[str, bytes, os.PathLike], *, buffer_size: Optional[int] = None,
     ) -> None:
         self.file_path = file_path
+        self.size = os.path.getsize(self.file_path)
+        self.begin = 0
+        self.end = self.size
         if buffer_size is not None:
             self.buffer_size = buffer_size
         self.file: Optional[AsyncFileIO] = None
@@ -123,6 +147,7 @@ class FileBody(ResponseBody):
     async def __aenter__(self) -> "FileBody":
         self.file_manager = async_open(self.file_path, mode="rb")
         self.file = await self.file_manager.__aenter__()
+        await self.file.seek(self.begin)
         return self
 
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
@@ -132,7 +157,11 @@ class FileBody(ResponseBody):
         return self
 
     async def __anext__(self) -> bytes:
-        chunk = await self.file.read(self.buffer_size)
+        current = await self.file.tell()
+        if current >= self.end:
+            raise StopAsyncIteration()
+        read_size = min(self.buffer_size, self.end - current)
+        chunk = await self.file.read(read_size)
 
         if chunk:
             return chunk
@@ -145,6 +174,16 @@ class FileBody(ResponseBody):
             async for data in response:
                 result.extend(data)
         return bytes(result)
+
+    async def make_conditional(
+            self, begin: int, end: Optional[int], max_partial_size: Optional[int]=None,
+    ) -> int:
+        self.begin = begin
+        self.end = self.size if end is None else end
+        if max_partial_size is not None:
+            self.end = min(self.begin + max_partial_size, self.end)
+        _raise_if_invalid_range(self.begin, self.end, self.size)
+        return self.size
 
 
 class Response(_BaseRequestResponse, JSONMixin):
@@ -258,6 +297,42 @@ class Response(_BaseRequestResponse, JSONMixin):
         self.response = self.data_body_class(bytes_data)
         if self.automatically_set_content_length:
             self.content_length = len(bytes_data)
+
+    async def make_conditional(
+            self,
+            request_range: Range,
+            max_partial_size: Optional[int]=None,
+    ) -> None:
+        """Make the response conditional to the
+
+        Arguments:
+            request_range: The range as requested by the request.
+            max_partial_size: The maximum length the server is willing
+                to serve in a single response. Defaults to unlimited.
+
+        """
+        if request_range.units != "bytes" or len(request_range.ranges) > 1:
+            from ..exceptions import RequestRangeNotSatisfiable
+            raise RequestRangeNotSatisfiable()
+
+        begin, end = request_range.ranges[0]
+        try:
+            complete_length = await self.response.make_conditional(  # type: ignore
+                begin, end, max_partial_size,
+            )
+        except AttributeError:
+            self.response = self.data_body_class(await self.response.convert_to_sequence())
+            return await self.make_conditional(request_range, max_partial_size)
+        else:
+            self.accept_ranges = "bytes"
+            self.content_length = self.response.end - self.response.begin  # type: ignore
+            if self.content_length != complete_length:
+                self.content_range = ContentRange(
+                    request_range.units,
+                    self.response.begin, self.response.end - 1,  # type: ignore
+                    complete_length,
+                )
+                self.status_code = 206
 
     async def freeze(self) -> None:
         """Freeze this object ready for pickling."""

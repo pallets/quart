@@ -62,6 +62,20 @@ class RequestEntityTooLarge(HTTPStatusException):
     status = HTTPStatus.REQUEST_ENTITY_TOO_LARGE
 
 
+class RequestRangeNotSatisfiable(HTTPStatusException):
+    status = HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE
+
+    def __init__(self, complete_length: Optional[int] = None) -> None:
+        super().__init__()
+        self.complete_length = complete_length
+
+    def get_headers(self) -> dict:
+        headers = super().get_headers()
+        if self.complete_length is not None:
+            headers.update({"Content-Range": f"bytes */{self.complete_length}"})
+        return headers
+
+
 class MethodNotAllowed(HTTPStatusException):
 
     def __init__(self, allowed_methods: Optional[Iterable[str]]=None) -> None:
