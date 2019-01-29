@@ -1,7 +1,7 @@
-quart.ctx module
+quart.cli module
 ================
 
-.. automodule:: quart.ctx
+.. automodule:: quart.cli
     :members:
     :undoc-members:
     :show-inheritance:

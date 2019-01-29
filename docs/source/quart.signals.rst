@@ -1,7 +1,7 @@
-quart\.worker module
+quart.signals module
 ====================
 
-.. automodule:: quart.worker
+.. automodule:: quart.signals
     :members:
     :undoc-members:
     :show-inheritance:

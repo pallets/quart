@@ -1,5 +1,5 @@
-quart\.testing module
-=====================
+quart.testing module
+====================
 
 .. automodule:: quart.testing
     :members:

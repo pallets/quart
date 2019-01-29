@@ -1,5 +1,5 @@
-quart\.globals module
-=====================
+quart.globals module
+====================
 
 .. automodule:: quart.globals
     :members:

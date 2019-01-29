@@ -1,5 +1,5 @@
-quart\.logging module
-=====================
+quart.logging module
+====================
 
 .. automodule:: quart.logging
     :members:

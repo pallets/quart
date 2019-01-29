@@ -1,5 +1,5 @@
-quart\.config module
-====================
+quart.config module
+===================
 
 .. automodule:: quart.config
     :members:

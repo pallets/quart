@@ -1,5 +1,5 @@
-quart\.typing module
-====================
+quart.typing module
+===================
 
 .. automodule:: quart.typing
     :members:

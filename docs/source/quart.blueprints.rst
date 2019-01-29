@@ -1,5 +1,5 @@
-quart\.blueprints module
-========================
+quart.blueprints module
+=======================
 
 .. automodule:: quart.blueprints
     :members:

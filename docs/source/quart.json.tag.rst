@@ -1,7 +1,7 @@
-quart\.serving module
+quart.json.tag module
 =====================
 
-.. automodule:: quart.serving
+.. automodule:: quart.json.tag
     :members:
     :undoc-members:
     :show-inheritance:

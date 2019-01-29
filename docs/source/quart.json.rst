@@ -1,5 +1,15 @@
-quart\.json module
+quart.json package
 ==================
+
+Submodules
+----------
+
+.. toctree::
+
+   quart.json.tag
+
+Module contents
+---------------
 
 .. automodule:: quart.json
     :members:

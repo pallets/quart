@@ -1,5 +1,5 @@
-quart\.routing module
-=====================
+quart.routing module
+====================
 
 .. automodule:: quart.routing
     :members:

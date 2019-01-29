@@ -1,5 +1,5 @@
-quart\.exceptions module
-========================
+quart.exceptions module
+=======================
 
 .. automodule:: quart.exceptions
     :members:

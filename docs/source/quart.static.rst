@@ -1,5 +1,5 @@
-quart\.static module
-====================
+quart.static module
+===================
 
 .. automodule:: quart.static
     :members:

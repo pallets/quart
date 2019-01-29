@@ -1,5 +1,16 @@
-quart\.wrappers module
+quart.wrappers package
 ======================
+
+Submodules
+----------
+
+.. toctree::
+
+   quart.wrappers.request
+   quart.wrappers.response
+
+Module contents
+---------------
 
 .. automodule:: quart.wrappers
     :members:

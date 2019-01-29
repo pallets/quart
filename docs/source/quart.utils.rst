@@ -1,5 +1,5 @@
-quart\.utils module
-===================
+quart.utils module
+==================
 
 .. automodule:: quart.utils
     :members:

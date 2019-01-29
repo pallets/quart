@@ -1,5 +1,5 @@
-quart\.app module
-=================
+quart.app module
+================
 
 .. automodule:: quart.app
     :members:

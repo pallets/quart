@@ -1,5 +1,5 @@
-quart\.sessions module
-======================
+quart.sessions module
+=====================
 
 .. automodule:: quart.sessions
     :members:

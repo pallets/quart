@@ -1,7 +1,7 @@
-quart.local module
+quart.views module
 ==================
 
-.. automodule:: quart.local
+.. automodule:: quart.views
     :members:
     :undoc-members:
     :show-inheritance:

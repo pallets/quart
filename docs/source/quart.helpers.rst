@@ -1,5 +1,5 @@
-quart\.helpers module
-=====================
+quart.helpers module
+====================
 
 .. automodule:: quart.helpers
     :members:

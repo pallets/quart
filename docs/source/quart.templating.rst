@@ -1,5 +1,5 @@
-quart\.templating module
-========================
+quart.templating module
+=======================
 
 .. automodule:: quart.templating
     :members:
