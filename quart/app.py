@@ -174,9 +174,10 @@ class Quart(PackageStatic):
 
         if instance_path is None:
             instance_path = self.auto_find_instance_path()
-        self.instance_path = instance_path
-        if instance_path is not None and not os.path.isabs(instance_path):
+        elif not os.path.isabs(instance_path):
             raise ValueError("The instance_path must be an absolute path.")
+        self.instance_path = instance_path
+
         self.config = self.make_config(instance_relative_config)
 
         self.after_request_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
