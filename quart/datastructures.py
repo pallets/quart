@@ -552,6 +552,7 @@ class ContentRange:
 
         try:
             range_, length = range_spec.split('/', 1)
+            length = int(length)  # type: ignore
         except ValueError:
             return cls(None, None, None)
 
