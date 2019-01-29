@@ -50,3 +50,25 @@ Most web browsers only support HTTP/2 over a TLS connection with
 TLSv1.2 or better and certain ciphers. So to use these features with
 Quart you must chose an ASGI server that implements HTTP/2 and use
 SSL.
+
+Serverless deployment
+---------------------
+
+To deploy Quart in a FaaS setting you will need to use a specialised
+ASGI function adapter. `Mangum <https://github.com/erm/mangum>`_ is
+recommended for this and can be as simple as,
+
+.. code-block:: python
+
+    from mangum.platforms.aws.adapter import AWSLambdaAdapter
+    # from mangum.platforms.azure.adapter import AzureFunctionAdapter
+    from quart import Quart
+
+    app = Quart(__name__)
+
+    @app.route("/")
+    async def index():
+        return "Hello, world!"
+
+    handler = AWSLambdaAdapter(app)  # optionally set debug=True
+    # handler = AzureFunctionAdapter(app)
