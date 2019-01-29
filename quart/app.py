@@ -1,4 +1,5 @@
 import asyncio
+import os
 import sys
 import warnings
 from collections import defaultdict, OrderedDict
@@ -8,8 +9,9 @@ from logging import Logger
 from pathlib import Path
 from types import TracebackType
 from typing import (
-    Any, Callable, cast, Dict, Iterable, List, Optional, Set, Tuple, Union, ValuesView,
+    Any, AnyStr, Callable, cast, Dict, Iterable, List, Optional, Set, Tuple, Union, ValuesView,
 )
+from typing.io import IO
 
 from hypercorn.asyncio import serve
 from hypercorn.config import Config as HyperConfig
@@ -138,7 +140,7 @@ class Quart(PackageStatic):
             template_folder: Optional[str]='templates',
             root_path: Optional[str]=None,
             instance_path: Optional[str]=None,
-            instance_relative_config: Optional[bool]=None,
+            instance_relative_config: bool=False,
     ) -> None:
         """Construct a Quart web application.
 
@@ -152,6 +154,10 @@ class Quart(PackageStatic):
                 ``__name__`` unless there is a specific issue.
             host_matching: Optionally choose to match the host to the
                 configured host on request (404 if no match).
+            instance_path: Optional path to an instance folder, for
+                deployment specific settings and files.
+            instance_relative_config: If True load the config from a
+                path relative to the instance path.
         Attributes:
             after_request_funcs: The functions to execute after a
                 request has been handled.
@@ -167,6 +173,8 @@ class Quart(PackageStatic):
         super().__init__(import_name, template_folder, root_path, static_folder, static_url_path)
 
         self.instance_path = instance_path
+        if instance_path is not None and not os.path.isabs(instance_path):
+            raise ValueError("The instance_path must be an absolute path.")
         self.config = self.make_config(False if instance_path is None else instance_relative_config)
 
         self.after_request_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
@@ -259,7 +267,7 @@ class Quart(PackageStatic):
         """Return if the app has received a request."""
         return self._got_first_request
 
-    def make_config(self, instance_relative: bool=False,) -> Config:
+    def make_config(self, instance_relative: bool=False) -> Config:
         """Create and return the configuration with appropriate defaults."""
         config = self.config_class(
             self.instance_path if instance_relative else self.root_path,
@@ -268,6 +276,18 @@ class Quart(PackageStatic):
         config['ENV'] = get_env()
         config['DEBUG'] = get_debug_flag()
         return config
+
+    def open_instance_resource(self, path: str, mode: str='rb') -> IO[AnyStr]:
+        """Open a file for reading.
+
+        Use as
+
+        .. code-block:: python
+
+            with app.open_instance_resouce(path) as file_:
+                file_.read()
+        """
+        return open(os.path.join(self.instance_path, path), mode)
 
     def create_url_adapter(self, request: Optional[BaseRequestWebsocket]) -> Optional[MapAdapter]:
         """Create and return a URL adapter.
