@@ -1,3 +1,32 @@
+0.8.0 2019-01-29
+----------------
+
+*This contains all the Bugfixes in the 0.6 and 0.7 branches.*
+
+* Bugfix raise an error if the loaded app is not a Quart instance.
+* Remove unused AccessLogAtoms
+* Change the Quart::run method interface, this reduces the available
+  options for simplicity. See hypercorn for an extended set of
+  deployment configuration.
+* Utilise the Hypercorn serve function, requires Hypercorn >= 0.5.0.
+* Added list_templates method to DispatchingJinjaLoader.
+* Add additional methods to the Accept datastructure, specifically
+  keyed accessors.
+* Expand the abort functionality and signature, to allow for the
+  description and name to be optionally specified.
+* Add a make_push_promise function, to allow for push promises to be
+  sent at any time during the request handling e.g. pre-emptive
+  pushes.
+* Rethink the Response Body structure to allow for more efficient
+  handling of file bodies and the ability to extend how files are
+  managed (for Quart-Trio and others).
+* Add the ability to send conditional 206 responses. Optionally a
+  response can be made conditional by awaiting the make_conditional
+  method with an argument of the request range.
+* Recommend Mangum for serverless deployments.
+* Added instance_path and instance_relative_config to allow for an
+  instance folder to be used.
+
 0.6.12 2019-01-29
 -----------------
 
