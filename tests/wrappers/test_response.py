@@ -8,7 +8,7 @@ import pytest
 from hypothesis import given
 from py._path.local import LocalPath
 
-from quart.datastructures import Range, RangeSet
+from quart.datastructures import ContentRange, Range, RangeSet
 from quart.exceptions import RequestRangeNotSatisfiable
 from quart.wrappers.response import DataBody, FileBody, IterableBody, Response
 
@@ -106,6 +106,19 @@ async def test_response_make_conditional() -> None:
     response = Response(b"abcdef")
     await response.make_conditional(Range("bytes", [RangeSet(0, 3)]))
     assert b"abc" == (await response.get_data())  # type: ignore
+    assert response.status_code == 206
+    assert response.accept_ranges == "bytes"
+    assert response.content_range == ContentRange("bytes", 0, 2, 6)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("range_", [Range("", {}), Range("bytes", [RangeSet(0, 6)])])
+async def test_response_make_conditional_no_condition(range_: Range) -> None:
+    response = Response(b"abcdef")
+    await response.make_conditional(range_)
+    assert b"abcdef" == (await response.get_data())  # type: ignore
+    assert response.status_code == 200
+    assert response.accept_ranges == "bytes"
 
 
 @pytest.mark.asyncio

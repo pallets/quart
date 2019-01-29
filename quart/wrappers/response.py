@@ -311,6 +311,10 @@ class Response(_BaseRequestResponse, JSONMixin):
                 to serve in a single response. Defaults to unlimited.
 
         """
+        self.accept_ranges = "bytes"  # Advertise this ability
+        if len(request_range.ranges) == 0:  # Not a conditional request
+            return
+
         if request_range.units != "bytes" or len(request_range.ranges) > 1:
             from ..exceptions import RequestRangeNotSatisfiable
             raise RequestRangeNotSatisfiable()
@@ -324,7 +328,6 @@ class Response(_BaseRequestResponse, JSONMixin):
             self.response = self.data_body_class(await self.response.convert_to_sequence())
             return await self.make_conditional(request_range, max_partial_size)
         else:
-            self.accept_ranges = "bytes"
             self.content_length = self.response.end - self.response.begin  # type: ignore
             if self.content_length != complete_length:
                 self.content_range = ContentRange(

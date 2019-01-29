@@ -577,6 +577,12 @@ class ContentRange:
         else:
             return f"{self.units} {self.start}-{self.stop}/{length}"
 
+    def __eq__(self, other: object) -> bool:
+        return self.__class__ == other.__class__ and self._specs == other._specs  # type: ignore
+
+    def __ne__(self, other: object) -> bool:
+        return not self.__eq__(other)
+
 
 class RequestAccessControl:
 
