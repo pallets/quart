@@ -1,3 +1,15 @@
+0.6.12 2019-01-29
+-----------------
+
+* Bugfix raise a BadRequest if the body encoding is wrong.
+* Limit Hypercorn to versions < 0.6.
+* Bugfix matching of MIMEAccept values.
+* Bugfix handle the special routing case of /.
+* Bugfix ensure sync functions work with async signals.
+* Bugfix ensure redirect location headers are full URLs.
+* Bugfix ensure open ended Range header works.
+* Bugfix ensure RequestEntityTooLarge errors are correctly raised.
+
 0.7.2 2019-01-03
 ----------------
 
