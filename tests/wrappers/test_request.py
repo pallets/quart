@@ -17,7 +17,7 @@ async def _fill_body(body: Body, semaphore: asyncio.Semaphore, limit: int) -> No
 
 @pytest.mark.asyncio
 async def test_full_body() -> None:
-    body = Body(None)
+    body = Body(None, None)
     limit = 3
     semaphore = asyncio.Semaphore(limit)
     asyncio.ensure_future(_fill_body(body, semaphore, limit))
@@ -26,7 +26,7 @@ async def test_full_body() -> None:
 
 @pytest.mark.asyncio
 async def test_body_streaming() -> None:
-    body = Body(None)
+    body = Body(None, None)
     limit = 3
     semaphore = asyncio.Semaphore(0)
     asyncio.ensure_future(_fill_body(body, semaphore, limit))
@@ -40,7 +40,7 @@ async def test_body_streaming() -> None:
 
 @pytest.mark.asyncio
 async def test_body_stream_single_chunk() -> None:
-    body = Body(None)
+    body = Body(None, None)
     body.append(b"data")
     body.set_complete()
 
@@ -53,7 +53,7 @@ async def test_body_stream_single_chunk() -> None:
 
 @pytest.mark.asyncio
 async def test_body_streaming_no_data() -> None:
-    body = Body(None)
+    body = Body(None, None)
     semaphore = asyncio.Semaphore(0)
     asyncio.ensure_future(_fill_body(body, semaphore, 0))
     async for _ in body:  # type: ignore # noqa: F841
@@ -61,19 +61,23 @@ async def test_body_streaming_no_data() -> None:
     assert b'' == await body  # type: ignore
 
 
-def test_body_exceeds_max_content_length() -> None:
+@pytest.mark.asyncio
+async def test_body_exceeds_max_content_length() -> None:
     max_content_length = 5
-    body = Body(max_content_length)
+    body = Body(None, max_content_length)
+    body.append(b' ' * (max_content_length + 1))
     with pytest.raises(RequestEntityTooLarge):
-        body.append(b' ' * (max_content_length + 1))
+        await body
 
 
-def test_request_exceeds_max_content_length() -> None:
+@pytest.mark.asyncio
+async def test_request_exceeds_max_content_length() -> None:
     max_content_length = 5
     headers = CIMultiDict()
     headers['Content-Length'] = str(max_content_length + 1)
+    request = Request('POST', 'http', '/', b'', headers, max_content_length=max_content_length)
     with pytest.raises(RequestEntityTooLarge):
-        Request('POST', 'http', '/', b'', headers, max_content_length=max_content_length)
+        await request.get_data()
 
 
 @pytest.mark.asyncio

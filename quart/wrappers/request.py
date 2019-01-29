@@ -28,16 +28,31 @@ class Body:
     it.
     """
 
-    def __init__(self, max_content_length: Optional[int]) -> None:
+    def __init__(
+            self, expected_content_length: Optional[int], max_content_length: Optional[int],
+    ) -> None:
         self._data = bytearray()
         self._complete: asyncio.Event = asyncio.Event()
         self._has_data: asyncio.Event = asyncio.Event()
         self._max_content_length = max_content_length
+        # Exceptions must be raised within application (not ASGI)
+        # calls, this is achieved by having the ASGI methods set this
+        # to an exception on error.
+        self._must_raise: Optional[Exception] = None
+        if (
+                expected_content_length is not None and max_content_length is not None
+                and expected_content_length > max_content_length
+        ):
+            from ..exceptions import RequestEntityTooLarge  # noqa Avoiding circular import
+            self._must_raise = RequestEntityTooLarge()
 
     def __aiter__(self) -> 'Body':
         return self
 
     async def __anext__(self) -> bytes:
+        if self._must_raise is not None:
+            raise self._must_raise
+
         # if we got all of the data in the first shot, then self._complete is
         # set and self._has_data will not get set again, so skip the await
         # if we already have completed everything
@@ -53,17 +68,28 @@ class Body:
         return data
 
     def __await__(self) -> Generator[Any, None, Any]:
+        # Must check the _must_raise before and after waiting on the
+        # completion event as it may change whilst waiting and the
+        # event may not be set if there is already an issue.
+
+        if self._must_raise is not None:
+            raise self._must_raise
+
         yield from self._complete.wait().__await__()
+
+        if self._must_raise is not None:
+            raise self._must_raise
         return bytes(self._data)
 
     def append(self, data: bytes) -> None:
-        if data == b'':
+        if data == b'' or self._must_raise is not None:
             return
         self._data.extend(data)
         self._has_data.set()
         if self._max_content_length is not None and len(self._data) > self._max_content_length:
             from ..exceptions import RequestEntityTooLarge  # noqa Avoiding circular import
-            raise RequestEntityTooLarge()
+            self._must_raise = RequestEntityTooLarge()
+            self.set_complete()
 
     def set_complete(self) -> None:
         self._complete.set()
@@ -121,15 +147,8 @@ class Request(BaseRequestWebsocket, JSONMixin):
                 off of this request (HTTP/2 feature).
         """
         super().__init__(method, scheme, path, query_string, headers)
-        self.max_content_length = max_content_length
         self.body_timeout = body_timeout
-        if (
-                self.content_length is not None and self.max_content_length is not None and
-                self.content_length > self.max_content_length
-        ):
-            from ..exceptions import RequestEntityTooLarge  # noqa Avoiding circular import
-            raise RequestEntityTooLarge()
-        self.body = self.body_class(self.max_content_length)
+        self.body = self.body_class(self.content_length, max_content_length)
         self._form: Optional[MultiDict] = None
         self._files: Optional[MultiDict] = None
         self.send_push_promise = send_push_promise or _no_op
