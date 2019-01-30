@@ -233,7 +233,7 @@ class MapAdapter:
             method: Optional[str]=None,
             scheme: Optional[str]=None,
             external: bool=False,
-    )-> str:
+    ) -> str:
         values = values or {}
         rules = self.map.endpoints[endpoint]
         for rule in rules:
