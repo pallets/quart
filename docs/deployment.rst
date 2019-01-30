@@ -54,14 +54,13 @@ SSL.
 Serverless deployment
 ---------------------
 
-To deploy Quart in a FaaS setting you will need to use a specialised
+To deploy Quart in an AWS Lambda & API Gateway setting you will need to use a specialised
 ASGI function adapter. `Mangum <https://github.com/erm/mangum>`_ is
 recommended for this and can be as simple as,
 
 .. code-block:: python
 
-    from mangum.platforms.aws.adapter import AWSLambdaAdapter
-    # from mangum.platforms.azure.adapter import AzureFunctionAdapter
+    from mangum import Mangum
     from quart import Quart
 
     app = Quart(__name__)
@@ -70,5 +69,4 @@ recommended for this and can be as simple as,
     async def index():
         return "Hello, world!"
 
-    handler = AWSLambdaAdapter(app)  # optionally set debug=True
-    # handler = AzureFunctionAdapter(app)
+    handler = Mangum(app)  # optionally set debug=True
