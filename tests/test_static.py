@@ -12,23 +12,19 @@ from quart.static import safe_join, send_file, send_from_directory
 ROOT_PATH = Path(__file__).parents[0]
 
 
-@pytest.mark.parametrize(
-    'directory, paths, expected',
-    [
-        (ROOT_PATH, ['../tests/'], ROOT_PATH),
-    ],
-)
-def test_safe_join(directory: str, paths: List[str], expected: Path) -> None:
-    assert safe_join(directory, *paths) == expected
+def test_safe_join(tmpdir: LocalPath) -> None:
+    directory = tmpdir.realpath()
+    tmpdir.join("file.txt").write("something")
+    assert safe_join(directory, "file.txt") == Path(directory, "file.txt")
 
 
 @pytest.mark.parametrize(
-    'directory, paths',
-    [
-        (ROOT_PATH, ['..']),
-    ],
+    "paths", [[".."], ["..", "other"], ["..", "safes", "file"]],
 )
-def test_safe_join_raises(directory: str, paths: List[str]) -> None:
+def test_safe_join_raises(paths: List[str], tmpdir: LocalPath) -> None:
+    directory = tmpdir.mkdir("safe").realpath()
+    tmpdir.mkdir("other")
+    tmpdir.mkdir("safes").join("file").write("something")
     with pytest.raises(NotFound):
         safe_join(directory, *paths)
 

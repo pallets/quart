@@ -120,9 +120,14 @@ def safe_join(directory: str, *paths: str) -> Path:
         NotFound: if the full path does not share a commonprefix with
         the directory.
     """
-    safe_path = Path(directory).resolve()
-    full_path = Path(directory, *paths).resolve()
-    if not str(full_path).startswith(str(safe_path)):
+    try:
+        safe_path = Path(directory).resolve(strict=True)
+        full_path = Path(directory, *paths).resolve(strict=True)
+    except FileNotFoundError:
+        raise NotFound()
+    try:
+        full_path.relative_to(safe_path)
+    except ValueError:
         raise NotFound()
     return full_path
 
