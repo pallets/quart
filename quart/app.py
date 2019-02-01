@@ -1345,7 +1345,7 @@ class Quart(PackageStatic):
     ) -> None:
         """Run this application.
 
-        This is best used for development only, see using Gunicorn for
+        This is best used for development only, see Hypercorn for
         production servers.
 
         Arguments:
@@ -1361,6 +1361,7 @@ class Quart(PackageStatic):
             certfile: Path to the SSL certificate file.
             ciphers: Ciphers to use for the SSL setup.
             keyfile: Path to the SSL key file.
+
         """
         if kwargs:
             warnings.warn(
