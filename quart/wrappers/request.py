@@ -211,8 +211,10 @@ class Request(BaseRequestWebsocket, JSONMixin):
                 for value in values:
                     self._form.add(key, value)
         elif content_type == 'multipart/form-data':
+            limit = self.headers['content-length']
             field_storage = FieldStorage(
-                io.BytesIO(raw_data), headers=self.headers, environ={'REQUEST_METHOD': 'POST'},
+                io.BytesIO(raw_data), headers=self.headers,
+                environ={'REQUEST_METHOD': 'POST'}, limit=limit,
             )
             for key in field_storage:  # type: ignore
                 field_storage_key = field_storage[key]
@@ -227,7 +229,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
                         io.BytesIO(field_storage_key.file.read()), field_storage_key.filename,
                         field_storage_key.name, field_storage_key.type, field_storage_key.headers,  # type: ignore # noqa: E501
                     )
-                else:
+                elif key:
                     self._form.add(key, field_storage_key.value)
 
     @property
