@@ -1,3 +1,10 @@
+0.8.1 2019-02-09
+----------------
+
+* Bugfix make the safe_join function stricter.
+* Bugfix parse multipart form data correctly.
+* Bugfix add missing await.
+
 0.8.0 2019-01-29
 ----------------
 
