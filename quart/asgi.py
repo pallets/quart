@@ -73,7 +73,7 @@ class ASGIHTTPConnection:
         })
 
         for path in response.push_promises:
-            self._send_push_promise(send, path)
+            await self._send_push_promise(send, path)
 
         async with response.response as body:
             async for data in body:
