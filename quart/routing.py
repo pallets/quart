@@ -2,7 +2,7 @@ import re
 import uuid
 from ast import literal_eval
 from collections import defaultdict
-from typing import Any, Dict, Generator, List, NamedTuple, Optional, Set, Tuple, Union  # noqa
+from typing import Any, Dict, Generator, List, NamedTuple, Optional, Set, Tuple, Union, Iterator  # noqa
 from typing.re import Pattern  # noqa
 from urllib.parse import urlencode, urlunsplit
 
@@ -206,6 +206,11 @@ class Map:
 
     def bind(self, scheme: str, server_name: str) -> 'MapAdapter':
         return MapAdapter(self, scheme, server_name)
+
+    def iter_rules(self, endpoint: Optional[str]=None) -> Iterator['Rule']:
+        if endpoint is not None:
+            return iter(self.endpoints[endpoint])
+        return iter(self.rules)
 
 
 class MapAdapter:
