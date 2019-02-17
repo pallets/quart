@@ -1377,7 +1377,7 @@ class Quart(PackageStatic):
         config.ca_certs = ca_certs
         config.certfile = certfile
         if debug is not None:
-            config.debug = debug
+            self.debug = debug
         config.error_logger = config.access_logger  # type: ignore
         config.keyfile = keyfile
         config.use_reloader = use_reloader
@@ -1386,7 +1386,7 @@ class Quart(PackageStatic):
         print("Running on {}://{} (CTRL + C to quit)".format(scheme, config.bind[0]))  # noqa: T001
 
         if loop is not None:
-            loop.set_debug(config.debug)
+            loop.set_debug(debug or False)
             loop.run_until_complete(serve(self, config))  # type: ignore
         else:
             asyncio.run(serve(self, config), debug=config.debug)  # type: ignore
