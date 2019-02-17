@@ -30,8 +30,12 @@ pre {
 }
 
 .header {
-  background-color: #fbf9f9;
+  background-color: #ececec;
   margin-bottom: 5px;
+}
+
+.highlight {
+  background-color: #ececec;
 }
 
 .info {
@@ -61,7 +65,7 @@ h1>span {
       </div>
       <div class="traceback">
         {% for line in frame.code[0] %}
-          <div>
+          <div {% if frame.line == loop.index + frame.code[1] %}class="highlight"{% endif %}>
             <div>{{ loop.index + frame.code[1] }}</div>
             <div><pre>{{ line }}</pre></div>
           </div>
