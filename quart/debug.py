@@ -86,11 +86,16 @@ async def traceback_response() -> Response:
     frames = []
     while tb:
         frame = tb.tb_frame
+        try:
+            code = inspect.getsourcelines(frame)
+        except OSError:
+            code = None
+
         frames.append({
             'file': inspect.getfile(frame),
             'line': frame.f_lineno,
             'locals': frame.f_locals,
-            'code': inspect.getsourcelines(frame),
+            'code': code,
         })
         tb = tb.tb_next
 
