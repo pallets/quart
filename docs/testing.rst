@@ -84,5 +84,5 @@ at a minimum this means the method and path must be supplied, e.g.
 
     @pytest.mark.asyncio
     async def test_app_context(app):
-        async with app.test_request_context('GET', '/'):
+        async with app.test_request_context("/", method="GET"):
             request.[use]

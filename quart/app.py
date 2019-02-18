@@ -24,6 +24,7 @@ from .ctx import (
     _AppCtxGlobals, _request_ctx_stack, _websocket_ctx_stack, AppContext, has_request_context,
     has_websocket_context, RequestContext, WebsocketContext,
 )
+from .datastructures import CIMultiDict
 from .debug import traceback_response
 from .exceptions import all_http_exceptions, HTTPException
 from .globals import g, request, session
@@ -1397,9 +1398,11 @@ class Quart(PackageStatic):
 
     def test_request_context(
             self,
-            method: str,
             path: str,
             *,
+            method: str='GET',
+            headers: Optional[Union[dict, CIMultiDict]]=None,
+            query_string: Optional[dict]=None,
             scheme: str='http',
     ) -> RequestContext:
         """Create a request context for testing purposes.
@@ -1410,16 +1413,21 @@ class Quart(PackageStatic):
 
         .. code-block:: python
 
-            async with app.test_request_context('GET', '/'):
+            async with app.test_request_context("/", method="GET"):
                 ...
 
         Arguments:
-            method: HTTP verb
             path: Request path.
+            method: HTTP verb
+            headers: Headers to include in the request.
+            query_string: To send as a dictionary, alternatively the
+                query_string can be determined from the path.
             scheme: Scheme for the request, default http.
         """
-        headers, path, query_string = make_test_headers_path_and_query_string(self, path)
-        request = self.request_class(method, scheme, path, query_string, headers)
+        headers, path, query_string_bytes = make_test_headers_path_and_query_string(
+            self, path, headers, query_string,
+        )
+        request = self.request_class(method, scheme, path, query_string_bytes, headers)
         request.body.set_result(b'')
         return self.request_context(request)
 

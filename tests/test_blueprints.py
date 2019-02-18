@@ -17,7 +17,7 @@ async def test_blueprint_route() -> None:
 
     app.register_blueprint(blueprint)
 
-    async with app.test_request_context('GET', '/page/'):
+    async with app.test_request_context("/page/"):
         assert request.blueprint == 'blueprint'
 
 
@@ -54,13 +54,13 @@ async def test_blueprint_url_prefix() -> None:
     app.register_blueprint(blueprint, url_prefix='/blueprint')
     app.register_blueprint(prefix)
 
-    async with app.test_request_context('GET', '/page/'):
+    async with app.test_request_context("/page/"):
         assert request.blueprint is None
 
-    async with app.test_request_context('GET', '/prefix/page/'):
+    async with app.test_request_context("/prefix/page/"):
         assert request.blueprint == 'prefix'
 
-    async with app.test_request_context('GET', '/blueprint/page/'):
+    async with app.test_request_context("/blueprint/page/"):
         assert request.blueprint == 'blueprint'
 
 
