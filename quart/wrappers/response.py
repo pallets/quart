@@ -614,3 +614,6 @@ class Response(_BaseRequestResponse, JSONMixin):
             self.headers.pop(key, None)
         else:
             self.headers[key] = value
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.status_code})"

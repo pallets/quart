@@ -264,6 +264,9 @@ class Request(BaseRequestWebsocket, JSONMixin):
         """Return the data after decoding."""
         return await self.get_data(raw=False)
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.method}, {self.path})"
+
 
 class Websocket(BaseRequestWebsocket):
 
@@ -308,3 +311,6 @@ class Websocket(BaseRequestWebsocket):
     async def accept(self) -> None:
         """Manually chose to accept the websocket connection."""
         await self._accept()
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.path})"
