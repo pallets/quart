@@ -211,10 +211,9 @@ class Request(BaseRequestWebsocket, JSONMixin):
                 for value in values:
                     self._form.add(key, value)
         elif content_type == 'multipart/form-data':
-            limit = self.headers['content-length']
             field_storage = FieldStorage(
                 io.BytesIO(raw_data), headers=self.headers,
-                environ={'REQUEST_METHOD': 'POST'}, limit=limit,
+                environ={'REQUEST_METHOD': 'POST'}, limit=len(raw_data),
             )
             for key in field_storage:  # type: ignore
                 field_storage_key = field_storage[key]
