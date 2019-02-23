@@ -56,28 +56,30 @@ def test_null_session_no_modification() -> None:
         session['a'] = 'b'
 
 
-def test_secure_cookie_session_interface_open_session() -> None:
+@pytest.mark.asyncio
+async def test_secure_cookie_session_interface_open_session() -> None:
     session = SecureCookieSession()
     session['something'] = 'else'
     interface = SecureCookieSessionInterface()
     app = Quart(__name__)
     app.secret_key = 'secret'
     response = Response('')
-    interface.save_session(app, session, response)
+    await interface.save_session(app, session, response)
     request = Request('GET', 'http', '/', b'', CIMultiDict())
     request.headers['Cookie'] = response.headers['Set-Cookie']
-    new_session = interface.open_session(app, request)
+    new_session = await interface.open_session(app, request)
     assert new_session == session
 
 
-def test_secure_cookie_session_interface_save_session() -> None:
+@pytest.mark.asyncio
+async def test_secure_cookie_session_interface_save_session() -> None:
     session = SecureCookieSession()
     session['something'] = 'else'
     interface = SecureCookieSessionInterface()
     app = Quart(__name__)
     app.secret_key = 'secret'
     response = Response('')
-    interface.save_session(app, session, response)
+    await interface.save_session(app, session, response)
     cookies = SimpleCookie()
     cookies.load(response.headers['Set-Cookie'])
     cookie = cookies[app.session_cookie_name]
@@ -89,28 +91,31 @@ def test_secure_cookie_session_interface_save_session() -> None:
     assert response.headers['Vary'] == 'Cookie'
 
 
-def _save_session(session: SecureCookieSession) -> Response:
+@pytest.mark.asyncio
+async def _save_session(session: SecureCookieSession) -> Response:
     interface = SecureCookieSessionInterface()
     app = Quart(__name__)
     app.secret_key = 'secret'
     response = Response('')
-    interface.save_session(app, session, response)
+    await interface.save_session(app, session, response)
     return response
 
 
-def test_secure_cookie_session_interface_save_session_no_modification() -> None:
+@pytest.mark.asyncio
+async def test_secure_cookie_session_interface_save_session_no_modification() -> None:
     session = SecureCookieSession()
     session['something'] = 'else'
     session.modified = False
-    response = _save_session(session)
+    response = await _save_session(session)
     assert response.headers.get('Set-Cookie') is None
 
 
-def test_secure_cookie_session_interface_save_session_no_access() -> None:
+@pytest.mark.asyncio
+async def test_secure_cookie_session_interface_save_session_no_access() -> None:
     session = SecureCookieSession()
     session['something'] = 'else'
     session.accessed = False
     session.modified = False
-    response = _save_session(session)
+    response = await _save_session(session)
     assert response.headers.get('Set-Cookie') is None
     assert response.headers.get('Vary') is None

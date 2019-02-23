@@ -114,7 +114,7 @@ class SessionInterface:
     null_session_class = NullSession
     pickle_based = False
 
-    def make_null_session(self, app: 'Quart') -> NullSession:
+    async def make_null_session(self, app: 'Quart') -> NullSession:
         """Create a Null session object.
 
         This is used in replacement of an actual session if sessions
@@ -169,7 +169,7 @@ class SessionInterface:
         save_each = app.config['SESSION_REFRESH_EACH_REQUEST']
         return save_each and session.permanent
 
-    def open_session(self, app: 'Quart', request: BaseRequestWebsocket) -> Optional[Session]:
+    async def open_session(self, app: 'Quart', request: BaseRequestWebsocket) -> Optional[Session]:
         """Open an existing session from the request or create one.
 
         Returns:
@@ -179,7 +179,7 @@ class SessionInterface:
         """
         raise NotImplementedError()
 
-    def save_session(self, app: 'Quart', session: Session, response: Response) -> Response:
+    async def save_session(self, app: 'Quart', session: Session, response: Response) -> Response:
         """Save the session argument to the response.
 
         Returns:
@@ -217,7 +217,7 @@ class SecureCookieSessionInterface(SessionInterface):
             app.secret_key, salt=self.salt, serializer=self.serializer, signer_kwargs=options,
         )
 
-    def open_session(
+    async def open_session(
             self,
             app: 'Quart',
             request: BaseRequestWebsocket,
@@ -242,7 +242,7 @@ class SecureCookieSessionInterface(SessionInterface):
         except BadSignature:
             return self.session_class()
 
-    def save_session(  # type: ignore
+    async def save_session(  # type: ignore
             self, app: 'Quart', session: SecureCookieSession, response: Response,
     ) -> None:
         """Saves the session to the response in a secure cookie."""

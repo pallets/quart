@@ -52,9 +52,9 @@ class _BaseRequestWebsocketContext:
             app_ctx = self.app.app_context()
         await app_ctx.push()
 
-        self.session = self.app.open_session(self.request_websocket)
+        self.session = await self.app.open_session(self.request_websocket)
         if self.session is None:
-            self.session = self.app.make_null_session()
+            self.session = await self.app.make_null_session()
         return self
 
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:

@@ -1224,17 +1224,17 @@ class Quart(PackageStatic):
         """Return a iterator over the blueprints."""
         return self.blueprints.values()
 
-    def open_session(self, request: BaseRequestWebsocket) -> Session:
+    async def open_session(self, request: BaseRequestWebsocket) -> Session:
         """Open and return a Session using the request."""
-        return self.session_interface.open_session(self, request)
+        return await self.session_interface.open_session(self, request)
 
-    def make_null_session(self) -> Session:
+    async def make_null_session(self) -> Session:
         """Create and return a null session."""
-        return self.session_interface.make_null_session(self)
+        return await self.session_interface.make_null_session(self)
 
-    def save_session(self, session: Session, response: Response) -> None:
+    async def save_session(self, session: Session, response: Response) -> None:
         """Saves the session to the response."""
-        self.session_interface.save_session(self, session, response)  # type: ignore
+        await self.session_interface.save_session(self, session, response)  # type: ignore
 
     async def do_teardown_request(
             self,
@@ -1615,7 +1615,7 @@ class Quart(PackageStatic):
 
         session_ = (request_context or _request_ctx_stack.top).session
         if not self.session_interface.is_null_session(session_):
-            self.save_session(session_, response)
+            await self.save_session(session_, response)
         return response
 
     async def handle_websocket(self, websocket: Websocket) -> Optional[Response]:
