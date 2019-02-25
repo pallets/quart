@@ -1226,15 +1226,15 @@ class Quart(PackageStatic):
 
     async def open_session(self, request: BaseRequestWebsocket) -> Session:
         """Open and return a Session using the request."""
-        return await self.session_interface.open_session(self, request)
+        return await ensure_coroutine(self.session_interface.open_session)(self, request)
 
     async def make_null_session(self) -> Session:
         """Create and return a null session."""
-        return await self.session_interface.make_null_session(self)
+        return await ensure_coroutine(self.session_interface.make_null_session)(self)
 
     async def save_session(self, session: Session, response: Response) -> None:
         """Saves the session to the response."""
-        await self.session_interface.save_session(self, session, response)  # type: ignore
+        await ensure_coroutine(self.session_interface.save_session)(self, session, response)
 
     async def do_teardown_request(
             self,
