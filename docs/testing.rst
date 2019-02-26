@@ -86,3 +86,19 @@ at a minimum this means the method and path must be supplied, e.g.
     async def test_app_context(app):
         async with app.test_request_context("/", method="GET"):
             request.[use]
+
+.. note::
+
+    Any ``before_request`` or ``after_request`` functions are not
+    called when using the ``test_request_context``. You can add
+    ``await app.preprocess_request()`` to ensure the
+    ``before_request`` functions are called.
+
+.. code-block:: python
+
+    @pytest.mark.asyncio
+    async def test_app_context(app):
+        async with app.test_request_context("/", method="GET"):
+            await app.preprocess_request()
+            # The before_request functions have now been called
+            request.[use]
