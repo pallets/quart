@@ -1360,7 +1360,6 @@ class Quart(PackageStatic):
                 loop.
             ca_certs: Path to the SSL CA certificate file.
             certfile: Path to the SSL certificate file.
-            ciphers: Ciphers to use for the SSL setup.
             keyfile: Path to the SSL key file.
 
         """
