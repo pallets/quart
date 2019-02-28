@@ -324,10 +324,9 @@ class Blueprint(PackageStatic):
     def before_websocket(self, func: Callable) -> Callable:
         """Add a before request websocket to the Blueprint.
 
-        This is designed to be used as a decorator, and has the same
-        arguments as :meth:`~quart.Quart.before_websocket`. It applies
-        only to requests that are routed to an endpoint in this
-        blueprint. An example usage,
+        This is designed to be used as a decorator, and has the same arguments
+        as :meth:`~quart.Quart.before_websocket`. It applies only to requests that
+        are routed to an endpoint in this blueprint. An example usage,
 
         .. code-block:: python
 
@@ -355,6 +354,24 @@ class Blueprint(PackageStatic):
                 ...
         """
         self.record_once(lambda state: state.app.before_request(func))
+        return func
+
+    def before_app_websocket(self, func: Callable) -> Callable:
+        """Add a before request websocket to the App.
+
+        This is designed to be used as a decorator, and has the same arguments
+        as :meth:`~quart.Quart.before_websocket`. It applies to all requests to the
+        app this blueprint is registered on. An example usage,
+
+        .. code-block:: python
+
+            blueprint = Blueprint(__name__)
+            @blueprint.before_app_websocket
+            def before():
+                ...
+
+        """
+        self.record_once(lambda state: state.app.before_websocket(func))
         return func
 
     def before_app_first_request(self, func: Callable) -> Callable:
