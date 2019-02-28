@@ -413,10 +413,9 @@ class Blueprint(PackageStatic):
     def after_websocket(self, func: Callable) -> Callable:
         """Add an after websocket function to the Blueprint.
 
-        This is designed to be used as a decorator, and has the same
-        arguments as :meth:`~quart.Quart.after_websocket`. It applies
-        only to requests that are routed to an endpoint in this
-        blueprint. An example usage,
+        This is designed to be used as a decorator, and has the same arguments
+        as :meth:`~quart.Quart.after_websocket`. It applies only to requests that
+        are routed to an endpoint in this blueprint. An example usage,
 
         .. code-block:: python
 
@@ -443,6 +442,23 @@ class Blueprint(PackageStatic):
                 ...
         """
         self.record_once(lambda state: state.app.after_request(func))
+        return func
+
+    def after_app_websocket(self, func: Callable) -> Callable:
+        """Add an after websocket function to the App.
+
+        This is designed to be used as a decorator, and has the same arguments
+        as :meth:`~quart.Quart.after_websocket`. It applies to all requests to the
+        ppe this blueprint is registerd on. An example usage,
+
+        .. code-block:: python
+
+            blueprint = Blueprint(__name__)
+            @blueprint.after_app_websocket
+            def after():
+                ...
+        """
+        self.record_once(lambda state: state.app.after_websocket(func))
         return func
 
     def teardown_request(self, func: Callable) -> Callable:
