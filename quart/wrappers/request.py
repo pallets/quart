@@ -1,11 +1,11 @@
 import asyncio
 import io
 from cgi import FieldStorage, parse_header
-from typing import Any, AnyStr, Callable, Generator, Optional, TYPE_CHECKING
+from typing import Any, AnyStr, Callable, Generator, Optional, TYPE_CHECKING, Union
 from urllib.parse import parse_qs
 
 from ._base import BaseRequestWebsocket, JSONMixin
-from ..datastructures import CIMultiDict, FileStorage, MultiDict
+from ..datastructures import CIMultiDict, FileStorage, Headers, MultiDict
 
 if TYPE_CHECKING:
     from .routing import Rule  # noqa
@@ -307,9 +307,23 @@ class Websocket(BaseRequestWebsocket):
         await self.accept()
         await self._send(data)
 
-    async def accept(self) -> None:
-        """Manually chose to accept the websocket connection."""
-        await self._accept()
+    async def accept(
+            self,
+            headers: Optional[Union[dict, CIMultiDict, Headers]] = None,
+            subprotocol: Optional[str] = None,
+    ) -> None:
+        """Manually chose to accept the websocket connection.
+
+        Arguments:
+            headers: Additional headers to send with the acceptance
+                response.
+            subprotocol: The chosen subprotocol, optional.
+        """
+        if headers is None:
+            headers_ = Headers()
+        else:
+            headers_ = Headers(headers)
+        await self._accept(headers_, subprotocol)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.path})"

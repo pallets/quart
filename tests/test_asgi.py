@@ -1,9 +1,13 @@
 import asyncio
+from typing import Optional
 
 import pytest
 
 from quart import Quart
-from quart.asgi import ASGIHTTPConnection, ASGIWebsocketConnection
+from quart.asgi import (
+    _convert_version, _encode_headers, ASGIHTTPConnection, ASGIWebsocketConnection,
+)
+from quart.datastructures import Headers
 
 
 @pytest.mark.asyncio
@@ -112,3 +116,50 @@ def test_websocket_path_from_absolute_target() -> None:
     connection = ASGIWebsocketConnection(app, scope)
     websocket = connection._create_websocket_from_scope(lambda: None)
     assert websocket.path == '/path'
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "scope, headers, subprotocol, has_headers",
+    [
+        ({}, Headers(), None, False),
+        ({}, Headers(), "abc", False),
+        ({"asgi": {"spec_version": "2.1"}}, Headers({"a": "b"}), None, True),
+        ({"asgi": {"spec_version": "2.1.1"}}, Headers({"a": "b"}), None, True),
+    ],
+)
+async def test_websocket_accept_connection(
+        scope: dict, headers: Headers, subprotocol: Optional[str], has_headers: bool,
+) -> None:
+    connection = ASGIWebsocketConnection(Quart(__name__), scope)
+    sent_message = None
+
+    async def mock_send(message: dict) -> None:
+        nonlocal sent_message
+        sent_message = message
+
+    await connection.accept_connection(mock_send, headers, subprotocol)
+
+    if has_headers:
+        assert sent_message["headers"]
+    if subprotocol is not None:
+        assert sent_message["subprotocol"] == subprotocol
+
+
+@pytest.mark.asyncio
+async def test_websocket_accept_connection_warns() -> None:
+    connection = ASGIWebsocketConnection(Quart(__name__), {})
+
+    async def mock_send(message: dict) -> None:
+        pass
+
+    with pytest.warns(None):
+        await connection.accept_connection(mock_send, Headers({"a": "b"}), None)
+
+
+def test__encode_headers() -> None:
+    assert _encode_headers(Headers({"Foo": "Bar"})) == [(b"foo", b"Bar")]
+
+
+def test__convert_version() -> None:
+    assert _convert_version("2.1") == [2, 1]

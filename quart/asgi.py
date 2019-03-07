@@ -1,9 +1,10 @@
 import asyncio
+import warnings
 from functools import partial
-from typing import AnyStr, Callable, Set, TYPE_CHECKING
+from typing import Any, AnyStr, Callable, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
 from urllib.parse import urlparse
 
-from .datastructures import CIMultiDict
+from .datastructures import CIMultiDict, Headers
 from .wrappers import Request, Response, Websocket  # noqa: F401
 
 if TYPE_CHECKING:
@@ -62,14 +63,10 @@ class ASGIHTTPConnection:
             pass
 
     async def _send_response(self, send: Callable, response: Response) -> None:
-        headers = [
-            (key.lower().encode(), value.encode())
-            for key, value in response.headers.items()
-        ]
         await send({
             'type': 'http.response.start',
             'status': response.status_code,
-            'headers': headers,
+            'headers': _encode_headers(response.headers),
         })
 
         for path in response.push_promises:
@@ -182,11 +179,20 @@ class ASGIWebsocketConnection:
                 'bytes': data,
             })
 
-    async def accept_connection(self, send: Callable) -> None:
+    async def accept_connection(
+            self, send: Callable, headers: Headers, subprotocol: Optional[str],
+    ) -> None:
         if not self._accepted:
-            await send({
+            message: Dict[str, Any] = {
+                'subprotocol': subprotocol,
                 'type': 'websocket.accept',
-            })
+            }
+            spec_version = _convert_version(self.scope.get("asgi", {}).get("spec_version", "2.0"))
+            if spec_version > [2, 0]:
+                message["headers"] = _encode_headers(headers)
+            elif headers:
+                warnings.warn("The ASGI Server does not support accept headers, headers not sent")
+            await send(message)
             self._accepted = True
 
 
@@ -217,3 +223,14 @@ async def _cancel_tasks(tasks: Set[asyncio.Future]) -> None:
     for task in tasks:
         if not task.cancelled() and task.exception() is not None:
             raise task.exception()
+
+
+def _encode_headers(headers: Headers) -> List[Tuple[bytes, bytes]]:
+    return [
+        (key.lower().encode(), value.encode())
+        for key, value in headers.items()
+    ]
+
+
+def _convert_version(raw: str) -> List[int]:
+    return list(map(int, raw.split(".")))

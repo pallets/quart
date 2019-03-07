@@ -6,7 +6,7 @@ from json import dumps
 from typing import Any, AnyStr, AsyncGenerator, Optional, Tuple, TYPE_CHECKING, Union
 from urllib.parse import urlencode
 
-from .datastructures import CIMultiDict
+from .datastructures import CIMultiDict, Headers
 from .exceptions import BadRequest
 from .utils import create_cookie
 from .wrappers import Request, Response
@@ -40,8 +40,10 @@ class _TestingWebsocket:
         await self._check_for_response()
         await self.remote_queue.put(data)
 
-    async def accept(self) -> None:
+    async def accept(self, headers: Headers, subprotocol: Optional[str]) -> None:
         self.accepted = True
+        self.accept_headers = headers
+        self.accept_subprotocol = subprotocol
 
     async def _check_for_response(self) -> None:
         await asyncio.sleep(0)  # Give serving task an opportunity to respond
