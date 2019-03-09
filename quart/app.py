@@ -1159,7 +1159,8 @@ class Quart(PackageStatic):
             func: The teardown request function itself.
             name: Optional blueprint key name.
         """
-        self.teardown_request_funcs[name].append(func)
+        handler = ensure_coroutine(func)
+        self.teardown_request_funcs[name].append(handler)
         return func
 
     def teardown_websocket(self, func: Callable, name: AppOrBlueprintKey=None) -> Callable:
@@ -1177,7 +1178,8 @@ class Quart(PackageStatic):
             func: The teardown websocket function itself.
             name: Optional blueprint key name.
         """
-        self.teardown_websocket_funcs[name].append(func)
+        handler = ensure_coroutine(func)
+        self.teardown_websocket_funcs[name].append(handler)
         return func
 
     def teardown_appcontext(self, func: Callable) -> Callable:
@@ -1195,7 +1197,8 @@ class Quart(PackageStatic):
             func: The teardown function itself.
             name: Optional blueprint key name.
         """
-        self.teardown_appcontext_funcs.append(func)
+        handler = ensure_coroutine(func)
+        self.teardown_appcontext_funcs.append(handler)
         return func
 
     def register_blueprint(self, blueprint: Blueprint, url_prefix: Optional[str]=None) -> None:
@@ -1256,7 +1259,7 @@ class Quart(PackageStatic):
             functions = chain(functions, self.teardown_request_funcs[blueprint])  # type: ignore
 
         for function in functions:
-            function(exc=exc)
+            await function(exc=exc)
         await request_tearing_down.send(self, exc=exc)
 
     async def do_teardown_websocket(
@@ -1279,13 +1282,13 @@ class Quart(PackageStatic):
             functions = chain(functions, self.teardown_websocket_funcs[blueprint])  # type: ignore
 
         for function in functions:
-            function(exc=exc)
+            await function(exc=exc)
         await websocket_tearing_down.send(self, exc=exc)
 
     async def do_teardown_appcontext(self, exc: Optional[BaseException]) -> None:
         """Teardown the app (context), calling the teardown functions."""
         for function in self.teardown_appcontext_funcs:
-            function(exc)
+            await function(exc)
         await appcontext_tearing_down.send(self, exc=exc)
 
     def app_context(self) -> AppContext:
