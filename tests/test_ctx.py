@@ -58,7 +58,7 @@ def test_request_context_matching_error(
         ),
         (
             lambda _, path, headers: Websocket(
-                path, b'', 'ws', headers, Mock(), Mock(), lambda: None,
+                path, b'', 'ws', headers, [], Mock(), Mock(), lambda: None,
             ),
             WebsocketContext, False,
         ),
@@ -259,7 +259,7 @@ async def test_overlapping_request_ctx() -> None:
 async def test_overlapping_websocket_ctx() -> None:
     app = Quart(__name__)
 
-    websocket = Websocket('/', b'', 'ws', CIMultiDict(), None, None, None)
+    websocket = Websocket('/', b'', 'ws', CIMultiDict(), [], None, None, None)
     ctx1 = app.websocket_context(websocket)
     await ctx1.__aenter__()
     ctx2 = app.websocket_context(websocket)

@@ -130,8 +130,8 @@ class ASGIWebsocketConnection:
 
         return self.app.websocket_class(
             path, self.scope['query_string'], self.scope['scheme'],
-            headers, self.queue.get, partial(self.send_data, send),
-            partial(self.accept_connection, send),
+            headers, self.scope.get('subprotocols', []), self.queue.get,
+            partial(self.send_data, send), partial(self.accept_connection, send),
         )
 
     async def handle_websocket(self, websocket: Websocket, send: Callable) -> None:

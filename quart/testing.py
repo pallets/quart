@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
 from json import dumps
-from typing import Any, AnyStr, AsyncGenerator, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Any, AnyStr, AsyncGenerator, List, Optional, Tuple, TYPE_CHECKING, Union
 from urllib.parse import urlencode
 
 from .datastructures import CIMultiDict, Headers
@@ -296,6 +296,7 @@ class QuartClient:
             headers: Optional[Union[dict, CIMultiDict]]=None,
             query_string: Optional[dict]=None,
             scheme: str='http',
+            subprotocols: Optional[List[str]]=None,
     ) -> AsyncGenerator[_TestingWebsocket, None]:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self.app, path, headers, query_string,
@@ -303,9 +304,10 @@ class QuartClient:
         queue: asyncio.Queue = asyncio.Queue()
         websocket_client = _TestingWebsocket(queue)
 
+        subprotocols = subprotocols or []
         websocket = self.app.websocket_class(
-            path, query_string_bytes, scheme, headers, queue.get, websocket_client.local_queue.put,
-            websocket_client.accept,
+            path, query_string_bytes, scheme, headers, subprotocols, queue.get,
+            websocket_client.local_queue.put, websocket_client.accept,
         )
         adapter = self.app.create_url_adapter(websocket)
         url_rule, _ = adapter.match()

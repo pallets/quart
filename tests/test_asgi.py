@@ -69,6 +69,7 @@ async def test_websocket_completion() -> None:
         'scheme': 'wss',
         'path': '/',
         'query_string': b'',
+        'subprotocols': [],
         'extensions': {'websocket.http.response': {}},
     }
     connection = ASGIWebsocketConnection(app, scope)
@@ -111,6 +112,7 @@ def test_websocket_path_from_absolute_target() -> None:
         'scheme': 'wss',
         'path': 'ws://quart/path',
         'query_string': b'',
+        'subprotocols': [],
         'extensions': {'websocket.http.response': {}},
     }
     connection = ASGIWebsocketConnection(app, scope)

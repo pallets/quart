@@ -1,7 +1,7 @@
 import asyncio
 import io
 from cgi import FieldStorage, parse_header
-from typing import Any, AnyStr, Callable, Generator, Optional, TYPE_CHECKING, Union
+from typing import Any, AnyStr, Callable, Generator, List, Optional, TYPE_CHECKING, Union
 from urllib.parse import parse_qs
 
 from ._base import BaseRequestWebsocket, JSONMixin
@@ -275,6 +275,7 @@ class Websocket(BaseRequestWebsocket):
             query_string: bytes,
             scheme: str,
             headers: CIMultiDict,
+            subprotocols: List[str],
             receive: Callable,
             send: Callable,
             accept: Callable,
@@ -286,14 +287,20 @@ class Websocket(BaseRequestWebsocket):
             query_string: The raw bytes for the query string part.
             scheme: The scheme used for the request.
             headers: The request headers.
+            subprotocols: The subprotocols requested.
             receive: Returns an awaitable of the current data
 
             accept: Idempotent callable to accept the websocket connection.
         """
         super().__init__('GET', scheme, path, query_string, headers)
+        self._accept = accept
         self._receive = receive
         self._send = send
-        self._accept = accept
+        self._subprotocols = subprotocols
+
+    @property
+    def requested_subprotocols(self) -> List[str]:
+        return self._subprotocols
 
     async def receive(self) -> AnyStr:
         await self.accept()
