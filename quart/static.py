@@ -144,8 +144,8 @@ async def send_file(
         mimetype: Optional[str]=None,
         add_etags: bool=True,
         cache_timeout: Optional[int]=None,
-        last_modified: Optional[datetime]=None,
         conditional: bool=False,
+        last_modified: Optional[datetime]=None,
 ) -> Response:
     """Return a Reponse to send the filename given.
 
@@ -156,8 +156,8 @@ async def send_file(
             revert to the DEFAULT_MIMETYPE.
         add_etags: Set etags based on the filename, size and
             modification time.
-        cache_timeout: Time in seconds for the response to be cached.
         last_modified: Used to override the last modified value.
+        cache_timeout: Time in seconds for the response to be cached.
 
     """
     file_path = os.fspath(filename)
