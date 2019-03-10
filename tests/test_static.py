@@ -46,6 +46,17 @@ async def test_send_file_path(tmpdir: LocalPath) -> None:
 
 
 @pytest.mark.asyncio
+async def test_send_file_mimetype(tmpdir: LocalPath) -> None:
+    app = Quart(__name__)
+    file_ = tmpdir.join('send.bob')
+    file_.write('something')
+    async with app.app_context():
+        response = await send_file(Path(file_.realpath()), mimetype="application/bob")
+    assert (await response.get_data(raw=True)) == file_.read_binary()
+    assert response.headers["Content-Type"] == "application/bob"
+
+
+@pytest.mark.asyncio
 async def test_send_file_last_modified(tmpdir: LocalPath) -> None:
     app = Quart(__name__)
     file_ = tmpdir.join('send.img')

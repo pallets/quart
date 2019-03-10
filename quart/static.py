@@ -141,6 +141,7 @@ async def send_from_directory(directory: str, file_name: str, conditional: bool=
 
 async def send_file(
         filename: FilePath,
+        mimetype: Optional[str]=None,
         add_etags: bool=True,
         cache_timeout: Optional[int]=None,
         last_modified: Optional[datetime]=None,
@@ -151,6 +152,8 @@ async def send_file(
     Arguments:
         filename: The filename (path) to send, remember to use
             :func:`safe_join`.
+        mimetype: Mimetype to use, by default it will be guessed or
+            revert to the DEFAULT_MIMETYPE.
         add_etags: Set etags based on the filename, size and
             modification time.
         cache_timeout: Time in seconds for the response to be cached.
@@ -158,7 +161,8 @@ async def send_file(
 
     """
     file_path = os.fspath(filename)
-    mimetype = mimetypes.guess_type(os.path.basename(file_path))[0] or DEFAULT_MIMETYPE
+    if mimetype is None:
+        mimetype = mimetypes.guess_type(os.path.basename(file_path))[0] or DEFAULT_MIMETYPE
     file_body = current_app.response_class.file_body_class(file_path)
     response = current_app.response_class(file_body, mimetype=mimetype)
 
