@@ -50,7 +50,7 @@ solution is to use a blueprint for the extra module, like so,
 
     from quart import Blueprint
 
-    blueprint = Blueprint(__name__)
+    blueprint = Blueprint('extra', __name__)
 
     @blueprint.route('/extra/')
     def extra():
