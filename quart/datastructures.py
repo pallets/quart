@@ -73,8 +73,18 @@ class Headers(CIMultiDict):
     # unicode whilst stored. Note only a select few methods do this,
     # the others will error if presented with byte keys.
 
-    def add(self, key: Any, value: Any) -> None:
-        super().add(_unicodify(key), _unicodify(value))
+    def add(self, key: Any, value: Any, **kwargs: Any) -> None:
+        if kwargs:
+            segments = [value] if value is not None else []
+            for name, arg in kwargs.items():
+                if arg is None:
+                    segments.append(name)
+                else:
+                    segments.append(f"{name}={arg}")
+                value = "; ".join(segments)
+        else:
+            value = _unicodify(value)
+        super().add(_unicodify(key), value)
 
     def __setitem__(self, key: Any, value: Any) -> None:
         super().__setitem__(_unicodify(key), _unicodify(value))

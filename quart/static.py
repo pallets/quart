@@ -132,16 +132,47 @@ def safe_join(directory: str, *paths: str) -> Path:
     return full_path
 
 
-async def send_from_directory(directory: str, file_name: str, conditional: bool=False) -> Response:
+async def send_from_directory(
+        directory: str,
+        file_name: str,
+        *,
+        mimetype: Optional[str]=None,
+        as_attachment: bool=False,
+        attachment_filename: Optional[str]=None,
+        add_etags: bool=True,
+        cache_timeout: Optional[int]=None,
+        conditional: bool=True,
+        last_modified: Optional[datetime]=None,
+) -> Response:
+    """Send a file from a given directory.
+
+    Arguments:
+       directory: Directory that when combined with file_name gives
+           the file path.
+       file_name: File name that when combined with directory gives
+           the file path.
+       See :func:`send_file` for the other arguments.
+    """
     file_path = safe_join(directory, file_name)
     if not os.path.isfile(file_path):
         raise NotFound()
-    return await send_file(file_path, conditional=conditional)
+    return await send_file(
+        file_path,
+        mimetype=mimetype,
+        as_attachment=as_attachment,
+        attachment_filename=attachment_filename,
+        add_etags=add_etags,
+        cache_timeout=cache_timeout,
+        conditional=conditional,
+        last_modified=last_modified,
+    )
 
 
 async def send_file(
         filename: FilePath,
         mimetype: Optional[str]=None,
+        as_attachment: bool=False,
+        attachment_filename: Optional[str]=None,
         add_etags: bool=True,
         cache_timeout: Optional[int]=None,
         conditional: bool=False,
@@ -154,6 +185,9 @@ async def send_file(
             :func:`safe_join`.
         mimetype: Mimetype to use, by default it will be guessed or
             revert to the DEFAULT_MIMETYPE.
+        as_attachment: If true use the attachment filename in a
+            Content-Disposition attachment header.
+        attachment_filename: Name for the filename, if it differs
         add_etags: Set etags based on the filename, size and
             modification time.
         last_modified: Used to override the last modified value.
@@ -161,10 +195,15 @@ async def send_file(
 
     """
     file_path = os.fspath(filename)
+    if attachment_filename is None:
+        attachment_filename = os.path.basename(file_path)
     if mimetype is None:
-        mimetype = mimetypes.guess_type(os.path.basename(file_path))[0] or DEFAULT_MIMETYPE
+        mimetype = mimetypes.guess_type(attachment_filename)[0] or DEFAULT_MIMETYPE
     file_body = current_app.response_class.file_body_class(file_path)
     response = current_app.response_class(file_body, mimetype=mimetype)
+
+    if as_attachment:
+        response.headers.add('Content-Disposition', 'attachment', filename=attachment_filename)
 
     if last_modified is not None:
         response.last_modified = last_modified

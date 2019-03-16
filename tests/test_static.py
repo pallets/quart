@@ -46,6 +46,28 @@ async def test_send_file_path(tmpdir: LocalPath) -> None:
 
 
 @pytest.mark.asyncio
+async def test_send_file_as_attachment(tmpdir: LocalPath) -> None:
+    app = Quart(__name__)
+    file_ = tmpdir.join('send.img')
+    file_.write('something')
+    async with app.app_context():
+        response = await send_file(Path(file_.realpath()), as_attachment=True)
+    assert response.headers["content-disposition"] == "attachment; filename=send.img"
+
+
+@pytest.mark.asyncio
+async def test_send_file_as_attachment_name(tmpdir: LocalPath) -> None:
+    app = Quart(__name__)
+    file_ = tmpdir.join('send.img')
+    file_.write('something')
+    async with app.app_context():
+        response = await send_file(
+            Path(file_.realpath()), as_attachment=True, attachment_filename="send.html",
+        )
+    assert response.headers["content-disposition"] == "attachment; filename=send.html"
+
+
+@pytest.mark.asyncio
 async def test_send_file_mimetype(tmpdir: LocalPath) -> None:
     app = Quart(__name__)
     file_ = tmpdir.join('send.bob')

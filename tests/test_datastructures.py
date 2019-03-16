@@ -61,6 +61,12 @@ def test_headers_non_strings() -> None:
     assert headers['x-bar'] == 'True'
 
 
+def test_headers_add_kwargs() -> None:
+    headers = Headers()
+    headers.add("Content-Disposition", "attachment", filename="abc")
+    assert headers["content-disposition"] == "attachment; filename=abc"
+
+
 def test_accept() -> None:
     accept = Accept(
         'application/vnd.google-earth.kml+xml;googleearth=context.kml,'
