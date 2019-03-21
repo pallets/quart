@@ -57,7 +57,7 @@ def test_config_from_pyfile_no_file() -> None:
 
 def test_config_from_pyfile_directory() -> None:
     config = Config(os.path.dirname(__file__))
-    with pytest.raises(IsADirectoryError):
+    with pytest.raises(PermissionError if os.name == 'nt' else IsADirectoryError):
         config.from_pyfile('assets')
 
 
