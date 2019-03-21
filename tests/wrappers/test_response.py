@@ -146,7 +146,11 @@ def test_response_cache_control() -> None:
 
 @given(
     value=strategies.datetimes(
-        timezones=strategies.just(timezone.utc), min_value=datetime(1900, 1, 1),
+        timezones=strategies.just(timezone.utc),
+        # The min_value and max_value are needed because
+        # wsgiref uses the function time.gmtime on the generated timestamps,
+        # which fails on windows with values outside of these bounds
+        min_value=datetime(1970, 1, 2), max_value=datetime(3000, 1, 2),
     ),
 )
 @pytest.mark.parametrize('header', ['date', 'expires', 'last_modified', 'retry_after'])
