@@ -89,3 +89,13 @@ example,
             await test_websocket.send(data)
     except WebsocketResponse as error:
         assert error.response.status_code == 401
+
+Sending and receiving Bytes or String
+-------------------------------------
+
+The WebSocket protocol llows for either bytes or trings to be sent
+with a frame marker indicating which. The
+:meth:`~quart.wrappers.request.Websocket.receive` method will return
+either ``bytes`` or ``str`` depending on what the client sent i.e. if
+the client sent a string it will be returned from the method. Equally
+you can send bytes or strings.
