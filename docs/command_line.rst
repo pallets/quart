@@ -45,3 +45,39 @@ create an event loop and run it manually, for example,
 
     async def _fetch():
         return await db.execute(...)
+
+Including a CLI Command in an extension or another module
+------------------
+
+To include CLI commands in a Quart extension or blueprint, register the methods in the "run" factory function
+
+.. code-block:: python
+
+    from quart import Quart
+    from my_extension import my_cli
+
+    def create_app():
+        app = Quart(__name__)
+        app = my_cli(app)
+        return app
+
+And in your module or extension:
+
+.. code-block:: python
+
+    import click
+
+    def my_cli(app):
+        # @click.option("--my-option")
+	@app.cli.command("mycli")
+	def my_cli_command():
+            print("quart ran this command")
+
+        return app
+
+This can be run with:
+
+.. code-block:: console
+
+    $ quart mycli
+    $ quart ran this command
