@@ -39,3 +39,12 @@ An example usage to store a users colour preference would be,
         ...
         session['colour'] = colour
         return redirect(url_for('index'))
+
+WebSockets
+----------
+
+Sessions can be used with WebSockets with an important caveat about
+cookies. A cookie can only be set on a HTTP response, and an accepted
+WebSocket connection cannot return a HTTP response. Therefore the
+default implementation, being based on cookies, will lose any
+modifications made during an accepted WebSocket connection.

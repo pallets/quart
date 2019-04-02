@@ -1,9 +1,13 @@
 import os
 from typing import Optional, Set
+from unittest.mock import Mock
 
 import pytest
 
 from quart.app import Quart
+from quart.globals import session, websocket
+from quart.sessions import SecureCookieSession
+from quart.testing import WebsocketResponse
 from quart.typing import ResponseReturnValue
 from quart.wrappers import Response
 
@@ -269,3 +273,56 @@ async def test_app_after_request_handler_exception(basic_app: Quart) -> None:
     test_client = basic_app.test_client()
     response = await test_client.get('/exception/')
     assert response.status_code == 500
+
+
+@pytest.fixture(name='session_app', scope="function")
+def _session_app() -> Quart:
+    app = Quart(__name__)
+    app.session_interface = Mock()
+    app.session_interface.open_session.return_value = SecureCookieSession()  # type: ignore
+    app.session_interface.is_null_session.return_value = False  # type: ignore
+
+    @app.route('/')
+    async def route() -> str:
+        session["a"] = "b"
+        return ''
+
+    @app.websocket('/ws/')
+    async def ws() -> None:
+        session["a"] = "b"
+        await websocket.accept()
+        await websocket.send("")
+
+    @app.websocket('/ws_return/')
+    async def ws_return() -> str:
+        session["a"] = "b"
+        return ""
+
+    return app
+
+
+@pytest.mark.asyncio
+async def test_app_session(session_app: Quart) -> None:
+    test_client = session_app.test_client()
+    await test_client.get('/')
+    session_app.session_interface.open_session.assert_called()  # type: ignore
+    session_app.session_interface.save_session.assert_called()  # type: ignore
+
+
+@pytest.mark.asyncio
+async def test_app_session_websocket(session_app: Quart) -> None:
+    test_client = session_app.test_client()
+    async with test_client.websocket('/ws/') as test_websocket:
+        await test_websocket.receive()
+    session_app.session_interface.open_session.assert_called()  # type: ignore
+    session_app.session_interface.save_session.assert_not_called()  # type: ignore
+
+
+@pytest.mark.asyncio
+async def test_app_session_websocket_return(session_app: Quart) -> None:
+    test_client = session_app.test_client()
+    async with test_client.websocket('/ws_return/') as test_websocket:
+        with pytest.raises(WebsocketResponse):
+            await test_websocket.receive()
+    session_app.session_interface.open_session.assert_called()  # type: ignore
+    session_app.session_interface.save_session.assert_called()  # type: ignore

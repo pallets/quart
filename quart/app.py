@@ -35,7 +35,7 @@ from .helpers import (
 from .json import JSONDecoder, JSONEncoder, tojson_filter
 from .logging import create_logger, create_serving_logger
 from .routing import Map, MapAdapter, Rule
-from .sessions import SecureCookieSessionInterface, Session
+from .sessions import SecureCookieSession, SecureCookieSessionInterface, Session
 from .signals import (
     appcontext_tearing_down, got_request_exception, got_websocket_exception, request_finished,
     request_started, request_tearing_down, websocket_finished, websocket_started,
@@ -1738,6 +1738,15 @@ class Quart(PackageStatic):
         for function in functions:
             response = await function(response)
 
+        session_ = (websocket_context or _request_ctx_stack.top).session
+        if not self.session_interface.is_null_session(session_):
+            if response is None and isinstance(session_, SecureCookieSession) and session_.modified:
+                self.logger.exception(
+                    "Secure Cookie Session modified during websocket handling. "
+                    "These modifications will be lost as a cookie cannot be set."
+                )
+            else:
+                await self.save_session(session_, response)
         return response
 
     def __call__(self, scope: dict) -> Callable:
