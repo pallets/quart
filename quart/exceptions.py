@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Iterable, Optional
+from typing import Iterable, NoReturn, Optional
 
 from .wrappers import Response
 
@@ -118,7 +118,11 @@ if not please click the link
         return headers
 
 
-def abort(status_code: int, description: Optional[str] = None, name: Optional[str] = None) -> None:
+def abort(
+    status_code: int,
+    description: Optional[str] = None,
+    name: Optional[str] = None,
+) -> NoReturn:
     error_class = all_http_exceptions.get(status_code)
     if error_class is None:
         raise HTTPException(status_code, description or 'Unknown', name or 'Unknown')
