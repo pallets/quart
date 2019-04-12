@@ -1485,15 +1485,17 @@ class Quart(PackageStatic):
             status = status_or_headers
 
         if not isinstance(value, Response):
-            response = self.response_class(value, timeout=self.config['RESPONSE_TIMEOUT'])
+            response = self.response_class(  # type: ignore
+                value, timeout=self.config['RESPONSE_TIMEOUT'],
+            )
         else:
             response = value
 
         if status is not None:
-            response.status_code = status
+            response.status_code = status  # type: ignore
 
         if headers is not None:
-            response.headers.update(headers)
+            response.headers.update(headers)  # type: ignore
 
         return response
 
