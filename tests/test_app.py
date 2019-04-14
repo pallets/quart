@@ -1,10 +1,12 @@
+import asyncio
 import os
-from typing import Optional, Set
+from typing import NoReturn, Optional, Set
 from unittest.mock import Mock
 
 import pytest
 
 from quart.app import Quart
+from quart.datastructures import CIMultiDict
 from quart.globals import session, websocket
 from quart.sessions import SecureCookieSession
 from quart.testing import WebsocketResponse
@@ -273,6 +275,34 @@ async def test_app_after_request_handler_exception(basic_app: Quart) -> None:
     test_client = basic_app.test_client()
     response = await test_client.get('/exception/')
     assert response.status_code == 500
+
+
+@pytest.mark.asyncio
+async def test_app_handle_request_asyncio_cancelled_error() -> None:
+    app = Quart(__name__)
+
+    @app.route("/")
+    async def index() -> NoReturn:
+        raise asyncio.CancelledError()
+
+    request = app.request_class("GET", "http", "/", b"", CIMultiDict())
+    with pytest.raises(asyncio.CancelledError):
+        await app.handle_request(request)
+
+
+@pytest.mark.asyncio
+async def test_app_handle_websocket_asyncio_cancelled_error() -> None:
+    app = Quart(__name__)
+
+    @app.websocket("/")
+    async def index() -> NoReturn:
+        raise asyncio.CancelledError()
+
+    websocket = app.websocket_class(
+        "/", b"", "wss", CIMultiDict(), None, None, None, None,
+    )
+    with pytest.raises(asyncio.CancelledError):
+        await app.handle_websocket(websocket)
 
 
 @pytest.fixture(name='session_app', scope="function")
