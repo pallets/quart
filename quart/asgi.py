@@ -205,11 +205,19 @@ class ASGILifespan:
         while True:
             event = await receive()
             if event['type'] == 'lifespan.startup':
-                await self.app.startup()
-                await send({'type': 'lifespan.startup.complete'})
+                try:
+                    await self.app.startup()
+                except Exception as error:
+                    await send({'type': 'lifespan.startup.failed', "message": str(error)})
+                else:
+                    await send({'type': 'lifespan.startup.complete'})
             elif event['type'] == 'lifespan.shutdown':
-                await self.app.shutdown()
-                await send({'type': 'lifespan.shutdown.complete'})
+                try:
+                    await self.app.shutdown()
+                except Exception as error:
+                    await send({'type': 'lifespan.shutdown.failed', "message": str(error)})
+                else:
+                    await send({'type': 'lifespan.shutdown.complete'})
                 break
 
 

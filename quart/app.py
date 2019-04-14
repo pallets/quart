@@ -1751,15 +1751,16 @@ class Quart(PackageStatic):
                 await self.save_session(session_, response)
         return response
 
-    def __call__(self, scope: dict) -> Callable:
+    async def __call__(self, scope: dict, receive: Callable, send: Callable) -> None:
         if scope['type'] == 'http':
-            return self.asgi_http_class(self, scope)
+            asgi_handler = self.asgi_http_class(self, scope)
         elif scope['type'] == 'websocket':
-            return self.asgi_websocket_class(self, scope)
+            asgi_handler = self.asgi_websocket_class(self, scope)  # type: ignore
         elif scope['type'] == 'lifespan':
-            return self.asgi_lifespan_class(self, scope)
+            asgi_handler = self.asgi_lifespan_class(self, scope)  # type: ignore
         else:
             raise RuntimeError('ASGI Scope type is unknown')
+        await asgi_handler(receive, send)
 
     async def startup(self) -> None:
         self._got_first_request = False

@@ -67,7 +67,7 @@ To deploy in a production setting see the `deployment
 Features
 --------
 
-Quart supports the full ASGI 2.0 specification as well as the
+Quart supports the full ASGI 3.0 specification as well as the
 websocket response and HTTP/2 server push extensions. For those of you
 familiar with Flask, Quart extends the Flask-API by adding support for,
 
