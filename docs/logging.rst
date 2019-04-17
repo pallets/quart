@@ -4,7 +4,7 @@ Logging
 =======
 
 By default Quart has two loggers, named ``quart.app`` and
-``quart.serving``, both are standar Python Loggers. The former is
+``quart.serving``, both are standard Python Loggers. The former is
 usually kept for app logging whilst the latter serving. To use the
 former, simply make use of :attr:`~quart.app.Quart.logger`, for
 example:
