@@ -23,7 +23,7 @@ from ..datastructures import (
 from ..utils import create_cookie
 
 if TYPE_CHECKING:
-    from .routing import Rule  # noqa
+    from ..routing import Rule  # noqa
 
 
 class ResponseBody(ABC):

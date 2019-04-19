@@ -119,7 +119,7 @@ async def test_data() -> None:
     client = Client(app)
     headers = {'Content-Type': 'application/octet-stream'}
     response = await client.post('/', data=b'ABCDEFG', headers=headers)
-    assert (await response.get_data(True)) == b'ABCDEFG'
+    assert (await response.get_data(True)) == b'ABCDEFG'  # type: ignore
 
 
 @pytest.mark.asyncio

@@ -10,7 +10,7 @@ from ._base import BaseRequestWebsocket, JSONMixin
 from ..datastructures import CIMultiDict, FileStorage, Headers, MultiDict
 
 if TYPE_CHECKING:
-    from .routing import Rule  # noqa
+    from ..routing import Rule  # noqa
 
 SERVER_PUSH_HEADERS_TO_COPY = {
     "accept", "accept-encoding", "accept-language", "cache-control", "user-agent",

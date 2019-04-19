@@ -2,8 +2,9 @@ import re
 import uuid
 from ast import literal_eval
 from collections import defaultdict
-from typing import Any, Dict, Generator, List, NamedTuple, Optional, Set, Tuple, Union, Iterator  # noqa
-from typing.re import Pattern  # noqa
+from typing import (
+    Any, Dict, Generator, Iterator, List, NamedTuple, Optional, Pattern, Set, Tuple, Union,
+)
 from urllib.parse import urlencode, urlunsplit
 
 from sortedcontainers import SortedListWithKey
@@ -315,7 +316,7 @@ class Rule:
         if 'GET' in methods and 'HEAD' not in methods and not self.is_websocket:
             methods.add('HEAD')
         self.methods = frozenset(method.upper() for method in methods)
-        if self.is_websocket and self.methods != {'GET'}:
+        if self.is_websocket and self.methods != {'GET'}:  # type: ignore
             raise ValueError(f"{methods} must only be GET for a websocket route")
         self.endpoint = endpoint
         self.strict_slashes = strict_slashes

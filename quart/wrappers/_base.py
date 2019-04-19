@@ -14,7 +14,7 @@ from ..datastructures import (
 from ..json import loads
 
 if TYPE_CHECKING:
-    from .routing import Rule  # noqa
+    from ..routing import Rule  # noqa
 
 sentinel = object()
 

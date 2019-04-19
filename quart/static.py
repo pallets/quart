@@ -4,8 +4,7 @@ import pkgutil
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import AnyStr, Optional, Union
-from typing.io import IO
+from typing import AnyStr, IO, Optional, Union
 from zlib import adler32
 
 from jinja2 import FileSystemLoader

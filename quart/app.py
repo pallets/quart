@@ -9,10 +9,9 @@ from logging import Logger
 from pathlib import Path
 from types import TracebackType
 from typing import (
-    Any, AnyStr, Awaitable, Callable, cast, Dict, Iterable, List, Optional, Set, Tuple, Union,
+    Any, AnyStr, Awaitable, Callable, cast, Dict, IO, Iterable, List, Optional, Set, Tuple, Union,
     ValuesView,
 )
-from typing.io import IO
 
 from hypercorn.asyncio import serve
 from hypercorn.config import Config as HyperConfig

@@ -10,7 +10,7 @@ from jinja2 import Markup
 from ..globals import _app_ctx_stack, _request_ctx_stack, current_app, request
 
 if TYPE_CHECKING:
-    from .wrappers import Response  # noqa: F401
+    from ..wrappers import Response  # noqa: F401
 
 
 def dumps(object_: Any, **kwargs: Any) -> str:

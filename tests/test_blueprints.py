@@ -80,7 +80,7 @@ async def test_blueprint_template_filter() -> None:
     app.register_blueprint(blueprint)
 
     response = await app.test_client().get('/')
-    assert b'olleh' in (await response.get_data())
+    assert b'olleh' in (await response.get_data())  # type: ignore
 
 
 @pytest.mark.asyncio
@@ -101,7 +101,7 @@ async def test_blueprint_error_handler() -> None:
 
     response = await app.test_client().get('/error/')
     assert response.status_code == 409
-    assert b'Something Unique' in (await response.get_data())
+    assert b'Something Unique' in (await response.get_data())  # type: ignore
 
 
 @pytest.mark.asyncio

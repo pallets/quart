@@ -8,7 +8,7 @@ from .utils import ensure_coroutine
 signals_available = True
 
 
-class AsyncNamedSignal(NamedSignal):
+class AsyncNamedSignal(NamedSignal):  # type: ignore
 
     def __init__(self, name: str, doc: Optional[str]=None) -> None:
         super().__init__(name, doc)
@@ -32,7 +32,7 @@ class AsyncNamedSignal(NamedSignal):
         return super().connect(handler, *args, **kwargs)
 
 
-class AsyncNamespace(Namespace):
+class AsyncNamespace(Namespace):  # type: ignore
 
     def signal(self, name: str, doc: Optional[str]=None) -> AsyncNamedSignal:
         try:

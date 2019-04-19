@@ -2,6 +2,7 @@ include CHANGELOG.rst
 include LICENSE
 include quart/py.typed
 include README.rst
+include setup.cfg
 recursive-include artwork *
 recursive-include quart *.py
 recursive-include tests *.py
