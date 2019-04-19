@@ -29,7 +29,7 @@ a separate thread via the ``run_in_executor`` function.
         asyncio.ensure_future(io_background_task())
 
         # Runs on another thread
-        asyncio.run_in_executor(None, cpu_background_task())
+        asyncio.get_running_loop().run_in_executor(None, cpu_background_task())
         return 'Success'
 
 These background tasks will not have access to the request or app
