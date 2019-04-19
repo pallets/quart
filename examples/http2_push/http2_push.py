@@ -5,7 +5,7 @@ import os
 import click
 from PIL import Image
 from quart import (
-    make_response, Quart, render_template, url_for, abort
+    make_push_promise, make_response, Quart, render_template, url_for, abort
 )
 
 
@@ -46,24 +46,20 @@ def get_tile(tile_number):
 
 @app.route('/')
 async def index():
-    response = await make_response(
-        await render_template(
-            'index.html',
-            max_tiles=app.max_tiles, title='Using standard HTTP/2'))
-    response.push_promises.add(url_for('static', filename='style.css'))
-    return response
+    await make_push_promise(url_for('static', filename='style.css'))
+    return await render_template(
+        'index.html', max_tiles=app.max_tiles, title='Using standard HTTP/2',
+    )
 
 
 @app.route('/push')
 async def push():
-    response = await make_response(
-        await render_template(
-            'index.html',
-            max_tiles=app.max_tiles, title='Using push promises'))
-    response.push_promises.add(url_for('static', filename='style.css'))
+    await make_push_promise(url_for('static', filename='style.css'))
     for i in range(app.max_tiles * app.max_tiles):
-        response.push_promises.add(url_for('tile', tile_number=i))
-    return response
+        await make_push_promise(url_for('tile', tile_number=i))
+    return await render_template(
+        'index.html', max_tiles=app.max_tiles, title='Using push promises',
+    )
 
 
 @app.route('/tile/<int:tile_number>')

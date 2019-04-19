@@ -1,5 +1,5 @@
 from quart import (
-    abort, jsonify, make_response, Quart, render_template, request, url_for,
+    abort, jsonify, make_push_promise, Quart, render_template, request, url_for,
 )
 
 
@@ -8,10 +8,9 @@ app = Quart(__name__)
 
 @app.route('/')
 async def index():
-    response = await make_response(await render_template('index.html'))
-    response.push_promises.add(url_for('static', filename='http2.css'))
-    response.push_promises.add(url_for('static', filename='http2.js'))
-    return response
+    await make_push_promise(url_for('static', filename='http2.css'))
+    await make_push_promise(url_for('static', filename='http2.js'))
+    return await render_template('index.html')
 
 
 @app.route('/', methods=['POST'])

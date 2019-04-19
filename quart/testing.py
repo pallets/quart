@@ -87,6 +87,17 @@ def make_test_headers_path_and_query_string(
     return headers, path, query_string_bytes
 
 
+async def no_op_push(path: str, headers: Headers) -> None:
+    """A push promise sender that does nothing.
+
+    This is best used when creating Request instances for testing
+    outside of the QuartClient. The Request instance must know what to
+    do with push promises, and this gives it the option of doing
+    nothing.
+    """
+    pass
+
+
 class QuartClient:
     """A Client bound to an app for testing.
 
@@ -101,6 +112,7 @@ class QuartClient:
         else:
             self.cookie_jar = None
         self.app = app
+        self.push_promises: List[Tuple[str, Headers]] = []
 
     async def open(
             self,
@@ -179,6 +191,7 @@ class QuartClient:
 
         request = self.app.request_class(
             method, scheme, path, query_string_bytes, headers,
+            send_push_promise=self._send_push_promise,
         )
         request.body.set_result(request_data)
         response = await self._handle_request(request)
@@ -194,12 +207,16 @@ class QuartClient:
                     method = 'GET'
                 request = self.app.request_class(
                     method, scheme, response.location, query_string_bytes, headers,
+                    send_push_promise=self._send_push_promise,
                 )
                 response = await self._handle_request(request)
         return response
 
     async def _handle_request(self, request: Request) -> Response:
         return await asyncio.ensure_future(self.app.handle_request(request))
+
+    async def _send_push_promise(self, path: str, headers: Headers) -> None:
+        self.push_promises.append((path, headers))
 
     async def delete(self, *args: Any, **kwargs: Any) -> Response:
         """Make a DELETE request.

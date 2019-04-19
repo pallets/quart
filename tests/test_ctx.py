@@ -13,7 +13,7 @@ from quart.datastructures import CIMultiDict
 from quart.exceptions import BadRequest, MethodNotAllowed, NotFound, RedirectRequired
 from quart.globals import g, request, websocket
 from quart.routing import Rule
-from quart.testing import make_test_headers_path_and_query_string
+from quart.testing import make_test_headers_path_and_query_string, no_op_push
 from quart.wrappers import Request, Websocket
 
 
@@ -23,7 +23,7 @@ def test_request_context_match() -> None:
     rule = Rule('/', {'GET'}, 'index')
     url_adapter.match.return_value = (rule, {'arg': 'value'})
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
-    request = Request('GET', 'http', '/', b'', CIMultiDict())
+    request = Request('GET', 'http', '/', b'', CIMultiDict(), send_push_promise=no_op_push)
     RequestContext(app, request)
     assert request.url_rule == rule
     assert request.view_args == {'arg': 'value'}
@@ -44,7 +44,7 @@ def test_request_context_matching_error(
     url_adapter = Mock()
     url_adapter.match.side_effect = exception_instance
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
-    request = Request('GET', 'http', '/', b'', CIMultiDict())
+    request = Request('GET', 'http', '/', b'', CIMultiDict(), send_push_promise=no_op_push)
     RequestContext(app, request)
     assert isinstance(request.routing_exception, exception_type)  # type: ignore
 
@@ -53,7 +53,9 @@ def test_request_context_matching_error(
     'request_factory, context_class, is_websocket',
     [
         (
-            lambda method, path, headers: Request(method, 'http', path, b'', headers),
+            lambda method, path, headers: Request(
+                method, 'http', path, b'', headers, send_push_promise=no_op_push,
+            ),
             RequestContext, True,
         ),
         (
@@ -81,7 +83,7 @@ def test_bad_request_if_websocket_route() -> None:
     url_adapter = Mock()
     url_adapter.match.return_value = Rule('/', {'GET'}, 'index', is_websocket=True), {}
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
-    request = Request('GET', 'http', '/', b'', CIMultiDict())
+    request = Request('GET', 'http', '/', b'', CIMultiDict(), send_push_promise=no_op_push)
     RequestContext(app, request)
     assert isinstance(request.routing_exception, BadRequest)
 
@@ -92,7 +94,7 @@ async def test_after_this_request() -> None:
     headers, path, query_string = make_test_headers_path_and_query_string(app, '/')
     async with RequestContext(
             Quart(__name__),
-            Request('GET', 'http', path, query_string, headers),
+            Request('GET', 'http', path, query_string, headers, send_push_promise=no_op_push),
     ) as context:
         after_this_request(lambda: 'hello')
         assert context._after_request_functions[0]() == 'hello'
@@ -102,7 +104,8 @@ async def test_after_this_request() -> None:
 async def test_has_request_context() -> None:
     app = Quart(__name__)
     headers, path, query_string = make_test_headers_path_and_query_string(app, '/')
-    async with RequestContext(Quart(__name__), Request('GET', 'http', path, query_string, headers)):
+    request = Request('GET', 'http', path, query_string, headers, send_push_promise=no_op_push)
+    async with RequestContext(Quart(__name__), request):
         assert has_request_context() is True
         assert has_app_context() is True
     assert has_request_context() is False
@@ -245,7 +248,7 @@ def test_copy_current_websocket_context_error() -> None:
 async def test_overlapping_request_ctx() -> None:
     app = Quart(__name__)
 
-    request = Request('GET', 'http', '/', b'', CIMultiDict())
+    request = Request('GET', 'http', '/', b'', CIMultiDict(), send_push_promise=no_op_push)
     ctx1 = app.request_context(request)
     await ctx1.__aenter__()
     ctx2 = app.request_context(request)

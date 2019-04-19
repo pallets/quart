@@ -6,7 +6,7 @@ from hashlib import md5
 from inspect import isasyncgen
 from types import TracebackType
 from typing import (
-    AnyStr, AsyncGenerator, AsyncIterable, AsyncIterator, Iterable, Optional, Set, Tuple,
+    AnyStr, AsyncGenerator, AsyncIterable, AsyncIterator, Iterable, Optional, Tuple,
     TYPE_CHECKING, Union,
 )
 from wsgiref.handlers import format_date_time
@@ -241,8 +241,6 @@ class Response(_BaseRequestResponse, JSONMixin):
 
         Attributes:
             response: An iterable of the response bytes-data.
-            push_promises: A set of paths that should be pushed to the
-                client if the protocol is HTTP/2.
         """
         super().__init__(headers)
         self.timeout = timeout
@@ -270,7 +268,6 @@ class Response(_BaseRequestResponse, JSONMixin):
             self.set_data(response)  # type: ignore
         else:
             self.response = self.iterable_body_class(response)
-        self.push_promises: Set[str] = set()
 
     async def get_data(self, raw: bool=True) -> AnyStr:
         """Return the body data."""

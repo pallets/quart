@@ -25,19 +25,19 @@ knows the client will likely initiate a request, say for the css or js
 referenced in a html response.
 
 In Quart server push can be initiated during a request via the
-function :func:`~quart.helpers.make_push_promise` or by adding the
-paths to push to any response, for example,
+function :func:`~quart.helpers.make_push_promise`, for example,
 
 .. code-block:: python
 
     async def index():
         await make_push_promise(url_for('static', filename='css/minimal.css'))
-        result = await render_template('index.html')
-        response = await make_response(result)
-        response.push_promises.add(url_for('static', filename='css/base.css'))
-        return response
+        return await render_template('index.html')
 
-see also :attr:`~quart.wrappers.Response.push_promises`.
+The push promise will include (copy) header values present in the
+request that triggers the push promise. These are to ensure that the
+push promise is responded too as if the request had made it. A good
+example is the ``Accept`` header. The full set of copied headers are
+``SERVER_PUSH_HEADERS_TO_COPY`` in the request module.
 
 .. note::
 
@@ -46,6 +46,17 @@ see also :attr:`~quart.wrappers.Response.push_promises`.
     not support this extension Quart will ignore the push promises (as
     with HTTP/1 connections). Hypercorn, the recommended ASGI server,
     supports this extension.
+
+When testing server push,the :class:`~quart.testing.QuartClient`
+``push_promises`` list will contain every push promise as a tuple of
+the path and headers, for example,
+
+.. code-block:: python
+
+    async def test_push_promise():
+        test_client = app.test_client()
+        await test_client.get("/push")
+        assert test_client.push_promises[0] == ("/", {})
 
 HTTP/2 clients
 ''''''''''''''

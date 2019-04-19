@@ -199,3 +199,17 @@ async def test_websocket_bad_request() -> None:
     with pytest.raises(BadRequest):
         async with test_client.websocket('/'):
             pass
+
+
+@pytest.mark.asyncio
+async def test_push_promise() -> None:
+    app = Quart(__name__)
+
+    @app.route('/')
+    async def index() -> str:
+        await request.send_push_promise("/")
+        return ''
+
+    test_client = app.test_client()
+    await test_client.get("/")
+    assert test_client.push_promises[0][0] == "/"

@@ -1,7 +1,9 @@
 import asyncio
 import io
 from cgi import FieldStorage, parse_header
-from typing import Any, AnyStr, Callable, Generator, List, Optional, TYPE_CHECKING, Union
+from typing import (
+    Any, AnyStr, Awaitable, Callable, Generator, List, Optional, TYPE_CHECKING, Union,
+)
 from urllib.parse import parse_qs
 
 from ._base import BaseRequestWebsocket, JSONMixin
@@ -9,6 +11,10 @@ from ..datastructures import CIMultiDict, FileStorage, Headers, MultiDict
 
 if TYPE_CHECKING:
     from .routing import Rule  # noqa
+
+SERVER_PUSH_HEADERS_TO_COPY = {
+    "accept", "accept-encoding", "accept-language", "cache-control", "user-agent",
+}
 
 
 class Body:
@@ -101,10 +107,6 @@ class Body:
         self.set_complete()
 
 
-async def _no_op() -> None:
-    pass
-
-
 class Request(BaseRequestWebsocket, JSONMixin):
     """This class represents a request.
 
@@ -127,7 +129,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
             *,
             max_content_length: Optional[int]=None,
             body_timeout: Optional[int]=None,
-            send_push_promise: Optional[Callable]=None,
+            send_push_promise: Callable[[str, Headers], Awaitable[None]],
     ) -> None:
         """Create a request object.
 
@@ -151,7 +153,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
         self.body = self.body_class(self.content_length, max_content_length)
         self._form: Optional[MultiDict] = None
         self._files: Optional[MultiDict] = None
-        self.send_push_promise = send_push_promise or _no_op
+        self._send_push_promise = send_push_promise
 
     async def get_data(self, raw: bool=True) -> AnyStr:
         """The request body data."""
@@ -262,6 +264,13 @@ class Request(BaseRequestWebsocket, JSONMixin):
     async def _load_json_data(self) -> str:
         """Return the data after decoding."""
         return await self.get_data(raw=False)
+
+    async def send_push_promise(self, path: str) -> None:
+        headers = Headers()
+        for name in SERVER_PUSH_HEADERS_TO_COPY:
+            for value in self.headers.getlist(name):
+                headers.add(name, value)
+        await self._send_push_promise(path, headers)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.method}, {self.path})"

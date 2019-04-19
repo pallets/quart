@@ -9,7 +9,7 @@ from quart.app import Quart
 from quart.datastructures import CIMultiDict
 from quart.globals import session, websocket
 from quart.sessions import SecureCookieSession
-from quart.testing import WebsocketResponse
+from quart.testing import no_op_push, WebsocketResponse
 from quart.typing import ResponseReturnValue
 from quart.wrappers import Response
 
@@ -285,7 +285,9 @@ async def test_app_handle_request_asyncio_cancelled_error() -> None:
     async def index() -> NoReturn:
         raise asyncio.CancelledError()
 
-    request = app.request_class("GET", "http", "/", b"", CIMultiDict())
+    request = app.request_class(
+        "GET", "http", "/", b"", CIMultiDict(), send_push_promise=no_op_push,
+    )
     with pytest.raises(asyncio.CancelledError):
         await app.handle_request(request)
 

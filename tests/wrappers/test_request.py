@@ -1,10 +1,12 @@
 import asyncio
+from typing import Tuple
 from urllib.parse import urlencode
 
 import pytest
 
-from quart.datastructures import CIMultiDict
+from quart.datastructures import CIMultiDict, Headers
 from quart.exceptions import RequestEntityTooLarge, RequestTimeout
+from quart.testing import no_op_push
 from quart.wrappers.request import Body, Request
 
 
@@ -75,14 +77,19 @@ async def test_request_exceeds_max_content_length() -> None:
     max_content_length = 5
     headers = CIMultiDict()
     headers['Content-Length'] = str(max_content_length + 1)
-    request = Request('POST', 'http', '/', b'', headers, max_content_length=max_content_length)
+    request = Request(
+        'POST', 'http', '/', b'', headers, max_content_length=max_content_length,
+        send_push_promise=no_op_push,
+    )
     with pytest.raises(RequestEntityTooLarge):
         await request.get_data()
 
 
 @pytest.mark.asyncio
 async def test_request_get_data_timeout() -> None:
-    request = Request('POST', 'http', '/', b'', CIMultiDict(), body_timeout=1)
+    request = Request(
+        'POST', 'http', '/', b'', CIMultiDict(), body_timeout=1, send_push_promise=no_op_push,
+    )
     with pytest.raises(RequestTimeout):
         await request.get_data()
 
@@ -92,7 +99,39 @@ async def test_request_values() -> None:
     request = Request(
         'GET', 'http', '/', b'a=b&a=c',
         CIMultiDict({'host': 'quart.com', 'Content-Type': 'application/x-www-form-urlencoded'}),
+        send_push_promise=no_op_push,
     )
     request.body.append(urlencode({'a': 'd'}).encode())
     request.body.set_complete()
     assert (await request.values).getlist('a') == ['b', 'c', 'd']
+
+
+@pytest.mark.asyncio
+async def test_request_send_push_promise() -> None:
+    push_promise: Tuple[str, Headers] = None
+
+    async def _push(path: str, headers: Headers) -> None:
+        nonlocal push_promise
+        push_promise = (path, headers)
+
+    request = Request(
+        'GET', 'http', '/', b'a=b&a=c',
+        CIMultiDict({
+            'host': 'quart.com',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip",
+            "User-Agent": "quart",
+        }),
+        send_push_promise=_push,
+    )
+    await request.send_push_promise("/")
+    assert push_promise[0] == "/"
+    valid_headers = {
+        "Accept": "*/*",
+        "Accept-Encoding": "gzip",
+        "User-Agent": "quart",
+    }
+    assert len(push_promise[1]) == len(valid_headers)
+    for name, value in valid_headers.items():
+        assert push_promise[1][name] == value

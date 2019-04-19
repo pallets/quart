@@ -69,9 +69,6 @@ class ASGIHTTPConnection:
             'headers': _encode_headers(response.headers),
         })
 
-        for path in response.push_promises:
-            await self._send_push_promise(send, path)
-
         async with response.response as body:
             async for data in body:
                 await send({
@@ -85,12 +82,12 @@ class ASGIHTTPConnection:
             'more_body': False,
         })
 
-    async def _send_push_promise(self, send: Callable, path: str) -> None:
+    async def _send_push_promise(self, send: Callable, path: str, headers: Headers) -> None:
         if 'http.response.push' in self.scope.get('extensions', {}):
             await send({
                 'type': 'http.response.push',
                 'path': path,
-                'headers': [],
+                'headers': _encode_headers(headers),
             })
 
 

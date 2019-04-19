@@ -9,7 +9,8 @@ from logging import Logger
 from pathlib import Path
 from types import TracebackType
 from typing import (
-    Any, AnyStr, Callable, cast, Dict, Iterable, List, Optional, Set, Tuple, Union, ValuesView,
+    Any, AnyStr, Awaitable, Callable, cast, Dict, Iterable, List, Optional, Set, Tuple, Union,
+    ValuesView,
 )
 from typing.io import IO
 
@@ -24,7 +25,7 @@ from .ctx import (
     _AppCtxGlobals, _request_ctx_stack, _websocket_ctx_stack, AppContext, has_request_context,
     has_websocket_context, RequestContext, WebsocketContext,
 )
-from .datastructures import CIMultiDict
+from .datastructures import CIMultiDict, Headers
 from .debug import traceback_response
 from .exceptions import all_http_exceptions, HTTPException
 from .globals import g, request, session
@@ -43,7 +44,7 @@ from .signals import (
 )
 from .static import PackageStatic
 from .templating import _default_template_context_processor, DispatchingJinjaLoader, Environment
-from .testing import make_test_headers_path_and_query_string, QuartClient
+from .testing import make_test_headers_path_and_query_string, no_op_push, QuartClient
 from .typing import ResponseReturnValue
 from .utils import ensure_coroutine
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
@@ -1406,6 +1407,7 @@ class Quart(PackageStatic):
             headers: Optional[Union[dict, CIMultiDict]]=None,
             query_string: Optional[dict]=None,
             scheme: str='http',
+            send_push_promise: Callable[[str, Headers], Awaitable[None]]=no_op_push,
     ) -> RequestContext:
         """Create a request context for testing purposes.
 
@@ -1429,7 +1431,9 @@ class Quart(PackageStatic):
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self, path, headers, query_string,
         )
-        request = self.request_class(method, scheme, path, query_string_bytes, headers)
+        request = self.request_class(
+            method, scheme, path, query_string_bytes, headers, send_push_promise=send_push_promise,
+        )
         request.body.set_result(b'')
         return self.request_context(request)
 
