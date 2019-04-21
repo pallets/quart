@@ -8,7 +8,7 @@ from logging import Logger
 from pathlib import Path
 from types import TracebackType
 from typing import (
-    Any, Callable, cast, Dict, Iterable, List, Optional, Set, Tuple, Union, ValuesView,
+    Any, Callable, cast, Dict, Iterable, List, Optional, Set, Tuple, Type, Union, ValuesView,
 )
 
 from hypercorn import Config as HyperConfig, run_single
@@ -599,7 +599,7 @@ class Quart(PackageStatic):
             return func
         return decorator
 
-    def errorhandler(self, error: Union[Exception, int]) -> Callable:
+    def errorhandler(self, error: Union[Type[Exception], int]) -> Callable:
         """Register a function as an error handler.
 
         This is designed to be used as a decorator. An example usage,
@@ -619,7 +619,7 @@ class Quart(PackageStatic):
         return decorator
 
     def register_error_handler(
-            self, error: Union[Exception, int], func: Callable, name: AppOrBlueprintKey=None,
+            self, error: Union[Type[Exception], int], func: Callable, name: AppOrBlueprintKey=None,
     ) -> None:
         """Register a function as an error handler.
 
@@ -640,7 +640,7 @@ class Quart(PackageStatic):
         """
         handler = ensure_coroutine(func)
         if isinstance(error, int):
-            error = all_http_exceptions[error]  # type: ignore
+            error = all_http_exceptions[error]
         self.error_handler_spec[name][error] = handler  # type: ignore
 
     def template_filter(self, name: Optional[str]=None) -> Callable:
