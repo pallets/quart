@@ -1,6 +1,6 @@
 from functools import update_wrapper
 from json import JSONDecoder, JSONEncoder
-from typing import Callable, Iterable, List, Optional, TYPE_CHECKING, Union
+from typing import Callable, Iterable, List, Optional, Type, TYPE_CHECKING, Union
 
 from .static import PackageStatic
 
@@ -515,7 +515,7 @@ class Blueprint(PackageStatic):
         self.record_once(lambda state: state.app.teardown_request(func))
         return func
 
-    def errorhandler(self, error: Union[Exception, int]) -> Callable:
+    def errorhandler(self, error: Union[Type[Exception], int]) -> Callable:
         """Add an error handler function to the Blueprint.
 
         This is designed to be used as a decorator, and has the same
@@ -536,7 +536,7 @@ class Blueprint(PackageStatic):
             return func
         return decorator
 
-    def app_errorhandler(self, error: Union[Exception, int]) -> Callable:
+    def app_errorhandler(self, error: Union[Type[Exception], int]) -> Callable:
         """Add an error handler function to the App.
 
         This is designed to be used as a decorator, and has the same
@@ -555,7 +555,7 @@ class Blueprint(PackageStatic):
             return func
         return decorator
 
-    def register_error_handler(self, error: Union[Exception, int], func: Callable) -> None:
+    def register_error_handler(self, error: Union[Type[Exception], int], func: Callable) -> None:
         """Add an error handler function to the blueprint.
 
         This is designed to be used on the blueprint directly, and
