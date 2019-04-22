@@ -1,3 +1,11 @@
+0.6.13 2019-04-22
+-----------------
+
+* Bugfix multipart parsing.
+* Added Map.iter_rules(endpoint) Method.
+* Bugfix cope if there is no source code (when using the debug
+  system).
+
 0.8.1 2019-02-09
 ----------------
 
