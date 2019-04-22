@@ -51,7 +51,7 @@ class GunicornWorker(Worker):
         max_fields_size = self.cfg.limit_request_fields * self.cfg.limit_request_field_size
         config.h11_max_incomplete_size = self.cfg.limit_request_line + max_fields_size
         for sock in self.sockets:
-            server = await self.loop.create_server(
+            server = await self.loop.create_server(  # type: ignore
                 lambda: Server(self.wsgi, self.loop, config),
                 sock=sock.sock, ssl=ssl_context,
             )
