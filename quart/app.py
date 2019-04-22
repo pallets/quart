@@ -1388,9 +1388,9 @@ class Quart(PackageStatic):
 
         if loop is not None:
             loop.set_debug(debug or False)
-            loop.run_until_complete(serve(self, config))  # type: ignore
+            loop.run_until_complete(serve(self, config))
         else:
-            asyncio.run(serve(self, config), debug=config.debug)  # type: ignore
+            asyncio.run(serve(self, config), debug=config.debug)
 
     def test_client(self) -> QuartClient:
         """Creates and returns a test client."""
