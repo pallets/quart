@@ -1,3 +1,34 @@
+0.9.0 2019-04-22
+----------------
+
+*This contains all the Bugfixes in the 0.6 and 0.8 branches.*
+
+* Highlight the traceback line of code when using the debug system.
+* Bugfix ensure debug has an affect when passed to app run.
+* Change the test_request_context arguments to match the test client
+  open arguments.
+* Bugfix form data loading limit type.
+* Support async Session Interfaces (with continued support for sync
+  interfaces).
+* Added before_app_websocket, and after_app_websocket methods to the
+  Blueprint.
+* Support sending headers on WebSocket acceptance (this requires ASGI
+  server support, the default Hypercorn supports this).
+* Support async teardown functions (with continued support for sync
+  functions).
+* Match the Flask API argument order for send_file adding a mimetype
+  argument and supporting attachment sending.
+* Make the requested subprotocols available via the websocket class,
+  ``websocket.requested_subprotocols``.
+* Support session saving with WebSockets (errors for cookie sessions
+  if the WebSocket connection has been accepted).
+* Switch to be an ASGI 3 framework (this requires ASGI server support,
+  the default Hypercorn supports this).
+* Refactor push promise API, the removes the
+  ``response.push_promises`` attribute.
+* Aceept Path (types) throughout and switch to Path (types)
+  internally.
+
 0.6.13 2019-04-22
 -----------------
 
