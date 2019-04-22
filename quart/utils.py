@@ -1,10 +1,13 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
 from http.cookies import SimpleCookie
-from typing import Callable, Optional, TYPE_CHECKING, Union
+from os import PathLike
+from pathlib import Path
+from typing import Callable, List, Optional, TYPE_CHECKING, Union
 from wsgiref.handlers import format_date_time
 
 from .globals import current_app
+from .typing import FilePath
 
 if TYPE_CHECKING:
     from .wrappers.response import Response  # noqa: F401
@@ -63,3 +66,14 @@ def ensure_coroutine(func: Callable) -> Callable:
         async_func = asyncio.coroutine(func)
         async_func._quart_async_wrapper = True  # type: ignore
         return async_func
+
+
+def file_path_to_path(*paths: FilePath) -> Path:
+    # Flask supports bytes paths
+    safe_paths: List[Union[str, PathLike]] = []
+    for path in paths:
+        if isinstance(path, bytes):
+            safe_paths.append(path.decode())
+        else:
+            safe_paths.append(path)
+    return Path(*safe_paths)

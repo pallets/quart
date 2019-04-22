@@ -4,17 +4,18 @@ import pkgutil
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import AnyStr, IO, Optional, Union
+from typing import AnyStr, IO, Optional
 from zlib import adler32
 
 from jinja2 import FileSystemLoader
 
 from .exceptions import NotFound
 from .globals import current_app, request
+from .typing import FilePath
+from .utils import file_path_to_path
 from .wrappers import Response
 
 DEFAULT_MIMETYPE = 'application/octet-stream'
-FilePath = Union[AnyStr, os.PathLike]
 
 
 class PackageStatic:
@@ -28,32 +29,35 @@ class PackageStatic:
             static_url_path: Optional[str]=None,
     ) -> None:
         self.import_name = import_name
-        self.template_folder = template_folder
+        self.template_folder = Path(template_folder) if template_folder is not None else None
 
         self.root_path = self._find_root_path(root_path)
 
-        self._static_folder: Optional[str] = None
+        self._static_folder: Optional[Path] = None
         self._static_url_path: Optional[str] = None
         self.static_folder = static_folder
         self.static_url_path = static_url_path
 
     @property
-    def static_folder(self) -> Optional[str]:
+    def static_folder(self) -> Optional[Path]:
         if self._static_folder is not None:
-            return os.path.join(self.root_path, self._static_folder)
+            return self.root_path / self._static_folder
         else:
             return None
 
     @static_folder.setter
-    def static_folder(self, static_folder: str) -> None:
-        self._static_folder = static_folder
+    def static_folder(self, static_folder: Optional[FilePath]) -> None:
+        if static_folder is not None:
+            self._static_folder = file_path_to_path(static_folder)
+        else:
+            self._static_folder = None
 
     @property
     def static_url_path(self) -> Optional[str]:
         if self._static_url_path is not None:
             return self._static_url_path
         if self.static_folder is not None:
-            return '/' + os.path.basename(self.static_folder)
+            return '/' + self.static_folder.name
         else:
             return None
 
@@ -68,9 +72,7 @@ class PackageStatic:
     @property
     def jinja_loader(self) -> Optional[FileSystemLoader]:
         if self.template_folder is not None:
-            return FileSystemLoader(
-                os.path.join(self.root_path, self.template_folder),
-            )
+            return FileSystemLoader(os.fspath(self.root_path / self.template_folder))
         else:
             return None
 
@@ -82,7 +84,7 @@ class PackageStatic:
             raise RuntimeError('No static folder for this object')
         return await send_from_directory(self.static_folder, filename)
 
-    def open_resource(self, path: str, mode: str='rb') -> IO[AnyStr]:
+    def open_resource(self, path: FilePath, mode: str='rb') -> IO[AnyStr]:
         """Open a file for reading.
 
         Use as
@@ -94,11 +96,11 @@ class PackageStatic:
         """
         if mode not in {'r', 'rb'}:
             raise ValueError('Files can only be opened for reading')
-        return open(os.path.join(self.root_path, path), mode)
+        return open(self.root_path / file_path_to_path(path), mode)
 
-    def _find_root_path(self, root_path: Optional[str]=None) -> str:
+    def _find_root_path(self, root_path: Optional[str]=None) -> Path:
         if root_path is not None:
-            return root_path
+            return Path(root_path)
         else:
             module = sys.modules.get(self.import_name)
             if module is not None and hasattr(module, '__file__'):
@@ -106,13 +108,13 @@ class PackageStatic:
             else:
                 loader = pkgutil.get_loader(self.import_name)
                 if loader is None or self.import_name == '__main__':
-                    return os.getcwd()
+                    return Path.cwd()
                 else:
                     file_path = loader.get_filename(self.import_name)  # type: ignore
-            return os.path.dirname(os.path.abspath(file_path))
+            return Path(file_path).resolve().parent
 
 
-def safe_join(directory: str, *paths: str) -> Path:
+def safe_join(directory: FilePath, *paths: FilePath) -> Path:
     """Safely join the paths to the known directory to return a full path.
 
     Raises:
@@ -120,8 +122,8 @@ def safe_join(directory: str, *paths: str) -> Path:
         the directory.
     """
     try:
-        safe_path = Path(directory).resolve(strict=True)
-        full_path = Path(directory, *paths).resolve(strict=True)
+        safe_path = file_path_to_path(directory).resolve(strict=True)
+        full_path = file_path_to_path(directory, *paths).resolve(strict=True)
     except FileNotFoundError:
         raise NotFound()
     try:
@@ -132,7 +134,7 @@ def safe_join(directory: str, *paths: str) -> Path:
 
 
 async def send_from_directory(
-        directory: str,
+        directory: FilePath,
         file_name: str,
         *,
         mimetype: Optional[str]=None,
@@ -153,7 +155,7 @@ async def send_from_directory(
        See :func:`send_file` for the other arguments.
     """
     file_path = safe_join(directory, file_name)
-    if not os.path.isfile(file_path):
+    if not file_path.is_file():
         raise NotFound()
     return await send_file(
         file_path,
@@ -193,9 +195,9 @@ async def send_file(
         cache_timeout: Time in seconds for the response to be cached.
 
     """
-    file_path = os.fspath(filename)
+    file_path = file_path_to_path(filename)
     if attachment_filename is None:
-        attachment_filename = os.path.basename(file_path)
+        attachment_filename = file_path.name
     if mimetype is None:
         mimetype = mimetypes.guess_type(attachment_filename)[0] or DEFAULT_MIMETYPE
     file_body = current_app.response_class.file_body_class(file_path)
@@ -207,7 +209,7 @@ async def send_file(
     if last_modified is not None:
         response.last_modified = last_modified
     else:
-        response.last_modified = datetime.fromtimestamp(os.path.getmtime(file_path))
+        response.last_modified = datetime.fromtimestamp(file_path.stat().st_mtime)
 
     response.cache_control.public = True
     cache_timeout = cache_timeout or current_app.get_send_file_max_age(file_path)
@@ -216,11 +218,10 @@ async def send_file(
         response.expires = datetime.utcnow() + timedelta(seconds=cache_timeout)
 
     if add_etags:
-        file_tag = file_path.encode('utf-8') if isinstance(file_path, str) else file_path
         response.set_etag(
             '{}-{}-{}'.format(
-                os.path.getmtime(file_path), os.path.getsize(file_path),
-                adler32(file_tag),
+                file_path.stat().st_mtime, file_path.stat().st_size,
+                adler32(bytes(file_path)),
             ),
         )
 

@@ -1,9 +1,9 @@
-import os
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from hashlib import md5
 from inspect import isasyncgen
+from os import PathLike
 from types import TracebackType
 from typing import (
     AnyStr, AsyncGenerator, AsyncIterable, AsyncIterator, Iterable, Optional, Tuple,
@@ -20,7 +20,7 @@ from ..datastructures import (
     CIMultiDict, ContentRange, Headers, HeaderSet, Range, ResponseAccessControl,
     ResponseCacheControl,
 )
-from ..utils import create_cookie
+from ..utils import create_cookie, file_path_to_path
 
 if TYPE_CHECKING:
     from ..routing import Rule  # noqa
@@ -133,10 +133,10 @@ class FileBody(ResponseBody):
     buffer_size = 8192
 
     def __init__(
-            self, file_path: Union[str, bytes, os.PathLike], *, buffer_size: Optional[int] = None,
+            self, file_path: Union[str, PathLike], *, buffer_size: Optional[int] = None,
     ) -> None:
-        self.file_path = file_path
-        self.size = os.path.getsize(self.file_path)
+        self.file_path = file_path_to_path(file_path)
+        self.size = self.file_path.stat().st_size
         self.begin = 0
         self.end = self.size
         if buffer_size is not None:

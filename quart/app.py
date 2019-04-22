@@ -1,5 +1,4 @@
 import asyncio
-import os
 import sys
 import warnings
 from collections import defaultdict, OrderedDict
@@ -44,8 +43,8 @@ from .signals import (
 from .static import PackageStatic
 from .templating import _default_template_context_processor, DispatchingJinjaLoader, Environment
 from .testing import make_test_headers_path_and_query_string, no_op_push, QuartClient
-from .typing import ResponseReturnValue
-from .utils import ensure_coroutine
+from .typing import FilePath, ResponseReturnValue
+from .utils import ensure_coroutine, file_path_to_path
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
@@ -173,9 +172,8 @@ class Quart(PackageStatic):
         """
         super().__init__(import_name, template_folder, root_path, static_folder, static_url_path)
 
-        if instance_path is None:
-            instance_path = self.auto_find_instance_path()
-        elif not os.path.isabs(instance_path):
+        instance_path = Path(instance_path) if instance_path else self.auto_find_instance_path()
+        if not instance_path.is_absolute():
             raise ValueError("The instance_path must be an absolute path.")
         self.instance_path = instance_path
 
@@ -271,13 +269,13 @@ class Quart(PackageStatic):
         """Return if the app has received a request."""
         return self._got_first_request
 
-    def auto_find_instance_path(self) -> str:
+    def auto_find_instance_path(self) -> Path:
         """Locates the instace_path if it was not provided
         """
         prefix, package_path = find_package(self.import_name)
         if prefix is None:
-            return os.path.join(package_path, 'instance')
-        return os.path.join(prefix, 'var', self.name + '-instance')
+            return package_path / "instance"
+        return prefix / "var" / f"{self.name}-instance"
 
     def make_config(self, instance_relative: bool = False) -> Config:
         """Create and return the configuration with appropriate defaults."""
@@ -289,7 +287,7 @@ class Quart(PackageStatic):
         config['DEBUG'] = get_debug_flag()
         return config
 
-    def open_instance_resource(self, path: str, mode: str='rb') -> IO[AnyStr]:
+    def open_instance_resource(self, path: FilePath, mode: str='rb') -> IO[AnyStr]:
         """Open a file for reading.
 
         Use as
@@ -299,7 +297,7 @@ class Quart(PackageStatic):
             with app.open_instance_resouce(path) as file_:
                 file_.read()
         """
-        return open(os.path.join(self.instance_path, path), mode)
+        return open(self.instance_path / file_path_to_path(path), mode)
 
     def create_url_adapter(self, request: Optional[BaseRequestWebsocket]) -> Optional[MapAdapter]:
         """Create and return a URL adapter.

@@ -4,8 +4,10 @@ import json
 import os
 from configparser import ConfigParser
 from datetime import timedelta
-from pathlib import Path
 from typing import Any, Callable, Dict, Mapping, Optional, Union
+
+from .typing import FilePath
+from .utils import file_path_to_path
 
 
 DEFAULT_CONFIG = {
@@ -79,9 +81,9 @@ class Config(dict):
     keys it is not recommended.
     """
 
-    def __init__(self, root_path: str, defaults: Optional[dict]=None) -> None:
+    def __init__(self, root_path: FilePath, defaults: Optional[dict]=None) -> None:
         super().__init__(defaults or {})
-        self.root_path = Path(root_path)
+        self.root_path = file_path_to_path(root_path)
 
     def from_envvar(self, variable_name: str, silent: bool=False) -> None:
         """Load the configuration from a location specified in the environment.

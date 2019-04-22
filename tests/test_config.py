@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import pytest
 
@@ -26,56 +27,56 @@ def _check_standard_config(config: Config) -> None:
 
 
 def test_config_from_object() -> None:
-    config = Config(os.path.dirname(__file__))
+    config = Config(Path(__file__).parent)
     config.from_object(__name__)
     _check_standard_config(config)
 
 
 def test_config_from_pyfile_this() -> None:
-    config = Config(os.path.dirname(__file__))
+    config = Config(Path(__file__).parent)
     config.from_pyfile(__file__)
     _check_standard_config(config)
 
 
 def test_config_from_pyfile_py() -> None:
-    config = Config(os.path.dirname(__file__))
+    config = Config(Path(__file__).parent)
     config.from_pyfile('assets/config.py')
     _check_standard_config(config)
 
 
 def test_config_from_pyfile_cfg() -> None:
-    config = Config(os.path.dirname(__file__))
+    config = Config(Path(__file__).parent)
     config.from_pyfile('assets/config.cfg')
     _check_standard_config(config)
 
 
 def test_config_from_pyfile_no_file() -> None:
-    config = Config(os.path.dirname(__file__))
+    config = Config(Path(__file__).parent)
     with pytest.raises(FileNotFoundError):
         config.from_pyfile('assets/no_file.cfg')
 
 
 def test_config_from_pyfile_directory() -> None:
-    config = Config(os.path.dirname(__file__))
+    config = Config(Path(__file__).parent)
     with pytest.raises(PermissionError if os.name == 'nt' else IsADirectoryError):
         config.from_pyfile('assets')
 
 
 def test_config_from_envvar() -> None:
-    config = Config(os.path.dirname(__file__))
+    config = Config(Path(__file__).parent)
     os.environ['CONFIG'] = 'assets/config.cfg'
     config.from_envvar('CONFIG')
     _check_standard_config(config)
 
 
 def test_config_from_json() -> None:
-    config = Config(os.path.dirname(__file__))
+    config = Config(Path(__file__).parent)
     config.from_json('assets/config.json')
     _check_standard_config(config)
 
 
 def test_config_get_namespace() -> None:
-    config = Config(os.path.dirname(__file__))
+    config = Config(Path(__file__).parent)
     config['FOO_A'] = 'a'
     config['FOO_BAR'] = 'bar'
     config['BAR'] = 'bar'
