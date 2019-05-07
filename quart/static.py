@@ -152,7 +152,8 @@ async def send_from_directory(
            the file path.
        file_name: File name that when combined with directory gives
            the file path.
-       See :func:`send_file` for the other arguments.
+
+    See :func:`send_file` for the other arguments.
     """
     file_path = safe_join(directory, file_name)
     if not file_path.is_file():

@@ -5,3 +5,4 @@ quart.datastructures module
     :members:
     :undoc-members:
     :show-inheritance:
+    :exclude-members: add, clear, pop, remove, update

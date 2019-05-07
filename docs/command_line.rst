@@ -47,7 +47,7 @@ create an event loop and run it manually, for example,
         return await db.execute(...)
 
 Including a CLI Command in an extension or another module
-------------------
+---------------------------------------------------------
 
 To include CLI commands in a Quart extension or blueprint, register the methods in the "run" factory function
 
