@@ -9,6 +9,6 @@ TODO
 .pytest_cache/
 .hypothesis/
 docs/_build/
-
+docs/source/
 
 .coverage
