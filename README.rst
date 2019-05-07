@@ -82,15 +82,18 @@ the recommended server is `Hypercorn
 Contributing
 ------------
 
-Quart is developed on `GitLab
-<https://gitlab.com/pgjones/quart>`_. You are very welcome to open
-`issues <https://gitlab.com/pgjones/quart/issues>`_ or propose `merge
-requests <https://gitlab.com/pgjones/quart/merge_requests>`_.
+Quart is developed on `GitLab <https://gitlab.com/pgjones/quart>`_. If
+you come across an issue, or have a feature request please open an
+`issue <https://gitlab.com/pgjones/quart/issues>`_.  If you want to
+contribute a fix or the feature-implementation please do (typo fixes
+welcome), by proposing a `merge request
+<https://gitlab.com/pgjones/quart/merge_requests>`_.
 
 Testing
 ~~~~~~~
 
-The best way to test Quart is with Tox,
+The best way to test Quart is with `Tox
+<https://tox.readthedocs.io>`_,
 
 .. code-block:: console
 
@@ -103,7 +106,9 @@ Help
 ----
 
 The Quart `documentation <https://pgjones.gitlab.io/quart/>`_ is the
-best place to start, after that try opening an `issue
+best place to start, after that try searching `stack overflow
+<https://stackoverflow.com/questions/tagged/quart>`_, if you still
+can't find an answer please `open an issue
 <https://gitlab.com/pgjones/quart/issues>`_.
 
 API Compatibility with Flask
