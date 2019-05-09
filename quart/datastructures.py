@@ -294,7 +294,7 @@ class MIMEAccept(Accept):
         return full_wildcard_allowed or wildcard_allowed or match_allowed
 
 
-class _CacheDirective:
+class _Directive:
 
     def __init__(self, name: str, converter: Callable) -> None:
         self.name = name
@@ -313,10 +313,10 @@ class _CacheDirective:
 
 
 class _CacheControl:
-    no_cache = _CacheDirective('no-cache', bool)
-    no_store = _CacheDirective('no-store', bool)
-    no_transform = _CacheDirective('no-transform', bool)
-    max_age = _CacheDirective('max-age', int)
+    no_cache = _Directive('no-cache', bool)
+    no_store = _Directive('no-store', bool)
+    no_transform = _Directive('no-transform', bool)
+    max_age = _Directive('max-age', int)
 
     def __init__(self, on_update: Optional[Callable]=None) -> None:
         self._on_update = on_update
@@ -349,18 +349,71 @@ class _CacheControl:
 
 
 class RequestCacheControl(_CacheControl):
-    max_stale = _CacheDirective('max-stale', int)
-    min_fresh = _CacheDirective('min-fresh', int)
-    no_transform = _CacheDirective('no-transform', bool)
-    only_if_cached = _CacheDirective('only-if-cached', bool)
+    max_stale = _Directive('max-stale', int)
+    min_fresh = _Directive('min-fresh', int)
+    no_transform = _Directive('no-transform', bool)
+    only_if_cached = _Directive('only-if-cached', bool)
 
 
 class ResponseCacheControl(_CacheControl):
-    must_revalidate = _CacheDirective('must-revalidate', bool)
-    private = _CacheDirective('private', bool)
-    proxy_revalidate = _CacheDirective('proxy-revalidate', bool)
-    public = _CacheDirective('public', bool)
-    s_maxage = _CacheDirective('s-maxage', int)
+    must_revalidate = _Directive('must-revalidate', bool)
+    private = _Directive('private', bool)
+    proxy_revalidate = _Directive('proxy-revalidate', bool)
+    public = _Directive('public', bool)
+    s_maxage = _Directive('s-maxage', int)
+
+
+class ContentSecurityPolicy:
+    base_uri = _Directive("base-uri", str)
+    child_src = _Directive("child-src", str)
+    connect_src = _Directive("connect-src", str)
+    default_src = _Directive("default-src", str)
+    font_src = _Directive("font-src", str)
+    form_action = _Directive("form-action", str)
+    frame_ancestors = _Directive("frame-ancestors", str)
+    frame_src = _Directive("frame-src", str)
+    img_src = _Directive("img-src", str)
+    manifest_src = _Directive("manifest-src", str)
+    media_src = _Directive("media-src", str)
+    navigate_to = _Directive("navigate-to", str)
+    object_src = _Directive("object-src", str)
+    prefetch_src = _Directive("prefetch-src", str)
+    plugin_types = _Directive("plugin-types", str)
+    report_uri = _Directive("report-uri", str)
+    sandbox = _Directive("sandbox", str)
+    script_src = _Directive("script-src", str)
+    script_src_attr = _Directive("script-src-attr", str)
+    script_src_elem = _Directive("script-src-elem", str)
+    style_src = _Directive("style-src", str)
+    style_src_attr = _Directive("style-src-attr", str)
+    style_src_elem = _Directive("style-src-elem", str)
+    worker_src = _Directive("worker-src", str)
+
+    def __init__(self, on_update: Optional[Callable]=None) -> None:
+        self._on_update = on_update
+        self._directives: Dict[str, str] = {}
+
+    @classmethod
+    def from_header(
+            cls: Type['ContentSecurityPolicy'],
+            header: str,
+            on_update: Optional[Callable]=None,
+    ) -> 'ContentSecurityPolicy':
+        csp = cls(on_update)
+        for policy in header.split(";"):
+            try:
+                directive, value = policy.strip().split(" ", 1)
+            except ValueError:
+                pass
+            else:
+                csp._directives[directive.strip()] = value.strip()
+        return csp
+
+    def to_header(self) -> str:
+        return "; ".join(f"{directive} {value}" for directive, value in self._directives.items())
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.to_header()})"
 
 
 class ETags:

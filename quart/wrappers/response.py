@@ -18,8 +18,8 @@ from aiofiles.threadpool import AsyncFileIO
 
 from ._base import _BaseRequestResponse, JSONMixin
 from ..datastructures import (
-    CIMultiDict, ContentRange, Headers, HeaderSet, Range, ResponseAccessControl,
-    ResponseCacheControl,
+    CIMultiDict, ContentRange, ContentSecurityPolicy, Headers, HeaderSet, Range,
+    ResponseAccessControl, ResponseCacheControl,
 )
 from ..utils import create_cookie, file_path_to_path
 
@@ -579,6 +579,32 @@ class Response(_BaseRequestResponse, JSONMixin):
     @content_range.setter
     def content_range(self, value: ContentRange) -> None:
         self._set_or_pop_header('Content-Range', value.to_header())
+
+    @property
+    def content_security_policy(self) -> ContentSecurityPolicy:
+        def on_update(content_security_policy: ContentSecurityPolicy) -> None:
+            self.content_security_policy = content_security_policy
+
+        return ContentSecurityPolicy.from_header(
+            self.headers.get("Content-Security-Policy", ""), on_update,
+        )
+
+    @content_security_policy.setter
+    def content_security_policy(self, value: ContentSecurityPolicy) -> None:
+        self._set_or_pop_header("Content-Security-Policy", value.to_header())
+
+    @property
+    def content_security_policy_report_only(self) -> ContentSecurityPolicy:
+        def on_update(content_security_policy: ContentSecurityPolicy) -> None:
+            self.content_security_policy_report_only = content_security_policy
+
+        return ContentSecurityPolicy.from_header(
+            self.headers.get("Content-Security-Policy-Report-Only", ""), on_update,
+        )
+
+    @content_security_policy_report_only.setter
+    def content_security_policy_report_only(self, value: ContentSecurityPolicy) -> None:
+        self._set_or_pop_header("Content-Security-Policy-Report-Only", value.to_header())
 
     @property
     def content_type(self) -> Optional[str]:
