@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
 from json import dumps
 from typing import Any, AnyStr, AsyncGenerator, List, Optional, Tuple, TYPE_CHECKING, Union
-from urllib.parse import urlencode
+from urllib.parse import unquote, urlencode
 
 from .datastructures import CIMultiDict, Headers
 from .exceptions import BadRequest
@@ -84,7 +84,7 @@ def make_test_headers_path_and_query_string(
     else:
         query_string_raw = urlencode(query_string, doseq=True)
     query_string_bytes = query_string_raw.encode('ascii')
-    return headers, path, query_string_bytes
+    return headers, unquote(path), query_string_bytes
 
 
 async def no_op_push(path: str, headers: Headers) -> None:

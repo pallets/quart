@@ -32,6 +32,7 @@ async def test_methods() -> None:
         ('/path', {'a': 'b'}, '/path', b'a=b'),
         ('/path', {'a': ['b', 'c']}, '/path', b'a=b&a=c'),
         ('/path?b=c', None, '/path', b'b=c'),
+        ('/path%20', None, '/path ', b''),
     ],
 )
 def test_build_headers_path_and_query_string(
