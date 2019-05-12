@@ -219,17 +219,20 @@ class Request(BaseRequestWebsocket, JSONMixin):
                 field_storage_key = field_storage[key]
                 if isinstance(field_storage_key, list):
                     for item in field_storage_key:
-                        self._form.add(key, item.value)
-                elif (
-                        isinstance(field_storage_key, FieldStorage) and
-                        field_storage_key.filename is not None
-                ):
-                    self._files[key] = FileStorage(  # type: ignore
-                        io.BytesIO(field_storage_key.file.read()), field_storage_key.filename,
-                        field_storage_key.name, field_storage_key.type, field_storage_key.headers,  # type: ignore # noqa: E501
-                    )
-                elif key:
-                    self._form.add(key, field_storage_key.value)
+                        self._load_field_storage(key, item)
+                else:
+                    self._load_field_storage(key, field_storage_key)
+
+    def _load_field_storage(self, key: str, field_storage: FieldStorage) -> None:
+        if isinstance(field_storage, FieldStorage) and field_storage.filename is not None:
+            self._files.add(
+                key, FileStorage(  # type: ignore
+                    io.BytesIO(field_storage.file.read()), field_storage.filename,
+                    field_storage.name, field_storage.type, field_storage.headers,  # type: ignore # noqa: E501
+                ),
+            )
+        else:
+            self._form.add(key, field_storage.value)
 
     @property
     def content_encoding(self) -> Optional[str]:
