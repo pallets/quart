@@ -10,3 +10,5 @@ here,
   Resource Sharing (access control) support.
 - `Quart-OpenApi <https://github.com/factset/quart-openapi/>`_ RESTful
   API building.
+- `Webargs-Quart <https://github.com/esfoobar/webargs-quart>`_ Webargs
+  parsing for Quart.
