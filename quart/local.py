@@ -1,7 +1,7 @@
 import asyncio
 import copy
 from contextvars import ContextVar  # noqa # contextvars not understood as stdlib
-from typing import Any, Callable, Dict  # noqa # contextvars not understood as stdlib
+from typing import Any, Callable, Dict, Optional  # noqa # contextvars not understood as stdlib
 
 
 class TaskLocal:
@@ -74,10 +74,11 @@ class LocalProxy:
     """Proxy to a task local object."""
     __slots__ = ('__dict__', '__local', '__wrapped__')
 
-    def __init__(self, local: Callable) -> None:
+    def __init__(self, local: Callable, name: Optional[str]=None) -> None:
         # Note as __setattr__ is overidden below, use the object __setattr__
         object.__setattr__(self, '__LocalProxy_local', local)
         object.__setattr__(self, '__wrapped__', local)
+        object.__setattr__(self, "__name__", name)
 
     def _get_current_object(self) -> Any:
         return object.__getattribute__(self, '__LocalProxy_local')()
