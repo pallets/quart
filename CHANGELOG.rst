@@ -1,3 +1,11 @@
+0.9.1 2019-05-12
+----------------
+
+* Bugfix unquote the path in the test client, following the ASGI
+  standard.
+* Bugfix follow Werkzeug LocalProxy name API.
+* Bugfix ensure multiple files are correctly loaded.
+
 0.9.0 2019-04-22
 ----------------
 
