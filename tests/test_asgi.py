@@ -2,6 +2,7 @@ import asyncio
 from typing import Optional
 
 import pytest
+from asynctest.mock import CoroutineMock
 
 from quart import Quart
 from quart.asgi import (
@@ -134,18 +135,20 @@ async def test_websocket_accept_connection(
         scope: dict, headers: Headers, subprotocol: Optional[str], has_headers: bool,
 ) -> None:
     connection = ASGIWebsocketConnection(Quart(__name__), scope)
-    sent_message = None
-
-    async def mock_send(message: dict) -> None:
-        nonlocal sent_message
-        sent_message = message
-
+    mock_send = CoroutineMock()
     await connection.accept_connection(mock_send, headers, subprotocol)
 
     if has_headers:
-        assert sent_message["headers"]
-    if subprotocol is not None:
-        assert sent_message["subprotocol"] == subprotocol
+        mock_send.assert_called_with({
+            "subprotocol": subprotocol,
+            "type": "websocket.accept",
+            "headers": _encode_headers(headers),
+        })
+    else:
+        mock_send.assert_called_with({
+            "subprotocol": subprotocol,
+            "type": "websocket.accept",
+        })
 
 
 @pytest.mark.asyncio

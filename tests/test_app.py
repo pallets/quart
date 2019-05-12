@@ -1,14 +1,14 @@
 import asyncio
 import os
 from typing import NoReturn, Optional, Set
-from unittest.mock import Mock
 
 import pytest
+from asynctest import Mock as AsyncMock
 
 from quart.app import Quart
 from quart.datastructures import CIMultiDict
 from quart.globals import session, websocket
-from quart.sessions import SecureCookieSession
+from quart.sessions import SecureCookieSession, SessionInterface
 from quart.testing import no_op_push, WebsocketResponse
 from quart.typing import ResponseReturnValue
 from quart.wrappers import Response
@@ -310,7 +310,7 @@ async def test_app_handle_websocket_asyncio_cancelled_error() -> None:
 @pytest.fixture(name='session_app', scope="function")
 def _session_app() -> Quart:
     app = Quart(__name__)
-    app.session_interface = Mock()
+    app.session_interface = AsyncMock(spec=SessionInterface)
     app.session_interface.open_session.return_value = SecureCookieSession()  # type: ignore
     app.session_interface.is_null_session.return_value = False  # type: ignore
 

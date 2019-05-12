@@ -52,6 +52,7 @@ setup(
     py_modules=['quart'],
     install_requires=INSTALL_REQUIRES,
     tests_require=INSTALL_REQUIRES + [
+        'asynctest',
         'hypothesis',
         'pytest',
         'pytest-asyncio',
