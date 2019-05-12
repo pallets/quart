@@ -42,3 +42,30 @@ To use this functionality simply do the following,
     @app.after_serving
     async def create_db_pool():
         await app.db_pool.close()
+
+Testing
+-------
+
+When testing a Quart app that utilises the ``before_serving`` and/or
+``after_serving`` functionality it is important to await the app
+``startup`` and ``shutdown`` methods as the default test client in
+Quart does not. An example, and recommended, pytest fixture is,
+
+.. code-block:: python
+
+    @pytest.fixture(name="app", scope="function")
+    async def _app():
+        app = ...  # However your app is created
+        await app.startup()
+        yield app
+        await app.shutdown()
+
+the app fixture can then be used as normal,
+
+.. code-block:: python
+
+    @pytest.mark.asyncio
+    async def test_index(app):
+        test_client = app.test_client()
+        await test_client.get("/")
+        ...
