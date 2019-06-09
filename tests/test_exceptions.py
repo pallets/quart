@@ -1,5 +1,6 @@
 import pytest
 
+from quart import Response
 from quart.exceptions import (
     abort, HTTPException, HTTPStatusException, MethodNotAllowed, RedirectRequired,
 )
@@ -14,6 +15,12 @@ def test_abort_with_arguments() -> None:
     with pytest.raises(HTTPException) as exc_info:
         abort(400, "A description", "A name")
     assert exc_info.value.description == "A description"
+
+
+def test_abort_with_response() -> None:
+    with pytest.raises(HTTPException) as exc_info:
+        abort(Response("Message", 205))
+    assert exc_info.value.get_response().status_code == 205
 
 
 @pytest.mark.asyncio

@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Iterable, NoReturn, Optional
+from typing import cast, Iterable, NoReturn, Optional, Union
 
 from .wrappers import Response
 
@@ -118,21 +118,46 @@ if not please click the link
         return headers
 
 
+class _AbortResponseException(HTTPException):
+    def __init__(self, response: Response) -> None:
+        self.response = response
+
+    def get_response(self) -> Response:
+        return self.response
+
+
 def abort(
-    status_code: int,
+    status_or_response: Union[int, Response],
     description: Optional[str] = None,
     name: Optional[str] = None,
 ) -> NoReturn:
-    error_class = all_http_exceptions.get(status_code)
-    if error_class is None:
-        raise HTTPException(status_code, description or 'Unknown', name or 'Unknown')
+    """Raises a HTTPException with the status code or response given.
+
+    This can be used either with a status code (with optional
+    description and name) or with a Response object. The latter allows
+    for an abort (after response functions etc aren't called) with a
+    custom response.
+
+    .. code-block:: python
+
+        abort(403)
+        abort(Response("Message"))
+
+    """
+    if description is None and name is None and not isinstance(status_or_response, int):
+        raise _AbortResponseException(status_or_response)
     else:
-        error = error_class()
-        if description is not None:
-            error.description = description
-        if name is not None:
-            error.name = name
-        raise error
+        status_or_response = cast(int, status_or_response)
+        error_class = all_http_exceptions.get(status_or_response)
+        if error_class is None:
+            raise HTTPException(status_or_response, description or 'Unknown', name or 'Unknown')
+        else:
+            error = error_class()
+            if description is not None:
+                error.description = description
+            if name is not None:
+                error.name = name
+            raise error
 
 
 all_http_exceptions = {
