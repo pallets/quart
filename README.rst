@@ -40,20 +40,21 @@ A minimal Quart example is,
 
 .. code-block:: python
 
-    from quart import Quart, websocket
+   from quart import Quart, websocket
+   from time import sleep
+   app = Quart(__name__)
 
-    app = Quart(__name__)
+   @app.route('/')
+   async def hello():
+      return 'hello'
 
-    @app.route('/')
-    async def hello():
-        return 'hello'
+   @app.websocket('/ws')
+   async def ws():
+      for i in range(5):
+         await websocket.send(f'hello {i}')
+         sleep(2)
 
-    @app.websocket('/ws')
-    async def ws():
-        while True:
-            await websocket.send('hello')
-
-    app.run()
+   app.run()
 
 if the above is in a file called ``app.py`` it can be run as,
 
@@ -61,6 +62,23 @@ if the above is in a file called ``app.py`` it can be run as,
 
     $ python app.py
 
+Then run the following html file to test
+
+.. code-block:: HTML
+
+   <!DOCTYPE html>
+   <html>
+   <body>
+       <script>
+       let socket = new WebSocket("ws://localhost:5000/ws");
+       socket.onmessage = function(event) {
+           alert(`Data received: ${event.data}`);
+       };
+       </script>
+   </body>
+   </html>
+   
+   
 To deploy in a production setting see the `deployment
 <https://pgjones.gitlab.io/quart/deployment.html>`_ documentation.
 
