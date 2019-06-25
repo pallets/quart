@@ -53,11 +53,11 @@ class _WerkzeugMultidictMixin:
             return {key: self.getall(key) for key in self}  # type: ignore
 
 
-class MultiDict(_WerkzeugMultidictMixin, AIOMultiDict):  # type: ignore
+class MultiDict(_WerkzeugMultidictMixin, AIOMultiDict):
     pass
 
 
-class CIMultiDict(_WerkzeugMultidictMixin, AIOCIMultiDict):  # type: ignore
+class CIMultiDict(_WerkzeugMultidictMixin, AIOCIMultiDict):
     pass
 
 

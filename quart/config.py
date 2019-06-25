@@ -128,7 +128,7 @@ class Config(dict):
         """
         file_path = self.root_path / filename
         try:
-            spec = importlib.util.spec_from_file_location("module.name", file_path)  # type: ignore
+            spec = importlib.util.spec_from_file_location("module.name", file_path)
             if spec is None:  # Likely passed a cfg file
                 parser = ConfigParser()
                 parser.optionxform = str  # type: ignore # Prevents lowercasing of keys
