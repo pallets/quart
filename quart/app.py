@@ -1438,7 +1438,7 @@ class Quart(PackageStatic):
             response = value
 
         if status is not None:
-            response.status_code = status  # type: ignore
+            response.status_code = int(status)  # type: ignore
 
         if headers is not None:
             response.headers.update(headers)  # type: ignore
