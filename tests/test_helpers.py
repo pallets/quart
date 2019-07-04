@@ -61,7 +61,7 @@ async def test_flash(app: Quart) -> None:
     async with app.test_request_context("/"):
         await flash("message")
         assert get_flashed_messages() == ["message"]
-        assert get_flashed_messages() == []
+        assert get_flashed_messages() == ["message"]
 
 
 @pytest.mark.asyncio
@@ -70,7 +70,7 @@ async def test_flash_category(app: Quart) -> None:
         await flash("bar", "error")
         await flash("foo", "info")
         assert get_flashed_messages(with_categories=True) == [("error", "bar"), ("info", "foo")]
-        assert get_flashed_messages() == []
+        assert get_flashed_messages(with_categories=True) == [("error", "bar"), ("info", "foo")]
 
 
 @pytest.mark.asyncio
@@ -79,7 +79,7 @@ async def test_flash_category_filter(app: Quart) -> None:
         await flash("bar", "error")
         await flash("foo", "info")
         assert get_flashed_messages(category_filter=["error"]) == ["bar"]
-        assert get_flashed_messages() == []
+        assert get_flashed_messages(category_filter=["error"]) == ["bar"]
 
 
 @pytest.mark.asyncio

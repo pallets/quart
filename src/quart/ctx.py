@@ -120,6 +120,7 @@ class RequestContext(_BaseRequestWebsocketContext):
         session: Optional[Session] = None,
     ) -> None:
         super().__init__(app, request, session)
+        self.flashes = None
         self._after_request_functions: List[Callable] = []
 
     @property
