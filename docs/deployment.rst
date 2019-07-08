@@ -40,7 +40,7 @@ Server name                                          HTTP/2 Server Push Websocke
 ==================================================== ====== =========== ==================
 `Hypercorn <https://gitlab.com/pgjones/hypercorn>`_  ✓      ✓           ✓
 `Uvicorn <https://github.com/encode/uvicorn>`_       ✗      ✗           ✗
-`Daphne <https://https://github.com/django/daphne>`_ ✓      ✗           ✗
+`Daphne <https://github.com/django/daphne>`_         ✓      ✗           ✗
 ==================================================== ====== =========== ==================
 
 HTTP/2 deployment
