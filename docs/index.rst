@@ -55,6 +55,7 @@ How-To Guides
    blueprints.rst
    command_line.rst
    configuration.rst
+   event_loop.rst
    flask_extensions.rst
    flask_migration.rst
    json_encoding.rst
