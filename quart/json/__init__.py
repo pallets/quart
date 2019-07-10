@@ -29,7 +29,7 @@ def dumps(object_: Any, **kwargs: Any) -> str:
     return json.dumps(object_, **kwargs)
 
 
-def loads(object_: Any, **kwargs: Any) -> str:
+def loads(object_: str, **kwargs: Any) -> Any:
     json_decoder = JSONDecoder
     if _app_ctx_stack.top is not None:  # has_app_context requires a circular import
         json_decoder = current_app.json_decoder
