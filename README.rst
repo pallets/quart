@@ -40,20 +40,22 @@ A minimal Quart example is,
 
 .. code-block:: python
 
+	
+
 	from quart import Quart, websocket
 	from time import sleep
 	app = Quart(__name__)
-	
+
 	@app.route('/')
 	async def hello():
-	   return 'hello'
-	
+	    return 'hello'
+
 	@app.websocket('/ws')
 	async def ws():
-	   for i in range(5):
-	      await websocket.send(f'hello {i}')
-	      sleep(2)
-	
+	    for i in range(5):
+		await websocket.send(f'hello {i}')
+		sleep(2)
+
 	app.run()
 
 if the above is in a file called ``app.py`` it can be run as,
