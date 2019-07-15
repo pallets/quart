@@ -5,7 +5,7 @@ import hypothesis.strategies as strategies
 import pytest
 from hypothesis import given
 
-from quart.exceptions import MethodNotAllowed, NotFound, RedirectRequired
+from quart.exceptions import BadRequest, MethodNotAllowed, NotFound, RedirectRequired
 from quart.routing import (
     BuildError, FloatConverter, IntegerConverter, Map, Rule, StringConverter, UUIDConverter,
 )
@@ -30,8 +30,9 @@ def test_basic_matching(basic_map: Map) -> None:
 def _test_match(
         map_: Map, path: str, method: str, expected: Tuple[Rule, Dict[str, Any]],
         host: str='',
+        websocket: bool=False,
 ) -> None:
-    adapter = map_.bind_to_request('http', host, method, path, b'')
+    adapter = map_.bind_to_request(False, host, method, path, b'', websocket)
     assert adapter.match() == expected
 
 
@@ -39,7 +40,7 @@ def _test_match_redirect(
         map_: Map, path: str, method: str, redirect_path: str, query_string: bytes=b'',
         host: str='',
 ) -> None:
-    adapter = map_.bind_to_request('http', host, method, path, query_string)
+    adapter = map_.bind_to_request(False, host, method, path, query_string, False)
     with pytest.raises(RedirectRequired) as error:
         adapter.match()
     assert error.value.redirect_path == f"http://{host}{redirect_path}"
@@ -50,13 +51,13 @@ def test_no_match_error(basic_map: Map) -> None:
 
 
 def _test_no_match(map_: Map, path: str, method: str) -> None:
-    adapter = map_.bind_to_request('http', '', method, path, b'')
+    adapter = map_.bind_to_request(False, '', method, path, b'', False)
     with pytest.raises(NotFound):
         adapter.match()
 
 
 def test_method_not_allowed_error(basic_map: Map) -> None:
-    adapter = basic_map.bind_to_request('http', '', 'GET', '/', b'')
+    adapter = basic_map.bind_to_request(False, '', 'GET', '/', b'', False)
     try:
         adapter.match()
     except Exception as error:
@@ -65,7 +66,7 @@ def test_method_not_allowed_error(basic_map: Map) -> None:
 
 
 def test_basic_building(basic_map: Map) -> None:
-    adapter = basic_map.bind('http', '')
+    adapter = basic_map.bind(False, '')
     assert adapter.build('index', method='POST') == '/'
     assert adapter.build('delete_index', method='DELETE') == '/'
     assert adapter.build('leaf') == '/leaf'
@@ -75,7 +76,7 @@ def test_basic_building(basic_map: Map) -> None:
 def test_value_building() -> None:
     map_ = Map()
     map_.add(Rule('/book/<page>', {'GET'}, 'book'))
-    adapter = map_.bind('http', '')
+    adapter = map_.bind(False, '')
     assert adapter.build('book', values={'page': 1}) == '/book/1'
     assert adapter.build('book', values={'page': 1, 'line': 12}) == '/book/1?line=12'
     assert adapter.build('book', values={'page': 1, 'line': [1, 2]}) == '/book/1?line=1&line=2'
@@ -83,7 +84,7 @@ def test_value_building() -> None:
 
 def test_build_error(basic_map: Map) -> None:
     basic_map.add(Rule('/values/<int:x>/', {'GET'}, 'values'))
-    adapter = basic_map.bind('http', '')
+    adapter = basic_map.bind(False, '')
     with pytest.raises(BuildError) as error:
         adapter.build('bob')
     assert 'No endpoint found' in str(error.value)
@@ -95,9 +96,18 @@ def test_build_error(basic_map: Map) -> None:
     assert 'not one of' in str(error.value)
 
 
+def test_build_external() -> None:
+    map_ = Map()
+    map_.add(Rule('/ws/', {'GET'}, 'websocket', is_websocket=True))
+    map_.add(Rule('/', {'GET'}, 'index'))
+    adapter = map_.bind(True, 'localhost')
+    adapter.build("websocket") == "wss://localhost/ws/"
+    adapter.build("index") == "https://localhost/"
+
+
 def test_strict_slashes() -> None:
     def _test_strict_slashes(map_: Map) -> None:
-        adapter = map_.bind_to_request('http', '', 'POST', '/path/', b'')
+        adapter = map_.bind_to_request(False, '', 'POST', '/path/', b'', False)
         with pytest.raises(MethodNotAllowed):
             adapter.match()
         _test_match_redirect(map_, '/path', 'GET', '/path/')
@@ -161,7 +171,7 @@ def test_defaults() -> None:
     _test_match(map_, '/book/', 'GET', (map_.endpoints['book'][0], {'page': 1}))
     _test_match_redirect(map_, '/book/1/', 'GET', '/book/')
     _test_match(map_, '/book/2/', 'GET', (map_.endpoints['book'][1], {'page': 2}))
-    adapter = map_.bind('http', '')
+    adapter = map_.bind(False, '')
     assert adapter.build('book', method='GET') == '/book/'
     assert adapter.build('book', method='GET', values={'page': 1}) == '/book/'
     assert adapter.build('book', method='GET', values={'page': 2}) == '/book/2/'
@@ -173,6 +183,32 @@ def test_host() -> None:
     map_.add(Rule('/', {'GET'}, 'subdomain', host='quart.com'))
     _test_match(map_, '/', 'GET', (map_.endpoints['index'][0], {}))
     _test_match(map_, '/', 'GET', (map_.endpoints['subdomain'][0], {}), host='quart.com')
+
+
+def test_websocket() -> None:
+    map_ = Map()
+    map_.add(Rule("/ws/", {"GET"}, "http"))
+    map_.add(Rule("/ws/", {"GET"}, "websocket", is_websocket=True))
+    _test_match(map_, "/ws/", "GET", (map_.endpoints["http"][0], {}))
+    _test_match(map_, "/ws/", "GET", (map_.endpoints["websocket"][0], {}), websocket=True)
+
+
+@pytest.mark.parametrize("websocket", [True, False])
+def test_websocket_bad_request(websocket: bool) -> None:
+    map_ = Map()
+    map_.add(Rule("/ws/", {"GET"}, "websocket", is_websocket=websocket))
+    adapter = map_.bind_to_request(False, "", "GET", "/ws/", b"", not websocket)
+    with pytest.raises(BadRequest):
+        adapter.match()
+
+
+def test_websocket_and_method_not_allowed() -> None:
+    map_ = Map()
+    map_.add(Rule("/ws/", {"GET"}, "websocket", is_websocket=True))
+    map_.add(Rule("/ws/", {"POST"}, "post"))
+    adapter = map_.bind_to_request(False, "", "PUT", "/ws/", b"", False)
+    with pytest.raises(MethodNotAllowed):
+        adapter.match()
 
 
 def test_any_converter() -> None:

@@ -7,7 +7,7 @@ from quart.app import Quart
 from quart.ctx import (
     _AppCtxGlobals, after_this_request, AppContext, copy_current_app_context,
     copy_current_request_context, copy_current_websocket_context, has_app_context,
-    has_request_context, RequestContext, WebsocketContext,
+    has_request_context, RequestContext,
 )
 from quart.datastructures import CIMultiDict
 from quart.exceptions import BadRequest, MethodNotAllowed, NotFound, RedirectRequired
@@ -49,39 +49,10 @@ def test_request_context_matching_error(
     assert isinstance(request.routing_exception, exception_type)  # type: ignore
 
 
-@pytest.mark.parametrize(
-    'request_factory, context_class, is_websocket',
-    [
-        (
-            lambda method, path, headers: Request(
-                method, 'http', path, b'', headers, send_push_promise=no_op_push,
-            ),
-            RequestContext, True,
-        ),
-        (
-            lambda _, path, headers: Websocket(
-                path, b'', 'ws', headers, [], Mock(), Mock(), lambda: None,
-            ),
-            WebsocketContext, False,
-        ),
-    ],
-)
-def test_bad_request_if_websocket_missmatch(
-        request_factory: object, context_class: object, is_websocket: bool,
-) -> None:
-    app = Quart(__name__)
-    url_adapter = Mock()
-    url_adapter.match.return_value = Rule('/', {'GET'}, 'index', is_websocket=is_websocket), {}
-    app.create_url_adapter = lambda *_: url_adapter  # type: ignore
-    request_websocket = request_factory('GET', '/', CIMultiDict())  # type: ignore
-    context_class(app, request_websocket)  # type: ignore
-    assert isinstance(request_websocket.routing_exception, BadRequest)
-
-
 def test_bad_request_if_websocket_route() -> None:
     app = Quart(__name__)
     url_adapter = Mock()
-    url_adapter.match.return_value = Rule('/', {'GET'}, 'index', is_websocket=True), {}
+    url_adapter.match.side_effect = BadRequest()
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
     request = Request('GET', 'http', '/', b'', CIMultiDict(), send_push_promise=no_op_push)
     RequestContext(app, request)

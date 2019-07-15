@@ -43,7 +43,7 @@ class _BaseRequestWebsocketContext:
         """
         try:
             self.request_websocket.url_rule, self.request_websocket.view_args = self.url_adapter.match()  # noqa
-        except (NotFound, MethodNotAllowed, RedirectRequired) as error:
+        except (BadRequest, NotFound, MethodNotAllowed, RedirectRequired) as error:
             self.request_websocket.routing_exception = error
 
     async def __aenter__(self) -> '_BaseRequestWebsocketContext':
@@ -81,11 +81,6 @@ class RequestContext(_BaseRequestWebsocketContext):
     def request(self) -> Request:
         return cast(Request, self.request_websocket)
 
-    def match_request(self) -> None:
-        super().match_request()
-        if self.request.routing_exception is None and self.request.url_rule.is_websocket:
-            self.request.routing_exception = BadRequest()
-
     async def __aenter__(self) -> 'RequestContext':
         await super().__aenter__()
         _request_ctx_stack.push(self)
@@ -116,11 +111,6 @@ class WebsocketContext(_BaseRequestWebsocketContext):
     @property
     def websocket(self) -> Websocket:
         return cast(Websocket, self.request_websocket)
-
-    def match_request(self) -> None:
-        super().match_request()
-        if self.websocket.routing_exception is None and not self.websocket.url_rule.is_websocket:
-            self.websocket.routing_exception = BadRequest()
 
     async def __aenter__(self) -> 'WebsocketContext':
         await super().__aenter__()

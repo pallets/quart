@@ -99,3 +99,24 @@ with a frame marker indicating which. The
 either ``bytes`` or ``str`` depending on what the client sent i.e. if
 the client sent a string it will be returned from the method. Equally
 you can send bytes or strings.
+
+Mixing websocket and HTTP routes
+--------------------------------
+
+Quart allows for a route to be defined both as for websockets and for
+http requests. This allows responses to be sent depending upon the
+type of request (WebSocket upgrade or not). As so,
+
+.. code-block:: python
+
+    @app.route("/ws")
+    async def http():
+        return "A HTTP request"
+
+    @app.route("/ws")
+    async def ws():
+        ...  # Use the WebSocket
+
+If the http definition is absent Quart will respond with a 400, Bad
+Request, response for requests to the missing route (rather than
+a 404).

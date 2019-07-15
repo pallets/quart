@@ -9,7 +9,7 @@ from urllib.parse import urlencode, urlunsplit
 
 from sortedcontainers import SortedListWithKey
 
-from .exceptions import MethodNotAllowed, NotFound, RedirectRequired
+from .exceptions import BadRequest, MethodNotAllowed, NotFound, RedirectRequired
 
 
 ROUTE_VAR_RE = re.compile(r'''  # noqa
@@ -197,16 +197,17 @@ class Map:
 
     def bind_to_request(
             self,
-            scheme: str,
+            secure: bool,
             server_name: str,
             method: str,
             path: str,
             query_string: bytes,
+            websocket: bool,
     ) -> 'MapAdapter':
-        return MapAdapter(self, scheme, server_name, method, path, query_string)
+        return MapAdapter(self, secure, server_name, method, path, query_string, websocket)
 
-    def bind(self, scheme: str, server_name: str) -> 'MapAdapter':
-        return MapAdapter(self, scheme, server_name)
+    def bind(self, secure: bool, server_name: str) -> 'MapAdapter':
+        return MapAdapter(self, secure, server_name)
 
     def iter_rules(self, endpoint: Optional[str]=None) -> Iterator['Rule']:
         if endpoint is not None:
@@ -219,14 +220,16 @@ class MapAdapter:
     def __init__(
             self,
             map: Map,
-            scheme: str,
+            secure: bool,
             server_name: str,
             method: Optional[str]=None,
             path: Optional[str]=None,
             query_string: Optional[bytes]=None,
+            websocket: bool=False,
     ) -> None:
         self.map = map
-        self.scheme = scheme
+        self.websocket = websocket
+        self.secure = secure
         self.server_name = server_name
         self.path = f"/{path.lstrip('/')}" if path is not None else path
         self.method = method
@@ -246,7 +249,8 @@ class MapAdapter:
             if rule.buildable(values, method=method):
                 path = rule.build(**values)
                 if external:
-                    scheme = scheme or self.scheme
+                    if scheme is None:
+                        scheme = self._build_scheme(rule)
                     host = rule.host or self.server_name
                     return f"{scheme}://{host}{path}"
                 else:
@@ -255,6 +259,7 @@ class MapAdapter:
 
     def match(self) -> Tuple['Rule', Dict[str, Any]]:
         allowed_methods: Set[str] = set()
+        websocket_missmatch = False
         for rule, variables, needs_slash in self._matches():
             if self.method in rule.methods:
                 if needs_slash:
@@ -265,9 +270,14 @@ class MapAdapter:
                     if potential_rule.provides_defaults_for(rule, **variables):
                         raise RedirectRequired(self._make_redirect_url(potential_rule, variables))
 
-                return rule, variables
+                if self.websocket == rule.is_websocket:
+                    return rule, variables
+                else:
+                    websocket_missmatch = True
             else:
                 allowed_methods.update(rule.methods)
+        if websocket_missmatch:
+            raise BadRequest()
         if allowed_methods:
             raise MethodNotAllowed(allowed_methods=allowed_methods)
         raise NotFound()
@@ -275,7 +285,8 @@ class MapAdapter:
     def _make_redirect_url(self, rule: 'Rule', variables: Dict[str, Any]) -> str:
         path = rule.build(**variables)
         suffix = self.query_string.decode('ascii')
-        return urlunsplit((self.scheme, self.server_name, path, suffix, ''))
+        scheme = self._build_scheme(rule)
+        return urlunsplit((scheme, self.server_name, path, suffix, ''))
 
     def allowed_methods(self) -> Set[str]:
         allowed_methods: Set[str] = set()
@@ -292,6 +303,15 @@ class MapAdapter:
             variables, needs_slash = rule.match(full_path)
             if variables is not None:
                 yield rule, variables, needs_slash
+
+    def _build_scheme(self, rule: "Rule") -> str:
+        if rule.is_websocket:
+            scheme = "ws"
+        else:
+            scheme = "http"
+        if self.secure:
+            scheme = f"{scheme}s"
+        return scheme
 
 
 class Rule:
@@ -330,7 +350,10 @@ class Rule:
         self.provide_automatic_options = provide_automatic_options
 
     def __repr__(self) -> str:
-        return f"Rule({self.rule}, {self.methods}, {self.endpoint}, {self.strict_slashes})"
+        return (
+            f"Rule({self.rule}, {self.methods}, {self.endpoint}, "
+            f"{self.strict_slashes}, {self.is_websocket})"
+        )
 
     def match(self, path: str) -> Tuple[Optional[Dict[str, Any]], bool]:
         """Check if the path matches this Rule.

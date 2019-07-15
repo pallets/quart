@@ -308,12 +308,17 @@ class Quart(PackageStatic):
         if request is not None:
             host = request.host
             return self.url_map.bind_to_request(
-                request.scheme, host, request.method, request.path, request.query_string,
+                request.is_secure,
+                host,
+                request.method,
+                request.path,
+                request.query_string,
+                isinstance(request, self.websocket_class),
             )
 
         if self.config['SERVER_NAME'] is not None:
             return self.url_map.bind(
-                self.config['PREFERRED_URL_SCHEME'], self.config['SERVER_NAME'],
+                self.config['PREFER_SECURE_URLS'], self.config['SERVER_NAME'],
             )
         return None
 
