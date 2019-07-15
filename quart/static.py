@@ -35,7 +35,7 @@ class PackageStatic:
 
         self._static_folder: Optional[Path] = None
         self._static_url_path: Optional[str] = None
-        self.static_folder = static_folder
+        self.static_folder = static_folder  # type: ignore
         self.static_url_path = static_url_path
 
     @property

@@ -44,8 +44,8 @@ def create_cookie(
     cookie = SimpleCookie()
     cookie[key] = value
     cookie[key]['path'] = path
-    cookie[key]['httponly'] = httponly  # type: ignore
-    cookie[key]['secure'] = secure  # type: ignore
+    cookie[key]['httponly'] = httponly
+    cookie[key]['secure'] = secure
     if isinstance(max_age, timedelta):
         cookie[key]['max-age'] = f"{max_age.total_seconds():d}"
     if isinstance(max_age, int):

@@ -4,7 +4,7 @@
 # created.
 
 try:
-    from werkzeug.exceptions import HTTPException  # type: ignore
+    from werkzeug.exceptions import HTTPException
 except ImportError:
     class HTTPException:  # type: ignore
         pass
