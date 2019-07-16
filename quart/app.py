@@ -1378,13 +1378,13 @@ class Quart(PackageStatic):
 
         config = HyperConfig()
         config.access_log_format = "%(h)s %(r)s %(s)s %(b)s %(D)s"
-        config.access_logger = create_serving_logger()  # type: ignore
+        config.accesslog = create_serving_logger()
         config.bind = [f"{host}:{port}"]
         config.ca_certs = ca_certs
         config.certfile = certfile
         if debug is not None:
             self.debug = debug
-        config.error_logger = config.access_logger  # type: ignore
+        config.errorlog = config.accesslog
         config.keyfile = keyfile
         config.use_reloader = use_reloader
 
