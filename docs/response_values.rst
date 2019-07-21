@@ -19,8 +19,7 @@ str
     return render_template("index.html")
 
 A solitary string return indicates that you intend to return a string
-mimetype ``text/html`` and a specified Content-Length header. The
-string will be encoded using the default
+mimetype ``text/html``. The string will be encoded using the default
 :attr:`~quart.wrappers._BaseRequestResponse.charset`.
 
 dict
