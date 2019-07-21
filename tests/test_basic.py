@@ -15,7 +15,12 @@ def app() -> Quart:
     @app.route('/json/', methods=['POST'])
     async def json() -> ResponseReturnValue:
         data = await request.get_json()
-        return jsonify(data['value'])
+        return jsonify(data)
+
+    @app.route('/implicit_json/', methods=['POST'])
+    async def implicit_json() -> ResponseReturnValue:
+        data = await request.get_json()
+        return data
 
     @app.route('/error/')
     async def error() -> ResponseReturnValue:
@@ -67,7 +72,15 @@ async def test_json(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.post('/json/', json={'value': 'json'})
     assert response.status_code == 200
-    assert b'json' in (await response.get_data())  # type: ignore
+    assert b'{"value":"json"}' == (await response.get_data())  # type: ignore
+
+
+@pytest.mark.asyncio
+async def test_implicit_json(app: Quart) -> None:
+    test_client = app.test_client()
+    response = await test_client.post('/implicit_json/', json={'value': 'json'})
+    assert response.status_code == 200
+    assert b'{"value":"json"}' == (await response.get_data())  # type: ignore
 
 
 @pytest.mark.asyncio

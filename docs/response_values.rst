@@ -23,6 +23,17 @@ mimetype ``text/html`` and a specified Content-Length header. The
 string will be encoded using the default
 :attr:`~quart.wrappers._BaseRequestResponse.charset`.
 
+dict
+''''
+
+.. code-block:: python
+
+    return {"a": "b"}
+
+A solitary dict return indicates that you intend to return json,
+``application/json``. The jsonify function will be used to encode the
+dictionary.
+
 Response
 ''''''''
 

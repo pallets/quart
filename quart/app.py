@@ -31,7 +31,7 @@ from .helpers import (
     _endpoint_from_view_func, find_package, get_debug_flag, get_env,
     get_flashed_messages, url_for,
 )
-from .json import JSONDecoder, JSONEncoder, tojson_filter
+from .json import JSONDecoder, JSONEncoder, jsonify, tojson_filter
 from .logging import create_logger, create_serving_logger
 from .routing import Map, MapAdapter, Rule
 from .sessions import SecureCookieSession, SecureCookieSessionInterface, Session
@@ -1491,7 +1491,10 @@ class Quart(PackageStatic):
             status = status_or_headers
 
         if not isinstance(value, Response):
-            response = self.response_class(value)  # type: ignore
+            if isinstance(value, dict):
+                response = jsonify(value)
+            else:
+                response = self.response_class(value)  # type: ignore
         else:
             response = value
 
