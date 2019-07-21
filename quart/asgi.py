@@ -40,7 +40,7 @@ class ASGIHTTPConnection:
         headers = CIMultiDict()
         headers['Remote-Addr'] = (self.scope.get('client') or ['<local>'])[0]
         for name, value in self.scope['headers']:
-            headers.add(name.decode().title(), value.decode())
+            headers.add(name.decode("latin1").title(), value.decode("latin1"))
         if self.scope['http_version'] < '1.1':
             headers.setdefault('Host', self.app.config['SERVER_NAME'] or '')
 
@@ -120,7 +120,7 @@ class ASGIWebsocketConnection:
         headers = CIMultiDict()
         headers['Remote-Addr'] = (self.scope.get('client') or ['<local>'])[0]
         for name, value in self.scope['headers']:
-            headers.add(name.decode().title(), value.decode())
+            headers.add(name.decode("latin1").title(), value.decode("latin1"))
 
         path = self.scope["path"]
         path = path if path[0] == "/" else urlparse(path).path
