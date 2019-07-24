@@ -1,11 +1,11 @@
 import asyncio
 import warnings
 from functools import partial
-from typing import Any, AnyStr, Callable, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Any, AnyStr, Callable, cast, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
 from urllib.parse import urlparse
 
 from .datastructures import CIMultiDict, Headers
-from .wrappers import Request, Response, Websocket  # noqa: F401
+from .wrappers import Request, Response, sentinel, Websocket  # noqa: F401
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa: F401
@@ -57,8 +57,12 @@ class ASGIHTTPConnection:
 
     async def handle_request(self, request: Request, send: Callable) -> None:
         response = await self.app.handle_request(request)
+        if response.timeout != sentinel:
+            timeout = cast(Optional[float], response.timeout)
+        else:
+            timeout = self.app.config["RESPONSE_TIMEOUT"]
         try:
-            await asyncio.wait_for(self._send_response(send, response), timeout=response.timeout)
+            await asyncio.wait_for(self._send_response(send, response), timeout=timeout)
         except asyncio.TimeoutError:
             pass
 

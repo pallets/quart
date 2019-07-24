@@ -1498,9 +1498,6 @@ class Quart(PackageStatic):
         else:
             response = value
 
-        if response.timeout is None:
-            response.timeout = self.config['RESPONSE_TIMEOUT']
-
         if status is not None:
             response.status_code = int(status)  # type: ignore
 

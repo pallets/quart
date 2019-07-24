@@ -25,6 +25,8 @@ from ..utils import create_cookie, file_path_to_path
 if TYPE_CHECKING:
     from ..routing import Rule  # noqa
 
+sentinel = object()
+
 
 class ResponseBody(ABC):
     """Base class wrapper for response body data.
@@ -218,8 +220,6 @@ class Response(_BaseRequestResponse, JSONMixin):
             headers: Optional[Union[dict, CIMultiDict, Headers]]=None,
             mimetype: Optional[str]=None,
             content_type: Optional[str]=None,
-            *,
-            timeout: Optional[int]=None,
     ) -> None:
         """Create a response object.
 
@@ -236,14 +236,12 @@ class Response(_BaseRequestResponse, JSONMixin):
             headers: Headers to attach to the response.
             mimetype: Mimetype of the response.
             content_type: Content-Type header value.
-            timeout: Optional argument to specify timeout when sending
-                response data.
 
         Attributes:
             response: An iterable of the response bytes-data.
         """
         super().__init__(headers)
-        self.timeout = timeout
+        self.timeout: Union[int, None, object] = sentinel
 
         if status is None:
             status = self.default_status
