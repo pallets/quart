@@ -1,4 +1,5 @@
 import asyncio
+from typing import cast
 from unittest.mock import Mock
 
 import pytest
@@ -207,7 +208,7 @@ async def test_copy_current_websocket_context() -> None:
     test_client = app.test_client()
     async with test_client.websocket('/') as test_websocket:
         data = await test_websocket.receive()
-    assert data == b'/'
+    assert cast(bytes, data) == b'/'
 
 
 def test_copy_current_websocket_context_error() -> None:

@@ -32,11 +32,11 @@ class _TestingWebsocket:
         self.accepted = False
         self.task: Optional[asyncio.Future] = None
 
-    async def receive(self) -> bytes:
+    async def receive(self) -> AnyStr:
         await self._check_for_response()
         return await self.local_queue.get()
 
-    async def send(self, data: bytes) -> None:
+    async def send(self, data: AnyStr) -> None:
         await self._check_for_response()
         await self.remote_queue.put(data)
 

@@ -1,3 +1,5 @@
+from typing import cast
+
 import pytest
 
 from quart import abort, jsonify, Quart, request, Response, ResponseReturnValue, websocket
@@ -140,7 +142,7 @@ async def test_websocket(app: Quart) -> None:
     async with test_client.websocket('/ws/') as test_websocket:
         await test_websocket.send(data)
         result = await test_websocket.receive()
-    assert result == data
+    assert cast(bytes, result) == data
 
 
 @pytest.mark.asyncio

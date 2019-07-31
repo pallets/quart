@@ -1,3 +1,5 @@
+from typing import cast
+
 import pytest
 
 from quart import (
@@ -36,7 +38,7 @@ async def test_blueprint_websocket() -> None:
     test_client = app.test_client()
     async with test_client.websocket('/ws/') as test_websocket:
         result = await test_websocket.receive()
-    assert result == b'blueprint'
+    assert cast(bytes, result) == b'blueprint'
 
 
 @pytest.mark.asyncio
