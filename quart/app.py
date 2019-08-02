@@ -42,7 +42,10 @@ from .signals import (
 )
 from .static import PackageStatic
 from .templating import _default_template_context_processor, DispatchingJinjaLoader, Environment
-from .testing import make_test_headers_path_and_query_string, no_op_push, QuartClient
+from .testing import (
+    make_test_body_with_headers, make_test_headers_path_and_query_string, no_op_push, QuartClient,
+    sentinel,
+)
 from .typing import FilePath, ResponseReturnValue
 from .utils import ensure_coroutine, file_path_to_path
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
@@ -1410,6 +1413,9 @@ class Quart(PackageStatic):
             query_string: Optional[dict]=None,
             scheme: str='http',
             send_push_promise: Callable[[str, Headers], Awaitable[None]]=no_op_push,
+            data: Optional[AnyStr]=None,
+            form: Optional[dict]=None,
+            json: Any=sentinel,
     ) -> RequestContext:
         """Create a request context for testing purposes.
 
@@ -1433,10 +1439,12 @@ class Quart(PackageStatic):
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self, path, headers, query_string,
         )
+        request_body, body_headers = make_test_body_with_headers(data, form, json)
+        headers.update(**body_headers)
         request = self.request_class(
             method, scheme, path, query_string_bytes, headers, send_push_promise=send_push_promise,
         )
-        request.body.set_result(b'')
+        request.body.set_result(request_body)
         return self.request_context(request)
 
     async def try_trigger_before_first_request_functions(self) -> None:

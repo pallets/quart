@@ -87,6 +87,41 @@ def make_test_headers_path_and_query_string(
     return headers, unquote(path), query_string_bytes
 
 
+def make_test_body_with_headers(
+    data: Optional[AnyStr]=None,
+    form: Optional[dict]=None,
+    json: Any=sentinel,
+) -> Tuple[bytes, CIMultiDict]:
+    """Make the body bytes with associated headers.
+
+    Arguments:
+        data: Raw data to send in the request body.
+        form: Data to send form encoded in the request body.
+        json: Data to send json encoded in the request body.
+    """
+    if [json is not sentinel, form is not None, data is not None].count(True) > 1:
+        raise ValueError("Quart test args 'json', 'form', and 'data' are mutually exclusive")
+
+    request_data = b''
+
+    headers = CIMultiDict()
+
+    if isinstance(data, str):
+        request_data = data.encode('utf-8')
+    elif isinstance(data, bytes):
+        request_data = data
+
+    if json is not sentinel:
+        request_data = dumps(json).encode('utf-8')
+        headers['Content-Type'] = 'application/json'
+
+    if form is not None:
+        request_data = urlencode(form).encode('utf-8')
+        headers['Content-Type'] = 'application/x-www-form-urlencoded'
+
+    return request_data, headers
+
+
 async def no_op_push(path: str, headers: Headers) -> None:
     """A push promise sender that does nothing.
 
@@ -120,7 +155,7 @@ class QuartClient:
             *,
             method: str='GET',
             headers: Optional[Union[dict, CIMultiDict]]=None,
-            data: AnyStr=None,
+            data: Optional[AnyStr]=None,
             form: Optional[dict]=None,
             query_string: Optional[dict]=None,
             json: Any=sentinel,
@@ -130,34 +165,26 @@ class QuartClient:
         """Open a request to the app associated with this client.
 
         Arguments:
-            path
+            path:
                 The path to request. If the query_string argument is not
                 defined this argument will be partitioned on a '?' with the
                 following part being considered the query_string.
-
-            method
+            method:
                 The method to make the request with, defaults to 'GET'.
-
-            headers
+            headers:
                 Headers to include in the request.
-
-            data
+            data:
                 Raw data to send in the request body.
-
-            form
+            form:
                 Data to send form encoded in the request body.
-
-            query_string
+            query_string:
                 To send as a dictionary, alternatively the query_string can be
                 determined from the path.
-
-            json
+            json:
                 Data to send json encoded in the request body.
-
-            scheme
+            scheme:
                 The scheme to use in the request, default http.
-
-            follow_redirects
+            follow_redirects:
                 Whether or not a redirect response should be followed, defaults
                 to False.
 
@@ -167,24 +194,8 @@ class QuartClient:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self.app, path, headers, query_string,
         )
-
-        if [json is not sentinel, form is not None, data is not None].count(True) > 1:
-            raise ValueError("Quart test args 'json', 'form', and 'data' are mutually exclusive")
-
-        request_data = b''
-
-        if isinstance(data, str):
-            request_data = data.encode('utf-8')
-        elif isinstance(data, bytes):
-            request_data = data
-
-        if json is not sentinel:
-            request_data = dumps(json).encode('utf-8')
-            headers['Content-Type'] = 'application/json'
-
-        if form is not None:
-            request_data = urlencode(form).encode('utf-8')
-            headers['Content-Type'] = 'application/x-www-form-urlencoded'
+        request_data, body_headers = make_test_body_with_headers(data, form, json)
+        headers.update(**body_headers)
 
         if self.cookie_jar is not None:
             headers.add('Cookie', self.cookie_jar.output(header=''))

@@ -34,11 +34,14 @@ def _patch_loop() -> None:
     def _sync_wait(self, future):  # type: ignore
         preserved_ready = list(self._ready)
         self._ready.clear()
+        current_task = asyncio.tasks._current_tasks.get(self)
         future = asyncio.tasks.ensure_future(future, loop=self)
         while not future.done() and not future.cancelled():
             self._run_once()
             if self._stopping:
                 break
+            if current_task._must_cancel:
+                future.cancel()
         self._ready.extendleft(preserved_ready)
         return future.result()
 

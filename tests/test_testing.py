@@ -5,7 +5,9 @@ import pytest
 from quart import jsonify, Quart, redirect, request, Response, session
 from quart.datastructures import CIMultiDict
 from quart.exceptions import BadRequest
-from quart.testing import make_test_headers_path_and_query_string, QuartClient as Client
+from quart.testing import (
+    make_test_body_with_headers, make_test_headers_path_and_query_string, QuartClient as Client,
+)
 
 
 @pytest.mark.asyncio
@@ -54,6 +56,29 @@ def test_build_headers_path_and_query_string(
 def test_build_headers_path_and_query_string_with_query_string_error() -> None:
     with pytest.raises(ValueError):
         make_test_headers_path_and_query_string(Quart(__name__), '/?a=b', None, {'c': 'd'})
+
+
+def test_make_test_body_with_headers_data() -> None:
+    body, headers = make_test_body_with_headers(data="data")
+    assert body == b"data"
+    assert headers == CIMultiDict()
+
+
+def test_make_test_body_with_headers_form() -> None:
+    body, headers = make_test_body_with_headers(form={"a": "b"})
+    assert body == b"a=b"
+    assert headers == CIMultiDict({"Content-Type": "application/x-www-form-urlencoded"})
+
+
+def test_make_test_body_with_headers_json() -> None:
+    body, headers = make_test_body_with_headers(json={"a": "b"})
+    assert body == b'{"a": "b"}'
+    assert headers == CIMultiDict({"Content-Type": "application/json"})
+
+
+def test_make_test_body_with_headers_argument_error() -> None:
+    with pytest.raises(ValueError):
+        make_test_body_with_headers(json={}, data="", form={})
 
 
 @pytest.mark.parametrize(
