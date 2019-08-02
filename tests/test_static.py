@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from io import BytesIO
 from pathlib import Path
 from typing import List
 
@@ -43,6 +44,23 @@ async def test_send_file_path(tmpdir: LocalPath) -> None:
     async with app.app_context():
         response = await send_file(Path(file_.realpath()))
     assert (await response.get_data(raw=True)) == file_.read_binary()
+
+
+@pytest.mark.asyncio
+async def test_send_file_bytes_io() -> None:
+    app = Quart(__name__)
+    io_stream = BytesIO(b"something")
+    async with app.app_context():
+        response = await send_file(io_stream, mimetype="text/plain")
+    assert (await response.get_data(raw=True)) == b"something"  # type: ignore
+
+
+@pytest.mark.asyncio
+async def test_send_file_no_mimetype() -> None:
+    app = Quart(__name__)
+    async with app.app_context():
+        with pytest.raises(ValueError):
+            await send_file(BytesIO(b"something"))
 
 
 @pytest.mark.asyncio

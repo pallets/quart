@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from http import HTTPStatus
+from io import BytesIO
 from pathlib import Path
 from typing import Any, AsyncGenerator
 
@@ -10,7 +11,7 @@ from py._path.local import LocalPath
 
 from quart.datastructures import ContentRange, Range, RangeSet
 from quart.exceptions import RequestRangeNotSatisfiable
-from quart.wrappers.response import DataBody, FileBody, IterableBody, Response
+from quart.wrappers.response import DataBody, FileBody, IOBody, IterableBody, Response
 
 
 @pytest.mark.asyncio
@@ -75,6 +76,22 @@ async def test_file_wrapper_sequence_conversion(tmpdir: LocalPath) -> None:
     file_ = tmpdir.join('file_wrapper')
     file_.write('abcdef')
     wrapper = FileBody(Path(file_.realpath()), buffer_size=3)
+    assert (await wrapper.convert_to_sequence()) == b"abcdef"
+
+
+@pytest.mark.asyncio
+async def test_io_wrapper() -> None:
+    wrapper = IOBody(BytesIO(b"abcdef"), buffer_size=3)
+    results = []
+    async with wrapper as response:
+        async for data in response:
+            results.append(data)
+    assert results == [b"abc", b"def"]
+
+
+@pytest.mark.asyncio
+async def test_io_wrapper_sequence_conversion() -> None:
+    wrapper = IOBody(BytesIO(b"abcdef"), buffer_size=3)
     assert (await wrapper.convert_to_sequence()) == b"abcdef"
 
 

@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from hashlib import md5
 from inspect import isasyncgen
+from io import BytesIO
 from os import PathLike
 from types import TracebackType
 from typing import (
@@ -188,6 +189,69 @@ class FileBody(ResponseBody):
         return self.size
 
 
+class IOBody(ResponseBody):
+    """Provides an async file accessor with range setting.
+
+    The :attr:`Response.response` attribute must be async-iterable and
+    yield bytes, which this wrapper does for a file. In addition it
+    allows a range to be set on the file, thereby supporting
+    conditional requests.
+
+    Attributes:
+        buffer_size: Size in bytes to load per iteration.
+    """
+    buffer_size = 8192
+
+    def __init__(
+            self, io_stream: BytesIO, *, buffer_size: Optional[int] = None,
+    ) -> None:
+        self.io_stream = io_stream
+        self.size = io_stream.getbuffer().nbytes  # type: ignore
+        self.begin = 0
+        self.end = self.size
+        if buffer_size is not None:
+            self.buffer_size = buffer_size
+
+    async def __aenter__(self) -> "IOBody":
+        self.io_stream.seek(self.begin)
+        return self
+
+    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+        return None
+
+    def __aiter__(self) -> "IOBody":
+        return self
+
+    async def __anext__(self) -> bytes:
+        current = self.io_stream.tell()
+        if current >= self.end:
+            raise StopAsyncIteration()
+        read_size = min(self.buffer_size, self.end - current)
+        chunk = self.io_stream.read(read_size)
+
+        if chunk:
+            return chunk
+        else:
+            raise StopAsyncIteration()
+
+    async def convert_to_sequence(self) -> bytes:
+        result = bytearray()
+        async with self as response:
+            async for data in response:
+                result.extend(data)
+        return bytes(result)
+
+    async def make_conditional(
+        self, begin: int, end: Optional[int], max_partial_size: Optional[int]=None,
+    ) -> int:
+        self.begin = begin
+        self.end = self.size if end is None else end
+        if max_partial_size is not None:
+            self.end = min(self.begin + max_partial_size, self.end)
+        _raise_if_invalid_range(self.begin, self.end, self.size)
+        return self.size
+
+
 class Response(_BaseRequestResponse, JSONMixin):
     """This class represents a response.
 
@@ -211,6 +275,7 @@ class Response(_BaseRequestResponse, JSONMixin):
     data_body_class = DataBody
     file_body_class = FileBody
     implicit_sequence_conversion = True
+    io_body_class = IOBody
     iterable_body_class = IterableBody
 
     def __init__(

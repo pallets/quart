@@ -3,8 +3,9 @@ import os
 import pkgutil
 import sys
 from datetime import datetime, timedelta
+from io import BytesIO
 from pathlib import Path
-from typing import AnyStr, IO, Optional
+from typing import AnyStr, IO, Optional, Union
 from zlib import adler32
 
 from jinja2 import FileSystemLoader
@@ -14,6 +15,7 @@ from .globals import current_app, request
 from .typing import FilePath
 from .utils import file_path_to_path
 from .wrappers import Response
+from .wrappers.response import ResponseBody
 
 DEFAULT_MIMETYPE = 'application/octet-stream'
 
@@ -171,7 +173,7 @@ async def send_from_directory(
 
 
 async def send_file(
-        filename: FilePath,
+        filename_or_io: Union[FilePath, BytesIO],
         mimetype: Optional[str]=None,
         as_attachment: bool=False,
         attachment_filename: Optional[str]=None,
@@ -183,7 +185,7 @@ async def send_file(
     """Return a Reponse to send the filename given.
 
     Arguments:
-        filename: The filename (path) to send, remember to use
+        filename_or_io: The filename (path) to send, remember to use
             :func:`safe_join`.
         mimetype: Mimetype to use, by default it will be guessed or
             revert to the DEFAULT_MIMETYPE.
@@ -196,12 +198,31 @@ async def send_file(
         cache_timeout: Time in seconds for the response to be cached.
 
     """
-    file_path = file_path_to_path(filename)
-    if attachment_filename is None:
-        attachment_filename = file_path.name
-    if mimetype is None:
+    file_body: ResponseBody
+    etag: Optional[str] = None
+    if isinstance(filename_or_io, BytesIO):
+        file_body = current_app.response_class.io_body_class(filename_or_io)
+    else:
+        file_path = file_path_to_path(filename_or_io)
+        if attachment_filename is None:
+            attachment_filename = file_path.name
+        file_body = current_app.response_class.file_body_class(file_path)
+        if last_modified is None:
+            last_modified = datetime.fromtimestamp(file_path.stat().st_mtime)
+        if cache_timeout is None:
+            cache_timeout = current_app.get_send_file_max_age(file_path)
+        etag = "{}-{}-{}".format(
+            file_path.stat().st_mtime, file_path.stat().st_size,
+            adler32(bytes(file_path)),
+        )
+
+    if mimetype is None and attachment_filename is not None:
         mimetype = mimetypes.guess_type(attachment_filename)[0] or DEFAULT_MIMETYPE
-    file_body = current_app.response_class.file_body_class(file_path)
+    if mimetype is None:
+        raise ValueError(
+            "The mime type cannot be infered, please set it manually via the mimetype argument."
+        )
+
     response = current_app.response_class(file_body, mimetype=mimetype)
 
     if as_attachment:
@@ -209,22 +230,14 @@ async def send_file(
 
     if last_modified is not None:
         response.last_modified = last_modified
-    else:
-        response.last_modified = datetime.fromtimestamp(file_path.stat().st_mtime)
 
     response.cache_control.public = True
-    cache_timeout = cache_timeout or current_app.get_send_file_max_age(file_path)
     if cache_timeout is not None:
         response.cache_control.max_age = cache_timeout
         response.expires = datetime.utcnow() + timedelta(seconds=cache_timeout)
 
-    if add_etags:
-        response.set_etag(
-            '{}-{}-{}'.format(
-                file_path.stat().st_mtime, file_path.stat().st_size,
-                adler32(bytes(file_path)),
-            ),
-        )
+    if add_etags and etag is not None:
+        response.set_etag(etag)
 
     if conditional:
         await response.make_conditional(request.range)
