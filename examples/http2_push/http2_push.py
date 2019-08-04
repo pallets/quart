@@ -1,6 +1,6 @@
 from collections import namedtuple
 from io import BytesIO
-import os
+from pathlib import Path
 
 import click
 from PIL import Image
@@ -90,8 +90,8 @@ async def tile(tile_number):
 @click.option('--image_name', default='burmese_python.jpg')
 @click.option('--max_tiles', default=8)
 def run(image_name, max_tiles):
-    base_path = os.path.dirname(__file__)
-    path_to_image = os.path.join(base_path, 'static', image_name)
+    base_path = Path(__file__).parent
+    path_to_image = base_path / 'static' / image_name
     app.img = Image.open(path_to_image)
     app.max_tiles = max_tiles
 

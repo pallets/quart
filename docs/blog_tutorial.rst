@@ -118,10 +118,11 @@ command. This is achieved via the following ``blog.py`` additions,
 .. code-block:: python
    :caption: blog.py
 
+    from pathlib import Path
     from sqlite3 import dbapi2 as sqlite3
 
     app.config.update({
-      'DATABASE': os.path.join(app.root_path, 'blog.db'),
+      'DATABASE': app.root_path / 'blog.db',
     })
 
     def connect_db():
@@ -133,7 +134,7 @@ command. This is achieved via the following ``blog.py`` additions,
     def init_db():
         """Create an empty database."""
         db = connect_db()
-        with open(os.path.join(os.path.dirname(__file__), 'schema.sql'), mode='r') as file_:
+        with open(Path(__file__).parent / 'schema.sql', mode='r') as file_:
             db.cursor().executescript(file_.read())
         db.commit()
 
