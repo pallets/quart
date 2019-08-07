@@ -411,6 +411,7 @@ class Response(_BaseRequestResponse, JSONMixin):
             domain: Optional[str]=None,
             secure: bool=False,
             httponly: bool=False,
+            samesite: str=None,
     ) -> None:
         """Set a cookie in the response headers.
 
@@ -419,7 +420,7 @@ class Response(_BaseRequestResponse, JSONMixin):
         """
         if isinstance(value, bytes):
             value = value.decode()  # type: ignore
-        cookie = create_cookie(key, value, max_age, expires, path, domain, secure, httponly)  # type: ignore  # noqa: E501
+        cookie = create_cookie(key, value, max_age, expires, path, domain, secure, httponly, samesite)  # type: ignore  # noqa: E501
         self.headers.add('Set-Cookie', cookie.output(header=''))
 
     def delete_cookie(self, key: str, path: str='/', domain: Optional[str]=None) -> None:

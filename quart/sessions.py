@@ -147,6 +147,10 @@ class SessionInterface:
         """Helper method to return if the Cookie should be Secure for the App."""
         return app.config['SESSION_COOKIE_SECURE']
 
+    def get_cookie_samesite(self, app: 'Quart') -> str:
+        """Helper method to return the Cookie Samesite configuration for the App."""
+        return app.config['SESSION_COOKIE_SAMESITE']
+
     def get_expiration_time(self, app: 'Quart', session: SessionMixin) -> Optional[datetime]:
         """Helper method to return the Session expiration time.
 
@@ -268,4 +272,5 @@ class SecureCookieSessionInterface(SessionInterface):
             domain=domain,
             path=path,
             secure=self.get_cookie_secure(app),
+            samesite=self.get_cookie_samesite(app),
         )

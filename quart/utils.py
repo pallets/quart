@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from http.cookies import SimpleCookie
 from os import PathLike
 from pathlib import Path
+from sys import version_info
 from typing import Callable, List, Optional, TYPE_CHECKING, Union
 from wsgiref.handlers import format_date_time
 
@@ -35,6 +36,7 @@ def create_cookie(
         domain: Optional[str]=None,
         secure: bool=False,
         httponly: bool=False,
+        samesite: str=None,
 ) -> SimpleCookie:
     """Create a Cookie given the options set
 
@@ -56,6 +58,8 @@ def create_cookie(
         cookie[key]['expires'] = format_date_time(expires.replace(tzinfo=timezone.utc).timestamp())
     if domain is not None:
         cookie[key]['domain'] = domain
+    if samesite is not None and version_info >= (3, 8):
+        cookie[key]['samesite'] = samesite
     return cookie
 
 

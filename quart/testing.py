@@ -303,13 +303,24 @@ class QuartClient:
             domain: Optional[str]=None,
             secure: bool=False,
             httponly: bool=False,
+            samesite: str=None,
     ) -> None:
         """Set a cookie in the cookie jar.
 
         The arguments are the standard cookie morsels and this is a
         wrapper around the stdlib SimpleCookie code.
         """
-        cookie = create_cookie(key, value, max_age, expires, path, domain, secure, httponly)
+        cookie = create_cookie(
+            key,
+            value,
+            max_age,
+            expires,
+            path,
+            domain,
+            secure,
+            httponly,
+            samesite,
+        )
         self.cookie_jar = cookie
 
     def delete_cookie(self, key: str, path: str='/', domain: Optional[str]=None) -> None:
