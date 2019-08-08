@@ -1,9 +1,9 @@
 import asyncio
+import warnings
 from datetime import datetime, timedelta, timezone
-from http.cookies import SimpleCookie
+from http.cookies import CookieError, SimpleCookie
 from os import PathLike
 from pathlib import Path
-from sys import version_info
 from typing import Callable, List, Optional, TYPE_CHECKING, Union
 from wsgiref.handlers import format_date_time
 
@@ -58,8 +58,14 @@ def create_cookie(
         cookie[key]['expires'] = format_date_time(expires.replace(tzinfo=timezone.utc).timestamp())
     if domain is not None:
         cookie[key]['domain'] = domain
-    if samesite is not None and version_info >= (3, 8):
-        cookie[key]['samesite'] = samesite
+    if samesite is not None:
+        try:
+            cookie[key]['samesite'] = samesite
+        except CookieError:
+            warnings.warn(
+                "Samesite cookies are not supported in this Python version, "
+                "please upgrade to >= 3.8"
+            )
     return cookie
 
 
