@@ -16,15 +16,21 @@ reading :ref:`installation`, if you are new to Quart then see
 
 Quart is an evolution of the `Flask <http://flask.pocoo.org/>`_ API to
 work with Asyncio and to provide a number of features not present or
-possible in Flask, see :ref:`flask_evolution`. Compatibility with the
-Flask API is however the main aim, which means that the `Flask
-documentation <http://flask.pocoo.org/docs/>`_ is an additional useful
-source of help.
+possible in Flask, see :ref:`flask_evolution`.
 
 Quart is developed on `GitLab <https://gitlab.com/pgjones/quart>`_.
 You are very welcome to open `issues
 <https://gitlab.com/pgjones/quart/issues>`_ or propose `merge requests
 <https://gitlab.com/pgjones/quart/merge_requests>`_.
+
+Flask Documentation
+~~~~~~~~~~~~~~~~~~~
+
+As Quart is an implementation of the Flask API the `Flask
+documentation <http://flask.pocoo.org/docs/>`_ is a great source of
+help for Quart. The Flask documentation is so good that you may be
+better placed consulting it first then returning here to check how
+Quart differs.
 
 Tutorials
 ---------
