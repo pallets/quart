@@ -205,7 +205,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
         return self._files
 
     async def _load_form_data(self) -> None:
-        raw_data = await self.body
+        raw_data: bytes = await self.get_data(raw=True)
         self._form = MultiDict()
         self._files = MultiDict()
         content_header = self.content_type
