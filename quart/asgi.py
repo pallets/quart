@@ -46,7 +46,6 @@ class ASGIHTTPConnection:
 
         path = self.scope["path"]
         path = path if path[0] == "/" else urlparse(path).path
-        path = f"{self.scope['root_path']}{path}"
 
         return self.app.request_class(
             self.scope['method'], self.scope['scheme'], path,
@@ -129,7 +128,6 @@ class ASGIWebsocketConnection:
 
         path = self.scope["path"]
         path = path if path[0] == "/" else urlparse(path).path
-        path = f"{self.scope['root_path']}{path}"
 
         return self.app.websocket_class(
             path, self.scope['query_string'], self.scope['scheme'],
