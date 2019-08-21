@@ -50,6 +50,10 @@ class BadRequest(HTTPStatusException):
     status = HTTPStatus.BAD_REQUEST
 
 
+class Unauthorized(HTTPStatusException):
+    status = HTTPStatus.UNAUTHORIZED
+
+
 class NotFound(HTTPStatusException):
     status = HTTPStatus.NOT_FOUND
 
@@ -122,6 +126,7 @@ all_http_exceptions = {
 all_http_exceptions.update({
     301: RedirectRequired,
     400: BadRequest,
+    401: Unauthorized,
     404: NotFound,
     405: MethodNotAllowed,
     413: RequestEntityTooLarge,
