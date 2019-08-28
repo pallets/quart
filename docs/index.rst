@@ -8,7 +8,7 @@
 
 Quart is a Python web microframework based on Asyncio. It is intended
 to provide the easiest way to use asyncio in a web context, especially
-with exiting Flask apps. If you are new to Python you should start by
+with existing Flask apps. If you are new to Python you should start by
 reading :ref:`installation`, if you are new to Quart then see
 :ref:`quickstart` and if you are also new to Asyncio see
 :ref:`asyncio`. If however you are very familiar with Flask, see
