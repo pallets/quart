@@ -54,8 +54,16 @@ class Unauthorized(HTTPStatusException):
     status = HTTPStatus.UNAUTHORIZED
 
 
+class Forbidden(HTTPStatusException):
+    status = HTTPStatus.FORBIDDEN
+
+
 class NotFound(HTTPStatusException):
     status = HTTPStatus.NOT_FOUND
+
+
+class NotAcceptable(HTTPStatusException):
+    status = HTTPStatus.NOT_ACCEPTABLE
 
 
 class RequestTimeout(HTTPStatusException):
@@ -175,8 +183,10 @@ all_http_exceptions.update({
     301: RedirectRequired,
     400: BadRequest,
     401: Unauthorized,
+    403: Forbidden,
     404: NotFound,
     405: MethodNotAllowed,
+    406: NotAcceptable,
     413: RequestEntityTooLarge,
     451: UnavailableForLegalReasons,
 })
