@@ -203,8 +203,11 @@ class Map:
             path: str,
             query_string: bytes,
             websocket: bool,
+            root_path: str,
     ) -> 'MapAdapter':
-        return MapAdapter(self, secure, server_name, method, path, query_string, websocket)
+        return MapAdapter(
+            self, secure, server_name, method, path, query_string, websocket, root_path,
+        )
 
     def bind(self, secure: bool, server_name: str) -> 'MapAdapter':
         return MapAdapter(self, secure, server_name)
@@ -226,12 +229,14 @@ class MapAdapter:
             path: Optional[str]=None,
             query_string: Optional[bytes]=None,
             websocket: bool=False,
+            root_path: str="",
     ) -> None:
         self.map = map
         self.websocket = websocket
         self.secure = secure
         self.server_name = server_name
         self.path = f"/{path.lstrip('/')}" if path is not None else path
+        self.root_path = root_path
         self.method = method
         self.query_string = query_string
 
@@ -247,7 +252,7 @@ class MapAdapter:
         rules = self.map.endpoints[endpoint]
         for rule in rules:
             if rule.buildable(values, method=method):
-                path = rule.build(**values)
+                path = f"{self.root_path}{rule.build(**values)}"
                 if external:
                     if scheme is None:
                         scheme = self._build_scheme(rule)
@@ -295,10 +300,14 @@ class MapAdapter:
         return allowed_methods
 
     def _matches(self) -> Generator[Tuple['Rule', Dict[str, Any], bool], None, None]:
+        if not self.path.startswith(self.root_path):
+            return
+
+        path = self.path[len(self.root_path):]
         if self.map.host_matching:
-            full_path = f"{self.server_name}|{self.path}"
+            full_path = f"{self.server_name}|{path}"
         else:
-            full_path = f"|{self.path}"
+            full_path = f"|{path}"
         for rule in self.map.rules:
             variables, needs_slash = rule.match(full_path)
             if variables is not None:

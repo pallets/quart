@@ -317,6 +317,7 @@ class Quart(PackageStatic):
                 request.path,
                 request.query_string,
                 isinstance(request, self.websocket_class),
+                request.root_path,
             )
 
         if self.config['SERVER_NAME'] is not None:

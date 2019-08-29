@@ -31,8 +31,9 @@ def _test_match(
         map_: Map, path: str, method: str, expected: Tuple[Rule, Dict[str, Any]],
         host: str='',
         websocket: bool=False,
+        root_path: str="",
 ) -> None:
-    adapter = map_.bind_to_request(False, host, method, path, b'', websocket)
+    adapter = map_.bind_to_request(False, host, method, path, b'', websocket, root_path)
     assert adapter.match() == expected
 
 
@@ -40,7 +41,7 @@ def _test_match_redirect(
         map_: Map, path: str, method: str, redirect_path: str, query_string: bytes=b'',
         host: str='',
 ) -> None:
-    adapter = map_.bind_to_request(False, host, method, path, query_string, False)
+    adapter = map_.bind_to_request(False, host, method, path, query_string, False, "")
     with pytest.raises(RedirectRequired) as error:
         adapter.match()
     assert error.value.redirect_path == f"http://{host}{redirect_path}"
@@ -50,14 +51,14 @@ def test_no_match_error(basic_map: Map) -> None:
     _test_no_match(basic_map, '/wrong/', 'GET')
 
 
-def _test_no_match(map_: Map, path: str, method: str) -> None:
-    adapter = map_.bind_to_request(False, '', method, path, b'', False)
+def _test_no_match(map_: Map, path: str, method: str, root_path: str="") -> None:
+    adapter = map_.bind_to_request(False, '', method, path, b'', False, root_path)
     with pytest.raises(NotFound):
         adapter.match()
 
 
 def test_method_not_allowed_error(basic_map: Map) -> None:
-    adapter = basic_map.bind_to_request(False, '', 'GET', '/', b'', False)
+    adapter = basic_map.bind_to_request(False, '', 'GET', '/', b'', False, "")
     try:
         adapter.match()
     except Exception as error:
@@ -107,7 +108,7 @@ def test_build_external() -> None:
 
 def test_strict_slashes() -> None:
     def _test_strict_slashes(map_: Map) -> None:
-        adapter = map_.bind_to_request(False, '', 'POST', '/path/', b'', False)
+        adapter = map_.bind_to_request(False, '', 'POST', '/path/', b'', False, "")
         with pytest.raises(MethodNotAllowed):
             adapter.match()
         _test_match_redirect(map_, '/path', 'GET', '/path/')
@@ -193,11 +194,25 @@ def test_websocket() -> None:
     _test_match(map_, "/ws/", "GET", (map_.endpoints["websocket"][0], {}), websocket=True)
 
 
+def test_root_path_match() -> None:
+    map_ = Map()
+    map_.add(Rule("/", {"GET"}, "http"))
+    _test_no_match(map_, "/", "GET", root_path="/rooti")
+    _test_match(map_, "/rooti/", "GET", (map_.endpoints["http"][0], {}), root_path="/rooti")
+
+
+def test_root_path_build() -> None:
+    map_ = Map()
+    map_.add(Rule("/", {"GET"}, "http"))
+    adapter = map_.bind_to_request(False, "", "GET", "/", b'', False, "/rooti")
+    assert adapter.build("http", method="GET") == "/rooti/"
+
+
 @pytest.mark.parametrize("websocket", [True, False])
 def test_websocket_bad_request(websocket: bool) -> None:
     map_ = Map()
     map_.add(Rule("/ws/", {"GET"}, "websocket", is_websocket=websocket))
-    adapter = map_.bind_to_request(False, "", "GET", "/ws/", b"", not websocket)
+    adapter = map_.bind_to_request(False, "", "GET", "/ws/", b"", not websocket, "")
     with pytest.raises(BadRequest):
         adapter.match()
 
@@ -206,7 +221,7 @@ def test_websocket_and_method_not_allowed() -> None:
     map_ = Map()
     map_.add(Rule("/ws/", {"GET"}, "websocket", is_websocket=True))
     map_.add(Rule("/ws/", {"POST"}, "post"))
-    adapter = map_.bind_to_request(False, "", "PUT", "/ws/", b"", False)
+    adapter = map_.bind_to_request(False, "", "PUT", "/ws/", b"", False, "")
     with pytest.raises(MethodNotAllowed):
         adapter.match()
 
