@@ -78,7 +78,7 @@ async def test_request_exceeds_max_content_length() -> None:
     headers = CIMultiDict()
     headers['Content-Length'] = str(max_content_length + 1)
     request = Request(
-        'POST', 'http', '/', b'', headers, max_content_length=max_content_length,
+        'POST', 'http', '/', b'', headers, "", "1.1", max_content_length=max_content_length,
         send_push_promise=no_op_push,
     )
     with pytest.raises(RequestEntityTooLarge):
@@ -88,7 +88,8 @@ async def test_request_exceeds_max_content_length() -> None:
 @pytest.mark.asyncio
 async def test_request_get_data_timeout() -> None:
     request = Request(
-        'POST', 'http', '/', b'', CIMultiDict(), body_timeout=1, send_push_promise=no_op_push,
+        'POST', 'http', '/', b'', CIMultiDict(), "", "1.1", body_timeout=1,
+        send_push_promise=no_op_push,
     )
     with pytest.raises(RequestTimeout):
         await request.get_data()
@@ -99,6 +100,7 @@ async def test_request_values() -> None:
     request = Request(
         'GET', 'http', '/', b'a=b&a=c',
         CIMultiDict({'host': 'quart.com', 'Content-Type': 'application/x-www-form-urlencoded'}),
+        "", "1.1",
         send_push_promise=no_op_push,
     )
     request.body.append(urlencode({'a': 'd'}).encode())
@@ -123,6 +125,8 @@ async def test_request_send_push_promise() -> None:
             "Accept-Encoding": "gzip",
             "User-Agent": "quart",
         }),
+        "",
+        "2",
         send_push_promise=_push,
     )
     await request.send_push_promise("/")

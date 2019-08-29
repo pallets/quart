@@ -161,6 +161,8 @@ class QuartClient:
             json: Any=sentinel,
             scheme: str='http',
             follow_redirects: bool=False,
+            root_path: str="",
+            http_version: str="1.1",
     ) -> Response:
         """Open a request to the app associated with this client.
 
@@ -201,7 +203,7 @@ class QuartClient:
             headers.add('Cookie', self.cookie_jar.output(header=''))
 
         request = self.app.request_class(
-            method, scheme, path, query_string_bytes, headers,
+            method, scheme, path, query_string_bytes, headers, root_path, http_version,
             send_push_promise=self._send_push_promise,
         )
         request.body.set_result(request_data)
@@ -218,7 +220,7 @@ class QuartClient:
                     method = 'GET'
                 request = self.app.request_class(
                     method, scheme, response.location, query_string_bytes, headers,
-                    send_push_promise=self._send_push_promise,
+                    root_path, http_version, send_push_promise=self._send_push_promise,
                 )
                 response = await self._handle_request(request)
         return response
@@ -336,6 +338,8 @@ class QuartClient:
             query_string: Optional[dict]=None,
             scheme: str='http',
             subprotocols: Optional[List[str]]=None,
+            root_path: str="",
+            http_version: str="1.1",
     ) -> AsyncGenerator[_TestingWebsocket, None]:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self.app, path, headers, query_string,
@@ -345,8 +349,8 @@ class QuartClient:
 
         subprotocols = subprotocols or []
         websocket = self.app.websocket_class(
-            path, query_string_bytes, scheme, headers, subprotocols, queue.get,
-            websocket_client.local_queue.put, websocket_client.accept,
+            path, query_string_bytes, scheme, headers, root_path, http_version, subprotocols,
+            queue.get, websocket_client.local_queue.put, websocket_client.accept,
         )
         adapter = self.app.create_url_adapter(websocket)
         url_rule, _ = adapter.match()

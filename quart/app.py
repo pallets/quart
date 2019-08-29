@@ -1416,6 +1416,8 @@ class Quart(PackageStatic):
             data: Optional[AnyStr]=None,
             form: Optional[dict]=None,
             json: Any=sentinel,
+            root_path: str="",
+            http_version: str="1.1",
     ) -> RequestContext:
         """Create a request context for testing purposes.
 
@@ -1442,7 +1444,8 @@ class Quart(PackageStatic):
         request_body, body_headers = make_test_body_with_headers(data, form, json)
         headers.update(**body_headers)
         request = self.request_class(
-            method, scheme, path, query_string_bytes, headers, send_push_promise=send_push_promise,
+            method, scheme, path, query_string_bytes, headers, root_path, http_version,
+            send_push_promise=send_push_promise,
         )
         request.body.set_result(request_body)
         return self.request_context(request)

@@ -155,6 +155,8 @@ class BaseRequestWebsocket(_BaseRequestResponse):
             path: str,
             query_string: bytes,
             headers: CIMultiDict,
+            root_path: str,
+            http_version: str,
     ) -> None:
         """Create a request or websocket base object.
 
@@ -164,6 +166,9 @@ class BaseRequestWebsocket(_BaseRequestResponse):
             path: The full unquoted path of the request.
             query_string: The raw bytes for the query string part.
             headers: The request headers.
+            root_path: The root path that should be prepended to all
+                routes.
+            http_version: The HTTP version of the request.
 
         Attributes:
             args: The query string arguments.
@@ -178,6 +183,8 @@ class BaseRequestWebsocket(_BaseRequestResponse):
         self.query_string = query_string
         self.scheme = scheme
         self.method = method
+        self.root_path = root_path
+        self.http_version = http_version
 
     @property
     def endpoint(self) -> Optional[str]:

@@ -126,6 +126,8 @@ class Request(BaseRequestWebsocket, JSONMixin):
             path: str,
             query_string: bytes,
             headers: CIMultiDict,
+            root_path: str,
+            http_version: str,
             *,
             max_content_length: Optional[int]=None,
             body_timeout: Optional[int]=None,
@@ -139,6 +141,9 @@ class Request(BaseRequestWebsocket, JSONMixin):
             path: The full unquoted path of the request.
             query_string: The raw bytes for the query string part.
             headers: The request headers.
+            root_path: The root path that should be prepended to all
+                routes.
+            http_version: The HTTP version of the request.
             body: An awaitable future for the body data i.e.
                 ``data = await body``
             max_content_length: The maximum length in bytes of the
@@ -148,7 +153,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
             send_push_promise: An awaitable to send a push promise based
                 off of this request (HTTP/2 feature).
         """
-        super().__init__(method, scheme, path, query_string, headers)
+        super().__init__(method, scheme, path, query_string, headers, root_path, http_version)
         self.body_timeout = body_timeout
         self.body = self.body_class(self.content_length, max_content_length)
         self._form: Optional[MultiDict] = None
@@ -287,6 +292,8 @@ class Websocket(BaseRequestWebsocket):
             query_string: bytes,
             scheme: str,
             headers: CIMultiDict,
+            root_path: str,
+            http_version: str,
             subprotocols: List[str],
             receive: Callable,
             send: Callable,
@@ -299,12 +306,15 @@ class Websocket(BaseRequestWebsocket):
             query_string: The raw bytes for the query string part.
             scheme: The scheme used for the request.
             headers: The request headers.
+            root_path: The root path that should be prepended to all
+                routes.
+            http_version: The HTTP version of the request.
             subprotocols: The subprotocols requested.
             receive: Returns an awaitable of the current data
 
             accept: Idempotent callable to accept the websocket connection.
         """
-        super().__init__('GET', scheme, path, query_string, headers)
+        super().__init__('GET', scheme, path, query_string, headers, root_path, http_version)
         self._accept = accept
         self._receive = receive
         self._send = send

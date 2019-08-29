@@ -48,8 +48,13 @@ class ASGIHTTPConnection:
         path = path if path[0] == "/" else urlparse(path).path
 
         return self.app.request_class(
-            self.scope['method'], self.scope['scheme'], path,
-            self.scope['query_string'], headers,
+            self.scope['method'],
+            self.scope['scheme'],
+            path,
+            self.scope['query_string'],
+            headers,
+            self.scope.get("root_path", ""),
+            self.scope["http_version"],
             max_content_length=self.app.config['MAX_CONTENT_LENGTH'],
             body_timeout=self.app.config['BODY_TIMEOUT'],
             send_push_promise=partial(self._send_push_promise, send),
@@ -130,9 +135,16 @@ class ASGIWebsocketConnection:
         path = path if path[0] == "/" else urlparse(path).path
 
         return self.app.websocket_class(
-            path, self.scope['query_string'], self.scope['scheme'],
-            headers, self.scope.get('subprotocols', []), self.queue.get,
-            partial(self.send_data, send), partial(self.accept_connection, send),
+            path,
+            self.scope['query_string'],
+            self.scope['scheme'],
+            headers,
+            self.scope.get("root_path", ""),
+            self.scope.get("http_version", "1.1"),
+            self.scope.get('subprotocols', []),
+            self.queue.get,
+            partial(self.send_data, send),
+            partial(self.accept_connection, send),
         )
 
     async def handle_websocket(self, websocket: Websocket, send: Callable) -> None:

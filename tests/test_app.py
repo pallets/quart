@@ -286,7 +286,7 @@ async def test_app_handle_request_asyncio_cancelled_error() -> None:
         raise asyncio.CancelledError()
 
     request = app.request_class(
-        "GET", "http", "/", b"", CIMultiDict(), send_push_promise=no_op_push,
+        "GET", "http", "/", b"", CIMultiDict(), "", "1.1", send_push_promise=no_op_push,
     )
     with pytest.raises(asyncio.CancelledError):
         await app.handle_request(request)
@@ -301,7 +301,7 @@ async def test_app_handle_websocket_asyncio_cancelled_error() -> None:
         raise asyncio.CancelledError()
 
     websocket = app.websocket_class(
-        "/", b"", "wss", CIMultiDict(), None, None, None, None,
+        "/", b"", "wss", CIMultiDict(), "", "1.1", None, None, None, None,
     )
     with pytest.raises(asyncio.CancelledError):
         await app.handle_websocket(websocket)
