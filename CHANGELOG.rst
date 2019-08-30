@@ -1,3 +1,14 @@
+0.6.14 2019-08-30
+-----------------
+
+* Bugfix follow Werkzeug LocalProxy name API.
+* Bugfix ensure multiple files are correctly loaded.
+* Bugfix ensure make_response status code is an int.
+* Bugfix be clear about header encoding.
+* Bugfix ensure loading form/files data is timeout protected.
+* Bugfix add missing Unauthorized, Forbidden, and NotAcceptable
+  exception classes.
+
 0.9.1 2019-05-12
 ----------------
 
