@@ -1,3 +1,24 @@
+0.10.0 2019-08-30
+-----------------
+
+*This contains all the Bugfixes in the 0.6 branch.*
+
+* Support aborting with a Response argument.
+* Fix JSON type hints to match typeshed.
+* Update to Hypercorn 0.7.0 as minimum version.
+* Bugfix ensure the default response timeout is set.
+* Allow returning dictionaries from view functions, this follows a new
+  addition to Flask.
+* Bugfix ensure the response timeout has a default.
+* Bugfix correct testing-websocket typing.
+* Accept json, data, or form arguments to test_request_context.
+* Support send_file sending a BytesIO object.
+* Add samesite cookie support (requires Python3.8).
+* Add a ContentSecurityPolicy datastructure, this follows a new
+  addition to Werkzeug.
+* Unblock logging I/O by logging in separate threads.
+* Support ASGI root_path as a prepended path to all routes.
+
 0.6.14 2019-08-30
 -----------------
 
