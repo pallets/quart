@@ -21,4 +21,4 @@ async def test_debug(debug: bool, testing: bool, present: bool) -> None:
 
     response = await test_client.get('/')
     assert response.status_code == 500
-    assert (b'Unique error' in (await response.get_data())) is present
+    assert (b'Unique error' in (await response.get_data())) is present  # type: ignore

@@ -86,13 +86,13 @@ def test_build_error(basic_map: Map) -> None:
     adapter = basic_map.bind('http', '')
     with pytest.raises(BuildError) as error:
         adapter.build('bob')
-    assert 'No endpoint found' in str(error)
+    assert 'No endpoint found' in str(error.value)
     with pytest.raises(BuildError) as error:
         adapter.build('values', values={'y': 2})
-    assert 'do not match' in str(error)
+    assert 'do not match' in str(error.value)
     with pytest.raises(BuildError) as error:
         adapter.build('values', method='POST')
-    assert 'not one of' in str(error)
+    assert 'not one of' in str(error.value)
 
 
 def test_strict_slashes() -> None:

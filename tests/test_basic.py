@@ -49,7 +49,7 @@ async def test_index(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get('/')
     assert response.status_code == 200
-    assert b'index' in (await response.get_data())
+    assert b'index' in (await response.get_data())  # type: ignore
 
 
 @pytest.mark.asyncio
@@ -67,7 +67,7 @@ async def test_json(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.post('/json/', json={'value': 'json'})
     assert response.status_code == 200
-    assert b'json' in (await response.get_data())
+    assert b'json' in (await response.get_data())  # type: ignore
 
 
 @pytest.mark.asyncio
@@ -75,7 +75,7 @@ async def test_generic_error(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get('/error/')
     assert response.status_code == 409
-    assert b'Something Unique' in (await response.get_data())
+    assert b'Something Unique' in (await response.get_data())  # type: ignore
 
 
 @pytest.mark.asyncio
@@ -83,7 +83,7 @@ async def test_not_found_error(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get('/not_found/')
     assert response.status_code == 404
-    assert b'Not Found' in (await response.get_data())
+    assert b'Not Found' in (await response.get_data())  # type: ignore
 
 
 @pytest.mark.asyncio

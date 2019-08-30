@@ -1,7 +1,7 @@
 import asyncio
 import os
 import warnings
-from asyncio.base_events import Server as AIOServer  # noqa: F401
+from asyncio.base_events import Server as AIOServer  # type: ignore # noqa: F401
 from ssl import SSLContext
 from typing import Any, List, Optional  # noqa: F401
 

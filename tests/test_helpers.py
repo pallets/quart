@@ -51,7 +51,7 @@ async def test_make_response(app: Quart) -> None:
     async with app.app_context():
         response = await make_response('foo', 202)
         assert response.status_code == 202
-        assert b'foo' in (await response.get_data())
+        assert b'foo' in (await response.get_data())  # type: ignore
 
 
 @pytest.mark.asyncio
