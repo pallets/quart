@@ -199,12 +199,17 @@ def test_root_path_match() -> None:
     map_.add(Rule("/", {"GET"}, "http"))
     _test_no_match(map_, "/", "GET", root_path="/rooti")
     _test_match(map_, "/rooti/", "GET", (map_.endpoints["http"][0], {}), root_path="/rooti")
+    # Relative root_path case
+    _test_match(map_, "/rooti/", "GET", (map_.endpoints["http"][0], {}), root_path="rooti")
 
 
 def test_root_path_build() -> None:
     map_ = Map()
     map_.add(Rule("/", {"GET"}, "http"))
     adapter = map_.bind_to_request(False, "", "GET", "/", b'', False, "/rooti")
+    assert adapter.build("http", method="GET") == "/rooti/"
+    # Relative root_path case
+    adapter = map_.bind_to_request(False, "", "GET", "/", b'', False, "rooti")
     assert adapter.build("http", method="GET") == "/rooti/"
 
 

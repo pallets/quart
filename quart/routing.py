@@ -236,7 +236,7 @@ class MapAdapter:
         self.secure = secure
         self.server_name = server_name
         self.path = f"/{path.lstrip('/')}" if path is not None else path
-        self.root_path = root_path
+        self.root_path = f"/{root_path.lstrip('/')}" if root_path != "" else root_path
         self.method = method
         self.query_string = query_string
 
