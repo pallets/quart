@@ -60,6 +60,44 @@ async def test_http_completion() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    'request_message',
+    [
+        {'type': 'http.request', 'body': b'', 'more_body': False},
+        {'type': 'http.request', 'more_body': False},
+    ],
+)
+async def test_http_request_without_body(request_message: dict) -> None:
+    app = Quart(__name__)
+
+    scope = {
+        'headers': [(b'host', b'quart')],
+        'http_version': '1.0',
+        'method': 'GET',
+        'scheme': 'https',
+        'path': '/',
+        'query_string': b'',
+    }
+    connection = ASGIHTTPConnection(app, scope)
+    request = connection._create_request_from_scope(lambda: None)
+
+    queue: asyncio.Queue = asyncio.Queue()
+    queue.put_nowait(request_message)
+
+    async def receive() -> dict:
+        # This will block after returning the first and only entry
+        return await queue.get()
+
+    # This test fails with a timeout error if the request body is not received
+    # within 1 second
+    receiver_task = asyncio.ensure_future(connection.handle_messages(request, receive))
+    body = await asyncio.wait_for(request.body, timeout=1)
+    receiver_task.cancel()
+
+    assert body == b''
+
+
+@pytest.mark.asyncio
 async def test_websocket_completion() -> None:
     # Ensure that the connecion callable returns on completion
     app = Quart(__name__)

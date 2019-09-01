@@ -30,7 +30,7 @@ class ASGIHTTPConnection:
         while True:
             message = await receive()
             if message['type'] == 'http.request':
-                request.body.append(message['body'])
+                request.body.append(message.get('body', b''))
                 if not message.get('more_body', False):
                     request.body.set_complete()
             elif message['type'] == 'http.disconnect':
