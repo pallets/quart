@@ -21,7 +21,7 @@ DEFAULT_CONFIG = {
     'JSONIFY_PRETTYPRINT_REGULAR': False,
     'MAX_CONTENT_LENGTH': 16 * 1024 * 1024,  # 16 MB Limit
     'PERMANENT_SESSION_LIFETIME': timedelta(days=31),
-    "PREFER_SECURE_URLS": False,  # Replaces PREFERRED_URL_SCHEME to allow for WebSocket sechems
+    "PREFER_SECURE_URLS": False,  # Replaces PREFERRED_URL_SCHEME to allow for WebSocket scheme
     'PROPAGATE_EXCEPTIONS': None,
     'RESPONSE_TIMEOUT': 60,  # Second
     'SECRET_KEY': None,

@@ -472,7 +472,7 @@ class Quart(PackageStatic):
 
         Arguments:
             path: The path to route on, should start with a ``/``.
-            func: Callable that returns a reponse.
+            func: Callable that returns a response.
             methods: List of HTTP verbs the function routes.
             endpoint: Optional endpoint name, if not present the
                 function name is used.
@@ -619,7 +619,7 @@ class Quart(PackageStatic):
 
         Arguments:
             path: The path to route on, should start with a ``/``.
-            func: Callable that returns a reponse.
+            func: Callable that returns a response.
             endpoint: Optional endpoint name, if not present the
                 function name is used.
             defaults: A dictionary of variables to provide automatically, use

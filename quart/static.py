@@ -182,7 +182,7 @@ async def send_file(
         conditional: bool=False,
         last_modified: Optional[datetime]=None,
 ) -> Response:
-    """Return a Reponse to send the filename given.
+    """Return a Response to send the filename given.
 
     Arguments:
         filename_or_io: The filename (path) to send, remember to use
