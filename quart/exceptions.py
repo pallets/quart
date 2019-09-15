@@ -88,6 +88,10 @@ class RequestRangeNotSatisfiable(HTTPStatusException):
         return headers
 
 
+class TooManyRequests(HTTPStatusException):
+    status = HTTPStatus.TOO_MANY_REQUESTS
+
+
 class MethodNotAllowed(HTTPStatusException):
 
     def __init__(self, allowed_methods: Optional[Iterable[str]]=None) -> None:
@@ -188,6 +192,7 @@ all_http_exceptions.update({
     405: MethodNotAllowed,
     406: NotAcceptable,
     413: RequestEntityTooLarge,
+    429: TooManyRequests,
     451: UnavailableForLegalReasons,
 })
 
