@@ -10,5 +10,8 @@ here,
   Resource Sharing (access control) support.
 - `Quart-OpenApi <https://github.com/factset/quart-openapi/>`_ RESTful
   API building.
+- `Quart-Rate-Limiter
+  <https://gitlab.com/pgjones/quart-rate-limiter>`_ Rate limiting
+  support.
 - `Webargs-Quart <https://github.com/esfoobar/webargs-quart>`_ Webargs
   parsing for Quart.
