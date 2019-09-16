@@ -72,6 +72,7 @@ How-To Guides
    session_storage.rst
    startup_shutdown.rst
    streaming_response.rst
+   sync_code.rst
    templating.rst
    testing.rst
    quart_extensions.rst

@@ -54,11 +54,11 @@ async def test_template_context_processors(app: Quart, blueprint: Blueprint) -> 
         return {'context': 'foo'}
 
     @blueprint.app_context_processor
-    def app_blueprint_context() -> dict:
+    async def app_blueprint_context() -> dict:
         return {'global_context': 'boo'}
 
     @app.context_processor
-    def app_context() -> dict:
+    async def app_context() -> dict:
         return {'context': 'bar'}
 
     app.register_blueprint(blueprint)

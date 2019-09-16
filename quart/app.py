@@ -2,7 +2,9 @@ import asyncio
 import sys
 import warnings
 from collections import defaultdict, OrderedDict
+from contextvars import copy_context
 from datetime import timedelta
+from functools import partial, wraps
 from itertools import chain
 from logging import Logger
 from pathlib import Path
@@ -47,7 +49,7 @@ from .testing import (
     sentinel,
 )
 from .typing import FilePath, ResponseReturnValue
-from .utils import ensure_coroutine, file_path_to_path
+from .utils import file_path_to_path
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
@@ -496,7 +498,7 @@ class Quart(PackageStatic):
                 path. Will redirect a leaf (no slash) to a branch (with slash).
         """
         endpoint = endpoint or _endpoint_from_view_func(view_func)
-        handler = ensure_coroutine(view_func)
+        handler = self.ensure_coroutine(view_func)
         if methods is None:
             methods = getattr(view_func, 'methods', ['GET'])
 
@@ -659,7 +661,7 @@ class Quart(PackageStatic):
             endpoint: The endpoint name to use.
         """
         def decorator(func: Callable) -> Callable:
-            handler = ensure_coroutine(func)
+            handler = self.ensure_coroutine(func)
             self.view_functions[endpoint] = handler
             return func
         return decorator
@@ -703,7 +705,7 @@ class Quart(PackageStatic):
             func: The function to handle the error.
             name: Optional blueprint key name.
         """
-        handler = ensure_coroutine(func)
+        handler = self.ensure_coroutine(func)
         if isinstance(error, int):
             error = all_http_exceptions[error]
         self.error_handler_spec[name][error] = handler  # type: ignore
@@ -834,7 +836,7 @@ class Quart(PackageStatic):
                 return context
 
         """
-        self.template_context_processors[name].append(ensure_coroutine(func))
+        self.template_context_processors[name].append(self.ensure_coroutine(func))
         return func
 
     def shell_context_processor(self, func: Callable) -> Callable:
@@ -1028,7 +1030,7 @@ class Quart(PackageStatic):
             func: The before request function itself.
             name: Optional blueprint key name.
         """
-        handler = ensure_coroutine(func)
+        handler = self.ensure_coroutine(func)
         self.before_request_funcs[name].append(handler)
         return func
 
@@ -1047,7 +1049,7 @@ class Quart(PackageStatic):
             func: The before websocket function itself.
             name: Optional blueprint key name.
         """
-        handler = ensure_coroutine(func)
+        handler = self.ensure_coroutine(func)
         self.before_websocket_funcs[name].append(handler)
         return func
 
@@ -1066,7 +1068,7 @@ class Quart(PackageStatic):
             func: The before first request function itself.
             name: Optional blueprint key name.
         """
-        handler = ensure_coroutine(func)
+        handler = self.ensure_coroutine(func)
         self.before_first_request_funcs.append(handler)
         return func
 
@@ -1087,7 +1089,7 @@ class Quart(PackageStatic):
         Arguments:
             func: The function itself.
         """
-        handler = ensure_coroutine(func)
+        handler = self.ensure_coroutine(func)
         self.before_serving_funcs.append(handler)
         return func
 
@@ -1106,7 +1108,7 @@ class Quart(PackageStatic):
             func: The after request function itself.
             name: Optional blueprint key name.
         """
-        handler = ensure_coroutine(func)
+        handler = self.ensure_coroutine(func)
         self.after_request_funcs[name].append(handler)
         return func
 
@@ -1125,7 +1127,7 @@ class Quart(PackageStatic):
             func: The after websocket function itself.
             name: Optional blueprint key name.
         """
-        handler = ensure_coroutine(func)
+        handler = self.ensure_coroutine(func)
         self.after_websocket_funcs[name].append(handler)
         return func
 
@@ -1147,7 +1149,7 @@ class Quart(PackageStatic):
             func: The function itself.
 
         """
-        handler = ensure_coroutine(func)
+        handler = self.ensure_coroutine(func)
         self.after_serving_funcs.append(handler)
         return func
 
@@ -1166,7 +1168,7 @@ class Quart(PackageStatic):
             func: The teardown request function itself.
             name: Optional blueprint key name.
         """
-        handler = ensure_coroutine(func)
+        handler = self.ensure_coroutine(func)
         self.teardown_request_funcs[name].append(handler)
         return func
 
@@ -1185,7 +1187,7 @@ class Quart(PackageStatic):
             func: The teardown websocket function itself.
             name: Optional blueprint key name.
         """
-        handler = ensure_coroutine(func)
+        handler = self.ensure_coroutine(func)
         self.teardown_websocket_funcs[name].append(handler)
         return func
 
@@ -1204,7 +1206,7 @@ class Quart(PackageStatic):
             func: The teardown function itself.
             name: Optional blueprint key name.
         """
-        handler = ensure_coroutine(func)
+        handler = self.ensure_coroutine(func)
         self.teardown_appcontext_funcs.append(handler)
         return func
 
@@ -1234,17 +1236,44 @@ class Quart(PackageStatic):
         """Return a iterator over the blueprints."""
         return self.blueprints.values()
 
+    def ensure_coroutine(self, func: Callable[..., Any]) -> Callable[..., Awaitable[Any]]:
+        """Ensure that the function is a coroutine.
+
+        If the *func* is not a coroutine it will be wrapped such that
+        it runs in the default executor (use loop.set_default_executor
+        to change). This ensures that synchronous functions do not
+        block the event loop.
+
+        .. versionadded:: 0.11
+
+        Override if you wish to change how synchronous functions are
+        run. Before Quart 0.11 this did not run the synchronous code
+        in an executor.
+        """
+        if asyncio.iscoroutinefunction(func):
+            return func
+        else:
+            @wraps(func)
+            async def _wrapper(*args: Any, **kwargs: Any) -> Any:
+                loop = asyncio.get_running_loop()
+                return await loop.run_in_executor(
+                    None, copy_context().run, partial(func, *args, **kwargs),
+                )
+
+            _wrapper._quart_async_wrapper = True  # type: ignore
+            return _wrapper
+
     async def open_session(self, request: BaseRequestWebsocket) -> Session:
         """Open and return a Session using the request."""
-        return await ensure_coroutine(self.session_interface.open_session)(self, request)
+        return await self.ensure_coroutine(self.session_interface.open_session)(self, request)
 
     async def make_null_session(self) -> Session:
         """Create and return a null session."""
-        return await ensure_coroutine(self.session_interface.make_null_session)(self)
+        return await self.ensure_coroutine(self.session_interface.make_null_session)(self)
 
     async def save_session(self, session: Session, response: Response) -> None:
         """Saves the session to the response."""
-        await ensure_coroutine(self.session_interface.save_session)(self, session, response)
+        await self.ensure_coroutine(self.session_interface.save_session)(self, session, response)
 
     async def do_teardown_request(
             self,

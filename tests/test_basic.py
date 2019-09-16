@@ -11,7 +11,11 @@ def app() -> Quart:
     app = Quart(__name__)
 
     @app.route('/')
-    def index() -> ResponseReturnValue:
+    async def index() -> ResponseReturnValue:
+        return 'index'
+
+    @app.route('/sync/')
+    def sync() -> ResponseReturnValue:
         return 'index'
 
     @app.route('/json/', methods=['POST'])
@@ -52,9 +56,10 @@ def app() -> Quart:
 
 
 @pytest.mark.asyncio
-async def test_index(app: Quart) -> None:
+@pytest.mark.parametrize("path", ["/", "/sync/"])
+async def test_index(path: str, app: Quart) -> None:
     test_client = app.test_client()
-    response = await test_client.get('/')
+    response = await test_client.get(path)
     assert response.status_code == 200
     assert b'index' in (await response.get_data())  # type: ignore
 

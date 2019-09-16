@@ -107,7 +107,7 @@ async def test_host_matching() -> None:
     app.config['SERVER_NAME'] = 'quart.com'
 
     @app.route('/')
-    def route() -> str:
+    async def route() -> str:
         return ''
 
     test_client = app.test_client()
@@ -124,7 +124,7 @@ async def test_subdomain() -> None:
     app.config['SERVER_NAME'] = 'quart.com'
 
     @app.route('/', subdomain='<subdomain>')
-    def route(subdomain: str) -> str:
+    async def route(subdomain: str) -> str:
         return subdomain
 
     test_client = app.test_client()

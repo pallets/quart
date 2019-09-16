@@ -70,6 +70,11 @@ def create_cookie(
 
 
 def ensure_coroutine(func: Callable) -> Callable:
+    warnings.warn(
+        "Please switch to using a coroutine function. "
+        "Synchronous functions will not be supported in 0.13 onwards.",
+        DeprecationWarning,
+    )
     if asyncio.iscoroutinefunction(func):
         return func
     else:
