@@ -356,6 +356,7 @@ class RequestCacheControl(_CacheControl):
 
 
 class ResponseCacheControl(_CacheControl):
+    immutable = _Directive("immutable", bool)
     must_revalidate = _Directive('must-revalidate', bool)
     private = _Directive('private', bool)
     proxy_revalidate = _Directive('proxy-revalidate', bool)
