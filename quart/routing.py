@@ -345,7 +345,7 @@ class Rule:
         if 'GET' in methods and 'HEAD' not in methods and not self.is_websocket:
             methods.add('HEAD')
         self.methods = frozenset(method.upper() for method in methods)
-        if self.is_websocket and self.methods != {'GET'}:  # type: ignore
+        if self.is_websocket and self.methods != {'GET'}:
             raise ValueError(f"{methods} must only be GET for a websocket route")
         self.endpoint = endpoint
         self.strict_slashes = strict_slashes

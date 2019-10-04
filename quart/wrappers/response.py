@@ -206,7 +206,7 @@ class IOBody(ResponseBody):
             self, io_stream: BytesIO, *, buffer_size: Optional[int] = None,
     ) -> None:
         self.io_stream = io_stream
-        self.size = io_stream.getbuffer().nbytes  # type: ignore
+        self.size = io_stream.getbuffer().nbytes
         self.begin = 0
         self.end = self.size
         if buffer_size is not None:

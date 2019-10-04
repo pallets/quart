@@ -242,7 +242,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
     def _load_field_storage(self, key: str, field_storage: FieldStorage) -> None:
         if isinstance(field_storage, FieldStorage) and field_storage.filename is not None:
             self._files.add(
-                key, FileStorage(  # type: ignore
+                key, FileStorage(
                     io.BytesIO(field_storage.file.read()), field_storage.filename,
                     field_storage.name, field_storage.type, field_storage.headers,  # type: ignore # noqa: E501
                 ),
