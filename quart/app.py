@@ -498,7 +498,7 @@ class Quart(PackageStatic):
                 path. Will redirect a leaf (no slash) to a branch (with slash).
         """
         endpoint = endpoint or _endpoint_from_view_func(view_func)
-        handler = self.ensure_coroutine(view_func)
+        handler = self.run_sync(view_func)
         if methods is None:
             methods = getattr(view_func, 'methods', ['GET'])
 
@@ -661,7 +661,7 @@ class Quart(PackageStatic):
             endpoint: The endpoint name to use.
         """
         def decorator(func: Callable) -> Callable:
-            handler = self.ensure_coroutine(func)
+            handler = self.run_sync(func)
             self.view_functions[endpoint] = handler
             return func
         return decorator
@@ -705,7 +705,7 @@ class Quart(PackageStatic):
             func: The function to handle the error.
             name: Optional blueprint key name.
         """
-        handler = self.ensure_coroutine(func)
+        handler = self.run_sync(func)
         if isinstance(error, int):
             error = all_http_exceptions[error]
         self.error_handler_spec[name][error] = handler  # type: ignore
@@ -836,7 +836,7 @@ class Quart(PackageStatic):
                 return context
 
         """
-        self.template_context_processors[name].append(self.ensure_coroutine(func))
+        self.template_context_processors[name].append(self.run_sync(func))
         return func
 
     def shell_context_processor(self, func: Callable) -> Callable:
@@ -1030,7 +1030,7 @@ class Quart(PackageStatic):
             func: The before request function itself.
             name: Optional blueprint key name.
         """
-        handler = self.ensure_coroutine(func)
+        handler = self.run_sync(func)
         self.before_request_funcs[name].append(handler)
         return func
 
@@ -1049,7 +1049,7 @@ class Quart(PackageStatic):
             func: The before websocket function itself.
             name: Optional blueprint key name.
         """
-        handler = self.ensure_coroutine(func)
+        handler = self.run_sync(func)
         self.before_websocket_funcs[name].append(handler)
         return func
 
@@ -1068,7 +1068,7 @@ class Quart(PackageStatic):
             func: The before first request function itself.
             name: Optional blueprint key name.
         """
-        handler = self.ensure_coroutine(func)
+        handler = self.run_sync(func)
         self.before_first_request_funcs.append(handler)
         return func
 
@@ -1089,7 +1089,7 @@ class Quart(PackageStatic):
         Arguments:
             func: The function itself.
         """
-        handler = self.ensure_coroutine(func)
+        handler = self.run_sync(func)
         self.before_serving_funcs.append(handler)
         return func
 
@@ -1108,7 +1108,7 @@ class Quart(PackageStatic):
             func: The after request function itself.
             name: Optional blueprint key name.
         """
-        handler = self.ensure_coroutine(func)
+        handler = self.run_sync(func)
         self.after_request_funcs[name].append(handler)
         return func
 
@@ -1127,7 +1127,7 @@ class Quart(PackageStatic):
             func: The after websocket function itself.
             name: Optional blueprint key name.
         """
-        handler = self.ensure_coroutine(func)
+        handler = self.run_sync(func)
         self.after_websocket_funcs[name].append(handler)
         return func
 
@@ -1149,7 +1149,7 @@ class Quart(PackageStatic):
             func: The function itself.
 
         """
-        handler = self.ensure_coroutine(func)
+        handler = self.run_sync(func)
         self.after_serving_funcs.append(handler)
         return func
 
@@ -1168,7 +1168,7 @@ class Quart(PackageStatic):
             func: The teardown request function itself.
             name: Optional blueprint key name.
         """
-        handler = self.ensure_coroutine(func)
+        handler = self.run_sync(func)
         self.teardown_request_funcs[name].append(handler)
         return func
 
@@ -1187,7 +1187,7 @@ class Quart(PackageStatic):
             func: The teardown websocket function itself.
             name: Optional blueprint key name.
         """
-        handler = self.ensure_coroutine(func)
+        handler = self.run_sync(func)
         self.teardown_websocket_funcs[name].append(handler)
         return func
 
@@ -1206,7 +1206,7 @@ class Quart(PackageStatic):
             func: The teardown function itself.
             name: Optional blueprint key name.
         """
-        handler = self.ensure_coroutine(func)
+        handler = self.run_sync(func)
         self.teardown_appcontext_funcs.append(handler)
         return func
 
@@ -1236,8 +1236,8 @@ class Quart(PackageStatic):
         """Return a iterator over the blueprints."""
         return self.blueprints.values()
 
-    def ensure_coroutine(self, func: Callable[..., Any]) -> Callable[..., Awaitable[Any]]:
-        """Ensure that the function is a coroutine.
+    def run_sync(self, func: Callable[..., Any]) -> Callable[..., Awaitable[Any]]:
+        """Ensure that the sync function is run within the event loop.
 
         If the *func* is not a coroutine it will be wrapped such that
         it runs in the default executor (use loop.set_default_executor
@@ -1265,15 +1265,15 @@ class Quart(PackageStatic):
 
     async def open_session(self, request: BaseRequestWebsocket) -> Session:
         """Open and return a Session using the request."""
-        return await self.ensure_coroutine(self.session_interface.open_session)(self, request)
+        return await self.run_sync(self.session_interface.open_session)(self, request)
 
     async def make_null_session(self) -> Session:
         """Create and return a null session."""
-        return await self.ensure_coroutine(self.session_interface.make_null_session)(self)
+        return await self.run_sync(self.session_interface.make_null_session)(self)
 
     async def save_session(self, session: Session, response: Response) -> None:
         """Saves the session to the response."""
-        await self.ensure_coroutine(self.session_interface.save_session)(self, session, response)
+        await self.run_sync(self.session_interface.save_session)(self, session, response)
 
     async def do_teardown_request(
             self,

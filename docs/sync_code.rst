@@ -30,8 +30,8 @@ the ``request``, ``current_app`` and other globals.
 
 Whilst you can access the ``request`` and other globals in synchronous
 routes you will be unable to await coroutine functions. To work around
-this Quart provides :meth:`~quart.app.Quart.ensure_coroutine` which
-can be used as so,
+this Quart provides :meth:`~quart.app.Quart.run_sync` which can be
+used as so,
 
 .. code-block:: python
 
@@ -43,7 +43,7 @@ can be used as so,
              # does something with data
              ...
 
-        result = await app.ensure_coroutine(sync_processor)
+        result = await app.run_sync(sync_processor)
         return result
 
 this is similar to utilising the asyncio run_in_executor function,
@@ -66,6 +66,6 @@ this is similar to utilising the asyncio run_in_executor function,
 .. note::
 
    The run_in_executor function does not copy the current context,
-   whereas the ensure_coroutine method does. It is for this reason
-   that the latter is recommended. Without the copied context the
-   ``request`` and other globals will not be accessible.
+   whereas the run_sync method does. It is for this reason that the
+   latter is recommended. Without the copied context the ``request``
+   and other globals will not be accessible.
