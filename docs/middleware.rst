@@ -33,7 +33,7 @@ the presence of a header,
                 'more_body': False,
             })
 
-     app = RejectMiddleware(quart_app)
+     quart_app.asgi_app = RejectMiddleware(quart_app.asgi_app)
 
 This can then be extended and used with any ASGI Middleware and served
 with any ASGI server.

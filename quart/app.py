@@ -1800,6 +1800,27 @@ class Quart(PackageStatic):
         return response
 
     async def __call__(self, scope: dict, receive: Callable, send: Callable) -> None:
+        """Called by ASGI servers.
+
+        The related :meth:`~quart.app.Quart.asgi_app` is called,
+        allowing for middleware usage whilst keeping the top level app
+        a :class:`~quart.app.Quart` instance.
+        """
+        await self.asgi_app(scope, receive, send)
+
+    async def asgi_app(self, scope: dict, receive: Callable, send: Callable) -> None:
+        """This handles ASGI calls, it can be wrapped in middleware.
+
+        When using middleware with Quart it is preferable to wrap this
+        method rather than the app itself. This is to ensure that the
+        app is an instance of this class - which allows the quart cli
+        to work correctly. To use this feature simply do,
+
+        .. code-block:: python
+
+            app.asgi_app = middleware(app.asgi_app)
+
+        """
         if scope['type'] == 'http':
             asgi_handler = self.asgi_http_class(self, scope)
         elif scope['type'] == 'websocket':
