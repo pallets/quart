@@ -212,6 +212,15 @@ class Accept:
             quality = float(params.pop('q', 1.0))
             self.options.append(AcceptOption(option, quality, params))
 
+    @property
+    def best(self) -> str:
+        options = sorted(
+            self.options,
+            key=lambda option: (option.value != "*", option.quality, option.value),
+            reverse=True,
+        )
+        return options[0].value
+
     def best_match(self, matches: List[str], default: Optional[str]=None) -> Optional[str]:
         best_match = AcceptOption(default, -1.0, {})
         for possible_match in matches:

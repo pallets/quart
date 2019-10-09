@@ -86,6 +86,11 @@ def test_accept_best_match() -> None:
     assert accept.best_match(['bizarre']) == 'bizarre'
 
 
+def test_accept_best() -> None:
+    accept = Accept("gzip, deflate, br;q=0.9, *;q=0.8")
+    assert accept.best == "gzip"
+
+
 def test_accept_quality() -> None:
     accept = Accept('gzip, deflate, br;q=0.9')
     assert accept.quality("gzip") == 1.0
