@@ -8,6 +8,7 @@ recursive-include quart *.py
 recursive-include tests *.py
 recursive-include tests *.cfg
 recursive-include tests *.json
+recursive-include tests *.toml
 recursive-exclude examples *
 recursive-exclude compliance *
 recursive-exclude docs *

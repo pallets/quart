@@ -24,6 +24,7 @@ INSTALL_REQUIRES = [
     'jinja2',
     'multidict',
     'sortedcontainers',
+    'toml',
 ]
 
 setup(

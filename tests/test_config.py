@@ -75,6 +75,12 @@ def test_config_from_json() -> None:
     _check_standard_config(config)
 
 
+def test_config_from_toml() -> None:
+    config = Config(Path(__file__).parent)
+    config.from_toml('assets/config.toml')
+    _check_standard_config(config)
+
+
 def test_config_get_namespace() -> None:
     config = Config(Path(__file__).parent)
     config['FOO_A'] = 'a'

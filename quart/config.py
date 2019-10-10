@@ -6,6 +6,8 @@ from configparser import ConfigParser
 from datetime import timedelta
 from typing import Any, Callable, Dict, Mapping, Optional, Union
 
+import toml
+
 from .typing import FilePath
 from .utils import file_path_to_path
 
@@ -197,6 +199,30 @@ class Config(dict):
         try:
             with open(file_path) as file_:
                 data = json.loads(file_.read())
+        except (FileNotFoundError, IsADirectoryError):
+            if not silent:
+                raise
+        else:
+            self.from_mapping(data)
+
+    def from_toml(self, filename: str, silent: bool = False) -> None:
+        """Load the configuration values from a TOML formatted file.
+
+        This allows configuration to be loaded as so
+
+        .. code-block:: python
+
+            app.config.from_toml('config.toml')
+
+        Arguments:
+            filename: The filename which when appended to
+                :attr:`root_path` gives the path to the file.
+            silent: If True any errors will fail silently.
+        """
+        file_path = self.root_path / filename
+        try:
+            with open(file_path) as file_:
+                data = toml.loads(file_.read())
         except (FileNotFoundError, IsADirectoryError):
             if not silent:
                 raise
