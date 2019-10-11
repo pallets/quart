@@ -200,6 +200,28 @@ async def test_cookie_jar() -> None:
 
 
 @pytest.mark.asyncio
+async def test_redirect_cookie_jar() -> None:
+    app = Quart(__name__)
+    app.secret_key = 'secret'
+
+    @app.route("/a")
+    async def a() -> Response:
+        response = redirect("/b")
+        response.set_cookie("bar", "foo")
+        return response
+
+    @app.route("/b")
+    async def echo() -> Response:
+        bar = request.cookies.get("bar")
+        response = jsonify({"bar": bar})
+        return response
+
+    client = Client(app)
+    response = await client.get("/a", follow_redirects=True)
+    assert (await response.get_json()) == {"bar": "foo"}
+
+
+@pytest.mark.asyncio
 async def test_set_cookie() -> None:
     app = Quart(__name__)
 

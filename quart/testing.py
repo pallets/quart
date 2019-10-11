@@ -193,6 +193,35 @@ class QuartClient:
         Returns:
             The response from the app handling the request.
         """
+        response = await self._make_request(
+            path, method, headers, data, form, query_string, json, scheme, root_path, http_version,
+        )
+        if follow_redirects:
+            while response.status_code >= 300 and response.status_code <= 399:
+                # Most browsers respond to an HTTP 302 with a GET request to the new location,
+                # despite what the HTTP spec says. HTTP 303 should always be responded to with
+                # a GET request.
+                if response.status_code == 302 or response.status_code == 303:
+                    method = "GET"
+                response = await self._make_request(
+                    response.location, method, headers, data, form, query_string, json, scheme,
+                    root_path, http_version,
+                )
+        return response
+
+    async def _make_request(
+            self,
+            path: str,
+            method: str="GET",
+            headers: Optional[Union[dict, CIMultiDict]]=None,
+            data: Optional[AnyStr]=None,
+            form: Optional[dict]=None,
+            query_string: Optional[dict]=None,
+            json: Any=sentinel,
+            scheme: str="http",
+            root_path: str="",
+            http_version: str="1.1",
+    ) -> Response:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self.app, path, headers, query_string,
         )
@@ -210,19 +239,6 @@ class QuartClient:
         response = await self._handle_request(request)
         if self.cookie_jar is not None and 'Set-Cookie' in response.headers:
             self.cookie_jar.load(";".join(response.headers.getall('Set-Cookie')))
-
-        if follow_redirects:
-            while response.status_code >= 300 and response.status_code <= 399:
-                # Most browsers respond to an HTTP 302 with a GET request to the new location,
-                # despite what the HTTP spec says. HTTP 303 should always be responded to with
-                # a GET request.
-                if response.status_code == 302 or response.status_code == 303:
-                    method = 'GET'
-                request = self.app.request_class(
-                    method, scheme, response.location, query_string_bytes, headers,
-                    root_path, http_version, send_push_promise=self._send_push_promise,
-                )
-                response = await self._handle_request(request)
         return response
 
     async def _handle_request(self, request: Request) -> Response:
