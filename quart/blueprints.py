@@ -30,8 +30,8 @@ class Blueprint(PackageStatic):
             blueprint.
     """
 
-    json_decoder: Optional[JSONDecoder] = None
-    json_encoder: Optional[JSONEncoder] = None
+    json_decoder: Optional[Type[JSONDecoder]] = None
+    json_encoder: Optional[Type[JSONEncoder]] = None
 
     def __init__(
             self,

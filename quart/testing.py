@@ -2,12 +2,12 @@ import asyncio
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
-from json import dumps
 from typing import Any, AnyStr, AsyncGenerator, List, Optional, Tuple, TYPE_CHECKING, Union
 from urllib.parse import unquote, urlencode
 
 from .datastructures import CIMultiDict, Headers
 from .exceptions import BadRequest
+from .json import dumps
 from .utils import create_cookie
 from .wrappers import Request, Response
 
@@ -91,6 +91,7 @@ def make_test_body_with_headers(
     data: Optional[AnyStr]=None,
     form: Optional[dict]=None,
     json: Any=sentinel,
+    app: Optional["Quart"]=None,
 ) -> Tuple[bytes, CIMultiDict]:
     """Make the body bytes with associated headers.
 
@@ -112,7 +113,7 @@ def make_test_body_with_headers(
         request_data = data
 
     if json is not sentinel:
-        request_data = dumps(json).encode('utf-8')
+        request_data = dumps(json, app=app).encode('utf-8')
         headers['Content-Type'] = 'application/json'
 
     if form is not None:
@@ -225,7 +226,8 @@ class QuartClient:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self.app, path, headers, query_string,
         )
-        request_data, body_headers = make_test_body_with_headers(data, form, json)
+
+        request_data, body_headers = make_test_body_with_headers(data, form, json, self.app)
         headers.update(**body_headers)
 
         if self.cookie_jar is not None:
