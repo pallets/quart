@@ -401,10 +401,10 @@ class Response(_BaseRequestResponse, JSONMixin):
         """Freeze this object ready for pickling."""
         self.set_data((await self.get_data()))
 
-    def set_cookie(  # type: ignore
+    def set_cookie(
             self,
             key: str,
-            value: AnyStr='',
+            value: AnyStr='',  # type: ignore
             max_age: Optional[Union[int, timedelta]]=None,
             expires: Optional[datetime]=None,
             path: str='/',

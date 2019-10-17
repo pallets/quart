@@ -43,7 +43,7 @@ def create_cookie(
     The arguments are the standard cookie morsels and this is a
     wrapper around the stdlib SimpleCookie code.
     """
-    cookie = SimpleCookie()
+    cookie: SimpleCookie = SimpleCookie()
     cookie[key] = value
     cookie[key]['path'] = path
     cookie[key]['httponly'] = httponly

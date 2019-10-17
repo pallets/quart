@@ -84,7 +84,7 @@ async def test_secure_cookie_session_interface_save_session() -> None:
     app.secret_key = 'secret'
     response = Response('')
     await interface.save_session(app, session, response)
-    cookies = SimpleCookie()
+    cookies: SimpleCookie = SimpleCookie()
     cookies.load(response.headers['Set-Cookie'])
     cookie = cookies[app.session_cookie_name]
     assert cookie['path'] == interface.get_cookie_path(app)

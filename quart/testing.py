@@ -143,6 +143,7 @@ class QuartClient:
     """
 
     def __init__(self, app: 'Quart', use_cookies: bool=True) -> None:
+        self.cookie_jar: Optional[SimpleCookie]
         if use_cookies:
             self.cookie_jar = SimpleCookie()
         else:
