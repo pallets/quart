@@ -55,7 +55,7 @@ class GunicornWorker(Worker):
                 lambda: Server(self.wsgi, self.loop, config),
                 sock=sock.sock, ssl=ssl_context,
             )
-            self.servers.append(server)
+            self.servers.append(server)  # type: ignore
 
     async def _check_alive(self) -> None:
         # If our parent changed then we shut down.
