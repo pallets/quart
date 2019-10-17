@@ -1,8 +1,7 @@
 0.6.15 2019-10-17
 -----------------
 
-**This is the final 0.6 release and the final release to support
- Python3.6, Python3.8 is now available.**
+**This is the final 0.6 release and the final release to support Python3.6, Python3.8 is now available.**
 
 * Bugfix handle 'http.request' without a 'body' key
 
