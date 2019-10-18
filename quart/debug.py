@@ -4,7 +4,6 @@ import sys
 from .templating import render_template_string
 from .wrappers import Response
 
-
 TEMPLATE = """
 <style>
 pre {
@@ -95,12 +94,14 @@ async def traceback_response() -> Response:
         except OSError:
             code = None
 
-        frames.append({
-            'file': inspect.getfile(frame),
-            'line': frame.f_lineno,
-            'locals': frame.f_locals,
-            'code': code,
-        })
+        frames.append(
+            {
+                "file": inspect.getfile(frame),
+                "line": frame.f_lineno,
+                "locals": frame.f_locals,
+                "code": code,
+            }
+        )
         tb = tb.tb_next
 
     name = type_.__name__

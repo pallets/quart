@@ -1,2 +1,2 @@
-FOO = 'bar'
-BOB = 'jeff'
+FOO = "bar"
+BOB = "jeff"

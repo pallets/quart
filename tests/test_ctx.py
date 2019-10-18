@@ -6,9 +6,15 @@ import pytest
 
 from quart.app import Quart
 from quart.ctx import (
-    _AppCtxGlobals, after_this_request, AppContext, copy_current_app_context,
-    copy_current_request_context, copy_current_websocket_context, has_app_context,
-    has_request_context, RequestContext,
+    _AppCtxGlobals,
+    after_this_request,
+    AppContext,
+    copy_current_app_context,
+    copy_current_request_context,
+    copy_current_websocket_context,
+    has_app_context,
+    has_request_context,
+    RequestContext,
 )
 from quart.datastructures import CIMultiDict
 from quart.exceptions import BadRequest, MethodNotAllowed, NotFound, RedirectRequired
@@ -21,34 +27,34 @@ from quart.wrappers import Request, Websocket
 def test_request_context_match() -> None:
     app = Quart(__name__)
     url_adapter = Mock()
-    rule = Rule('/', {'GET'}, 'index')
-    url_adapter.match.return_value = (rule, {'arg': 'value'})
+    rule = Rule("/", {"GET"}, "index")
+    url_adapter.match.return_value = (rule, {"arg": "value"})
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
     request = Request(
-        'GET', 'http', '/', b'', CIMultiDict(), "", "1.1", send_push_promise=no_op_push,
+        "GET", "http", "/", b"", CIMultiDict(), "", "1.1", send_push_promise=no_op_push
     )
     RequestContext(app, request)
     assert request.url_rule == rule
-    assert request.view_args == {'arg': 'value'}
+    assert request.view_args == {"arg": "value"}
 
 
 @pytest.mark.parametrize(
-    'exception_type, exception_instance',
+    "exception_type, exception_instance",
     [
-        (MethodNotAllowed, MethodNotAllowed(['GET'])),
+        (MethodNotAllowed, MethodNotAllowed(["GET"])),
         (NotFound, NotFound()),
-        (RedirectRequired, RedirectRequired('/')),
+        (RedirectRequired, RedirectRequired("/")),
     ],
 )
 def test_request_context_matching_error(
-        exception_type: Exception, exception_instance: Exception,
+    exception_type: Exception, exception_instance: Exception
 ) -> None:
     app = Quart(__name__)
     url_adapter = Mock()
     url_adapter.match.side_effect = exception_instance
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
     request = Request(
-        'GET', 'http', '/', b'', CIMultiDict(), "", "1.1", send_push_promise=no_op_push,
+        "GET", "http", "/", b"", CIMultiDict(), "", "1.1", send_push_promise=no_op_push
     )
     RequestContext(app, request)
     assert isinstance(request.routing_exception, exception_type)  # type: ignore
@@ -60,7 +66,7 @@ def test_bad_request_if_websocket_route() -> None:
     url_adapter.match.side_effect = BadRequest()
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
     request = Request(
-        'GET', 'http', '/', b'', CIMultiDict(), "", "1.1", send_push_promise=no_op_push,
+        "GET", "http", "/", b"", CIMultiDict(), "", "1.1", send_push_promise=no_op_push
     )
     RequestContext(app, request)
     assert isinstance(request.routing_exception, BadRequest)
@@ -69,23 +75,23 @@ def test_bad_request_if_websocket_route() -> None:
 @pytest.mark.asyncio
 async def test_after_this_request() -> None:
     app = Quart(__name__)
-    headers, path, query_string = make_test_headers_path_and_query_string(app, '/')
+    headers, path, query_string = make_test_headers_path_and_query_string(app, "/")
     async with RequestContext(
-            Quart(__name__),
-            Request(
-                'GET', 'http', path, query_string, headers, "", "1.1", send_push_promise=no_op_push,
-            ),
+        Quart(__name__),
+        Request(
+            "GET", "http", path, query_string, headers, "", "1.1", send_push_promise=no_op_push
+        ),
     ) as context:
-        after_this_request(lambda: 'hello')
-        assert context._after_request_functions[0]() == 'hello'
+        after_this_request(lambda: "hello")
+        assert context._after_request_functions[0]() == "hello"
 
 
 @pytest.mark.asyncio
 async def test_has_request_context() -> None:
     app = Quart(__name__)
-    headers, path, query_string = make_test_headers_path_and_query_string(app, '/')
+    headers, path, query_string = make_test_headers_path_and_query_string(app, "/")
     request = Request(
-        'GET', 'http', path, query_string, headers, "", "1.1", send_push_promise=no_op_push,
+        "GET", "http", path, query_string, headers, "", "1.1", send_push_promise=no_op_push
     )
     async with RequestContext(Quart(__name__), request):
         assert has_request_context() is True
@@ -103,57 +109,57 @@ async def test_has_app_context() -> None:
 
 def test_app_ctx_globals_get() -> None:
     g = _AppCtxGlobals()
-    g.foo = 'bar'  # type: ignore
-    assert g.get('foo') == 'bar'
-    assert g.get('bar', 'something') == 'something'
+    g.foo = "bar"  # type: ignore
+    assert g.get("foo") == "bar"
+    assert g.get("bar", "something") == "something"
 
 
 def test_app_ctx_globals_pop() -> None:
     g = _AppCtxGlobals()
-    g.foo = 'bar'  # type: ignore
-    assert g.pop('foo') == 'bar'
-    assert g.pop('foo', None) is None
+    g.foo = "bar"  # type: ignore
+    assert g.pop("foo") == "bar"
+    assert g.pop("foo", None) is None
     with pytest.raises(KeyError):
-        g.pop('foo')
+        g.pop("foo")
 
 
 def test_app_ctx_globals_setdefault() -> None:
     g = _AppCtxGlobals()
-    g.setdefault('foo', []).append('bar')
-    assert g.foo == ['bar']  # type: ignore
+    g.setdefault("foo", []).append("bar")
+    assert g.foo == ["bar"]  # type: ignore
 
 
 def test_app_ctx_globals_contains() -> None:
     g = _AppCtxGlobals()
-    g.foo = 'bar'  # type: ignore
-    assert 'foo' in g
-    assert 'bar' not in g
+    g.foo = "bar"  # type: ignore
+    assert "foo" in g
+    assert "bar" not in g
 
 
 def test_app_ctx_globals_iter() -> None:
     g = _AppCtxGlobals()
-    g.foo = 'bar'  # type: ignore
-    g.bar = 'foo'  # type: ignore
-    assert sorted(iter(g)) == ['bar', 'foo']
+    g.foo = "bar"  # type: ignore
+    g.bar = "foo"  # type: ignore
+    assert sorted(iter(g)) == ["bar", "foo"]
 
 
 @pytest.mark.asyncio
 async def test_copy_current_app_context() -> None:
     app = Quart(__name__)
 
-    @app.route('/')
+    @app.route("/")
     async def index() -> str:
-        g.foo = 'bar'  # type: ignore
+        g.foo = "bar"  # type: ignore
 
         @copy_current_app_context
         async def within_context() -> None:
-            assert g.foo == 'bar'
+            assert g.foo == "bar"
 
         await asyncio.ensure_future(within_context())
-        return ''
+        return ""
 
     test_client = app.test_client()
-    response = await test_client.get('/')
+    response = await test_client.get("/")
     assert response.status_code == 200
 
 
@@ -166,17 +172,17 @@ def test_copy_current_app_context_error() -> None:
 async def test_copy_current_request_context() -> None:
     app = Quart(__name__)
 
-    @app.route('/')
+    @app.route("/")
     async def index() -> str:
         @copy_current_request_context
         async def within_context() -> None:
-            assert request.path == '/'
+            assert request.path == "/"
 
         await asyncio.ensure_future(within_context())
-        return ''
+        return ""
 
     test_client = app.test_client()
-    response = await test_client.get('/')
+    response = await test_client.get("/")
     assert response.status_code == 200
 
 
@@ -189,16 +195,16 @@ def test_copy_current_request_context_error() -> None:
 async def test_works_without_copy_current_request_context() -> None:
     app = Quart(__name__)
 
-    @app.route('/')
+    @app.route("/")
     async def index() -> str:
         async def within_context() -> None:
-            assert request.path == '/'
+            assert request.path == "/"
 
         await asyncio.ensure_future(within_context())
-        return ''
+        return ""
 
     test_client = app.test_client()
-    response = await test_client.get('/')
+    response = await test_client.get("/")
     assert response.status_code == 200
 
 
@@ -206,7 +212,7 @@ async def test_works_without_copy_current_request_context() -> None:
 async def test_copy_current_websocket_context() -> None:
     app = Quart(__name__)
 
-    @app.websocket('/')
+    @app.websocket("/")
     async def index() -> None:
         @copy_current_websocket_context
         async def within_context() -> None:
@@ -216,9 +222,9 @@ async def test_copy_current_websocket_context() -> None:
         await websocket.send(data.encode())
 
     test_client = app.test_client()
-    async with test_client.websocket('/') as test_websocket:
+    async with test_client.websocket("/") as test_websocket:
         data = await test_websocket.receive()
-    assert cast(bytes, data) == b'/'
+    assert cast(bytes, data) == b"/"
 
 
 def test_copy_current_websocket_context_error() -> None:
@@ -231,7 +237,7 @@ async def test_overlapping_request_ctx() -> None:
     app = Quart(__name__)
 
     request = Request(
-        'GET', 'http', '/', b'', CIMultiDict(), "", "1.1", send_push_promise=no_op_push,
+        "GET", "http", "/", b"", CIMultiDict(), "", "1.1", send_push_promise=no_op_push
     )
     ctx1 = app.request_context(request)
     await ctx1.__aenter__()
@@ -246,7 +252,7 @@ async def test_overlapping_request_ctx() -> None:
 async def test_overlapping_websocket_ctx() -> None:
     app = Quart(__name__)
 
-    websocket = Websocket('/', b'', 'ws', CIMultiDict(), "", "1.1", [], None, None, None)
+    websocket = Websocket("/", b"", "ws", CIMultiDict(), "", "1.1", [], None, None, None)
     ctx1 = app.websocket_context(websocket)
     await ctx1.__aenter__()
     ctx2 = app.websocket_context(websocket)

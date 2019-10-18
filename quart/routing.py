@@ -3,7 +3,17 @@ import uuid
 from ast import literal_eval
 from collections import defaultdict
 from typing import (
-    Any, Dict, Generator, Iterator, List, NamedTuple, Optional, Pattern, Set, Tuple, Union,
+    Any,
+    Dict,
+    Generator,
+    Iterator,
+    List,
+    NamedTuple,
+    Optional,
+    Pattern,
+    Set,
+    Tuple,
+    Union,
 )
 from urllib.parse import urlencode, urlunsplit
 
@@ -11,8 +21,8 @@ from sortedcontainers import SortedListWithKey
 
 from .exceptions import BadRequest, MethodNotAllowed, NotFound, RedirectRequired
 
-
-ROUTE_VAR_RE = re.compile(r'''  # noqa
+ROUTE_VAR_RE = re.compile(
+    r"""  # noqa
     (?P<static>[^<]*)                           # static rule data
     <
     (?:
@@ -22,9 +32,12 @@ ROUTE_VAR_RE = re.compile(r'''  # noqa
     )?
     (?P<variable>[a-zA-Z][a-zA-Z0-9_]*)         # variable name
     >
-''', re.VERBOSE)  # noqa
+""",
+    re.VERBOSE,
+)  # noqa
 
-CONVERTER_ARGS_RE = re.compile(r'''  # noqa
+CONVERTER_ARGS_RE = re.compile(
+    r"""  # noqa
     ((?P<name>\w+)\s*=\s*)?
     (?P<value>
         True|False|
@@ -34,13 +47,15 @@ CONVERTER_ARGS_RE = re.compile(r'''  # noqa
         \w+|
         [urUR]?(?P<str_value>"[^"]*?"|'[^']*')
     )\s*,
-''', re.VERBOSE | re.UNICODE)  # noqa
+""",
+    re.VERBOSE | re.UNICODE,
+)  # noqa
 
 VariablePart = NamedTuple(
-    'VariablePart',
-    [('converter', Optional[str]), ('arguments', Tuple[List[Any], Dict[str, Any]]), ('name', str)],
+    "VariablePart",
+    [("converter", Optional[str]), ("arguments", Tuple[List[Any], Dict[str, Any]]), ("name", str)],
 )
-WeightedPart = NamedTuple('Weight', [('converter', bool), ('weight', int)])
+WeightedPart = NamedTuple("Weight", [("converter", bool), ("weight", int)])
 
 
 class ValidationError(Exception):
@@ -48,13 +63,12 @@ class ValidationError(Exception):
 
 
 class BuildError(Exception):
-
     def __init__(
-            self,
-            endpoint: str,
-            rules: List['Rule'],
-            values: Optional[Dict]=None,
-            method: Optional[str]=None,
+        self,
+        endpoint: str,
+        rules: List["Rule"],
+        values: Optional[Dict] = None,
+        method: Optional[str] = None,
     ) -> None:
         self.endpoint = endpoint
         self.rules = rules
@@ -70,15 +84,15 @@ class BuildError(Exception):
                     message.append(f"as {self.method} is not one of {rule.methods}.")
                 elif self.values is not None:
                     message.append(
-                        f"as {self.values.keys()} do not match {rule._converters.keys()}.",
+                        f"as {self.values.keys()} do not match {rule._converters.keys()}."
                     )
         else:
-            message.append('No endpoint found.')
-        return ' '.join(message)
+            message.append("No endpoint found.")
+        return " ".join(message)
 
 
 class BaseConverter:
-    regex = r'[^/]+'
+    regex = r"[^/]+"
     weight = 100
 
     def to_python(self, value: str) -> Any:
@@ -89,35 +103,36 @@ class BaseConverter:
 
 
 class StringConverter(BaseConverter):
-
     def __init__(
-            self, minlength: int=1, maxlength: Optional[int]=None, length: Optional[int]=None,
+        self, minlength: int = 1, maxlength: Optional[int] = None, length: Optional[int] = None
     ) -> None:
         if length is not None:
-            re_length = '{%d}' % length
+            re_length = "{%d}" % length
         else:
-            maxlength = '' if maxlength is None else int(maxlength)  # type: ignore
-            re_length = '{%d,%s}' % (minlength, maxlength)
+            maxlength = "" if maxlength is None else int(maxlength)  # type: ignore
+            re_length = "{%d,%s}" % (minlength, maxlength)
         self.regex = f"[^/]{re_length}"
 
 
 class AnyConverter(BaseConverter):
     def __init__(self, *items: str) -> None:
-        self.regex = '(?:%s)' % '|'.join((re.escape(x) for x in items))
+        self.regex = "(?:%s)" % "|".join((re.escape(x) for x in items))
 
 
 class PathConverter(BaseConverter):
-    regex = r'[^/].*?'
+    regex = r"[^/].*?"
     weight = 200
 
 
 class IntegerConverter(BaseConverter):
-    regex = r'\d+'
+    regex = r"\d+"
     weight = 50
 
     def __init__(
-            self, fixed_digits: Optional[int]=None, min: Optional[int]=None,
-            max: Optional[int]=None,
+        self,
+        fixed_digits: Optional[int] = None,
+        min: Optional[int] = None,
+        max: Optional[int] = None,
     ) -> None:
         self.fixed_digits = fixed_digits
         self.min = min
@@ -128,8 +143,10 @@ class IntegerConverter(BaseConverter):
             raise ValidationError()
         converted_value = int(value)
         if (
-                self.min is not None and self.min > converted_value or
-                self.max is not None and self.max < converted_value
+            self.min is not None
+            and self.min > converted_value
+            or self.max is not None
+            and self.max < converted_value
         ):
             raise ValidationError()
         return converted_value
@@ -142,18 +159,20 @@ class IntegerConverter(BaseConverter):
 
 
 class FloatConverter(BaseConverter):
-    regex = r'\d+\.\d+'
+    regex = r"\d+\.\d+"
     weight = 50
 
-    def __init__(self, min: Optional[float]=None, max: Optional[float]=None) -> None:
+    def __init__(self, min: Optional[float] = None, max: Optional[float] = None) -> None:
         self.min = min
         self.max = max
 
     def to_python(self, value: str) -> float:
         converted_value = float(value)
         if (
-                self.min is not None and self.min > converted_value or
-                self.max is not None and self.max < converted_value
+            self.min is not None
+            and self.min > converted_value
+            or self.max is not None
+            and self.max < converted_value
         ):
             raise ValidationError()
         return converted_value
@@ -163,7 +182,7 @@ class FloatConverter(BaseConverter):
 
 
 class UUIDConverter(BaseConverter):
-    regex = r'[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}'  # noqa
+    regex = r"[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}"  # noqa
 
     def to_python(self, value: str) -> uuid.UUID:
         return uuid.UUID(value)
@@ -175,61 +194,62 @@ class UUIDConverter(BaseConverter):
 class Map:
 
     default_converters = {
-        'any': AnyConverter,
-        'default': StringConverter,
-        'float': FloatConverter,
-        'int': IntegerConverter,
-        'path': PathConverter,
-        'string': StringConverter,
-        'uuid': UUIDConverter,
+        "any": AnyConverter,
+        "default": StringConverter,
+        "float": FloatConverter,
+        "int": IntegerConverter,
+        "path": PathConverter,
+        "string": StringConverter,
+        "uuid": UUIDConverter,
     }
 
-    def __init__(self, host_matching: bool=False) -> None:
+    def __init__(self, host_matching: bool = False) -> None:
         self.rules = SortedListWithKey(key=lambda rule: rule.match_key)
-        self.endpoints: Dict[str, SortedListWithKey] = defaultdict(lambda: SortedListWithKey(key=lambda rule: rule.build_key))  # noqa
+        self.endpoints: Dict[str, SortedListWithKey] = defaultdict(
+            lambda: SortedListWithKey(key=lambda rule: rule.build_key)
+        )  # noqa
         self.converters = self.default_converters.copy()
         self.host_matching = host_matching
 
-    def add(self, rule: 'Rule') -> None:
+    def add(self, rule: "Rule") -> None:
         rule.bind(self)
         self.endpoints[rule.endpoint].add(rule)
         self.rules.add(rule)
 
     def bind_to_request(
-            self,
-            secure: bool,
-            server_name: str,
-            method: str,
-            path: str,
-            query_string: bytes,
-            websocket: bool,
-            root_path: str,
-    ) -> 'MapAdapter':
+        self,
+        secure: bool,
+        server_name: str,
+        method: str,
+        path: str,
+        query_string: bytes,
+        websocket: bool,
+        root_path: str,
+    ) -> "MapAdapter":
         return MapAdapter(
-            self, secure, server_name, method, path, query_string, websocket, root_path,
+            self, secure, server_name, method, path, query_string, websocket, root_path
         )
 
-    def bind(self, secure: bool, server_name: str) -> 'MapAdapter':
+    def bind(self, secure: bool, server_name: str) -> "MapAdapter":
         return MapAdapter(self, secure, server_name)
 
-    def iter_rules(self, endpoint: Optional[str]=None) -> Iterator['Rule']:
+    def iter_rules(self, endpoint: Optional[str] = None) -> Iterator["Rule"]:
         if endpoint is not None:
             return iter(self.endpoints[endpoint])
         return iter(self.rules)
 
 
 class MapAdapter:
-
     def __init__(
-            self,
-            map: Map,
-            secure: bool,
-            server_name: str,
-            method: Optional[str]=None,
-            path: Optional[str]=None,
-            query_string: Optional[bytes]=None,
-            websocket: bool=False,
-            root_path: str="",
+        self,
+        map: Map,
+        secure: bool,
+        server_name: str,
+        method: Optional[str] = None,
+        path: Optional[str] = None,
+        query_string: Optional[bytes] = None,
+        websocket: bool = False,
+        root_path: str = "",
     ) -> None:
         self.map = map
         self.websocket = websocket
@@ -241,12 +261,12 @@ class MapAdapter:
         self.query_string = query_string
 
     def build(
-            self,
-            endpoint: str,
-            values: Optional[dict]=None,
-            method: Optional[str]=None,
-            scheme: Optional[str]=None,
-            external: bool=False,
+        self,
+        endpoint: str,
+        values: Optional[dict] = None,
+        method: Optional[str] = None,
+        scheme: Optional[str] = None,
+        external: bool = False,
     ) -> str:
         values = values or {}
         rules = self.map.endpoints[endpoint]
@@ -262,7 +282,7 @@ class MapAdapter:
                     return path
         raise BuildError(endpoint, rules, values, method)
 
-    def match(self) -> Tuple['Rule', Dict[str, Any]]:
+    def match(self) -> Tuple["Rule", Dict[str, Any]]:
         allowed_methods: Set[str] = set()
         websocket_missmatch = False
         for rule, variables, needs_slash in self._matches():
@@ -287,11 +307,11 @@ class MapAdapter:
             raise MethodNotAllowed(allowed_methods=allowed_methods)
         raise NotFound()
 
-    def _make_redirect_url(self, rule: 'Rule', variables: Dict[str, Any]) -> str:
+    def _make_redirect_url(self, rule: "Rule", variables: Dict[str, Any]) -> str:
         path = rule.build(**variables)
-        suffix = self.query_string.decode('ascii')
+        suffix = self.query_string.decode("ascii")
         scheme = self._build_scheme(rule)
-        return urlunsplit((scheme, self.server_name, path, suffix, ''))
+        return urlunsplit((scheme, self.server_name, path, suffix, ""))
 
     def allowed_methods(self) -> Set[str]:
         allowed_methods: Set[str] = set()
@@ -299,11 +319,11 @@ class MapAdapter:
             allowed_methods.update(rule.methods)
         return allowed_methods
 
-    def _matches(self) -> Generator[Tuple['Rule', Dict[str, Any], bool], None, None]:
+    def _matches(self) -> Generator[Tuple["Rule", Dict[str, Any], bool], None, None]:
         if not self.path.startswith(self.root_path):
             return
 
-        path = self.path[len(self.root_path):]
+        path = self.path[len(self.root_path) :]
         if self.map.host_matching:
             full_path = f"{self.server_name}|{path}"
         else:
@@ -324,28 +344,27 @@ class MapAdapter:
 
 
 class Rule:
-
     def __init__(
-            self,
-            rule: str,
-            methods: Set[str],
-            endpoint: str,
-            strict_slashes: bool=True,
-            defaults: Optional[dict]=None,
-            host: Optional[str]=None,
-            *,
-            provide_automatic_options: bool=True,
-            is_websocket: bool=False,
+        self,
+        rule: str,
+        methods: Set[str],
+        endpoint: str,
+        strict_slashes: bool = True,
+        defaults: Optional[dict] = None,
+        host: Optional[str] = None,
+        *,
+        provide_automatic_options: bool = True,
+        is_websocket: bool = False,
     ) -> None:
-        if not rule.startswith('/'):
+        if not rule.startswith("/"):
             raise ValueError(f"Rule '{rule}' does not start with a slash")
         self.rule = rule
-        self.is_leaf = not rule.endswith('/')
+        self.is_leaf = not rule.endswith("/")
         self.is_websocket = is_websocket
-        if 'GET' in methods and 'HEAD' not in methods and not self.is_websocket:
-            methods.add('HEAD')
+        if "GET" in methods and "HEAD" not in methods and not self.is_websocket:
+            methods.add("HEAD")
         self.methods = frozenset(method.upper() for method in methods)
-        if self.is_websocket and self.methods != {'GET'}:
+        if self.is_websocket and self.methods != {"GET"}:
             raise ValueError(f"{methods} must only be GET for a websocket route")
         self.endpoint = endpoint
         self.strict_slashes = strict_slashes
@@ -376,13 +395,13 @@ class Rule:
             # missing a trailing slash then it needs one to be
             # considered a match in the strict slashes mode.
             needs_slash = (
-                self.strict_slashes and not self.is_leaf and match.groupdict()['__slash__'] != '/'
+                self.strict_slashes and not self.is_leaf and match.groupdict()["__slash__"] != "/"
             )
             try:
                 converted_varaibles = {
                     name: self._converters[name].to_python(value)
                     for name, value in match.groupdict().items()
-                    if name != '__slash__'
+                    if name != "__slash__"
                 }
             except ValidationError:  # Doesn't meet conversion rules, no match
                 return None, False
@@ -391,10 +410,12 @@ class Rule:
         else:
             return None, False
 
-    def provides_defaults_for(self, rule: 'Rule', **values: Any) -> bool:
+    def provides_defaults_for(self, rule: "Rule", **values: Any) -> bool:
         """Returns true if this rule provides defaults for the argument and values."""
         defaults_match = all(
-            values[key] == self.defaults[key] for key in self.defaults if key in values  # noqa: S101, E501
+            values[key] == self.defaults[key]
+            for key in self.defaults
+            if key in values  # noqa: S101, E501
         )
         return self != rule and bool(self.defaults) and defaults_match
 
@@ -405,7 +426,7 @@ class Rule:
             for key, value in values.items()
             if key in self._converters
         }
-        result = self._builder.format(**converted_values).split('|', 1)[1]
+        result = self._builder.format(**converted_values).split("|", 1)[1]
         query_string = urlencode(
             {
                 key: value
@@ -418,12 +439,14 @@ class Rule:
             result = "{}?{}".format(result, query_string)
         return result
 
-    def buildable(self, values: Optional[dict]=None, method: Optional[str]=None) -> bool:
+    def buildable(self, values: Optional[dict] = None, method: Optional[str] = None) -> bool:
         """Return True if this rule can build with the values and method."""
         if method is not None and method not in self.methods:
             return False
         defaults_match = all(
-            values[key] == self.defaults[key] for key in self.defaults if key in values  # noqa: S101, E501
+            values[key] == self.defaults[key]
+            for key in self.defaults
+            if key in values  # noqa: S101, E501
         )
         return defaults_match and set(values.keys()) >= set(self._converters.keys())
 
@@ -434,17 +457,17 @@ class Rule:
 
         self.map = map
 
-        pattern = ''
-        builder = ''
-        full_rule = "{}\\|{}".format(self.host or '', self.rule)
+        pattern = ""
+        builder = ""
+        full_rule = "{}\\|{}".format(self.host or "", self.rule)
         for part in _parse_rule(full_rule):
             if isinstance(part, VariablePart):
                 converter = self.map.converters[part.converter](
-                    *part.arguments[0], **part.arguments[1],
+                    *part.arguments[0], **part.arguments[1]
                 )
                 pattern += f"(?P<{part.name}>{converter.regex})"
                 self._converters[part.name] = converter
-                builder += '{' + part.name + '}'
+                builder += "{" + part.name + "}"
                 self._weights.append(WeightedPart(True, converter.weight))
             else:
                 builder += part
@@ -499,30 +522,30 @@ def _parse_rule(rule: str) -> Generator[Union[str, VariablePart], None, None]:
     final_match = 0
     for match in ROUTE_VAR_RE.finditer(rule):
         named_groups = match.groupdict()
-        if named_groups['static'] is not None:
-            yield named_groups['static']
-        variable = named_groups['variable']
+        if named_groups["static"] is not None:
+            yield named_groups["static"]
+        variable = named_groups["variable"]
         if variable in variable_names:
             raise ValueError(f"Variable name {variable} used more than once")
         else:
             variable_names.add(variable)
-        arguments = _parse_converter_args(named_groups['args'] or '')
-        yield VariablePart(named_groups['converter'] or 'default', arguments, variable)
+        arguments = _parse_converter_args(named_groups["args"] or "")
+        yield VariablePart(named_groups["converter"] or "default", arguments, variable)
         final_match = match.span()[-1]
     yield rule[final_match:]
 
 
 def _parse_converter_args(raw: str) -> Tuple[List[Any], Dict[str, Any]]:
-    raw += ','  # Simplifies matching regex if each argument has a trailing comma
+    raw += ","  # Simplifies matching regex if each argument has a trailing comma
     args = []
     kwargs = {}
     for match in CONVERTER_ARGS_RE.finditer(raw):
-        value = match.group('str_value') or match.group('value')
+        value = match.group("str_value") or match.group("value")
         try:
             value = literal_eval(value)
         except ValueError:
             value = str(value)
-        name = match.group('name')
+        name = match.group("name")
         if not name:
             args.append(value)
         else:

@@ -17,18 +17,17 @@ from .utils import file_path_to_path
 from .wrappers import Response
 from .wrappers.response import ResponseBody
 
-DEFAULT_MIMETYPE = 'application/octet-stream'
+DEFAULT_MIMETYPE = "application/octet-stream"
 
 
 class PackageStatic:
-
     def __init__(
-            self,
-            import_name: str,
-            template_folder: Optional[str]=None,
-            root_path: Optional[str]=None,
-            static_folder: Optional[str]=None,
-            static_url_path: Optional[str]=None,
+        self,
+        import_name: str,
+        template_folder: Optional[str] = None,
+        root_path: Optional[str] = None,
+        static_folder: Optional[str] = None,
+        static_url_path: Optional[str] = None,
     ) -> None:
         self.import_name = import_name
         self.template_folder = Path(template_folder) if template_folder is not None else None
@@ -59,7 +58,7 @@ class PackageStatic:
         if self._static_url_path is not None:
             return self._static_url_path
         if self.static_folder is not None:
-            return '/' + self.static_folder.name
+            return "/" + self.static_folder.name
         else:
             return None
 
@@ -83,10 +82,10 @@ class PackageStatic:
 
     async def send_static_file(self, filename: str) -> Response:
         if not self.has_static_folder:
-            raise RuntimeError('No static folder for this object')
+            raise RuntimeError("No static folder for this object")
         return await send_from_directory(self.static_folder, filename)
 
-    def open_resource(self, path: FilePath, mode: str='rb') -> IO[AnyStr]:
+    def open_resource(self, path: FilePath, mode: str = "rb") -> IO[AnyStr]:
         """Open a file for reading.
 
         Use as
@@ -96,20 +95,20 @@ class PackageStatic:
             with app.open_resouce(path) as file_:
                 file_.read()
         """
-        if mode not in {'r', 'rb'}:
-            raise ValueError('Files can only be opened for reading')
+        if mode not in {"r", "rb"}:
+            raise ValueError("Files can only be opened for reading")
         return open(self.root_path / file_path_to_path(path), mode)
 
-    def _find_root_path(self, root_path: Optional[str]=None) -> Path:
+    def _find_root_path(self, root_path: Optional[str] = None) -> Path:
         if root_path is not None:
             return Path(root_path)
         else:
             module = sys.modules.get(self.import_name)
-            if module is not None and hasattr(module, '__file__'):
+            if module is not None and hasattr(module, "__file__"):
                 file_path = module.__file__
             else:
                 loader = pkgutil.get_loader(self.import_name)
-                if loader is None or self.import_name == '__main__':
+                if loader is None or self.import_name == "__main__":
                     return Path.cwd()
                 else:
                     file_path = loader.get_filename(self.import_name)  # type: ignore
@@ -136,16 +135,16 @@ def safe_join(directory: FilePath, *paths: FilePath) -> Path:
 
 
 async def send_from_directory(
-        directory: FilePath,
-        file_name: str,
-        *,
-        mimetype: Optional[str]=None,
-        as_attachment: bool=False,
-        attachment_filename: Optional[str]=None,
-        add_etags: bool=True,
-        cache_timeout: Optional[int]=None,
-        conditional: bool=True,
-        last_modified: Optional[datetime]=None,
+    directory: FilePath,
+    file_name: str,
+    *,
+    mimetype: Optional[str] = None,
+    as_attachment: bool = False,
+    attachment_filename: Optional[str] = None,
+    add_etags: bool = True,
+    cache_timeout: Optional[int] = None,
+    conditional: bool = True,
+    last_modified: Optional[datetime] = None,
 ) -> Response:
     """Send a file from a given directory.
 
@@ -173,14 +172,14 @@ async def send_from_directory(
 
 
 async def send_file(
-        filename_or_io: Union[FilePath, BytesIO],
-        mimetype: Optional[str]=None,
-        as_attachment: bool=False,
-        attachment_filename: Optional[str]=None,
-        add_etags: bool=True,
-        cache_timeout: Optional[int]=None,
-        conditional: bool=False,
-        last_modified: Optional[datetime]=None,
+    filename_or_io: Union[FilePath, BytesIO],
+    mimetype: Optional[str] = None,
+    as_attachment: bool = False,
+    attachment_filename: Optional[str] = None,
+    add_etags: bool = True,
+    cache_timeout: Optional[int] = None,
+    conditional: bool = False,
+    last_modified: Optional[datetime] = None,
 ) -> Response:
     """Return a Response to send the filename given.
 
@@ -212,8 +211,7 @@ async def send_file(
         if cache_timeout is None:
             cache_timeout = current_app.get_send_file_max_age(file_path)
         etag = "{}-{}-{}".format(
-            file_path.stat().st_mtime, file_path.stat().st_size,
-            adler32(bytes(file_path)),
+            file_path.stat().st_mtime, file_path.stat().st_size, adler32(bytes(file_path))
         )
 
     if mimetype is None and attachment_filename is not None:
@@ -226,7 +224,7 @@ async def send_file(
     response = current_app.response_class(file_body, mimetype=mimetype)
 
     if as_attachment:
-        response.headers.add('Content-Disposition', 'attachment', filename=attachment_filename)
+        response.headers.add("Content-Disposition", "attachment", filename=attachment_filename)
 
     if last_modified is not None:
         response.last_modified = last_modified

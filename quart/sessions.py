@@ -32,11 +32,11 @@ class SessionMixin:
 
     @property
     def permanent(self) -> bool:
-        return self.get('_permanent', False)  # type: ignore
+        return self.get("_permanent", False)  # type: ignore
 
     @permanent.setter
     def permanent(self, value: bool) -> None:
-        self['_permanent'] = value  # type: ignore
+        self["_permanent"] = value  # type: ignore
 
 
 def _wrap_modified(method: Callable) -> Callable:
@@ -45,6 +45,7 @@ def _wrap_modified(method: Callable) -> Callable:
         self.accessed = True
         self.modified = True
         return method(self, *args, **kwargs)
+
     return wrapper
 
 
@@ -53,11 +54,13 @@ def _wrap_accessed(method: Callable) -> Callable:
     def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
         self.accessed = True
         return method(self, *args, **kwargs)
+
     return wrapper
 
 
 class Session(MutableMapping):
     """An abstract base class for Sessions."""
+
     pass
 
 
@@ -68,6 +71,7 @@ class SecureCookieSession(SessionMixin, dict, Session):
     class does not implement anything bar modification and accessed
     flags.
     """
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.accessed = False
@@ -87,7 +91,8 @@ class SecureCookieSession(SessionMixin, dict, Session):
 def _wrap_no_modification(method: Callable) -> Callable:
     @wraps(method)
     def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
-        raise RuntimeError('Cannot create session, ensure there is a app secret key.')
+        raise RuntimeError("Cannot create session, ensure there is a app secret key.")
+
     return wrapper
 
 
@@ -111,10 +116,11 @@ class SessionInterface:
             sessions.
         pickle_based: Indicates if pickling is used for the session.
     """
+
     null_session_class = NullSession
     pickle_based = False
 
-    async def make_null_session(self, app: 'Quart') -> NullSession:
+    async def make_null_session(self, app: "Quart") -> NullSession:
         """Create a Null session object.
 
         This is used in replacement of an actual session if sessions
@@ -126,32 +132,32 @@ class SessionInterface:
         """Returns True is the instance is a null session."""
         return isinstance(instance, self.null_session_class)
 
-    def get_cookie_domain(self, app: 'Quart') -> Optional[str]:
+    def get_cookie_domain(self, app: "Quart") -> Optional[str]:
         """Helper method to return the Cookie Domain for the App."""
-        if app.config['SESSION_COOKIE_DOMAIN'] is not None:
-            return app.config['SESSION_COOKIE_DOMAIN']
-        elif app.config['SERVER_NAME'] is not None:
-            return '.' + app.config['SERVER_NAME'].rsplit(':', 1)[0]
+        if app.config["SESSION_COOKIE_DOMAIN"] is not None:
+            return app.config["SESSION_COOKIE_DOMAIN"]
+        elif app.config["SERVER_NAME"] is not None:
+            return "." + app.config["SERVER_NAME"].rsplit(":", 1)[0]
         else:
             return None
 
-    def get_cookie_path(self, app: 'Quart') -> str:
+    def get_cookie_path(self, app: "Quart") -> str:
         """Helper method to return the Cookie path for the App."""
-        return app.config['SESSION_COOKIE_PATH'] or app.config['APPLICATION_ROOT'] or '/'
+        return app.config["SESSION_COOKIE_PATH"] or app.config["APPLICATION_ROOT"] or "/"
 
-    def get_cookie_httponly(self, app: 'Quart') -> bool:
+    def get_cookie_httponly(self, app: "Quart") -> bool:
         """Helper method to return if the Cookie should be HTTPOnly for the App."""
-        return app.config['SESSION_COOKIE_HTTPONLY']
+        return app.config["SESSION_COOKIE_HTTPONLY"]
 
-    def get_cookie_secure(self, app: 'Quart') -> bool:
+    def get_cookie_secure(self, app: "Quart") -> bool:
         """Helper method to return if the Cookie should be Secure for the App."""
-        return app.config['SESSION_COOKIE_SECURE']
+        return app.config["SESSION_COOKIE_SECURE"]
 
-    def get_cookie_samesite(self, app: 'Quart') -> str:
+    def get_cookie_samesite(self, app: "Quart") -> str:
         """Helper method to return the Cookie Samesite configuration for the App."""
-        return app.config['SESSION_COOKIE_SAMESITE']
+        return app.config["SESSION_COOKIE_SAMESITE"]
 
-    def get_expiration_time(self, app: 'Quart', session: SessionMixin) -> Optional[datetime]:
+    def get_expiration_time(self, app: "Quart", session: SessionMixin) -> Optional[datetime]:
         """Helper method to return the Session expiration time.
 
         If the session is not 'permanent' it will expire as and when
@@ -162,7 +168,7 @@ class SessionInterface:
         else:
             return None
 
-    def should_set_cookie(self, app: 'Quart', session: SessionMixin) -> bool:
+    def should_set_cookie(self, app: "Quart", session: SessionMixin) -> bool:
         """Helper method to return if the Set Cookie header should be present.
 
         This triggers if the session is marked as modified or the app
@@ -170,10 +176,10 @@ class SessionInterface:
         """
         if session.modified:
             return True
-        save_each = app.config['SESSION_REFRESH_EACH_REQUEST']
+        save_each = app.config["SESSION_REFRESH_EACH_REQUEST"]
         return save_each and session.permanent
 
-    async def open_session(self, app: 'Quart', request: BaseRequestWebsocket) -> Optional[Session]:
+    async def open_session(self, app: "Quart", request: BaseRequestWebsocket) -> Optional[Session]:
         """Open an existing session from the request or create one.
 
         Returns:
@@ -183,7 +189,7 @@ class SessionInterface:
         """
         raise NotImplementedError()
 
-    async def save_session(self, app: 'Quart', session: Session, response: Response) -> Response:
+    async def save_session(self, app: "Quart", session: Session, response: Response) -> Response:
         """Save the session argument to the response.
 
         Returns:
@@ -200,12 +206,12 @@ class SecureCookieSessionInterface(SessionInterface):
     """
 
     digest_method = staticmethod(hashlib.sha1)
-    key_derivation = 'hmac'
-    salt = 'cookie-session'
+    key_derivation = "hmac"
+    salt = "cookie-session"
     serializer = TaggedJSONSerializer()
     session_class = SecureCookieSession
 
-    def get_signing_serializer(self, app: 'Quart') -> Optional[URLSafeTimedSerializer]:
+    def get_signing_serializer(self, app: "Quart") -> Optional[URLSafeTimedSerializer]:
         """Return a serializer for the session that also signs data.
 
         This will return None if the app is not configured for secrets.
@@ -213,18 +219,13 @@ class SecureCookieSessionInterface(SessionInterface):
         if not app.secret_key:
             return None
 
-        options = {
-            'key_derivation': self.key_derivation,
-            'digest_method': self.digest_method,
-        }
+        options = {"key_derivation": self.key_derivation, "digest_method": self.digest_method}
         return URLSafeTimedSerializer(
-            app.secret_key, salt=self.salt, serializer=self.serializer, signer_kwargs=options,
+            app.secret_key, salt=self.salt, serializer=self.serializer, signer_kwargs=options
         )
 
     async def open_session(
-            self,
-            app: 'Quart',
-            request: BaseRequestWebsocket,
+        self, app: "Quart", request: BaseRequestWebsocket
     ) -> Optional[SecureCookieSession]:
         """Open a secure cookie based session.
 
@@ -239,15 +240,13 @@ class SecureCookieSessionInterface(SessionInterface):
         if cookie is None:
             return self.session_class()
         try:
-            data = signer.loads(
-                cookie, max_age=app.permanent_session_lifetime.total_seconds(),
-            )
+            data = signer.loads(cookie, max_age=app.permanent_session_lifetime.total_seconds())
             return self.session_class(**data)
         except BadSignature:
             return self.session_class()
 
     async def save_session(  # type: ignore
-            self, app: 'Quart', session: SecureCookieSession, response: Response,
+        self, app: "Quart", session: SecureCookieSession, response: Response
     ) -> None:
         """Saves the session to the response in a secure cookie."""
         domain = self.get_cookie_domain(app)
@@ -258,7 +257,7 @@ class SecureCookieSessionInterface(SessionInterface):
             return
 
         if session.accessed:
-            response.vary.add('Cookie')
+            response.vary.add("Cookie")
 
         if not self.should_set_cookie(app, session):
             return

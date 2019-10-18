@@ -7,7 +7,17 @@ from email.utils import parsedate_to_datetime
 from functools import wraps
 from shutil import copyfileobj
 from typing import (
-    Any, BinaryIO, Callable, Dict, Iterable, List, NamedTuple, Optional, Set, Type, Union,
+    Any,
+    BinaryIO,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    NamedTuple,
+    Optional,
+    Set,
+    Type,
+    Union,
 )
 from urllib.request import parse_http_list, parse_keqv_list
 from wsgiref.handlers import format_date_time
@@ -16,8 +26,7 @@ from multidict import CIMultiDict as AIOCIMultiDict, MultiDict as AIOMultiDict
 
 
 class _WerkzeugMultidictMixin:
-
-    def get(self, key: str, default: Any=None, type: Any=None) -> Any:
+    def get(self, key: str, default: Any = None, type: Any = None) -> Any:
         value = super().get(key, default)  # type: ignore
         if type is not None:
             try:
@@ -26,7 +35,7 @@ class _WerkzeugMultidictMixin:
                 value = default
         return value
 
-    def getlist(self, key: str, type: Any=None) -> List[Any]:
+    def getlist(self, key: str, type: Any = None) -> List[Any]:
         values = self.getall(key, [])  # type: ignore
         if type is not None:
             result = []
@@ -39,7 +48,7 @@ class _WerkzeugMultidictMixin:
         else:
             return values
 
-    def to_dict(self, flat: bool=True) -> Dict[Any, Any]:
+    def to_dict(self, flat: bool = True) -> Dict[Any, Any]:
         """Convert the multidict to a plain dictionary.
 
         Arguments:
@@ -89,7 +98,7 @@ class Headers(CIMultiDict):
     def __setitem__(self, key: Any, value: Any) -> None:
         super().__setitem__(_unicodify(key), _unicodify(value))
 
-    def setdefault(self, key: Any, default: Optional[Any]=None) -> Optional[str]:
+    def setdefault(self, key: Any, default: Optional[Any] = None) -> Optional[str]:
         return super().setdefault(_unicodify(key), _unicodify(default))
 
 
@@ -97,12 +106,12 @@ class FileStorage:
     """A thin wrapper over incoming files."""
 
     def __init__(
-            self,
-            stream: BinaryIO=None,
-            filename: str=None,
-            name: str=None,
-            content_type: str=None,
-            headers: Dict=None,
+        self,
+        stream: BinaryIO = None,
+        filename: str = None,
+        name: str = None,
+        content_type: str = None,
+        headers: Dict = None,
     ) -> None:
         self.name = name
         self.stream = stream or io.BytesIO()
@@ -111,29 +120,29 @@ class FileStorage:
             headers = {}
         self.headers = headers
         if content_type is not None:
-            headers['Content-Type'] = content_type
+            headers["Content-Type"] = content_type
 
     @property
     def content_type(self) -> Optional[str]:
         """The content-type sent in the header."""
-        return self.headers.get('Content-Type')
+        return self.headers.get("Content-Type")
 
     @property
     def content_length(self) -> int:
         """The content-length sent in the header."""
-        return int(self.headers.get('content-length', 0))
+        return int(self.headers.get("content-length", 0))
 
     @property
     def mimetype(self) -> str:
         """Returns the mimetype parsed from the Content-Type header."""
-        return parse_header(self.headers.get('Content-Type'))[0]
+        return parse_header(self.headers.get("Content-Type"))[0]
 
     @property
     def mimetype_params(self) -> Dict[str, str]:
         """Returns the params parsed from the Content-Type header."""
-        return parse_header(self.headers.get('Content-Type'))[1]
+        return parse_header(self.headers.get("Content-Type"))[1]
 
-    def save(self, destination: BinaryIO, buffer_size: int=16384) -> None:
+    def save(self, destination: BinaryIO, buffer_size: int = 16384) -> None:
         """Save the file to the destination.
 
         Arguments:
@@ -143,7 +152,7 @@ class FileStorage:
         """
         close_destination = False
         if isinstance(destination, str):
-            destination = open(destination, 'wb')
+            destination = open(destination, "wb")
             close_destination = True
         try:
             copyfileobj(self.stream, destination, buffer_size)
@@ -171,19 +180,18 @@ class FileStorage:
 
 
 class Authorization:
-
     def __init__(
-            self,
-            cnonce: Optional[str]=None,
-            nc: Optional[str]=None,
-            nonce: Optional[str]=None,
-            opaque: Optional[str]=None,
-            password: Optional[str]=None,
-            qop: Optional[str]=None,
-            realm: Optional[str]=None,
-            response: Optional[str]=None,
-            uri: Optional[str]=None,
-            username: Optional[str]=None,
+        self,
+        cnonce: Optional[str] = None,
+        nc: Optional[str] = None,
+        nonce: Optional[str] = None,
+        opaque: Optional[str] = None,
+        password: Optional[str] = None,
+        qop: Optional[str] = None,
+        realm: Optional[str] = None,
+        response: Optional[str] = None,
+        uri: Optional[str] = None,
+        username: Optional[str] = None,
     ) -> None:
         self.cnonce = cnonce
         self.nc = nc
@@ -204,12 +212,11 @@ class AcceptOption(NamedTuple):
 
 
 class Accept:
-
     def __init__(self, header_value: str) -> None:
         self.options: List[AcceptOption] = []
         for accept_option in parse_http_list(header_value):
             option, params = parse_header(accept_option)
-            quality = float(params.pop('q', 1.0))
+            quality = float(params.pop("q", 1.0))
             self.options.append(AcceptOption(option, quality, params))
 
     @property
@@ -221,13 +228,13 @@ class Accept:
         )
         return options[0].value
 
-    def best_match(self, matches: List[str], default: Optional[str]=None) -> Optional[str]:
+    def best_match(self, matches: List[str], default: Optional[str] = None) -> Optional[str]:
         best_match = AcceptOption(default, -1.0, {})
         for possible_match in matches:
             for option in self.options:
                 if (
-                        self._values_match(possible_match, option.value) and
-                        option.quality > best_match.quality
+                    self._values_match(possible_match, option.value)
+                    and option.quality > best_match.quality
                 ):
                     best_match = AcceptOption(possible_match, option.quality, {})
         return best_match.value
@@ -239,7 +246,7 @@ class Accept:
         return 0.0
 
     def _values_match(self, lhs: str, rhs: str) -> bool:
-        return rhs == '*' or lhs.lower() == rhs.lower()
+        return rhs == "*" or lhs.lower() == rhs.lower()
 
     def __getitem__(self, key: str) -> float:
         return self.quality(key)
@@ -252,7 +259,6 @@ class Accept:
 
 
 class CharsetAccept(Accept):
-
     def _values_match(self, lhs: str, rhs: str) -> bool:
         try:
             lhs_normalised = codecs.lookup(lhs).name
@@ -264,52 +270,48 @@ class CharsetAccept(Accept):
         except LookupError:
             rhs_normalised = rhs.lower()
 
-        return rhs == '*' or lhs_normalised == rhs_normalised
+        return rhs == "*" or lhs_normalised == rhs_normalised
 
 
 class LanguageAccept(Accept):
-
     def _values_match(self, lhs: str, rhs: str) -> bool:
-        lhs_normalised = re.split(r'[_-]', lhs.lower())
-        rhs_normalised = re.split(r'[_-]', rhs.lower())
-        return rhs == '*' or lhs_normalised == rhs_normalised
+        lhs_normalised = re.split(r"[_-]", lhs.lower())
+        rhs_normalised = re.split(r"[_-]", rhs.lower())
+        return rhs == "*" or lhs_normalised == rhs_normalised
 
 
 class MIMEAccept(Accept):
-
     def _values_match(self, lhs: str, rhs: str) -> bool:
-        if rhs == '*':
-            rhs_normalised = ['*', '*']
+        if rhs == "*":
+            rhs_normalised = ["*", "*"]
         else:
-            rhs_normalised = rhs.lower().split('/', 1)
+            rhs_normalised = rhs.lower().split("/", 1)
 
-        if lhs == '*':
-            lhs_normalised = ['*', '*']
+        if lhs == "*":
+            lhs_normalised = ["*", "*"]
         else:
             try:
-                lhs_normalised = lhs.lower().split('/', 1)
+                lhs_normalised = lhs.lower().split("/", 1)
             except ValueError:
                 return False
 
         full_wildcard_allowed = (
-            lhs_normalised[0] == lhs_normalised[1] == '*' or
-            rhs_normalised[0] == rhs_normalised[1] == '*'
+            lhs_normalised[0] == lhs_normalised[1] == "*"
+            or rhs_normalised[0] == rhs_normalised[1] == "*"
         )
-        wildcard_allowed = (
-            lhs_normalised[0] == rhs_normalised[0] and
-            (lhs_normalised[1] == '*' or rhs_normalised[1] == '*')
+        wildcard_allowed = lhs_normalised[0] == rhs_normalised[0] and (
+            lhs_normalised[1] == "*" or rhs_normalised[1] == "*"
         )
         match_allowed = lhs_normalised == rhs_normalised
         return full_wildcard_allowed or wildcard_allowed or match_allowed
 
 
 class _Directive:
-
     def __init__(self, name: str, converter: Callable) -> None:
         self.name = name
         self.converter = converter
 
-    def __get__(self, instance: object, owner: type=None) -> Any:
+    def __get__(self, instance: object, owner: type = None) -> Any:
         if instance is None:
             return self
         result = instance._directives[self.name]  # type: ignore
@@ -322,24 +324,22 @@ class _Directive:
 
 
 class _CacheControl:
-    no_cache = _Directive('no-cache', bool)
-    no_store = _Directive('no-store', bool)
-    no_transform = _Directive('no-transform', bool)
-    max_age = _Directive('max-age', int)
+    no_cache = _Directive("no-cache", bool)
+    no_store = _Directive("no-store", bool)
+    no_transform = _Directive("no-transform", bool)
+    max_age = _Directive("max-age", int)
 
-    def __init__(self, on_update: Optional[Callable]=None) -> None:
+    def __init__(self, on_update: Optional[Callable] = None) -> None:
         self._on_update = on_update
         self._directives: Dict[str, Any] = {}
 
     @classmethod
     def from_header(
-            cls: Type['_CacheControl'],
-            header: str,
-            on_update: Optional[Callable]=None,
-    ) -> '_CacheControl':
+        cls: Type["_CacheControl"], header: str, on_update: Optional[Callable] = None
+    ) -> "_CacheControl":
         cache_control = cls(on_update)
         for item in parse_http_list(header):
-            if '=' in item:
+            if "=" in item:
                 for key, value in parse_keqv_list([item]).items():
                     cache_control._directives[key] = value
             else:
@@ -347,30 +347,30 @@ class _CacheControl:
         return cache_control
 
     def to_header(self) -> str:
-        header = ''
+        header = ""
         for directive, value in self._directives.items():
             if isinstance(value, bool):
                 if value:
                     header += f"{directive},"
             else:
                 header += f"{directive}={value},"
-        return header.strip(',')
+        return header.strip(",")
 
 
 class RequestCacheControl(_CacheControl):
-    max_stale = _Directive('max-stale', int)
-    min_fresh = _Directive('min-fresh', int)
-    no_transform = _Directive('no-transform', bool)
-    only_if_cached = _Directive('only-if-cached', bool)
+    max_stale = _Directive("max-stale", int)
+    min_fresh = _Directive("min-fresh", int)
+    no_transform = _Directive("no-transform", bool)
+    only_if_cached = _Directive("only-if-cached", bool)
 
 
 class ResponseCacheControl(_CacheControl):
     immutable = _Directive("immutable", bool)
-    must_revalidate = _Directive('must-revalidate', bool)
-    private = _Directive('private', bool)
-    proxy_revalidate = _Directive('proxy-revalidate', bool)
-    public = _Directive('public', bool)
-    s_maxage = _Directive('s-maxage', int)
+    must_revalidate = _Directive("must-revalidate", bool)
+    private = _Directive("private", bool)
+    proxy_revalidate = _Directive("proxy-revalidate", bool)
+    public = _Directive("public", bool)
+    s_maxage = _Directive("s-maxage", int)
 
 
 class ContentSecurityPolicy:
@@ -399,16 +399,14 @@ class ContentSecurityPolicy:
     style_src_elem = _Directive("style-src-elem", str)
     worker_src = _Directive("worker-src", str)
 
-    def __init__(self, on_update: Optional[Callable]=None) -> None:
+    def __init__(self, on_update: Optional[Callable] = None) -> None:
         self._on_update = on_update
         self._directives: Dict[str, str] = {}
 
     @classmethod
     def from_header(
-            cls: Type['ContentSecurityPolicy'],
-            header: str,
-            on_update: Optional[Callable]=None,
-    ) -> 'ContentSecurityPolicy':
+        cls: Type["ContentSecurityPolicy"], header: str, on_update: Optional[Callable] = None
+    ) -> "ContentSecurityPolicy":
         csp = cls(on_update)
         for policy in header.split(";"):
             try:
@@ -427,12 +425,8 @@ class ContentSecurityPolicy:
 
 
 class ETags:
-
     def __init__(
-            self,
-            weak: Optional[Set[str]]=None,
-            strong: Optional[Set[str]]=None,
-            star: bool=False,
+        self, weak: Optional[Set[str]] = None, strong: Optional[Set[str]] = None, star: bool = False
     ) -> None:
         self.weak = weak or set()
         self.strong = strong or set()
@@ -442,15 +436,15 @@ class ETags:
         return self.star or etag in self.strong
 
     @classmethod
-    def from_header(cls: Type['ETags'], header: str) -> 'ETags':
+    def from_header(cls: Type["ETags"], header: str) -> "ETags":
         header = header.strip()
         weak = set()
         strong = set()
-        if header == '*':
+        if header == "*":
             return ETags(star=True)
         else:
             for item in parse_http_list(header):
-                if item.upper().startswith('W/'):
+                if item.upper().startswith("W/"):
                     weak.add(item[2:].strip('"'))
                 else:
                     strong.add(item.strip('"'))
@@ -458,24 +452,23 @@ class ETags:
 
     def to_header(self) -> str:
         if self.star:
-            return '*'
+            return "*"
         else:
-            header = ''
+            header = ""
             for tag in self.weak:
-                header += f"W/\"{tag}\","
+                header += f'W/"{tag}",'
             for tag in self.strong:
-                header += f"\"{tag}\","
-            return header.strip(',')
+                header += f'"{tag}",'
+            return header.strip(",")
 
 
 class IfRange:
-
-    def __init__(self, etag: Optional[str]=None, date: Optional[datetime]=None) -> None:
+    def __init__(self, etag: Optional[str] = None, date: Optional[datetime] = None) -> None:
         self.etag = etag
         self.date = date
 
     @classmethod
-    def from_header(cls: Type['IfRange'], header: str) -> 'IfRange':
+    def from_header(cls: Type["IfRange"], header: str) -> "IfRange":
         try:
             return IfRange(date=parsedate_to_datetime(header))
         except TypeError:  # Not a date format
@@ -483,11 +476,11 @@ class IfRange:
 
     def to_header(self) -> str:
         if self.etag is not None:
-            return f"\"{self.etag}\""
+            return f'"{self.etag}"'
         elif self.date is not None:
             return format_date_time(self.date.timestamp())
         else:
-            return ''
+            return ""
 
 
 class RangeSet(NamedTuple):
@@ -496,27 +489,26 @@ class RangeSet(NamedTuple):
 
 
 class Range:
-
     def __init__(self, units: str, ranges: List[RangeSet]) -> None:
         self.units = units
         self.ranges = ranges
 
     @classmethod
-    def from_header(cls: Type['Range'], header: str) -> 'Range':
+    def from_header(cls: Type["Range"], header: str) -> "Range":
         try:
-            units, raw_ranges = header.split('=', 1)
+            units, raw_ranges = header.split("=", 1)
         except ValueError:
-            return cls('', [])
+            return cls("", [])
 
         units = units.strip().lower()
         ranges = []
         for range_set in parse_http_list(raw_ranges):
-            if range_set.startswith('-'):
+            if range_set.startswith("-"):
                 ranges.append(RangeSet(int(range_set), None))
-            elif range_set.endswith('-'):
+            elif range_set.endswith("-"):
                 ranges.append(RangeSet(int(range_set[:-1]), None))
-            elif '-' in range_set:
-                begin, end = range_set.split('-')
+            elif "-" in range_set:
+                begin, end = range_set.split("-")
                 ranges.append(RangeSet(int(begin), int(end)))
             else:
                 ranges.append(RangeSet(0, int(range_set)))
@@ -530,8 +522,8 @@ class Range:
                 header += "-"
             if range_set.end is not None:
                 header += f"{range_set.end}"
-            header += ','
-        return header.strip(',')
+            header += ","
+        return header.strip(",")
 
 
 def _on_update(method: Callable) -> Callable:
@@ -541,25 +533,23 @@ def _on_update(method: Callable) -> Callable:
         if self.on_update is not None:
             self.on_update(self)
         return result
+
     return wrapper
 
 
 class HeaderSet(set):
-
-    def __init__(self, *args: Any, on_update: Optional[Callable]=None, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, on_update: Optional[Callable] = None, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.on_update = on_update
 
     def to_header(self) -> str:
-        header = ', '.join(self)
-        return header.strip(',')
+        header = ", ".join(self)
+        return header.strip(",")
 
     @classmethod
     def from_header(
-            cls: Type['HeaderSet'],
-            header: str,
-            on_update: Optional[Callable]=None,
-    ) -> 'HeaderSet':
+        cls: Type["HeaderSet"], header: str, on_update: Optional[Callable] = None
+    ) -> "HeaderSet":
         items = {item for item in parse_http_list(header)}
         return cls(items, on_update=on_update)
 
@@ -571,12 +561,11 @@ class HeaderSet(set):
 
 
 class _ContentRangeSpec:
-
     def __init__(self, name: str, converter: Callable) -> None:
         self.name = name
         self.converter = converter
 
-    def __get__(self, instance: object, owner: type=None) -> Any:
+    def __get__(self, instance: object, owner: type = None) -> Any:
         if instance is None:
             return self
         result = instance._specs.get(self.name)  # type: ignore
@@ -592,18 +581,18 @@ class _ContentRangeSpec:
 
 
 class ContentRange:
-    units = _ContentRangeSpec('units', str)
-    start = _ContentRangeSpec('start', int)
-    stop = _ContentRangeSpec('stop', int)
-    length = _ContentRangeSpec('length', int)
+    units = _ContentRangeSpec("units", str)
+    start = _ContentRangeSpec("start", int)
+    stop = _ContentRangeSpec("stop", int)
+    length = _ContentRangeSpec("length", int)
 
     def __init__(
-            self,
-            units: Optional[str],
-            start: Optional[int],
-            stop: Optional[int],
-            length: Optional[Union[int, str]]=None,
-            on_update: Optional[Callable]=None,
+        self,
+        units: Optional[str],
+        start: Optional[int],
+        stop: Optional[int],
+        length: Optional[Union[int, str]] = None,
+        on_update: Optional[Callable] = None,
     ) -> None:
         self._on_update = on_update
         self._specs: Dict[str, Any] = {}
@@ -614,26 +603,24 @@ class ContentRange:
 
     @classmethod
     def from_header(
-            cls: Type['ContentRange'],
-            header: str,
-            on_update: Optional[Callable]=None,
-    ) -> 'ContentRange':
+        cls: Type["ContentRange"], header: str, on_update: Optional[Callable] = None
+    ) -> "ContentRange":
         try:
             units, range_spec = header.split(None, 1)
         except ValueError:
             return cls(None, None, None)
 
         try:
-            range_, length = range_spec.split('/', 1)
+            range_, length = range_spec.split("/", 1)
             length = int(length)  # type: ignore
         except ValueError:
             return cls(None, None, None)
 
-        if range_ == '*':
+        if range_ == "*":
             return cls(units, None, None, length, on_update)
 
         try:
-            start, stop = range_.split('-', 1)
+            start, stop = range_.split("-", 1)
             start = int(start)  # type: ignore
             stop = int(stop)  # type: ignore
         except ValueError:
@@ -643,8 +630,8 @@ class ContentRange:
 
     def to_header(self) -> str:
         if self.units is None:
-            return ''
-        length = self.length or '*'
+            return ""
+        length = self.length or "*"
         if self.start is None:
             return f"{self.units} */{length}"
         else:
@@ -658,7 +645,6 @@ class ContentRange:
 
 
 class RequestAccessControl:
-
     def __init__(self, origin: str, request_headers: HeaderSet, request_method: str) -> None:
         self.origin = origin
         self.request_headers = request_headers
@@ -666,21 +652,20 @@ class RequestAccessControl:
 
     @classmethod
     def from_headers(
-            cls: Type['RequestAccessControl'],
-            origin_header: str,
-            request_headers_header: str,
-            request_method_header: str,
-    ) -> 'RequestAccessControl':
+        cls: Type["RequestAccessControl"],
+        origin_header: str,
+        request_headers_header: str,
+        request_method_header: str,
+    ) -> "RequestAccessControl":
         request_headers = HeaderSet.from_header(request_headers_header)
         return cls(origin_header, request_headers, request_method_header)
 
 
 class _AccessControlDescriptor:
-
     def __init__(self, name: str) -> None:
         self.name = name
 
-    def __get__(self, instance: object, owner: type=None) -> Any:
+    def __get__(self, instance: object, owner: type = None) -> Any:
         if instance is None:
             return self
         return instance._controls[self.name]  # type: ignore
@@ -693,20 +678,20 @@ class _AccessControlDescriptor:
 
 
 class ResponseAccessControl:
-    allow_headers = _AccessControlDescriptor('allow_headers')
-    allow_methods = _AccessControlDescriptor('allow_methods')
-    allow_origin = _AccessControlDescriptor('allow_origin')
-    expose_headers = _AccessControlDescriptor('expose_headers')
+    allow_headers = _AccessControlDescriptor("allow_headers")
+    allow_methods = _AccessControlDescriptor("allow_methods")
+    allow_origin = _AccessControlDescriptor("allow_origin")
+    expose_headers = _AccessControlDescriptor("expose_headers")
 
     def __init__(
-            self,
-            allow_credentials: Optional[bool],
-            allow_headers: HeaderSet,
-            allow_methods: HeaderSet,
-            allow_origin: HeaderSet,
-            expose_headers: HeaderSet,
-            max_age: Optional[float],
-            on_update: Optional[Callable]=None,
+        self,
+        allow_credentials: Optional[bool],
+        allow_headers: HeaderSet,
+        allow_methods: HeaderSet,
+        allow_origin: HeaderSet,
+        expose_headers: HeaderSet,
+        max_age: Optional[float],
+        on_update: Optional[Callable] = None,
     ) -> None:
         self._on_update = None
         self._controls: Dict[str, Any] = {}
@@ -720,38 +705,38 @@ class ResponseAccessControl:
 
     @property
     def allow_credentials(self) -> bool:
-        return self._controls['allow_credentials'] is True
+        return self._controls["allow_credentials"] is True
 
     @allow_credentials.setter
-    def allow_credentials(self, value: Optional[bool]=None) -> None:
-        self._controls['allow_credentials'] = value
+    def allow_credentials(self, value: Optional[bool] = None) -> None:
+        self._controls["allow_credentials"] = value
         self.on_update()
 
     @property
     def max_age(self) -> Optional[float]:
-        return self._controls['max_age']
+        return self._controls["max_age"]
 
     @max_age.setter
-    def max_age(self, value: Optional[float]=None) -> None:
+    def max_age(self, value: Optional[float] = None) -> None:
         try:
             value = float(value)
         except (TypeError, ValueError):
             value = None
-        self._controls['max_age'] = value
+        self._controls["max_age"] = value
         self.on_update()
 
     @classmethod
     def from_headers(
-            cls: Type['ResponseAccessControl'],
-            allow_credentials_header: str,
-            allow_headers_header: str,
-            allow_methods_header: str,
-            allow_origin_header: str,
-            expose_headers_header: str,
-            max_age_header: str,
-            on_update: Optional[Callable]=None,
-    ) -> 'ResponseAccessControl':
-        allow_credentials = allow_credentials_header == 'true'
+        cls: Type["ResponseAccessControl"],
+        allow_credentials_header: str,
+        allow_headers_header: str,
+        allow_methods_header: str,
+        allow_origin_header: str,
+        expose_headers_header: str,
+        max_age_header: str,
+        on_update: Optional[Callable] = None,
+    ) -> "ResponseAccessControl":
+        allow_credentials = allow_credentials_header == "true"
         allow_headers = HeaderSet.from_header(allow_headers_header)
         allow_methods = HeaderSet.from_header(allow_methods_header)
         allow_origin = HeaderSet.from_header(allow_origin_header)
@@ -761,10 +746,15 @@ class ResponseAccessControl:
         except (ValueError, TypeError):
             max_age = None
         return cls(
-            allow_credentials, allow_headers, allow_methods, allow_origin, expose_headers, max_age,
+            allow_credentials,
+            allow_headers,
+            allow_methods,
+            allow_origin,
+            expose_headers,
+            max_age,
             on_update,
         )
 
-    def on_update(self, _: Any=None) -> None:
+    def on_update(self, _: Any = None) -> None:
         if self._on_update is not None:
             self._on_update(self)

@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from .wrappers.response import Response  # noqa: F401
 
 
-def redirect(location: str, status_code: int=302) -> 'Response':
+def redirect(location: str, status_code: int = 302) -> "Response":
     body = f"""
 <!doctype html>
 <title>Redirect</title>
@@ -22,21 +22,19 @@ def redirect(location: str, status_code: int=302) -> 'Response':
 You should be redirected to <a href="{location}">{location}</a>, if not please click the link
     """
 
-    return current_app.response_class(
-        body, status=status_code, headers={'Location': location},
-    )
+    return current_app.response_class(body, status=status_code, headers={"Location": location})
 
 
 def create_cookie(
-        key: str,
-        value: str='',
-        max_age: Optional[Union[int, timedelta]]=None,
-        expires: Optional[Union[int, float, datetime]]=None,
-        path: str='/',
-        domain: Optional[str]=None,
-        secure: bool=False,
-        httponly: bool=False,
-        samesite: str=None,
+    key: str,
+    value: str = "",
+    max_age: Optional[Union[int, timedelta]] = None,
+    expires: Optional[Union[int, float, datetime]] = None,
+    path: str = "/",
+    domain: Optional[str] = None,
+    secure: bool = False,
+    httponly: bool = False,
+    samesite: str = None,
 ) -> SimpleCookie:
     """Create a Cookie given the options set
 
@@ -45,22 +43,22 @@ def create_cookie(
     """
     cookie: SimpleCookie = SimpleCookie()
     cookie[key] = value
-    cookie[key]['path'] = path
-    cookie[key]['httponly'] = httponly
-    cookie[key]['secure'] = secure
+    cookie[key]["path"] = path
+    cookie[key]["httponly"] = httponly
+    cookie[key]["secure"] = secure
     if isinstance(max_age, timedelta):
-        cookie[key]['max-age'] = f"{max_age.total_seconds():d}"
+        cookie[key]["max-age"] = f"{max_age.total_seconds():d}"
     if isinstance(max_age, int):
-        cookie[key]['max-age'] = str(max_age)
+        cookie[key]["max-age"] = str(max_age)
     if expires is not None and isinstance(expires, (int, float)):
-        cookie[key]['expires'] = format_date_time(int(expires))
+        cookie[key]["expires"] = format_date_time(int(expires))
     elif expires is not None and isinstance(expires, datetime):
-        cookie[key]['expires'] = format_date_time(expires.replace(tzinfo=timezone.utc).timestamp())
+        cookie[key]["expires"] = format_date_time(expires.replace(tzinfo=timezone.utc).timestamp())
     if domain is not None:
-        cookie[key]['domain'] = domain
+        cookie[key]["domain"] = domain
     if samesite is not None:
         try:
-            cookie[key]['samesite'] = samesite
+            cookie[key]["samesite"] = samesite
         except CookieError:
             warnings.warn(
                 "Samesite cookies are not supported in this Python version, "

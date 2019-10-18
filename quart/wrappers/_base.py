@@ -8,8 +8,19 @@ from urllib.parse import parse_qs, ParseResult, urlunparse
 from urllib.request import parse_http_list, parse_keqv_list
 
 from ..datastructures import (
-    Accept, Authorization, CharsetAccept, CIMultiDict, ETags, Headers, IfRange, LanguageAccept,
-    MIMEAccept, MultiDict, Range, RequestAccessControl, RequestCacheControl,
+    Accept,
+    Authorization,
+    CharsetAccept,
+    CIMultiDict,
+    ETags,
+    Headers,
+    IfRange,
+    LanguageAccept,
+    MIMEAccept,
+    MultiDict,
+    Range,
+    RequestAccessControl,
+    RequestCacheControl,
 )
 from ..json import loads
 
@@ -25,6 +36,7 @@ class JSONMixin:
     The class must support _load_data_json and have a mimetype
     attribute.
     """
+
     _cached_json = sentinel
 
     @property
@@ -40,8 +52,8 @@ class JSONMixin:
     def is_json(self) -> bool:
         """Returns True if the content_type is json like."""
         content_type = self.mimetype
-        if content_type == 'application/json' or (
-                content_type.startswith('application/') and content_type.endswith('+json')
+        if content_type == "application/json" or (
+            content_type.startswith("application/") and content_type.endswith("+json")
         ):
             return True
         else:
@@ -51,9 +63,7 @@ class JSONMixin:
     async def json(self) -> Any:
         return await self.get_json()
 
-    async def get_json(
-        self, force: bool=False, silent: bool=False, cache: bool=True,
-    ) -> Any:
+    async def get_json(self, force: bool = False, silent: bool = False, cache: bool = True) -> Any:
         """Parses the body data as JSON and returns it.
 
         Arguments:
@@ -88,6 +98,7 @@ class JSONMixin:
             error: The exception raised during parsing.
         """
         from ..exceptions import BadRequest  # noqa Avoiding circular import
+
         raise BadRequest()
 
 
@@ -99,7 +110,8 @@ class _BaseRequestResponse:
     Attributes:
         charset: The default charset for encoding/decoding.
     """
-    charset = url_charset = 'utf-8'
+
+    charset = url_charset = "utf-8"
 
     def __init__(self, headers: Optional[Union[dict, CIMultiDict, Headers]]) -> None:
         self.headers: Headers
@@ -111,26 +123,27 @@ class _BaseRequestResponse:
     @property
     def mimetype(self) -> str:
         """Returns the mimetype parsed from the Content-Type header."""
-        return parse_header(self.headers.get('Content-Type', ''))[0]
+        return parse_header(self.headers.get("Content-Type", ""))[0]
 
     @mimetype.setter
     def mimetype(self, value: str) -> None:
         """Set the mimetype to the value."""
         if (
-                value.startswith('text/') or value == 'application/xml' or
-                (value.startswith('application/') and value.endswith('+xml'))
+            value.startswith("text/")
+            or value == "application/xml"
+            or (value.startswith("application/") and value.endswith("+xml"))
         ):
             mimetype = f"{value}; charset={self.charset}"
         else:
             mimetype = value
-        self.headers['Content-Type'] = mimetype
+        self.headers["Content-Type"] = mimetype
 
     @property
     def mimetype_params(self) -> Dict[str, str]:
         """Returns the params parsed from the Content-Type header."""
-        return parse_header(self.headers.get('Content-Type', ''))[1]
+        return parse_header(self.headers.get("Content-Type", ""))[1]
 
-    async def get_data(self, raw: bool=True) -> AnyStr:
+    async def get_data(self, raw: bool = True) -> AnyStr:
         raise NotImplementedError()
 
 
@@ -144,19 +157,20 @@ class BaseRequestWebsocket(_BaseRequestResponse):
         view_args: The keyword arguments for the view from the route
             matching.
     """
+
     routing_exception: Optional[Exception] = None
-    url_rule: Optional['Rule'] = None
+    url_rule: Optional["Rule"] = None
     view_args: Optional[Dict[str, Any]] = None
 
     def __init__(
-            self,
-            method: str,
-            scheme: str,
-            path: str,
-            query_string: bytes,
-            headers: CIMultiDict,
-            root_path: str,
-            http_version: str,
+        self,
+        method: str,
+        scheme: str,
+        path: str,
+        query_string: bytes,
+        headers: CIMultiDict,
+        root_path: str,
+        http_version: str,
     ) -> None:
         """Create a request or websocket base object.
 
@@ -176,7 +190,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
         """
         super().__init__(headers)
         self.args = MultiDict()
-        for key, values in parse_qs(query_string.decode('ascii'), keep_blank_values=True).items():
+        for key, values in parse_qs(query_string.decode("ascii"), keep_blank_values=True).items():
             for value in values:
                 self.args.add(key, value)
         self.path = path
@@ -205,74 +219,77 @@ class BaseRequestWebsocket(_BaseRequestResponse):
         This can be None if the request has not been matched or the
         endpoint is not in a blueprint.
         """
-        if self.endpoint is not None and '.' in self.endpoint:
-            return self.endpoint.rsplit('.', 1)[0]
+        if self.endpoint is not None and "." in self.endpoint:
+            return self.endpoint.rsplit(".", 1)[0]
         else:
             return None
 
     @property
     def accept_charsets(self) -> CharsetAccept:
-        return CharsetAccept(self.headers.get('Accept-Charset', ''))
+        return CharsetAccept(self.headers.get("Accept-Charset", ""))
 
     @property
     def accept_encodings(self) -> Accept:
-        return Accept(self.headers.get('Accept-Encoding', ''))
+        return Accept(self.headers.get("Accept-Encoding", ""))
 
     @property
     def accept_languages(self) -> LanguageAccept:
-        return LanguageAccept(self.headers.get('Accept-Language', ''))
+        return LanguageAccept(self.headers.get("Accept-Language", ""))
 
     @property
     def accept_mimetypes(self) -> MIMEAccept:
-        return MIMEAccept(self.headers.get('Accept', ''))
+        return MIMEAccept(self.headers.get("Accept", ""))
 
     @property
     def access_control(self) -> RequestAccessControl:
         return RequestAccessControl.from_headers(
-            self.headers.get('Origin', ''), self.headers.get('Access-Control-Request-Headers', ''),
-            self.headers.get('Access-Control-Request-Method', ''),
+            self.headers.get("Origin", ""),
+            self.headers.get("Access-Control-Request-Headers", ""),
+            self.headers.get("Access-Control-Request-Method", ""),
         )
 
     @property
     def authorization(self) -> Optional[Authorization]:
-        header = self.headers.get('Authorization', '')
+        header = self.headers.get("Authorization", "")
         try:
             type_, value = header.split(None, 1)
             type_ = type_.lower()
         except ValueError:
             return None
         else:
-            if type_ == 'basic':
+            if type_ == "basic":
                 try:
-                    username, password = b64decode(value.encode()).decode().split(':', 1)
+                    username, password = b64decode(value.encode()).decode().split(":", 1)
                 except ValueError:
                     return None
                 else:
                     return Authorization(username=username, password=password)
-            elif type_ == 'digest':
+            elif type_ == "digest":
                 items = parse_http_list(value)
                 params = parse_keqv_list(items)
-                for key in 'username', 'realm', 'nonce', 'uri', 'response':
+                for key in "username", "realm", "nonce", "uri", "response":
                     if key not in params:
                         return None
-                if ('cnonce' in params or 'nc' in params) and 'qop' not in params:
+                if ("cnonce" in params or "nc" in params) and "qop" not in params:
                     return None
                 return Authorization(**params)
         return None
 
     @property
     def cache_control(self) -> RequestCacheControl:
-        return RequestCacheControl.from_header(self.headers.get('Cache-Control', ''))  # type: ignore # noqa: E501
+        return RequestCacheControl.from_header(  # type: ignore
+            self.headers.get("Cache-Control", "")
+        )
 
     @property
     def remote_addr(self) -> str:
         """Returns the remote address of the request, faked into the headers."""
-        return self.headers['Remote-Addr']
+        return self.headers["Remote-Addr"]
 
     @property
     def base_url(self) -> str:
         """Returns the base url without query string or fragments."""
-        return urlunparse(ParseResult(self.scheme, self.host, self.path, '', '', ''))
+        return urlunparse(ParseResult(self.scheme, self.host, self.path, "", "", ""))
 
     @property
     def full_path(self) -> str:
@@ -283,92 +300,90 @@ class BaseRequestWebsocket(_BaseRequestResponse):
 
     @property
     def host(self) -> str:
-        return self.headers.get('host') or self.headers.get(':authority')
+        return self.headers.get("host") or self.headers.get(":authority")
 
     @property
     def host_url(self) -> str:
-        return urlunparse(ParseResult(self.scheme, self.host, '', '', '', ''))
+        return urlunparse(ParseResult(self.scheme, self.host, "", "", "", ""))
 
     @property
     def url(self) -> str:
         """Returns the full url requested."""
         return urlunparse(
             ParseResult(
-                self.scheme, self.host, self.path, '', self.query_string.decode('ascii'), '',
-            ),
+                self.scheme, self.host, self.path, "", self.query_string.decode("ascii"), ""
+            )
         )
 
     @property
     def url_root(self) -> str:
         return urlunparse(
-            ParseResult(
-                self.scheme, self.host, self.path.rsplit('/', 1)[0] + '/', '', '', '',
-            ),
+            ParseResult(self.scheme, self.host, self.path.rsplit("/", 1)[0] + "/", "", "", "")
         )
 
     @property
     def is_secure(self) -> bool:
-        return self.scheme in {'https', 'wss'}
+        return self.scheme in {"https", "wss"}
 
     @property
     def cookies(self) -> Dict[str, str]:
         """The parsed cookies attached to this request."""
         cookies: SimpleCookie = SimpleCookie()
-        cookies.load(self.headers.get('Cookie', ''))
+        cookies.load(self.headers.get("Cookie", ""))
         return {key: cookie.value for key, cookie in cookies.items()}
 
     @property
     def access_route(self) -> List[str]:
-        if 'X-Forwarded-For' in self.headers:
-            return parse_http_list(self.headers['X-Forwarded-For'])
+        if "X-Forwarded-For" in self.headers:
+            return parse_http_list(self.headers["X-Forwarded-For"])
         else:
             return [self.remote_addr]
 
     @property
     def date(self) -> Optional[datetime]:
-        if 'date' in self.headers:
-            return parsedate_to_datetime(self.headers['date'])
+        if "date" in self.headers:
+            return parsedate_to_datetime(self.headers["date"])
         else:
             return None
 
     @property
     def if_match(self) -> ETags:
-        return ETags.from_header(self.headers.get('If-Match', ''))
+        return ETags.from_header(self.headers.get("If-Match", ""))
 
     @property
     def if_modified_since(self) -> Optional[datetime]:
-        if 'If-Modified-Since' in self.headers:
-            return parsedate_to_datetime(self.headers['If-Modified-Since'])
+        if "If-Modified-Since" in self.headers:
+            return parsedate_to_datetime(self.headers["If-Modified-Since"])
         else:
             return None
 
     @property
     def if_none_match(self) -> ETags:
-        return ETags.from_header(self.headers.get('If-None-Match', ''))
+        return ETags.from_header(self.headers.get("If-None-Match", ""))
 
     @property
     def if_range(self) -> IfRange:
-        return IfRange.from_header(self.headers.get('If-Range', ''))
+        return IfRange.from_header(self.headers.get("If-Range", ""))
 
     @property
     def max_forwards(self) -> Optional[str]:
-        return self.headers.get('Max-Forwards')
+        return self.headers.get("Max-Forwards")
 
     @property
     def pragma(self) -> List[str]:
-        return parse_http_list(self.headers.get('Pragma', ''))
+        return parse_http_list(self.headers.get("Pragma", ""))
 
     @property
     def range(self) -> Range:
-        return Range.from_header(self.headers.get('Range', ''))
+        return Range.from_header(self.headers.get("Range", ""))
 
     @property
     def referrer(self) -> Optional[str]:
-        return self.headers.get('Referer')
+        return self.headers.get("Referer")
 
     @property
     def if_unmodified_since(self) -> Optional[datetime]:
-        if 'If-Unmodified-Since' in self.headers:
-            return parsedate_to_datetime(self.headers['If-Unmodified-Since'])
+        if "If-Unmodified-Since" in self.headers:
+            return parsedate_to_datetime(self.headers["If-Unmodified-Since"])
         else:
             return None

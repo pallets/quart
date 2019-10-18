@@ -7,7 +7,7 @@ from .static import PackageStatic
 if TYPE_CHECKING:
     from .app import Quart  # noqa
 
-DeferedSetupFunction = Callable[['BlueprintSetupState'], Callable]
+DeferedSetupFunction = Callable[["BlueprintSetupState"], Callable]
 
 
 class Blueprint(PackageStatic):
@@ -34,15 +34,15 @@ class Blueprint(PackageStatic):
     json_encoder: Optional[Type[JSONEncoder]] = None
 
     def __init__(
-            self,
-            name: str,
-            import_name: str,
-            static_folder: Optional[str]=None,
-            static_url_path: Optional[str]=None,
-            template_folder: Optional[str]=None,
-            url_prefix: Optional[str]=None,
-            subdomain: Optional[str]=None,
-            root_path: Optional[str]=None,
+        self,
+        name: str,
+        import_name: str,
+        static_folder: Optional[str] = None,
+        static_url_path: Optional[str] = None,
+        template_folder: Optional[str] = None,
+        url_prefix: Optional[str] = None,
+        subdomain: Optional[str] = None,
+        root_path: Optional[str] = None,
     ) -> None:
         super().__init__(import_name, template_folder, root_path, static_folder, static_url_path)
         self.name = name
@@ -51,16 +51,16 @@ class Blueprint(PackageStatic):
         self.subdomain = subdomain
 
     def route(
-            self,
-            path: str,
-            methods: Optional[List[str]]=None,
-            endpoint: Optional[str]=None,
-            defaults: Optional[dict]=None,
-            host: Optional[str]=None,
-            subdomain: Optional[str]=None,
-            *,
-            provide_automatic_options: Optional[bool]=None,
-            strict_slashes: bool=True,
+        self,
+        path: str,
+        methods: Optional[List[str]] = None,
+        endpoint: Optional[str] = None,
+        defaults: Optional[dict] = None,
+        host: Optional[str] = None,
+        subdomain: Optional[str] = None,
+        *,
+        provide_automatic_options: Optional[bool] = None,
+        strict_slashes: bool = True,
     ) -> Callable:
         """Add a route to the blueprint.
 
@@ -74,27 +74,36 @@ class Blueprint(PackageStatic):
             def route():
                 ...
         """
+
         def decorator(func: Callable) -> Callable:
             self.add_url_rule(
-                path, endpoint, func, methods, defaults=defaults, host=host, subdomain=subdomain,
-                provide_automatic_options=provide_automatic_options, strict_slashes=strict_slashes,
+                path,
+                endpoint,
+                func,
+                methods,
+                defaults=defaults,
+                host=host,
+                subdomain=subdomain,
+                provide_automatic_options=provide_automatic_options,
+                strict_slashes=strict_slashes,
             )
             return func
+
         return decorator
 
     def add_url_rule(
-            self,
-            path: str,
-            endpoint: Optional[str]=None,
-            view_func: Optional[Callable]=None,
-            methods: Optional[Iterable[str]]=None,
-            defaults: Optional[dict]=None,
-            host: Optional[str]=None,
-            subdomain: Optional[str]=None,
-            *,
-            provide_automatic_options: Optional[bool]=None,
-            is_websocket: bool=False,
-            strict_slashes: bool=True,
+        self,
+        path: str,
+        endpoint: Optional[str] = None,
+        view_func: Optional[Callable] = None,
+        methods: Optional[Iterable[str]] = None,
+        defaults: Optional[dict] = None,
+        host: Optional[str] = None,
+        subdomain: Optional[str] = None,
+        *,
+        provide_automatic_options: Optional[bool] = None,
+        is_websocket: bool = False,
+        strict_slashes: bool = True,
     ) -> None:
         """Add a route/url rule to the blueprint.
 
@@ -111,25 +120,32 @@ class Blueprint(PackageStatic):
             blueprint.add_url_rule('/', route)
         """
         endpoint = endpoint or view_func.__name__
-        if '.' in endpoint:
-            raise ValueError('Blueprint endpoints should not contain periods')
+        if "." in endpoint:
+            raise ValueError("Blueprint endpoints should not contain periods")
         self.record(
             lambda state: state.add_url_rule(
-                path, endpoint, view_func, methods, defaults, host, self.subdomain,
-                provide_automatic_options=provide_automatic_options, is_websocket=is_websocket,
+                path,
+                endpoint,
+                view_func,
+                methods,
+                defaults,
+                host,
+                self.subdomain,
+                provide_automatic_options=provide_automatic_options,
+                is_websocket=is_websocket,
                 strict_slashes=strict_slashes,
-            ),
+            )
         )
 
     def websocket(
-            self,
-            path: str,
-            endpoint: Optional[str]=None,
-            defaults: Optional[dict]=None,
-            host: Optional[str]=None,
-            subdomain: Optional[str]=None,
-            *,
-            strict_slashes: bool=True,
+        self,
+        path: str,
+        endpoint: Optional[str] = None,
+        defaults: Optional[dict] = None,
+        host: Optional[str] = None,
+        subdomain: Optional[str] = None,
+        *,
+        strict_slashes: bool = True,
     ) -> Callable:
         """Add a websocket to the blueprint.
 
@@ -143,24 +159,31 @@ class Blueprint(PackageStatic):
             async def route():
                 ...
         """
+
         def decorator(func: Callable) -> Callable:
             self.add_websocket(
-                path, endpoint, func, defaults=defaults, host=host, subdomain=subdomain,
+                path,
+                endpoint,
+                func,
+                defaults=defaults,
+                host=host,
+                subdomain=subdomain,
                 strict_slashes=strict_slashes,
             )
             return func
+
         return decorator
 
     def add_websocket(
-            self,
-            path: str,
-            endpoint: Optional[str]=None,
-            view_func: Optional[Callable]=None,
-            defaults: Optional[dict]=None,
-            host: Optional[str]=None,
-            subdomain: Optional[str]=None,
-            *,
-            strict_slashes: bool=True,
+        self,
+        path: str,
+        endpoint: Optional[str] = None,
+        view_func: Optional[Callable] = None,
+        defaults: Optional[dict] = None,
+        host: Optional[str] = None,
+        subdomain: Optional[str] = None,
+        *,
+        strict_slashes: bool = True,
     ) -> None:
         """Add a websocket rule to the blueprint.
 
@@ -177,8 +200,16 @@ class Blueprint(PackageStatic):
             blueprint.add_websocket('/', route)
         """
         return self.add_url_rule(
-            path, endpoint, view_func, {'GET'}, defaults=defaults, host=host, subdomain=subdomain,
-            provide_automatic_options=False, is_websocket=True, strict_slashes=strict_slashes,
+            path,
+            endpoint,
+            view_func,
+            {"GET"},
+            defaults=defaults,
+            host=host,
+            subdomain=subdomain,
+            provide_automatic_options=False,
+            is_websocket=True,
+            strict_slashes=strict_slashes,
         )
 
     def endpoint(self, endpoint: str) -> Callable:
@@ -194,12 +225,14 @@ class Blueprint(PackageStatic):
             def index():
                 ...
         """
+
         def decorator(func: Callable) -> Callable:
             self.record_once(lambda state: state.register_endpoint(endpoint, func))
             return func
+
         return decorator
 
-    def app_template_filter(self, name: Optional[str]=None) -> Callable:
+    def app_template_filter(self, name: Optional[str] = None) -> Callable:
         """Add an application wide template filter.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -212,12 +245,14 @@ class Blueprint(PackageStatic):
             def filter(value):
                 ...
         """
+
         def decorator(func: Callable) -> Callable:
             self.add_app_template_filter(func, name=name)
             return func
+
         return decorator
 
-    def add_app_template_filter(self, func: Callable, name: Optional[str]=None) -> None:
+    def add_app_template_filter(self, func: Callable, name: Optional[str] = None) -> None:
         """Add an application wide template filter.
 
         This is designed to be used on the blueprint directly, and
@@ -234,7 +269,7 @@ class Blueprint(PackageStatic):
         """
         self.record_once(lambda state: state.register_template_filter(func, name))
 
-    def app_template_test(self, name: Optional[str]=None) -> Callable:
+    def app_template_test(self, name: Optional[str] = None) -> Callable:
         """Add an application wide template test.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -247,12 +282,14 @@ class Blueprint(PackageStatic):
             def test(value):
                 ...
         """
+
         def decorator(func: Callable) -> Callable:
             self.add_app_template_test(func, name=name)
             return func
+
         return decorator
 
-    def add_app_template_test(self, func: Callable, name: Optional[str]=None) -> None:
+    def add_app_template_test(self, func: Callable, name: Optional[str] = None) -> None:
         """Add an application wide template test.
 
         This is designed to be used on the blueprint directly, and
@@ -269,7 +306,7 @@ class Blueprint(PackageStatic):
         """
         self.record_once(lambda state: state.register_template_test(func, name))
 
-    def app_template_global(self, name: Optional[str]=None) -> Callable:
+    def app_template_global(self, name: Optional[str] = None) -> Callable:
         """Add an application wide template global.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -282,12 +319,14 @@ class Blueprint(PackageStatic):
             def global(value):
                 ...
         """
+
         def decorator(func: Callable) -> Callable:
             self.add_app_template_global(func, name=name)
             return func
+
         return decorator
 
-    def add_app_template_global(self, func: Callable, name: Optional[str]=None) -> None:
+    def add_app_template_global(self, func: Callable, name: Optional[str] = None) -> None:
         """Add an application wide template global.
 
         This is designed to be used on the blueprint directly, and
@@ -531,9 +570,11 @@ class Blueprint(PackageStatic):
                 ...
 
         """
+
         def decorator(func: Callable) -> Callable:
             self.register_error_handler(error, func)
             return func
+
         return decorator
 
     def app_errorhandler(self, error: Union[Type[Exception], int]) -> Callable:
@@ -550,9 +591,11 @@ class Blueprint(PackageStatic):
             def not_found():
                 ...
         """
+
         def decorator(func: Callable) -> Callable:
             self.record_once(lambda state: state.app.register_error_handler(error, func))
             return func
+
         return decorator
 
     def register_error_handler(self, error: Union[Type[Exception], int], func: Callable) -> None:
@@ -686,37 +729,32 @@ class Blueprint(PackageStatic):
 
     def record_once(self, func: DeferedSetupFunction) -> None:
         """Used to register a deferred action that happens only once."""
-        def wrapper(state: 'BlueprintSetupState') -> None:
+
+        def wrapper(state: "BlueprintSetupState") -> None:
             if state.first_registration:
                 func(state)
+
         self.record(update_wrapper(wrapper, func))
 
     def register(
-            self,
-            app: 'Quart',
-            first_registration: bool,
-            *,
-            url_prefix: Optional[str]=None,
+        self, app: "Quart", first_registration: bool, *, url_prefix: Optional[str] = None
     ) -> None:
         """Register this blueprint on the app given."""
         state = self.make_setup_state(app, first_registration, url_prefix=url_prefix)
 
         if self.has_static_folder:
             state.add_url_rule(
-                self.static_url_path + '/<path:filename>',
-                view_func=self.send_static_file, endpoint='static',
+                self.static_url_path + "/<path:filename>",
+                view_func=self.send_static_file,
+                endpoint="static",
             )
 
         for func in self.deferred_functions:
             func(state)
 
     def make_setup_state(
-            self,
-            app: 'Quart',
-            first_registration: bool,
-            *,
-            url_prefix: Optional[str]=None,
-    ) -> 'BlueprintSetupState':
+        self, app: "Quart", first_registration: bool, *, url_prefix: Optional[str] = None
+    ) -> "BlueprintSetupState":
         """Return a blueprint setup state instance.
 
         Arguments:
@@ -740,12 +778,12 @@ class BlueprintSetupState:
     """
 
     def __init__(
-            self,
-            blueprint: Blueprint,
-            app: 'Quart',
-            first_registration: bool,
-            *,
-            url_prefix: Optional[str]=None,
+        self,
+        blueprint: Blueprint,
+        app: "Quart",
+        first_registration: bool,
+        *,
+        url_prefix: Optional[str] = None,
     ) -> None:
         self.blueprint = blueprint
         self.app = app
@@ -753,25 +791,32 @@ class BlueprintSetupState:
         self.first_registration = first_registration
 
     def add_url_rule(
-            self,
-            path: str,
-            endpoint: Optional[str]=None,
-            view_func: Optional[Callable]=None,
-            methods: Optional[Iterable[str]]=None,
-            defaults: Optional[dict]=None,
-            host: Optional[str]=None,
-            subdomain: Optional[str]=None,
-            *,
-            provide_automatic_options: Optional[bool]=None,
-            is_websocket: bool=False,
-            strict_slashes: bool=True,
+        self,
+        path: str,
+        endpoint: Optional[str] = None,
+        view_func: Optional[Callable] = None,
+        methods: Optional[Iterable[str]] = None,
+        defaults: Optional[dict] = None,
+        host: Optional[str] = None,
+        subdomain: Optional[str] = None,
+        *,
+        provide_automatic_options: Optional[bool] = None,
+        is_websocket: bool = False,
+        strict_slashes: bool = True,
     ) -> None:
         if self.url_prefix is not None:
             path = f"{self.url_prefix}{path}"
         endpoint = f"{self.blueprint.name}.{endpoint}"
         self.app.add_url_rule(
-            path, endpoint, view_func, methods, defaults, host=host, subdomain=subdomain,
-            provide_automatic_options=provide_automatic_options, is_websocket=is_websocket,
+            path,
+            endpoint,
+            view_func,
+            methods,
+            defaults,
+            host=host,
+            subdomain=subdomain,
+            provide_automatic_options=provide_automatic_options,
+            is_websocket=is_websocket,
             strict_slashes=strict_slashes,
         )
 

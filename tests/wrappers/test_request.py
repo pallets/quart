@@ -23,7 +23,7 @@ async def test_full_body() -> None:
     limit = 3
     semaphore = asyncio.Semaphore(limit)
     asyncio.ensure_future(_fill_body(body, semaphore, limit))
-    assert b'012' == await body  # type: ignore
+    assert b"012" == await body  # type: ignore
 
 
 @pytest.mark.asyncio
@@ -37,7 +37,7 @@ async def test_body_streaming() -> None:
         semaphore.release()
         assert data == b"%d" % index
         index += 1
-    assert b'' == await body  # type: ignore
+    assert b"" == await body  # type: ignore
 
 
 @pytest.mark.asyncio
@@ -60,14 +60,14 @@ async def test_body_streaming_no_data() -> None:
     asyncio.ensure_future(_fill_body(body, semaphore, 0))
     async for _ in body:  # type: ignore # noqa: F841
         assert False  # Should not reach this
-    assert b'' == await body  # type: ignore
+    assert b"" == await body  # type: ignore
 
 
 @pytest.mark.asyncio
 async def test_body_exceeds_max_content_length() -> None:
     max_content_length = 5
     body = Body(None, max_content_length)
-    body.append(b' ' * (max_content_length + 1))
+    body.append(b" " * (max_content_length + 1))
     with pytest.raises(RequestEntityTooLarge):
         await body
 
@@ -76,9 +76,16 @@ async def test_body_exceeds_max_content_length() -> None:
 async def test_request_exceeds_max_content_length() -> None:
     max_content_length = 5
     headers = CIMultiDict()
-    headers['Content-Length'] = str(max_content_length + 1)
+    headers["Content-Length"] = str(max_content_length + 1)
     request = Request(
-        'POST', 'http', '/', b'', headers, "", "1.1", max_content_length=max_content_length,
+        "POST",
+        "http",
+        "/",
+        b"",
+        headers,
+        "",
+        "1.1",
+        max_content_length=max_content_length,
         send_push_promise=no_op_push,
     )
     with pytest.raises(RequestEntityTooLarge):
@@ -88,7 +95,14 @@ async def test_request_exceeds_max_content_length() -> None:
 @pytest.mark.asyncio
 async def test_request_get_data_timeout() -> None:
     request = Request(
-        'POST', 'http', '/', b'', CIMultiDict(), "", "1.1", body_timeout=1,
+        "POST",
+        "http",
+        "/",
+        b"",
+        CIMultiDict(),
+        "",
+        "1.1",
+        body_timeout=1,
         send_push_promise=no_op_push,
     )
     with pytest.raises(RequestTimeout):
@@ -98,14 +112,18 @@ async def test_request_get_data_timeout() -> None:
 @pytest.mark.asyncio
 async def test_request_values() -> None:
     request = Request(
-        'GET', 'http', '/', b'a=b&a=c',
-        CIMultiDict({'host': 'quart.com', 'Content-Type': 'application/x-www-form-urlencoded'}),
-        "", "1.1",
+        "GET",
+        "http",
+        "/",
+        b"a=b&a=c",
+        CIMultiDict({"host": "quart.com", "Content-Type": "application/x-www-form-urlencoded"}),
+        "",
+        "1.1",
         send_push_promise=no_op_push,
     )
-    request.body.append(urlencode({'a': 'd'}).encode())
+    request.body.append(urlencode({"a": "d"}).encode())
     request.body.set_complete()
-    assert (await request.values).getlist('a') == ['b', 'c', 'd']
+    assert (await request.values).getlist("a") == ["b", "c", "d"]
 
 
 @pytest.mark.asyncio
@@ -117,25 +135,26 @@ async def test_request_send_push_promise() -> None:
         push_promise = (path, headers)
 
     request = Request(
-        'GET', 'http', '/', b'a=b&a=c',
-        CIMultiDict({
-            'host': 'quart.com',
-            'Content-Type': 'application/x-www-form-urlencoded',
-            "Accept": "*/*",
-            "Accept-Encoding": "gzip",
-            "User-Agent": "quart",
-        }),
+        "GET",
+        "http",
+        "/",
+        b"a=b&a=c",
+        CIMultiDict(
+            {
+                "host": "quart.com",
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Accept": "*/*",
+                "Accept-Encoding": "gzip",
+                "User-Agent": "quart",
+            }
+        ),
         "",
         "2",
         send_push_promise=_push,
     )
     await request.send_push_promise("/")
     assert push_promise[0] == "/"
-    valid_headers = {
-        "Accept": "*/*",
-        "Accept-Encoding": "gzip",
-        "User-Agent": "quart",
-    }
+    valid_headers = {"Accept": "*/*", "Accept-Encoding": "gzip", "User-Agent": "quart"}
     assert len(push_promise[1]) == len(valid_headers)
     for name, value in valid_headers.items():
         assert push_promise[1][name] == value

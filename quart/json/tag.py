@@ -11,7 +11,7 @@ from quart.json import dumps, loads
 class JSONTag:
     key: Optional[str] = None
 
-    def __init__(self, serializer: 'TaggedJSONSerializer') -> None:
+    def __init__(self, serializer: "TaggedJSONSerializer") -> None:
         self.serializer = serializer
 
     def check(self, value: Any) -> bool:
@@ -28,17 +28,18 @@ class JSONTag:
 
 
 class TagDict(JSONTag):
-    key = ' di'
+    key = " di"
 
     def check(self, value: Any) -> bool:
         return (
-            isinstance(value, dict) and len(value) == 1 and
-            next(iter(value)) in self.serializer.tags
+            isinstance(value, dict)
+            and len(value) == 1
+            and next(iter(value)) in self.serializer.tags
         )
 
     def to_json(self, value: Any) -> Dict[str, Any]:
         key = next(iter(value))
-        return {key + '__': self.serializer.tag(value[key])}
+        return {key + "__": self.serializer.tag(value[key])}
 
     def to_python(self, value: str) -> Dict[str, Any]:
         key, item = next(iter(value))
@@ -46,7 +47,6 @@ class TagDict(JSONTag):
 
 
 class PassDict(JSONTag):
-
     def check(self, value: Any) -> bool:
         return isinstance(value, dict)
 
@@ -57,7 +57,7 @@ class PassDict(JSONTag):
 
 
 class TagTuple(JSONTag):
-    key = ' t'
+    key = " t"
 
     def check(self, value: Any) -> bool:
         return isinstance(value, tuple)
@@ -70,7 +70,6 @@ class TagTuple(JSONTag):
 
 
 class PassList(JSONTag):
-
     def check(self, value: Any) -> bool:
         return isinstance(value, list)
 
@@ -81,23 +80,23 @@ class PassList(JSONTag):
 
 
 class TagBytes(JSONTag):
-    key = ' b'
+    key = " b"
 
     def check(self, value: Any) -> bool:
         return isinstance(value, bytes)
 
     def to_json(self, value: bytes) -> str:
-        return b64encode(value).decode('ascii')
+        return b64encode(value).decode("ascii")
 
     def to_python(self, value: str) -> bytes:
         return b64decode(value)
 
 
 class TagMarkup(JSONTag):
-    key = ' m'
+    key = " m"
 
     def check(self, value: Any) -> bool:
-        return callable(getattr(value, '__html__', None))
+        return callable(getattr(value, "__html__", None))
 
     def to_json(self, value: Any) -> str:
         return str(value.__html__())
@@ -107,7 +106,7 @@ class TagMarkup(JSONTag):
 
 
 class TagUUID(JSONTag):
-    key = ' u'
+    key = " u"
 
     def check(self, value: Any) -> bool:
         return isinstance(value, UUID)
@@ -127,13 +126,13 @@ def _parse_datetime(value: str) -> datetime:
 
 
 class TagDateTime(JSONTag):
-    key = ' d'
+    key = " d"
 
     def check(self, value: Any) -> bool:
         return isinstance(value, datetime)
 
     def to_json(self, value: datetime) -> str:
-        return value.isoformat(timespec='microseconds')
+        return value.isoformat(timespec="microseconds")
 
     def to_python(self, value: str) -> datetime:
         return _parse_datetime(value)
@@ -142,7 +141,13 @@ class TagDateTime(JSONTag):
 class TaggedJSONSerializer:
 
     default_tags = [
-        TagDict, PassDict, TagTuple, PassList, TagBytes, TagMarkup, TagUUID,
+        TagDict,
+        PassDict,
+        TagTuple,
+        PassList,
+        TagBytes,
+        TagMarkup,
+        TagUUID,
         TagDateTime,
     ]
 
@@ -154,7 +159,7 @@ class TaggedJSONSerializer:
             self.register(tag_class)
 
     def register(
-            self, tag_class: Type[JSONTag], force: bool=False, index: Optional[int]=None,
+        self, tag_class: Type[JSONTag], force: bool = False, index: Optional[int] = None
     ) -> None:
         tag = tag_class(self)
         key = tag.key
@@ -189,7 +194,7 @@ class TaggedJSONSerializer:
         return self.tags[key].to_python(value[key])
 
     def dumps(self, value: Any) -> str:
-        return dumps(self.tag(value), separators=(',', ':'))
+        return dumps(self.tag(value), separators=(",", ":"))
 
     def loads(self, value: str) -> Any:
         return loads(value, object_hook=self.untag)

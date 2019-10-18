@@ -20,19 +20,19 @@ def get_debug_flag() -> bool:
         the app in debug mode. If unset, and development mode has been
         configured, it will be enabled automatically.
     """
-    value = os.getenv('QUART_DEBUG', None)
+    value = os.getenv("QUART_DEBUG", None)
 
     if value is None:
-        return 'development' == get_env()
+        return "development" == get_env()
 
-    return value.lower() not in {'0', 'false', 'no'}
+    return value.lower() not in {"0", "false", "no"}
 
 
-def get_env(default: Optional[str]= 'production') -> str:
+def get_env(default: Optional[str] = "production") -> str:
     """Reads QUART_ENV environment variable to determine in which environment
     the app is running on. Defaults to 'production' when unset.
     """
-    return os.getenv('QUART_ENV', default)
+    return os.getenv("QUART_ENV", default)
 
 
 async def make_response(*args: Any) -> Response:
@@ -65,7 +65,7 @@ async def make_push_promise(path: str) -> None:
     return await request.send_push_promise(path)
 
 
-async def flash(message: str, category: str='message') -> None:
+async def flash(message: str, category: str = "message") -> None:
     """Add a message (with optional category) to the session store.
 
     This is typically used to flash a message to a user that will be
@@ -84,17 +84,16 @@ async def flash(message: str, category: str='message') -> None:
     having to accept the message as an argument or otherwise.  See
     :func:`~quart.helpers.get_flashed_messages` for message retrieval.
     """
-    flashes = session.get('_flashes', [])
+    flashes = session.get("_flashes", [])
     flashes.append((category, message))
-    session['_flashes'] = flashes
+    session["_flashes"] = flashes
     await message_flashed.send(
-        current_app._get_current_object(), message=message, category=category,
+        current_app._get_current_object(), message=message, category=category
     )
 
 
 def get_flashed_messages(
-        with_categories: bool=False,
-        category_filter: List[str]=[],
+    with_categories: bool = False, category_filter: List[str] = []
 ) -> Union[List[str], List[Tuple[str, str]]]:
     """Retrieve the flashed messages stored in the session.
 
@@ -113,7 +112,7 @@ def get_flashed_messages(
     all messages will be popped, but only those matching the filter
     returned. See :func:`~quart.helpers.flash` for message creation.
     """
-    flashes = session.pop('_flashes') if '_flashes' in session else []
+    flashes = session.pop("_flashes") if "_flashes" in session else []
     if category_filter:
         flashes = [flash for flash in flashes if flash[0] in category_filter]
     if not with_categories:
@@ -135,13 +134,13 @@ def get_template_attribute(template_name: str, attribute: str) -> Any:
 
 
 def url_for(
-        endpoint: str,
-        *,
-        _anchor: Optional[str]=None,
-        _external: Optional[bool]=None,
-        _method: Optional[str]=None,
-        _scheme: Optional[str]=None,
-        **values: Any,
+    endpoint: str,
+    *,
+    _anchor: Optional[str] = None,
+    _external: Optional[bool] = None,
+    _method: Optional[str] = None,
+    _scheme: Optional[str] = None,
+    **values: Any,
 ) -> str:
     """Return the url for a specific endpoint.
 
@@ -163,7 +162,7 @@ def url_for(
 
     if request_context is not None:
         url_adapter = request_context.url_adapter
-        if endpoint.startswith('.'):
+        if endpoint.startswith("."):
             if request.blueprint is not None:
                 endpoint = request.blueprint + endpoint
             else:
@@ -175,19 +174,19 @@ def url_for(
         if _external is None:
             _external = True
     else:
-        raise RuntimeError('Cannot create a url outside of an application context')
+        raise RuntimeError("Cannot create a url outside of an application context")
 
     if url_adapter is None:
         raise RuntimeError(
-            'Unable to create a url adapter, try setting the the SERVER_NAME config variable.'
+            "Unable to create a url adapter, try setting the the SERVER_NAME config variable."
         )
     if _scheme is not None and not _external:
-        raise ValueError('External must be True for scheme usage')
+        raise ValueError("External must be True for scheme usage")
 
     app_context.app.inject_url_defaults(endpoint, values)
     try:
         url = url_adapter.build(
-            endpoint, values, method=_method, scheme=_scheme, external=_external,
+            endpoint, values, method=_method, scheme=_scheme, external=_external
         )
     except BuildError as error:
         return app_context.app.handle_url_build_error(error, endpoint, values)
@@ -224,6 +223,7 @@ def stream_with_context(func: Callable) -> Callable:
         async with request_context:
             async for data in func(*args, **kwargs):
                 yield data
+
     return generator
 
 
@@ -239,13 +239,13 @@ def find_package(name: str) -> Tuple[Optional[Path], Path]:
     if name == "__main__" or loader is None:
         package_path = Path.cwd()
     else:
-        if hasattr(loader, 'get_filename'):
+        if hasattr(loader, "get_filename"):
             filename = loader.get_filename(module)  # type: ignore
         else:
             __import__(name)
             filename = sys.modules[name].__file__
         package_path = Path(filename).resolve().parent
-        if hasattr(loader, 'is_package'):
+        if hasattr(loader, "is_package"):
             is_package = loader.is_package(module)  # type: ignore
             if is_package:
                 package_path = Path(package_path).resolve().parent

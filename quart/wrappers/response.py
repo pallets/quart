@@ -7,8 +7,15 @@ from io import BytesIO
 from os import PathLike
 from types import TracebackType
 from typing import (
-    AnyStr, AsyncGenerator, AsyncIterable, AsyncIterator, Iterable, Optional, Tuple,
-    TYPE_CHECKING, Union,
+    AnyStr,
+    AsyncGenerator,
+    AsyncIterable,
+    AsyncIterator,
+    Iterable,
+    Optional,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
 )
 from wsgiref.handlers import format_date_time
 
@@ -18,8 +25,14 @@ from aiofiles.threadpool import AsyncFileIO
 
 from ._base import _BaseRequestResponse, JSONMixin
 from ..datastructures import (
-    CIMultiDict, ContentRange, ContentSecurityPolicy, Headers, HeaderSet, Range,
-    ResponseAccessControl, ResponseCacheControl,
+    CIMultiDict,
+    ContentRange,
+    ContentSecurityPolicy,
+    Headers,
+    HeaderSet,
+    Range,
+    ResponseAccessControl,
+    ResponseCacheControl,
 )
 from ..utils import create_cookie, file_path_to_path
 
@@ -40,6 +53,7 @@ class ResponseBody(ABC):
                 send(data)
 
     """
+
     @abstractmethod
     async def __aenter__(self) -> AsyncIterable:
         pass
@@ -56,11 +70,11 @@ class ResponseBody(ABC):
 def _raise_if_invalid_range(begin: int, end: int, size: int) -> None:
     if begin >= end or abs(begin) > size or end > size:
         from ..exceptions import RequestRangeNotSatisfiable
+
         raise RequestRangeNotSatisfiable()
 
 
 class DataBody(ResponseBody):
-
     def __init__(self, data: bytes) -> None:
         self.data = data
         self.begin = 0
@@ -73,17 +87,16 @@ class DataBody(ResponseBody):
         pass
 
     def __aiter__(self) -> AsyncIterator:
-
         async def _aiter() -> AsyncGenerator[bytes, None]:
-            yield self.data[self.begin:self.end]
+            yield self.data[self.begin : self.end]
 
         return _aiter()
 
     async def convert_to_sequence(self) -> bytes:
-        return self.data[self.begin:self.end]
+        return self.data[self.begin : self.end]
 
     async def make_conditional(
-            self, begin: int, end: Optional[int], max_partial_size: Optional[int]=None,
+        self, begin: int, end: Optional[int], max_partial_size: Optional[int] = None
     ) -> int:
         self.begin = begin
         self.end = len(self.data) if end is None else end
@@ -94,12 +107,12 @@ class DataBody(ResponseBody):
 
 
 class IterableBody(ResponseBody):
-
     def __init__(self, iterable: Union[AsyncGenerator[bytes, None], Iterable]) -> None:
         self.iter: AsyncGenerator[bytes, None]
         if isasyncgen(iterable):
             self.iter = iterable  # type: ignore
         else:
+
             async def _aiter() -> AsyncGenerator[bytes, None]:
                 for data in iterable:  # type: ignore
                     yield data
@@ -133,10 +146,11 @@ class FileBody(ResponseBody):
     Attributes:
         buffer_size: Size in bytes to load per iteration.
     """
+
     buffer_size = 8192
 
     def __init__(
-            self, file_path: Union[str, PathLike], *, buffer_size: Optional[int] = None,
+        self, file_path: Union[str, PathLike], *, buffer_size: Optional[int] = None
     ) -> None:
         self.file_path = file_path_to_path(file_path)
         self.size = self.file_path.stat().st_size
@@ -156,7 +170,7 @@ class FileBody(ResponseBody):
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
         await self.file_manager.__aexit__(exc_type, exc_value, tb)
 
-    def __aiter__(self) -> 'FileBody':
+    def __aiter__(self) -> "FileBody":
         return self
 
     async def __anext__(self) -> bytes:
@@ -179,7 +193,7 @@ class FileBody(ResponseBody):
         return bytes(result)
 
     async def make_conditional(
-            self, begin: int, end: Optional[int], max_partial_size: Optional[int]=None,
+        self, begin: int, end: Optional[int], max_partial_size: Optional[int] = None
     ) -> int:
         self.begin = begin
         self.end = self.size if end is None else end
@@ -200,11 +214,10 @@ class IOBody(ResponseBody):
     Attributes:
         buffer_size: Size in bytes to load per iteration.
     """
+
     buffer_size = 8192
 
-    def __init__(
-            self, io_stream: BytesIO, *, buffer_size: Optional[int] = None,
-    ) -> None:
+    def __init__(self, io_stream: BytesIO, *, buffer_size: Optional[int] = None) -> None:
         self.io_stream = io_stream
         self.size = io_stream.getbuffer().nbytes
         self.begin = 0
@@ -242,7 +255,7 @@ class IOBody(ResponseBody):
         return bytes(result)
 
     async def make_conditional(
-        self, begin: int, end: Optional[int], max_partial_size: Optional[int]=None,
+        self, begin: int, end: Optional[int], max_partial_size: Optional[int] = None
     ) -> int:
         self.begin = begin
         self.end = self.size if end is None else end
@@ -271,7 +284,7 @@ class Response(_BaseRequestResponse, JSONMixin):
 
     automatically_set_content_length = True
     default_status = 200
-    default_mimetype = 'text/html'
+    default_mimetype = "text/html"
     data_body_class = DataBody
     file_body_class = FileBody
     implicit_sequence_conversion = True
@@ -279,12 +292,12 @@ class Response(_BaseRequestResponse, JSONMixin):
     iterable_body_class = IterableBody
 
     def __init__(
-            self,
-            response: Union[ResponseBody, AnyStr, Iterable],
-            status: Optional[int]=None,
-            headers: Optional[Union[dict, CIMultiDict, Headers]]=None,
-            mimetype: Optional[str]=None,
-            content_type: Optional[str]=None,
+        self,
+        response: Union[ResponseBody, AnyStr, Iterable],
+        status: Optional[int] = None,
+        headers: Optional[Union[dict, CIMultiDict, Headers]] = None,
+        mimetype: Optional[str] = None,
+        content_type: Optional[str] = None,
     ) -> None:
         """Create a response object.
 
@@ -313,16 +326,16 @@ class Response(_BaseRequestResponse, JSONMixin):
         try:
             self.status_code = int(status)
         except ValueError as error:
-            raise ValueError('Quart  does not support non-integer status values') from error
+            raise ValueError("Quart  does not support non-integer status values") from error
 
         if content_type is None:
-            if mimetype is None and 'content-type' not in self.headers:
+            if mimetype is None and "content-type" not in self.headers:
                 mimetype = self.default_mimetype
             if mimetype is not None:
                 self.mimetype = mimetype
 
         if content_type is not None:
-            self.headers['Content-Type'] = content_type
+            self.headers["Content-Type"] = content_type
 
         self.response: ResponseBody
         if isinstance(response, ResponseBody):
@@ -332,11 +345,11 @@ class Response(_BaseRequestResponse, JSONMixin):
         else:
             self.response = self.iterable_body_class(response)
 
-    async def get_data(self, raw: bool=True) -> AnyStr:
+    async def get_data(self, raw: bool = True) -> AnyStr:
         """Return the body data."""
         if self.implicit_sequence_conversion:
             self.response = self.data_body_class(await self.response.convert_to_sequence())
-        result = b'' if raw else ''
+        result = b"" if raw else ""
         async with self.response as body:  # type: ignore
             async for data in body:
                 if raw:
@@ -359,9 +372,7 @@ class Response(_BaseRequestResponse, JSONMixin):
             self.content_length = len(bytes_data)
 
     async def make_conditional(
-            self,
-            request_range: Range,
-            max_partial_size: Optional[int]=None,
+        self, request_range: Range, max_partial_size: Optional[int] = None
     ) -> None:
         """Make the response conditional to the
 
@@ -377,12 +388,13 @@ class Response(_BaseRequestResponse, JSONMixin):
 
         if request_range.units != "bytes" or len(request_range.ranges) > 1:
             from ..exceptions import RequestRangeNotSatisfiable
+
             raise RequestRangeNotSatisfiable()
 
         begin, end = request_range.ranges[0]
         try:
             complete_length = await self.response.make_conditional(  # type: ignore
-                begin, end, max_partial_size,
+                begin, end, max_partial_size
             )
         except AttributeError:
             self.response = self.data_body_class(await self.response.convert_to_sequence())
@@ -392,7 +404,8 @@ class Response(_BaseRequestResponse, JSONMixin):
             if self.content_length != complete_length:
                 self.content_range = ContentRange(
                     request_range.units,
-                    self.response.begin, self.response.end - 1,  # type: ignore
+                    self.response.begin,  # type: ignore
+                    self.response.end - 1,  # type: ignore
                     complete_length,
                 )
                 self.status_code = 206
@@ -402,16 +415,16 @@ class Response(_BaseRequestResponse, JSONMixin):
         self.set_data((await self.get_data()))
 
     def set_cookie(
-            self,
-            key: str,
-            value: AnyStr='',  # type: ignore
-            max_age: Optional[Union[int, timedelta]]=None,
-            expires: Optional[datetime]=None,
-            path: str='/',
-            domain: Optional[str]=None,
-            secure: bool=False,
-            httponly: bool=False,
-            samesite: str=None,
+        self,
+        key: str,
+        value: AnyStr = "",  # type: ignore
+        max_age: Optional[Union[int, timedelta]] = None,
+        expires: Optional[datetime] = None,
+        path: str = "/",
+        domain: Optional[str] = None,
+        secure: bool = False,
+        httponly: bool = False,
+        samesite: str = None,
     ) -> None:
         """Set a cookie in the response headers.
 
@@ -420,32 +433,34 @@ class Response(_BaseRequestResponse, JSONMixin):
         """
         if isinstance(value, bytes):
             value = value.decode()  # type: ignore
-        cookie = create_cookie(key, value, max_age, expires, path, domain, secure, httponly, samesite)  # type: ignore  # noqa: E501
-        self.headers.add('Set-Cookie', cookie.output(header=''))
+        cookie = create_cookie(
+            key, value, max_age, expires, path, domain, secure, httponly, samesite  # type: ignore
+        )
+        self.headers.add("Set-Cookie", cookie.output(header=""))
 
-    def delete_cookie(self, key: str, path: str='/', domain: Optional[str]=None) -> None:
+    def delete_cookie(self, key: str, path: str = "/", domain: Optional[str] = None) -> None:
         """Delete a cookie (set to expire immediately)."""
         self.set_cookie(key, expires=datetime.utcnow(), max_age=0, path=path, domain=domain)
 
-    async def add_etag(self, overwrite: bool=False, weak: bool=False) -> None:
-        if overwrite or 'etag' not in self.headers:
+    async def add_etag(self, overwrite: bool = False, weak: bool = False) -> None:
+        if overwrite or "etag" not in self.headers:
             self.set_etag(md5((await self.get_data())).hexdigest(), weak)  # type: ignore
 
     def get_etag(self) -> Tuple[Optional[str], Optional[bool]]:
-        etag = self.headers.get('ETag')
+        etag = self.headers.get("ETag")
         if etag is None:
             return None, None
         else:
             weak = False
-            if etag.upper().startswith('W/'):
+            if etag.upper().startswith("W/"):
                 etag = etag[2:]
             return etag.strip('"'), weak
 
-    def set_etag(self, etag: str, weak: bool=False) -> None:
+    def set_etag(self, etag: str, weak: bool = False) -> None:
         if weak:
-            self.headers['ETag'] = f"W/\"{etag}\""
+            self.headers["ETag"] = f'W/"{etag}"'
         else:
-            self.headers['ETag'] = f"\"{etag}\""
+            self.headers["ETag"] = f'"{etag}"'
 
     @property
     def access_control(self) -> ResponseAccessControl:
@@ -453,12 +468,12 @@ class Response(_BaseRequestResponse, JSONMixin):
             self.access_control = value
 
         return ResponseAccessControl.from_headers(
-            self.headers.get('Access-Control-Allow-Credentials', ''),
-            self.headers.get('Access-Control-Allow-Headers', ''),
-            self.headers.get('Access-Control-Allow-Methods', ''),
-            self.headers.get('Access-Control-Allow-Origin', ''),
-            self.headers.get('Access-Control-Expose-Headers', ''),
-            self.headers.get('Access-Control-Max-Age', ''),
+            self.headers.get("Access-Control-Allow-Credentials", ""),
+            self.headers.get("Access-Control-Allow-Headers", ""),
+            self.headers.get("Access-Control-Allow-Methods", ""),
+            self.headers.get("Access-Control-Allow-Origin", ""),
+            self.headers.get("Access-Control-Expose-Headers", ""),
+            self.headers.get("Access-Control-Max-Age", ""),
             on_update=on_update,
         )
 
@@ -466,30 +481,30 @@ class Response(_BaseRequestResponse, JSONMixin):
     def access_control(self, value: ResponseAccessControl) -> None:
         max_age = value.max_age
         if max_age is None:
-            self.headers.pop('Access-Control-Max-Age', None)
+            self.headers.pop("Access-Control-Max-Age", None)
         else:
-            self.headers['Access-Control-Max-Age'] = max_age
+            self.headers["Access-Control-Max-Age"] = max_age
         if value.allow_credentials:
-            self.headers['Access-Control-Allow-Credentials'] = 'true'
+            self.headers["Access-Control-Allow-Credentials"] = "true"
         else:
-            self.headers.pop('Access-Control-Allow-Credentials', None)
-        self._set_or_pop_header('Access-Control-Allow-Headers', value.allow_headers.to_header())
-        self._set_or_pop_header('Access-Control-Allow-Methods', value.allow_methods.to_header())
-        self._set_or_pop_header('Access-Control-Allow-Origin', value.allow_origin.to_header())
-        self._set_or_pop_header('Access-Control-Expose-Headers', value.expose_headers.to_header())
+            self.headers.pop("Access-Control-Allow-Credentials", None)
+        self._set_or_pop_header("Access-Control-Allow-Headers", value.allow_headers.to_header())
+        self._set_or_pop_header("Access-Control-Allow-Methods", value.allow_methods.to_header())
+        self._set_or_pop_header("Access-Control-Allow-Origin", value.allow_origin.to_header())
+        self._set_or_pop_header("Access-Control-Expose-Headers", value.expose_headers.to_header())
 
     @property
     def accept_ranges(self) -> Optional[str]:
-        return self.headers.get('Accept-Ranges')
+        return self.headers.get("Accept-Ranges")
 
     @accept_ranges.setter
     def accept_ranges(self, value: str) -> None:
-        self.headers['Accept-Ranges'] = value
+        self.headers["Accept-Ranges"] = value
 
     @property
     def age(self) -> Optional[int]:
         try:
-            value = self.headers.get('Age', '')
+            value = self.headers.get("Age", "")
         except (TypeError, ValueError):
             return None
         return int(value) if value > 0 else None
@@ -497,88 +512,90 @@ class Response(_BaseRequestResponse, JSONMixin):
     @age.setter
     def age(self, value: Union[int, timedelta]) -> None:
         if isinstance(value, timedelta):
-            self.headers['Age'] = str(value.total_seconds())
+            self.headers["Age"] = str(value.total_seconds())
         else:
-            self.headers['Age'] = str(value)
+            self.headers["Age"] = str(value)
 
     @property
     def allow(self) -> HeaderSet:
         def on_update(header_set: HeaderSet) -> None:
             self.allow = header_set
 
-        return HeaderSet.from_header(self.headers.get('Allow', ''), on_update=on_update)
+        return HeaderSet.from_header(self.headers.get("Allow", ""), on_update=on_update)
 
     @allow.setter
     def allow(self, value: HeaderSet) -> None:
-        self._set_or_pop_header('Allow', value.to_header())
+        self._set_or_pop_header("Allow", value.to_header())
 
     @property
     def cache_control(self) -> ResponseCacheControl:
         def on_update(cache_control: ResponseCacheControl) -> None:
             self.cache_control = cache_control
 
-        return ResponseCacheControl.from_header(self.headers.get('Cache-Control', ''), on_update)  # type: ignore  # noqa: E501
+        return ResponseCacheControl.from_header(  # type: ignore
+            self.headers.get("Cache-Control", ""), on_update
+        )
 
     @cache_control.setter
     def cache_control(self, value: ResponseCacheControl) -> None:
-        self._set_or_pop_header('Cache-Control', value.to_header())
+        self._set_or_pop_header("Cache-Control", value.to_header())
 
     @property
     def content_encoding(self) -> Optional[str]:
-        return self.headers.get('Content-Encoding')
+        return self.headers.get("Content-Encoding")
 
     @content_encoding.setter
     def content_encoding(self, value: str) -> None:
-        self.headers['Content-Encoding'] = value
+        self.headers["Content-Encoding"] = value
 
     @property
     def content_language(self) -> HeaderSet:
         def on_update(header_set: HeaderSet) -> None:
             self.content_language = header_set
 
-        return HeaderSet.from_header(self.headers.get('Content-Language', ''), on_update=on_update)
+        return HeaderSet.from_header(self.headers.get("Content-Language", ""), on_update=on_update)
 
     @content_language.setter
     def content_language(self, value: HeaderSet) -> None:
-        self._set_or_pop_header('Content-Language', value.to_header())
+        self._set_or_pop_header("Content-Language", value.to_header())
 
     @property
     def content_length(self) -> Optional[int]:
         try:
-            return int(self.headers.get('Content-Length'))
+            return int(self.headers.get("Content-Length"))
         except (ValueError, TypeError):
             return None
 
     @content_length.setter
     def content_length(self, value: int) -> None:
-        self.headers['Content-Length'] = str(value)
+        self.headers["Content-Length"] = str(value)
 
     @property
     def content_location(self) -> Optional[str]:
-        return self.headers.get('Content-Location')
+        return self.headers.get("Content-Location")
 
     @content_location.setter
     def content_location(self, value: str) -> None:
-        self.headers['Content-Location'] = value
+        self.headers["Content-Location"] = value
 
     @property
     def content_md5(self) -> Optional[str]:
-        return self.headers.get('Content-MD5')
+        return self.headers.get("Content-MD5")
 
     @content_md5.setter
     def content_md5(self, value: str) -> None:
-        self.headers['Content-MD5'] = value
+        self.headers["Content-MD5"] = value
 
     @property
     def content_range(self) -> ContentRange:
         def on_update(cache_range: ContentRange) -> None:
             self.content_range = cache_range
 
-        return ContentRange.from_header(self.headers.get('Content-Range', ''), on_update)
+        return ContentRange.from_header(self.headers.get("Content-Range", ""), on_update)
 
     @content_range.setter
     def content_range(self, value: ContentRange) -> None:
-        self._set_or_pop_header('Content-Range', value.to_header())
+        self._set_or_pop_header("Content-Range", value.to_header())
 
     @property
     def content_security_policy(self) -> ContentSecurityPolicy:
@@ -586,7 +603,7 @@ class Response(_BaseRequestResponse, JSONMixin):
             self.content_security_policy = content_security_policy
 
         return ContentSecurityPolicy.from_header(
-            self.headers.get("Content-Security-Policy", ""), on_update,
+            self.headers.get("Content-Security-Policy", ""), on_update
         )
 
     @content_security_policy.setter
@@ -599,7 +616,7 @@ class Response(_BaseRequestResponse, JSONMixin):
             self.content_security_policy_report_only = content_security_policy
 
         return ContentSecurityPolicy.from_header(
-            self.headers.get("Content-Security-Policy-Report-Only", ""), on_update,
+            self.headers.get("Content-Security-Policy-Report-Only", ""), on_update
         )
 
     @content_security_policy_report_only.setter
@@ -608,64 +625,64 @@ class Response(_BaseRequestResponse, JSONMixin):
 
     @property
     def content_type(self) -> Optional[str]:
-        return self.headers.get('Content-Type')
+        return self.headers.get("Content-Type")
 
     @content_type.setter
     def content_type(self, value: str) -> None:
-        self.headers['Content-Type'] = value
+        self.headers["Content-Type"] = value
 
     @property
     def date(self) -> Optional[datetime]:
         try:
-            return parsedate_to_datetime(self.headers.get('Date', ''))
+            return parsedate_to_datetime(self.headers.get("Date", ""))
         except TypeError:  # Not a date format
             return None
 
     @date.setter
     def date(self, value: datetime) -> None:
-        self.headers['Date'] = format_date_time(value.timestamp())
+        self.headers["Date"] = format_date_time(value.timestamp())
 
     @property
     def expires(self) -> Optional[datetime]:
         try:
-            return parsedate_to_datetime(self.headers.get('Expires', ''))
+            return parsedate_to_datetime(self.headers.get("Expires", ""))
         except TypeError:  # Not a date format
             return None
 
     @expires.setter
     def expires(self, value: datetime) -> None:
-        self.headers['Expires'] = format_date_time(value.timestamp())
+        self.headers["Expires"] = format_date_time(value.timestamp())
 
     @property
     def last_modified(self) -> Optional[datetime]:
         try:
-            return parsedate_to_datetime(self.headers.get('Last-Modified', ''))
+            return parsedate_to_datetime(self.headers.get("Last-Modified", ""))
         except TypeError:  # Not a date format
             return None
 
     @last_modified.setter
     def last_modified(self, value: datetime) -> None:
-        self.headers['Last-Modified'] = format_date_time(value.timestamp())
+        self.headers["Last-Modified"] = format_date_time(value.timestamp())
 
     @property
     def location(self) -> Optional[str]:
-        return self.headers.get('Location')
+        return self.headers.get("Location")
 
     @location.setter
     def location(self, value: str) -> None:
-        self.headers['Location'] = value
+        self.headers["Location"] = value
 
     @property
     def referrer(self) -> Optional[str]:
-        return self.headers.get('Referer')
+        return self.headers.get("Referer")
 
     @referrer.setter
     def referrer(self, value: str) -> None:
-        self.headers['Referer'] = value
+        self.headers["Referer"] = value
 
     @property
     def retry_after(self) -> Optional[datetime]:
-        value = self.headers.get('Retry-After', '')
+        value = self.headers.get("Retry-After", "")
         if value.isdigit():
             return datetime.utcnow() + timedelta(seconds=int(value))
         else:
@@ -677,27 +694,27 @@ class Response(_BaseRequestResponse, JSONMixin):
     @retry_after.setter
     def retry_after(self, value: Union[datetime, int]) -> None:
         if isinstance(value, datetime):
-            self.headers['Retry-After'] = format_date_time(value.timestamp())
+            self.headers["Retry-After"] = format_date_time(value.timestamp())
         else:
-            self.headers['Retry-After'] = str(value)
+            self.headers["Retry-After"] = str(value)
 
     @property
     def vary(self) -> HeaderSet:
         def on_update(header_set: HeaderSet) -> None:
             self.vary = header_set
 
-        return HeaderSet.from_header(self.headers.get('Vary', ''), on_update=on_update)
+        return HeaderSet.from_header(self.headers.get("Vary", ""), on_update=on_update)
 
     @vary.setter
     def vary(self, value: HeaderSet) -> None:
-        self._set_or_pop_header('Vary', value.to_header())
+        self._set_or_pop_header("Vary", value.to_header())
 
     async def _load_json_data(self) -> str:
         """Return the data after decoding."""
         return await self.get_data(raw=False)
 
     def _set_or_pop_header(self, key: str, value: str) -> None:
-        if value == '':
+        if value == "":
             self.headers.pop(key, None)
         else:
             self.headers[key] = value

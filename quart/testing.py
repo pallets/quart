@@ -18,14 +18,12 @@ sentinel = object()
 
 
 class WebsocketResponse(Exception):
-
     def __init__(self, response: Response) -> None:
         super().__init__()
         self.response = response
 
 
 class _TestingWebsocket:
-
     def __init__(self, remote_queue: asyncio.Queue) -> None:
         self.remote_queue = remote_queue
         self.local_queue: asyncio.Queue = asyncio.Queue()
@@ -52,10 +50,10 @@ class _TestingWebsocket:
 
 
 def make_test_headers_path_and_query_string(
-        app: 'Quart',
-        path: str,
-        headers: Optional[Union[dict, CIMultiDict]]=None,
-        query_string: Optional[dict]=None,
+    app: "Quart",
+    path: str,
+    headers: Optional[Union[dict, CIMultiDict]] = None,
+    query_string: Optional[dict] = None,
 ) -> Tuple[CIMultiDict, str, bytes]:
     """Make the headers and path with defaults for testing.
 
@@ -74,24 +72,24 @@ def make_test_headers_path_and_query_string(
         headers = headers
     elif headers is not None:
         headers = CIMultiDict(headers)
-    headers.setdefault('Remote-Addr', '127.0.0.1')
-    headers.setdefault('User-Agent', 'Quart')
-    headers.setdefault('host', app.config['SERVER_NAME'] or 'localhost')
-    if '?' in path and query_string is not None:
-        raise ValueError('Query string is defined in the path and as an argument')
+    headers.setdefault("Remote-Addr", "127.0.0.1")
+    headers.setdefault("User-Agent", "Quart")
+    headers.setdefault("host", app.config["SERVER_NAME"] or "localhost")
+    if "?" in path and query_string is not None:
+        raise ValueError("Query string is defined in the path and as an argument")
     if query_string is None:
-        path, _, query_string_raw = path.partition('?')
+        path, _, query_string_raw = path.partition("?")
     else:
         query_string_raw = urlencode(query_string, doseq=True)
-    query_string_bytes = query_string_raw.encode('ascii')
+    query_string_bytes = query_string_raw.encode("ascii")
     return headers, unquote(path), query_string_bytes
 
 
 def make_test_body_with_headers(
-    data: Optional[AnyStr]=None,
-    form: Optional[dict]=None,
-    json: Any=sentinel,
-    app: Optional["Quart"]=None,
+    data: Optional[AnyStr] = None,
+    form: Optional[dict] = None,
+    json: Any = sentinel,
+    app: Optional["Quart"] = None,
 ) -> Tuple[bytes, CIMultiDict]:
     """Make the body bytes with associated headers.
 
@@ -103,22 +101,22 @@ def make_test_body_with_headers(
     if [json is not sentinel, form is not None, data is not None].count(True) > 1:
         raise ValueError("Quart test args 'json', 'form', and 'data' are mutually exclusive")
 
-    request_data = b''
+    request_data = b""
 
     headers = CIMultiDict()
 
     if isinstance(data, str):
-        request_data = data.encode('utf-8')
+        request_data = data.encode("utf-8")
     elif isinstance(data, bytes):
         request_data = data
 
     if json is not sentinel:
-        request_data = dumps(json, app=app).encode('utf-8')
-        headers['Content-Type'] = 'application/json'
+        request_data = dumps(json, app=app).encode("utf-8")
+        headers["Content-Type"] = "application/json"
 
     if form is not None:
-        request_data = urlencode(form).encode('utf-8')
-        headers['Content-Type'] = 'application/x-www-form-urlencoded'
+        request_data = urlencode(form).encode("utf-8")
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
 
     return request_data, headers
 
@@ -142,7 +140,7 @@ class QuartClient:
     :attr:`~quart.app.Quart.test_client` method.
     """
 
-    def __init__(self, app: 'Quart', use_cookies: bool=True) -> None:
+    def __init__(self, app: "Quart", use_cookies: bool = True) -> None:
         self.cookie_jar: Optional[SimpleCookie]
         if use_cookies:
             self.cookie_jar = SimpleCookie()
@@ -152,19 +150,19 @@ class QuartClient:
         self.push_promises: List[Tuple[str, Headers]] = []
 
     async def open(
-            self,
-            path: str,
-            *,
-            method: str='GET',
-            headers: Optional[Union[dict, CIMultiDict]]=None,
-            data: Optional[AnyStr]=None,
-            form: Optional[dict]=None,
-            query_string: Optional[dict]=None,
-            json: Any=sentinel,
-            scheme: str='http',
-            follow_redirects: bool=False,
-            root_path: str="",
-            http_version: str="1.1",
+        self,
+        path: str,
+        *,
+        method: str = "GET",
+        headers: Optional[Union[dict, CIMultiDict]] = None,
+        data: Optional[AnyStr] = None,
+        form: Optional[dict] = None,
+        query_string: Optional[dict] = None,
+        json: Any = sentinel,
+        scheme: str = "http",
+        follow_redirects: bool = False,
+        root_path: str = "",
+        http_version: str = "1.1",
     ) -> Response:
         """Open a request to the app associated with this client.
 
@@ -196,7 +194,7 @@ class QuartClient:
             The response from the app handling the request.
         """
         response = await self._make_request(
-            path, method, headers, data, form, query_string, json, scheme, root_path, http_version,
+            path, method, headers, data, form, query_string, json, scheme, root_path, http_version
         )
         if follow_redirects:
             while response.status_code >= 300 and response.status_code <= 399:
@@ -206,42 +204,56 @@ class QuartClient:
                 if response.status_code == 302 or response.status_code == 303:
                     method = "GET"
                 response = await self._make_request(
-                    response.location, method, headers, data, form, query_string, json, scheme,
-                    root_path, http_version,
+                    response.location,
+                    method,
+                    headers,
+                    data,
+                    form,
+                    query_string,
+                    json,
+                    scheme,
+                    root_path,
+                    http_version,
                 )
         return response
 
     async def _make_request(
-            self,
-            path: str,
-            method: str="GET",
-            headers: Optional[Union[dict, CIMultiDict]]=None,
-            data: Optional[AnyStr]=None,
-            form: Optional[dict]=None,
-            query_string: Optional[dict]=None,
-            json: Any=sentinel,
-            scheme: str="http",
-            root_path: str="",
-            http_version: str="1.1",
+        self,
+        path: str,
+        method: str = "GET",
+        headers: Optional[Union[dict, CIMultiDict]] = None,
+        data: Optional[AnyStr] = None,
+        form: Optional[dict] = None,
+        query_string: Optional[dict] = None,
+        json: Any = sentinel,
+        scheme: str = "http",
+        root_path: str = "",
+        http_version: str = "1.1",
     ) -> Response:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
-            self.app, path, headers, query_string,
+            self.app, path, headers, query_string
         )
 
         request_data, body_headers = make_test_body_with_headers(data, form, json, self.app)
         headers.update(**body_headers)
 
         if self.cookie_jar is not None:
-            headers.add('Cookie', self.cookie_jar.output(header=''))
+            headers.add("Cookie", self.cookie_jar.output(header=""))
 
         request = self.app.request_class(
-            method, scheme, path, query_string_bytes, headers, root_path, http_version,
+            method,
+            scheme,
+            path,
+            query_string_bytes,
+            headers,
+            root_path,
+            http_version,
             send_push_promise=self._send_push_promise,
         )
         request.body.set_result(request_data)
         response = await self._handle_request(request)
-        if self.cookie_jar is not None and 'Set-Cookie' in response.headers:
-            self.cookie_jar.load(";".join(response.headers.getall('Set-Cookie')))
+        if self.cookie_jar is not None and "Set-Cookie" in response.headers:
+            self.cookie_jar.load(";".join(response.headers.getall("Set-Cookie")))
         return response
 
     async def _handle_request(self, request: Request) -> Response:
@@ -256,7 +268,7 @@ class QuartClient:
         See :meth:`~quart.testing.QuartClient.open` for argument
         details.
         """
-        return await self.open(*args, method='DELETE', **kwargs)
+        return await self.open(*args, method="DELETE", **kwargs)
 
     async def get(self, *args: Any, **kwargs: Any) -> Response:
         """Make a GET request.
@@ -264,7 +276,7 @@ class QuartClient:
         See :meth:`~quart.testing.QuartClient.open` for argument
         details.
         """
-        return await self.open(*args, method='GET', **kwargs)
+        return await self.open(*args, method="GET", **kwargs)
 
     async def head(self, *args: Any, **kwargs: Any) -> Response:
         """Make a HEAD request.
@@ -272,7 +284,7 @@ class QuartClient:
         See :meth:`~quart.testing.QuartClient.open` for argument
         details.
         """
-        return await self.open(*args, method='HEAD', **kwargs)
+        return await self.open(*args, method="HEAD", **kwargs)
 
     async def options(self, *args: Any, **kwargs: Any) -> Response:
         """Make a OPTIONS request.
@@ -280,7 +292,7 @@ class QuartClient:
         See :meth:`~quart.testing.QuartClient.open` for argument
         details.
         """
-        return await self.open(*args, method='OPTIONS', **kwargs)
+        return await self.open(*args, method="OPTIONS", **kwargs)
 
     async def patch(self, *args: Any, **kwargs: Any) -> Response:
         """Make a PATCH request.
@@ -288,7 +300,7 @@ class QuartClient:
         See :meth:`~quart.testing.QuartClient.open` for argument
         details.
         """
-        return await self.open(*args, method='PATCH', **kwargs)
+        return await self.open(*args, method="PATCH", **kwargs)
 
     async def post(self, *args: Any, **kwargs: Any) -> Response:
         """Make a POST request.
@@ -296,7 +308,7 @@ class QuartClient:
         See :meth:`~quart.testing.QuartClient.open` for argument
         details.
         """
-        return await self.open(*args, method='POST', **kwargs)
+        return await self.open(*args, method="POST", **kwargs)
 
     async def put(self, *args: Any, **kwargs: Any) -> Response:
         """Make a PUT request.
@@ -304,7 +316,7 @@ class QuartClient:
         See :meth:`~quart.testing.QuartClient.open` for argument
         details.
         """
-        return await self.open(*args, method='PUT', **kwargs)
+        return await self.open(*args, method="PUT", **kwargs)
 
     async def trace(self, *args: Any, **kwargs: Any) -> Response:
         """Make a TRACE request.
@@ -312,19 +324,19 @@ class QuartClient:
         See :meth:`~quart.testing.QuartClient.open` for argument
         details.
         """
-        return await self.open(*args, method='TRACE', **kwargs)
+        return await self.open(*args, method="TRACE", **kwargs)
 
     def set_cookie(
-            self,
-            key: str,
-            value: str='',
-            max_age: Optional[Union[int, timedelta]]=None,
-            expires: Optional[Union[int, float, datetime]]=None,
-            path: str='/',
-            domain: Optional[str]=None,
-            secure: bool=False,
-            httponly: bool=False,
-            samesite: str=None,
+        self,
+        key: str,
+        value: str = "",
+        max_age: Optional[Union[int, timedelta]] = None,
+        expires: Optional[Union[int, float, datetime]] = None,
+        path: str = "/",
+        domain: Optional[str] = None,
+        secure: bool = False,
+        httponly: bool = False,
+        samesite: str = None,
     ) -> None:
         """Set a cookie in the cookie jar.
 
@@ -332,44 +344,44 @@ class QuartClient:
         wrapper around the stdlib SimpleCookie code.
         """
         cookie = create_cookie(
-            key,
-            value,
-            max_age,
-            expires,
-            path,
-            domain,
-            secure,
-            httponly,
-            samesite,
+            key, value, max_age, expires, path, domain, secure, httponly, samesite
         )
         self.cookie_jar = cookie
 
-    def delete_cookie(self, key: str, path: str='/', domain: Optional[str]=None) -> None:
+    def delete_cookie(self, key: str, path: str = "/", domain: Optional[str] = None) -> None:
         """Delete a cookie (set to expire immediately)."""
         self.set_cookie(key, expires=datetime.utcnow(), max_age=0, path=path, domain=domain)
 
     @asynccontextmanager
     async def websocket(
-            self,
-            path: str,
-            *,
-            headers: Optional[Union[dict, CIMultiDict]]=None,
-            query_string: Optional[dict]=None,
-            scheme: str='http',
-            subprotocols: Optional[List[str]]=None,
-            root_path: str="",
-            http_version: str="1.1",
+        self,
+        path: str,
+        *,
+        headers: Optional[Union[dict, CIMultiDict]] = None,
+        query_string: Optional[dict] = None,
+        scheme: str = "http",
+        subprotocols: Optional[List[str]] = None,
+        root_path: str = "",
+        http_version: str = "1.1",
     ) -> AsyncGenerator[_TestingWebsocket, None]:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
-            self.app, path, headers, query_string,
+            self.app, path, headers, query_string
         )
         queue: asyncio.Queue = asyncio.Queue()
         websocket_client = _TestingWebsocket(queue)
 
         subprotocols = subprotocols or []
         websocket = self.app.websocket_class(
-            path, query_string_bytes, scheme, headers, root_path, http_version, subprotocols,
-            queue.get, websocket_client.local_queue.put, websocket_client.accept,
+            path,
+            query_string_bytes,
+            scheme,
+            headers,
+            root_path,
+            http_version,
+            subprotocols,
+            queue.get,
+            websocket_client.local_queue.put,
+            websocket_client.accept,
         )
         adapter = self.app.create_url_adapter(websocket)
         url_rule, _ = adapter.match()

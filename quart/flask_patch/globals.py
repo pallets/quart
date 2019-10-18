@@ -2,14 +2,18 @@ from typing import Any, AnyStr
 
 from quart.datastructures import MultiDict
 from quart.globals import (
-    _app_ctx_stack, _request_ctx_stack, current_app, g, request as quart_request, session,
+    _app_ctx_stack,
+    _request_ctx_stack,
+    current_app,
+    g,
+    request as quart_request,
+    session,
 )
 from quart.local import LocalProxy
 from ._synchronise import sync_with_context
 
 
 class FlaskRequestProxy(LocalProxy):
-
     @property
     def form(self) -> MultiDict:
         return sync_with_context(self._get_current_object().form)
@@ -31,4 +35,4 @@ class FlaskRequestProxy(LocalProxy):
 
 request = FlaskRequestProxy(lambda: quart_request)
 
-__all__ = ('_app_ctx_stack', '_request_ctx_stack', 'current_app', 'g', 'request', 'session')
+__all__ = ("_app_ctx_stack", "_request_ctx_stack", "current_app", "g", "request", "session")

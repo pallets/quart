@@ -3,9 +3,7 @@ from typing import Any, Callable, List, Optional
 from .globals import request
 from .typing import ResponseReturnValue
 
-http_method_funcs = frozenset([
-    'get', 'post', 'head', 'options', 'delete', 'put', 'trace', 'patch',
-])
+http_method_funcs = frozenset(["get", "post", "head", "options", "delete", "put", "trace", "patch"])
 
 
 class View:
@@ -37,6 +35,7 @@ class View:
         provide_automatic_options: Override automatic OPTIONS
             if set, to either True or False.
     """
+
     decorators: List[Callable] = []
     methods: Optional[List[str]] = None
     provide_automatic_options: Optional[bool] = None
@@ -51,7 +50,6 @@ class View:
 
     @classmethod
     def as_view(cls, name: str, *class_args: Any, **class_kwargs: Any) -> Callable:
-
         async def view(*args: Any, **kwargs: Any) -> Callable:
             self = view.view_class(*class_args, **class_kwargs)  # type: ignore
             return await self.dispatch_request(*args, **kwargs)
@@ -72,11 +70,10 @@ class View:
 
 
 class MethodViewType(type):
-
     def __init__(cls, name, bases, attributes):  # type: ignore # noqa
         super().__init__(name, bases, attributes)
 
-        if 'methods' not in attributes:
+        if "methods" not in attributes:
             methods = []
 
             for key in http_method_funcs:
@@ -109,7 +106,7 @@ class MethodView(View, metaclass=MethodViewType):
     async def dispatch_request(self, *args: Any, **kwargs: Any) -> ResponseReturnValue:
         handler = getattr(self, request.method.lower(), None)
 
-        if handler is None and request.method == 'HEAD':
-            handler = getattr(self, 'get', None)
+        if handler is None and request.method == "HEAD":
+            handler = getattr(self, "get", None)
 
         return await handler(*args, **kwargs)

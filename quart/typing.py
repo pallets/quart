@@ -9,7 +9,7 @@ FilePath = Union[bytes, str, os.PathLike]
 # The possible types that are directly convertable or are a Response
 # object.
 ResponseValue = Union[
-    "Response", str, Dict[str, Any], AsyncGenerator[bytes, None], Generator[bytes, None, None],
+    "Response", str, Dict[str, Any], AsyncGenerator[bytes, None], Generator[bytes, None, None]
 ]
 
 # The possible types returned by a route function.

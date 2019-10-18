@@ -2,33 +2,33 @@ import asyncio
 from typing import Optional
 
 import pytest
-from asynctest.mock import CoroutineMock
 
+from asynctest.mock import CoroutineMock
 from quart import Quart
 from quart.asgi import (
-    _convert_version, _encode_headers, ASGIHTTPConnection, ASGIWebsocketConnection,
+    _convert_version,
+    _encode_headers,
+    ASGIHTTPConnection,
+    ASGIWebsocketConnection,
 )
 from quart.datastructures import Headers
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    'headers, expected',
-    [([(b'host', b'quart')], 'quart'), ([], '')],
-)
+@pytest.mark.parametrize("headers, expected", [([(b"host", b"quart")], "quart"), ([], "")])
 async def test_http_1_0_host_header(headers: list, expected: str) -> None:
     app = Quart(__name__)
     scope = {
-        'headers': headers,
-        'http_version': '1.0',
-        'method': 'GET',
-        'scheme': 'https',
-        'path': '/',
-        'query_string': b'',
+        "headers": headers,
+        "http_version": "1.0",
+        "method": "GET",
+        "scheme": "https",
+        "path": "/",
+        "query_string": b"",
     }
     connection = ASGIHTTPConnection(app, scope)
     request = connection._create_request_from_scope(lambda: None)
-    assert request.headers['host'] == expected
+    assert request.headers["host"] == expected
 
 
 @pytest.mark.asyncio
@@ -36,17 +36,17 @@ async def test_http_completion() -> None:
     # Ensure that the connecion callable returns on completion
     app = Quart(__name__)
     scope = {
-        'headers': [(b'host', b'quart')],
-        'http_version': '1.1',
-        'method': 'GET',
-        'scheme': 'https',
-        'path': '/',
-        'query_string': b'',
+        "headers": [(b"host", b"quart")],
+        "http_version": "1.1",
+        "method": "GET",
+        "scheme": "https",
+        "path": "/",
+        "query_string": b"",
     }
     connection = ASGIHTTPConnection(app, scope)
 
     queue: asyncio.Queue = asyncio.Queue()
-    queue.put_nowait({'type': 'http.request', 'body': b'', 'more_body': False})
+    queue.put_nowait({"type": "http.request", "body": b"", "more_body": False})
 
     async def receive() -> dict:
         # This will block after returning the first and only entry
@@ -61,22 +61,22 @@ async def test_http_completion() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    'request_message',
+    "request_message",
     [
-        {'type': 'http.request', 'body': b'', 'more_body': False},
-        {'type': 'http.request', 'more_body': False},
+        {"type": "http.request", "body": b"", "more_body": False},
+        {"type": "http.request", "more_body": False},
     ],
 )
 async def test_http_request_without_body(request_message: dict) -> None:
     app = Quart(__name__)
 
     scope = {
-        'headers': [(b'host', b'quart')],
-        'http_version': '1.0',
-        'method': 'GET',
-        'scheme': 'https',
-        'path': '/',
-        'query_string': b'',
+        "headers": [(b"host", b"quart")],
+        "http_version": "1.0",
+        "method": "GET",
+        "scheme": "https",
+        "path": "/",
+        "query_string": b"",
     }
     connection = ASGIHTTPConnection(app, scope)
     request = connection._create_request_from_scope(lambda: None)
@@ -94,7 +94,7 @@ async def test_http_request_without_body(request_message: dict) -> None:
     body = await asyncio.wait_for(request.body, timeout=1)
     receiver_task.cancel()
 
-    assert body == b''
+    assert body == b""
 
 
 @pytest.mark.asyncio
@@ -102,19 +102,19 @@ async def test_websocket_completion() -> None:
     # Ensure that the connecion callable returns on completion
     app = Quart(__name__)
     scope = {
-        'headers': [(b'host', b'quart')],
-        'http_version': '1.1',
-        'method': 'GET',
-        'scheme': 'wss',
-        'path': '/',
-        'query_string': b'',
-        'subprotocols': [],
-        'extensions': {'websocket.http.response': {}},
+        "headers": [(b"host", b"quart")],
+        "http_version": "1.1",
+        "method": "GET",
+        "scheme": "wss",
+        "path": "/",
+        "query_string": b"",
+        "subprotocols": [],
+        "extensions": {"websocket.http.response": {}},
     }
     connection = ASGIWebsocketConnection(app, scope)
 
     queue: asyncio.Queue = asyncio.Queue()
-    queue.put_nowait({'type': 'websocket.connect'})
+    queue.put_nowait({"type": "websocket.connect"})
 
     async def receive() -> dict:
         # This will block after returning the first and only entry
@@ -130,33 +130,33 @@ async def test_websocket_completion() -> None:
 def test_http_path_from_absolute_target() -> None:
     app = Quart(__name__)
     scope = {
-        'headers': [(b'host', b'quart')],
-        'http_version': '1.1',
-        'method': 'GET',
-        'scheme': 'https',
-        'path': 'http://quart/path',
-        'query_string': b'',
+        "headers": [(b"host", b"quart")],
+        "http_version": "1.1",
+        "method": "GET",
+        "scheme": "https",
+        "path": "http://quart/path",
+        "query_string": b"",
     }
     connection = ASGIHTTPConnection(app, scope)
     request = connection._create_request_from_scope(lambda: None)
-    assert request.path == '/path'
+    assert request.path == "/path"
 
 
 def test_websocket_path_from_absolute_target() -> None:
     app = Quart(__name__)
     scope = {
-        'headers': [(b'host', b'quart')],
-        'http_version': '1.1',
-        'method': 'GET',
-        'scheme': 'wss',
-        'path': 'ws://quart/path',
-        'query_string': b'',
-        'subprotocols': [],
-        'extensions': {'websocket.http.response': {}},
+        "headers": [(b"host", b"quart")],
+        "http_version": "1.1",
+        "method": "GET",
+        "scheme": "wss",
+        "path": "ws://quart/path",
+        "query_string": b"",
+        "subprotocols": [],
+        "extensions": {"websocket.http.response": {}},
     }
     connection = ASGIWebsocketConnection(app, scope)
     websocket = connection._create_websocket_from_scope(lambda: None)
-    assert websocket.path == '/path'
+    assert websocket.path == "/path"
 
 
 @pytest.mark.asyncio
@@ -170,23 +170,22 @@ def test_websocket_path_from_absolute_target() -> None:
     ],
 )
 async def test_websocket_accept_connection(
-        scope: dict, headers: Headers, subprotocol: Optional[str], has_headers: bool,
+    scope: dict, headers: Headers, subprotocol: Optional[str], has_headers: bool
 ) -> None:
     connection = ASGIWebsocketConnection(Quart(__name__), scope)
     mock_send = CoroutineMock()
     await connection.accept_connection(mock_send, headers, subprotocol)
 
     if has_headers:
-        mock_send.assert_called_with({
-            "subprotocol": subprotocol,
-            "type": "websocket.accept",
-            "headers": _encode_headers(headers),
-        })
+        mock_send.assert_called_with(
+            {
+                "subprotocol": subprotocol,
+                "type": "websocket.accept",
+                "headers": _encode_headers(headers),
+            }
+        )
     else:
-        mock_send.assert_called_with({
-            "subprotocol": subprotocol,
-            "type": "websocket.accept",
-        })
+        mock_send.assert_called_with({"subprotocol": subprotocol, "type": "websocket.accept"})
 
 
 @pytest.mark.asyncio

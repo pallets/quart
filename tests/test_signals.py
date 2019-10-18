@@ -8,7 +8,7 @@ from quart.signals import AsyncNamedSignal
 @pytest.mark.asyncio
 @pytest.mark.parametrize("weak", [True, False])
 async def test_sync_signal(weak: bool) -> None:
-    signal = AsyncNamedSignal('name')
+    signal = AsyncNamedSignal("name")
     fired = False
 
     def sync_fired(*_: Any) -> None:
@@ -24,7 +24,7 @@ async def test_sync_signal(weak: bool) -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("weak", [True, False])
 async def test_async_signal(weak: bool) -> None:
-    signal = AsyncNamedSignal('name')
+    signal = AsyncNamedSignal("name")
     fired = False
 
     async def async_fired(*_: Any) -> None:

@@ -1,17 +1,18 @@
 import asyncio
 import copy
 from contextvars import ContextVar  # noqa # contextvars not understood as stdlib
-from typing import Any, Callable, Dict, Optional  # noqa # contextvars not understood as stdlib
+from typing import Any  # noqa # contextvars not understood as stdlib
+from typing import Callable, Dict, Optional
 
 
 class TaskLocal:
     """An object local to the current task."""
 
-    __slots__ = ('_storage',)
+    __slots__ = ("_storage",)
 
     def __init__(self) -> None:
         # Note as __setattr__ is overidden below, use the object __setattr__
-        object.__setattr__(self, '_storage', ContextVar('storage'))
+        object.__setattr__(self, "_storage", ContextVar("storage"))
 
     def __getattr__(self, name: str) -> Any:
         values = self._storage.get({})
@@ -45,18 +46,17 @@ class TaskLocal:
 
 
 class LocalStack:
-
     def __init__(self) -> None:
         self._task_local = TaskLocal()
 
     def push(self, value: Any) -> None:
-        stack = getattr(self._task_local, 'stack', None)
+        stack = getattr(self._task_local, "stack", None)
         if stack is None:
             self._task_local.stack = stack = []
         stack.append(value)
 
     def pop(self) -> Any:
-        stack = getattr(self._task_local, 'stack', None)
+        stack = getattr(self._task_local, "stack", None)
         if stack is None or stack == []:
             return None
         else:
@@ -72,29 +72,30 @@ class LocalStack:
 
 class LocalProxy:
     """Proxy to a task local object."""
-    __slots__ = ('__dict__', '__local', '__wrapped__')
 
-    def __init__(self, local: Callable, name: Optional[str]=None) -> None:
+    __slots__ = ("__dict__", "__local", "__wrapped__")
+
+    def __init__(self, local: Callable, name: Optional[str] = None) -> None:
         # Note as __setattr__ is overidden below, use the object __setattr__
-        object.__setattr__(self, '__LocalProxy_local', local)
-        object.__setattr__(self, '__wrapped__', local)
+        object.__setattr__(self, "__LocalProxy_local", local)
+        object.__setattr__(self, "__wrapped__", local)
         object.__setattr__(self, "__name__", name)
 
     def _get_current_object(self) -> Any:
-        return object.__getattribute__(self, '__LocalProxy_local')()
+        return object.__getattribute__(self, "__LocalProxy_local")()
 
     @property
     def __dict__(self) -> Dict[str, Any]:  # type: ignore
         try:
             return self._get_current_object().__dict__
         except RuntimeError:
-            raise AttributeError('__dict__')
+            raise AttributeError("__dict__")
 
     def __repr__(self) -> str:
         try:
             obj = self._get_current_object()
         except RuntimeError:
-            return '<%s unbound>' % self.__class__.__name__
+            return "<%s unbound>" % self.__class__.__name__
         return repr(obj)
 
     def __bool__(self) -> bool:
@@ -110,7 +111,7 @@ class LocalProxy:
             return []
 
     def __getattr__(self, name: Any) -> Any:
-        if name == '__members__':
+        if name == "__members__":
             return dir(self._get_current_object())
         return getattr(self._get_current_object(), name)
 
@@ -124,7 +125,9 @@ class LocalProxy:
         async for x in self._get_current_object():
             yield x
 
-    __setattr__ = lambda x, n, v: setattr(x._get_current_object(), n, v)  # type: ignore # noqa: E731, E501
+    __setattr__ = lambda x, n, v: setattr(  # noqa: E731, E501
+        x._get_current_object(), n, v  # type: ignore
+    )
     __delattr__ = lambda x, n: delattr(x._get_current_object(), n)  # type: ignore # noqa: E731
     __str__ = lambda x: str(x._get_current_object())  # type: ignore # noqa: E731
     __lt__ = lambda x, o: x._get_current_object() < o  # noqa: E731

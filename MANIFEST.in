@@ -1,5 +1,6 @@
 include CHANGELOG.rst
 include LICENSE
+include pyproject.toml
 include quart/py.typed
 include README.rst
 include setup.cfg
