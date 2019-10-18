@@ -4,9 +4,7 @@ import json
 import os
 from configparser import ConfigParser
 from datetime import timedelta
-from typing import Any, Callable, Dict, Mapping, Optional, Union
-
-import toml
+from typing import Any, Callable, Dict, IO, Mapping, Optional, Union
 
 from .typing import FilePath
 from .utils import file_path_to_path
@@ -194,34 +192,31 @@ class Config(dict):
                 :attr:`root_path` gives the path to the file.
             silent: If True any errors will fail silently.
         """
-        file_path = self.root_path / filename
-        try:
-            with open(file_path) as file_:
-                data = json.loads(file_.read())
-        except (FileNotFoundError, IsADirectoryError):
-            if not silent:
-                raise
-        else:
-            self.from_mapping(data)
+        self.from_file(filename, json.load, silent=silent)
 
-    def from_toml(self, filename: str, silent: bool = False) -> None:
-        """Load the configuration values from a TOML formatted file.
+    def from_file(
+        self, filename: str, load: Callable[[IO[Any]], Mapping], silent: bool = False
+    ) -> None:
+        """Load the configuration from a data file.
 
         This allows configuration to be loaded as so
 
         .. code-block:: python
 
-            app.config.from_toml('config.toml')
+            app.config.from_file('config.toml', toml.load)
+            app.config.from_file('config.json', json.load)
 
         Arguments:
             filename: The filename which when appended to
                 :attr:`root_path` gives the path to the file.
+            load: Callable that takes a file descriptor and
+                returns a mapping loaded from the file.
             silent: If True any errors will fail silently.
         """
         file_path = self.root_path / filename
         try:
             with open(file_path) as file_:
-                data = toml.loads(file_.read())
+                data = load(file_)
         except (FileNotFoundError, IsADirectoryError):
             if not silent:
                 raise

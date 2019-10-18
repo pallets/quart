@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import pytest
+import toml
 
 from quart.config import Config, ConfigAttribute
 
@@ -77,7 +78,7 @@ def test_config_from_json() -> None:
 
 def test_config_from_toml() -> None:
     config = Config(Path(__file__).parent)
-    config.from_toml("assets/config.toml")
+    config.from_file("assets/config.toml", toml.load)
     _check_standard_config(config)
 
 
