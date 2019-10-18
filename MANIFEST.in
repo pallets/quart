@@ -1,11 +1,11 @@
 include CHANGELOG.rst
 include LICENSE
 include pyproject.toml
-include quart/py.typed
+include src/quart/py.typed
 include README.rst
 include setup.cfg
 recursive-include artwork *
-recursive-include quart *.py
+recursive-include src/quart *.py
 recursive-include tests *.py
 recursive-include tests *.cfg
 recursive-include tests *.json
