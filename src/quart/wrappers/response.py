@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from hashlib import md5
-from inspect import isasyncgen
+from inspect import isasyncgen, isgenerator
 from io import BytesIO
 from os import PathLike
 from types import TracebackType
@@ -34,7 +34,7 @@ from ..datastructures import (
     ResponseAccessControl,
     ResponseCacheControl,
 )
-from ..utils import create_cookie, file_path_to_path
+from ..utils import create_cookie, file_path_to_path, run_sync_iterable
 
 if TYPE_CHECKING:
     from ..routing import Rule  # noqa
@@ -111,6 +111,8 @@ class IterableBody(ResponseBody):
         self.iter: AsyncGenerator[bytes, None]
         if isasyncgen(iterable):
             self.iter = iterable  # type: ignore
+        elif isgenerator(iterable):
+            self.iter = run_sync_iterable(iterable)  # type: ignore
         else:
 
             async def _aiter() -> AsyncGenerator[bytes, None]:

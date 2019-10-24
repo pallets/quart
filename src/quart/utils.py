@@ -4,9 +4,20 @@ from contextvars import copy_context
 from datetime import datetime, timedelta, timezone
 from functools import partial, wraps
 from http.cookies import CookieError, SimpleCookie
+from inspect import isgenerator
 from os import PathLike
 from pathlib import Path
-from typing import Any, Awaitable, Callable, List, Optional, TYPE_CHECKING, Union
+from typing import (
+    Any,
+    AsyncGenerator,
+    Callable,
+    Coroutine,
+    Generator,
+    List,
+    Optional,
+    TYPE_CHECKING,
+    Union,
+)
 from wsgiref.handlers import format_date_time
 
 from .globals import current_app
@@ -94,7 +105,7 @@ def file_path_to_path(*paths: FilePath) -> Path:
     return Path(*safe_paths)
 
 
-def run_sync(func: Callable[..., Any]) -> Callable[..., Awaitable[Any]]:
+def run_sync(func: Callable[..., Any]) -> Callable[..., Coroutine[Any, None, None]]:
     """Ensure that the sync function is run within the event loop.
 
     If the *func* is not a coroutine it will be wrapped such that
@@ -106,7 +117,37 @@ def run_sync(func: Callable[..., Any]) -> Callable[..., Awaitable[Any]]:
     @wraps(func)
     async def _wrapper(*args: Any, **kwargs: Any) -> Any:
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, copy_context().run, partial(func, *args, **kwargs))
+        result = await loop.run_in_executor(
+            None, copy_context().run, partial(func, *args, **kwargs)
+        )
+        if isgenerator(result):
+            return run_sync_iterable(result)  # type: ignore
+        else:
+            return result
 
     _wrapper._quart_async_wrapper = True  # type: ignore
     return _wrapper
+
+
+def run_sync_iterable(iterable: Generator[Any, None, None]) -> AsyncGenerator[Any, None]:
+    async def _gen_wrapper() -> AsyncGenerator[Any, None]:
+        # Wrap the generator such that each iteration runs
+        # in the executor. Then rationalise the raised
+        # errors so that it ends.
+        def _inner() -> Any:
+            # https://bugs.python.org/issue26221
+            # StopIteration errors are swallowed by the
+            # run_in_exector method
+            try:
+                return next(iterable)
+            except StopIteration:
+                raise StopAsyncIteration()
+
+        loop = asyncio.get_running_loop()
+        while True:
+            try:
+                yield await loop.run_in_executor(None, copy_context().run, _inner)
+            except StopAsyncIteration:
+                return
+
+    return _gen_wrapper()
