@@ -2,9 +2,7 @@ import asyncio
 import sys
 import warnings
 from collections import defaultdict, OrderedDict
-from contextvars import copy_context
 from datetime import timedelta
-from functools import partial, wraps
 from itertools import chain
 from logging import Logger
 from pathlib import Path
@@ -81,7 +79,7 @@ from .testing import (
     sentinel,
 )
 from .typing import FilePath, ResponseReturnValue
-from .utils import file_path_to_path
+from .utils import file_path_to_path, run_sync
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
@@ -1315,19 +1313,7 @@ class Quart(PackageStatic):
         return self.blueprints.values()
 
     def ensure_async(self, func: Callable[..., Any]) -> Callable[..., Awaitable[Any]]:
-        """Ensure that the returned func is async and calls the func."""
-        if asyncio.iscoroutinefunction(func):
-            return func
-        else:
-            return self.run_sync(func)
-
-    def run_sync(self, func: Callable[..., Any]) -> Callable[..., Awaitable[Any]]:
-        """Ensure that the sync function is run within the event loop.
-
-        If the *func* is not a coroutine it will be wrapped such that
-        it runs in the default executor (use loop.set_default_executor
-        to change). This ensures that synchronous functions do not
-        block the event loop.
+        """Ensure that the returned func is async and calls the func.
 
         .. versionadded:: 0.11
 
@@ -1335,16 +1321,10 @@ class Quart(PackageStatic):
         run. Before Quart 0.11 this did not run the synchronous code
         in an executor.
         """
-
-        @wraps(func)
-        async def _wrapper(*args: Any, **kwargs: Any) -> Any:
-            loop = asyncio.get_running_loop()
-            return await loop.run_in_executor(
-                None, copy_context().run, partial(func, *args, **kwargs)
-            )
-
-        _wrapper._quart_async_wrapper = True  # type: ignore
-        return _wrapper
+        if asyncio.iscoroutinefunction(func):
+            return func
+        else:
+            return run_sync(func)
 
     async def open_session(self, request: BaseRequestWebsocket) -> Session:
         """Open and return a Session using the request."""

@@ -1,10 +1,12 @@
 import asyncio
 import warnings
+from contextvars import copy_context
 from datetime import datetime, timedelta, timezone
+from functools import partial, wraps
 from http.cookies import CookieError, SimpleCookie
 from os import PathLike
 from pathlib import Path
-from typing import Callable, List, Optional, TYPE_CHECKING, Union
+from typing import Any, Awaitable, Callable, List, Optional, TYPE_CHECKING, Union
 from wsgiref.handlers import format_date_time
 
 from .globals import current_app
@@ -90,3 +92,21 @@ def file_path_to_path(*paths: FilePath) -> Path:
         else:
             safe_paths.append(path)
     return Path(*safe_paths)
+
+
+def run_sync(func: Callable[..., Any]) -> Callable[..., Awaitable[Any]]:
+    """Ensure that the sync function is run within the event loop.
+
+    If the *func* is not a coroutine it will be wrapped such that
+    it runs in the default executor (use loop.set_default_executor
+    to change). This ensures that synchronous functions do not
+    block the event loop.
+    """
+
+    @wraps(func)
+    async def _wrapper(*args: Any, **kwargs: Any) -> Any:
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, copy_context().run, partial(func, *args, **kwargs))
+
+    _wrapper._quart_async_wrapper = True  # type: ignore
+    return _wrapper
