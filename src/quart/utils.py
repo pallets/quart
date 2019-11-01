@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from .wrappers.response import Response  # noqa: F401
 
 
-def redirect(location: str, status_code: int = 302) -> "Response":
+def redirect(location: str, code: int = 302) -> "Response":
     body = f"""
 <!doctype html>
 <title>Redirect</title>
@@ -35,7 +35,7 @@ def redirect(location: str, status_code: int = 302) -> "Response":
 You should be redirected to <a href="{location}">{location}</a>, if not please click the link
     """
 
-    return current_app.response_class(body, status=status_code, headers={"Location": location})
+    return current_app.response_class(body, status=code, headers={"Location": location})
 
 
 def create_cookie(
