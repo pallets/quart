@@ -1481,7 +1481,9 @@ class Quart(PackageStatic):
         config.use_reloader = use_reloader
 
         scheme = "https" if config.ssl_enabled else "http"
-        print("Running on {}://{} (CTRL + C to quit)".format(scheme, config.bind[0]))  # noqa: T001
+        print(  # noqa: T001, T002
+            "Running on {}://{} (CTRL + C to quit)".format(scheme, config.bind[0])
+        )
 
         if loop is not None:
             loop.set_debug(debug or False)

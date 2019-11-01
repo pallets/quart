@@ -98,7 +98,7 @@ class ScriptInfo:
             if Path(".quartenv").is_file():
                 load_dotenv(dotenv_path=Path(".") / ".quartenv")
         except NameError:
-            print(  # noqa: T001
+            print(  # noqa: T001, T002
                 "* Tip: There are .env files present. "
                 'Do "pip install python-dotenv" to use them.'
             )

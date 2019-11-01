@@ -42,9 +42,10 @@ class _BaseRequestWebsocketContext:
         routing_exception.
         """
         try:
-            self.request_websocket.url_rule, self.request_websocket.view_args = (
-                self.url_adapter.match()
-            )  # noqa
+            (
+                self.request_websocket.url_rule,
+                self.request_websocket.view_args,
+            ) = self.url_adapter.match()  # noqa
         except (BadRequest, NotFound, MethodNotAllowed, RedirectRequired) as error:
             self.request_websocket.routing_exception = error
 
