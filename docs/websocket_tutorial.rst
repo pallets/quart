@@ -106,7 +106,55 @@ To connect to and communicate with a websocket in Javascript a
 
     ws.send('bob');
 
-5: Conclusion
+5: Broadcasting
+---------------
+
+A common task is to have one part of the application send messages to all
+connected clients.  This could come from a POST, a websocket, or even another
+asyncio server.
+
+To broadcast to all connected websockets, we are going to create a queue for
+each connected websocket, and then send the message to all queues.  A
+decorator can be used to allocate and add queues to a set on connection and
+remove them on disconnect, as so,
+
+.. code-block:: python
+
+    connected_websockets = set()
+
+    def collect_websocket(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            global connected_websockets
+            queue = asyncio.Queue()
+            connected_websockets.add(queue)
+            try:
+                return await func(queue, *args, **kwargs)
+            finally:
+                connected_websockets.remove(queue)
+        return wrapper
+
+The websocket endpoint in your application then just needs to receive data on
+that queue and send it to the client, as so,
+
+.. code-block:: python
+
+    @app.websocket('/api/v2/ws')
+    @collect_websocket
+    async def ws(queue):
+        while True:
+            data = await queue.get()
+            await websocket.send(data)
+
+And finally, broadcast the message, as so,
+
+.. code-block:: python
+
+    def broadcast(message):
+        for queue in connected_websockets:
+            await queue.put(message)
+
+6: Conclusion
 -------------
 
 The example files contain this entire tutorial and a little more, so

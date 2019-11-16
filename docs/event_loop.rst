@@ -4,26 +4,30 @@ Customise the Event Loop
 ========================
 
 Customising the event loop is often desired in order to use Quart with
-another library whilst ensuring both use the same loop. A typical
-example is,
-
-.. code-block:: python
-
-    loop = asyncio.get_event_loop()
-    third_party = ThirdParty(loop)
-    app.run()  # A new loop is created by default
-
-which as written will fail as Quart will create and use a different
-event loop to the third party. In this situation the best practice is
+another library whilst ensuring both use the same loop.  The best practice is
 to create/initialise the third party within the loop created by Quart,
-by using a :ref:`startup_shutdown` ``before_serving`` function as so,
+by using :ref:`startup_shutdown` ``before_serving`` functions as so,
 
 .. code-block:: python
 
     @app.before_serving
     async def startup():
         loop = asyncio.get_event_loop()
-        third_party = ThirdParty(loop)
+        app.smtp_server = loop.create_server(aiosmtpd.smtp.SMTP, port=1025)
+        loop.create_task(app.smtp_server)
+
+    @app.after_serving
+    async def shutdown():
+        app.smtp_server.close()
+
+Do not follow this pattern, typically seen in examples, because this creates a
+new loop separate from the Quart loop for ThirdParty,
+
+.. code-block:: python
+
+    loop = asyncio.get_event_loop()
+    third_party = ThirdParty(loop)
+    app.run()  # A new loop is created by default
 
 Controlling the event loop
 --------------------------
