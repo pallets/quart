@@ -1,8 +1,8 @@
 import asyncio
-import os
 from typing import NoReturn, Optional, Set
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
 from asynctest import Mock as AsyncMock
 from quart.app import Quart
@@ -209,17 +209,21 @@ async def test_make_response(result: ResponseReturnValue, expected: Response, ra
     ],
 )
 def test_env_and_debug_environments(
-    quart_env: Optional[str], quart_debug: Optional[bool], expected_env: bool, expected_debug: bool
+    quart_env: Optional[str],
+    quart_debug: Optional[bool],
+    expected_env: bool,
+    expected_debug: bool,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     if quart_env is None:
-        os.environ.pop("QUART_ENV", None)
+        monkeypatch.delenv("QUART_ENV", raising=False)
     else:
-        os.environ["QUART_ENV"] = quart_env
+        monkeypatch.setenv("QUART_ENV", quart_env)
 
     if quart_debug is None:
-        os.environ.pop("QUART_DEBUG", None)
+        monkeypatch.delenv("QUART_DEBUG", raising=False)
     else:
-        os.environ["QUART_DEBUG"] = str(quart_debug)
+        monkeypatch.setenv("QUART_DEBUG", str(quart_debug))
 
     app = Quart(__name__)
     assert app.env == expected_env
