@@ -185,8 +185,9 @@ class QuartGroup(AppGroup):
 @click.option("--port", "-p", default=5000, help="The port to serve on.")
 @pass_script_info
 def run_command(info: ScriptInfo, host: str, port: int) -> None:
+    debug = get_debug_flag()
     app = info.load_app()
-    app.run(debug=True, host=host, port=port, use_reloader=True)
+    app.run(debug=debug, host=host, port=port, use_reloader=True)
 
 
 @click.command("shell", short_help="Open a shell within the app context.")
