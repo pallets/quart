@@ -446,7 +446,7 @@ class Response(_BaseRequestResponse, JSONMixin):
 
     async def add_etag(self, overwrite: bool = False, weak: bool = False) -> None:
         if overwrite or "etag" not in self.headers:
-            self.set_etag(md5((await self.get_data())).hexdigest(), weak)  # type: ignore
+            self.set_etag(md5((await self.get_data())).hexdigest(), weak)
 
     def get_etag(self) -> Tuple[Optional[str], Optional[bool]]:
         etag = self.headers.get("ETag")

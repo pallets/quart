@@ -170,7 +170,9 @@ class Request(BaseRequestWebsocket, JSONMixin):
         """The request body data."""
         try:
             body_future = asyncio.ensure_future(self.body)
-            raw_data = await asyncio.wait_for(body_future, timeout=self.body_timeout)
+            raw_data = await asyncio.wait_for(  # type: ignore
+                body_future, timeout=self.body_timeout
+            )
         except asyncio.TimeoutError:
             body_future.cancel()
             from ..exceptions import RequestTimeout  # noqa Avoiding circular import
