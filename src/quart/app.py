@@ -1479,6 +1479,7 @@ class Quart(PackageStatic):
         config.errorlog = config.accesslog
         config.keyfile = keyfile
         config.use_reloader = use_reloader
+        shutdown_trigger = kwargs.get('shutdown_trigger', None)
 
         scheme = "https" if config.ssl_enabled else "http"
         print(  # noqa: T001, T002
@@ -1487,9 +1488,9 @@ class Quart(PackageStatic):
 
         if loop is not None:
             loop.set_debug(debug or False)
-            loop.run_until_complete(serve(self, config))
+            loop.run_until_complete(serve(self, config, shutdown_trigger))
         else:
-            asyncio.run(serve(self, config), debug=config.debug)
+            asyncio.run(serve(self, config, shutdown_trigger), debug=config.debug)
 
     def test_client(self) -> QuartClient:
         """Creates and returns a test client."""
