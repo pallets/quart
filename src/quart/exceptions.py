@@ -137,7 +137,7 @@ class UnavailableForLegalReasons(HTTPException):
 
 class RedirectRequired(HTTPStatusException):
     def __init__(self, redirect_path: str) -> None:
-        super().__init__(HTTPStatus.MOVED_PERMANENTLY)
+        super().__init__(HTTPStatus.PERMANENT_REDIRECT)
         self.redirect_path = redirect_path
 
     def get_body(self) -> str:
