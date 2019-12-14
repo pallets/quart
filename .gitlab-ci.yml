@@ -1,12 +1,17 @@
-image: python:3.7
-
 py37:
   image: python:3.7
   script:
   - pip install tox
-  - tox
+  - tox -e docs,format,mypy,py37,pep8,setuppy,manifest
+
+py38:
+  image: python:3.8
+  script:
+  - pip install tox
+  - tox -e py38
 
 pages:
+  image: python:3.7
   script:
   - pip install sphinx solar-theme
   - python setup.py install
