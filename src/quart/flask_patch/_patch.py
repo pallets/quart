@@ -90,6 +90,7 @@ def _convert_module(new_name, module):  # type: ignore
             setattr(new_module, name, _context_decorator(member))
         else:
             setattr(new_module, name, member)
+    setattr(new_module, "_QUART_PATCHED", True)
     return new_module
 
 
@@ -105,6 +106,7 @@ def _patch_modules() -> None:
         if name.startswith("quart.flask_patch._"):
             continue
         elif name.startswith("quart.flask_patch"):
+            setattr(module, "_QUART_PATCHED", True)
             flask_modules[name.replace("quart.flask_patch", "flask")] = module
         elif name.startswith("quart.") and not name.startswith("quart.serving"):
             flask_name = name.replace("quart.", "flask.")
