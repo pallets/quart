@@ -5,6 +5,7 @@ from typing import Any, AnyStr, Callable, cast, Dict, List, Optional, Set, Tuple
 from urllib.parse import urlparse
 
 from .datastructures import CIMultiDict, Headers
+from .debug import traceback_response
 from .wrappers import Request, Response, sentinel, Websocket  # noqa: F401
 
 if TYPE_CHECKING:
@@ -60,7 +61,11 @@ class ASGIHTTPConnection:
         )
 
     async def handle_request(self, request: Request, send: Callable) -> None:
-        response = await self.app.handle_request(request)
+        try:
+            response = await self.app.handle_request(request)
+        except Exception:
+            response = await traceback_response()
+
         if response.timeout != sentinel:
             timeout = cast(Optional[float], response.timeout)
         else:

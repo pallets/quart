@@ -16,6 +16,10 @@ from quart.wrappers import Response
 TEST_RESPONSE = Response("")
 
 
+class SimpleException(Exception):
+    pass
+
+
 def test_endpoint_overwrite() -> None:
     app = Quart(__name__)
 
@@ -366,3 +370,27 @@ async def test_app_session_websocket_return(session_app: Quart) -> None:
             await test_websocket.receive()
     session_app.session_interface.open_session.assert_called()  # type: ignore
     session_app.session_interface.save_session.assert_called()  # type: ignore
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "debug, testing, raises",
+    [(False, False, False), (True, False, True), (False, True, True), (True, True, True)],
+)
+async def test_propagation(debug: bool, testing: bool, raises: bool) -> None:
+    app = Quart(__name__)
+
+    @app.route("/")
+    async def exception() -> ResponseReturnValue:
+        raise SimpleException()
+
+    app.debug = debug
+    app.testing = testing
+    test_client = app.test_client()
+
+    if raises:
+        with pytest.raises(SimpleException):
+            await test_client.get("/")
+    else:
+        response = await test_client.get("/")
+        assert response.status_code == 500

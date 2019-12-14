@@ -43,7 +43,6 @@ from .ctx import (
     WebsocketContext,
 )
 from .datastructures import CIMultiDict, Headers
-from .debug import traceback_response
 from .exceptions import all_http_exceptions, HTTPException
 from .globals import g, request, session
 from .helpers import (
@@ -284,7 +283,11 @@ class Quart(PackageStatic):
         If false the exception will be handled. See the
         ``PROPAGATE_EXCEPTIONS`` config settin.
         """
-        return self.config["PROPAGATE_EXCEPTIONS"] or (self.debug and not self.testing)
+        propagate = self.config["PROPAGATE_EXCEPTIONS"]
+        if propagate is not None:
+            return propagate
+        else:
+            return self.debug or self.testing
 
     @property
     def logger(self) -> Logger:
@@ -1050,7 +1053,7 @@ class Quart(PackageStatic):
         self.log_exception(sys.exc_info())
 
         if self.propagate_exceptions:
-            return await traceback_response()
+            raise error
 
         internal_server_error = all_http_exceptions[500]()
         handler = self._find_exception_handler(internal_server_error)
