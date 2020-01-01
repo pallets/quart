@@ -27,6 +27,7 @@ from typing import (
 
 from hypercorn.asyncio import serve
 from hypercorn.config import Config as HyperConfig
+from werkzeug.datastructures import Headers
 
 from .asgi import ASGIHTTPConnection, ASGILifespan, ASGIWebsocketConnection
 from .blueprints import Blueprint
@@ -42,7 +43,6 @@ from .ctx import (
     RequestContext,
     WebsocketContext,
 )
-from .datastructures import CIMultiDict, Headers
 from .exceptions import all_http_exceptions, HTTPException
 from .globals import g, request, session
 from .helpers import (
@@ -1503,7 +1503,7 @@ class Quart(PackageStatic):
         path: str,
         *,
         method: str = "GET",
-        headers: Optional[Union[dict, CIMultiDict]] = None,
+        headers: Optional[Union[dict, Headers]] = None,
         query_string: Optional[dict] = None,
         scheme: str = "http",
         send_push_promise: Callable[[str, Headers], Awaitable[None]] = no_op_push,
@@ -1536,7 +1536,10 @@ class Quart(PackageStatic):
             self, path, headers, query_string
         )
         request_body, body_headers = make_test_body_with_headers(data, form, json)
-        headers.update(**body_headers)
+        # Replace with headers.update(**body_headers) when Werkzeug
+        # supports https://github.com/pallets/werkzeug/pull/1687
+        for key, value in body_headers.items():
+            headers[key] = value
         request = self.request_class(
             method,
             scheme,
@@ -1585,10 +1588,10 @@ class Quart(PackageStatic):
         A ResponseValue is either a Response object (or subclass) or a str.
         """
         status_or_headers = None
-        headers = None
+        headers: Optional[dict] = None
         status = None
         if isinstance(result, tuple):
-            value, status_or_headers, headers = result + (None,) * (3 - len(result))
+            value, status_or_headers, headers = result + (None,) * (3 - len(result))  # type: ignore
         else:
             value = result
 
@@ -1613,7 +1616,11 @@ class Quart(PackageStatic):
             response.status_code = int(status)  # type: ignore
 
         if headers is not None:
-            response.headers.update(headers)  # type: ignore
+            # Replace with response.headers.update(**headers) when
+            # Werkzeug supports
+            # https://github.com/pallets/werkzeug/pull/1687
+            for key, value in headers.items():
+                response.headers[key] = value
 
         return response
 

@@ -2,6 +2,7 @@ import asyncio
 from typing import Optional
 
 import pytest
+from werkzeug.datastructures import Headers
 
 from asynctest.mock import CoroutineMock
 from quart import Quart
@@ -11,7 +12,6 @@ from quart.asgi import (
     ASGIHTTPConnection,
     ASGIWebsocketConnection,
 )
-from quart.datastructures import Headers
 
 
 @pytest.mark.asyncio

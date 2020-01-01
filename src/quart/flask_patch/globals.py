@@ -1,6 +1,7 @@
 from typing import Any, AnyStr
 
-from quart.datastructures import MultiDict
+from werkzeug.datastructures import MultiDict
+
 from quart.globals import (
     _app_ctx_stack,
     _request_ctx_stack,

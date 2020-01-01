@@ -3,10 +3,10 @@ from typing import NoReturn, Optional, Set
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
+from werkzeug.datastructures import Headers
 
 from asynctest import Mock as AsyncMock
 from quart.app import Quart
-from quart.datastructures import CIMultiDict
 from quart.globals import session, websocket
 from quart.sessions import SecureCookieSession, SessionInterface
 from quart.testing import no_op_push, WebsocketResponse
@@ -199,7 +199,7 @@ async def test_make_response(result: ResponseReturnValue, expected: Response, ra
         if not raises:
             raise
     else:
-        assert response.headers.keys() == expected.headers.keys()
+        assert set(response.headers.keys()) == set(expected.headers.keys())
         assert response.status_code == expected.status_code
         assert (await response.get_data()) == (await expected.get_data())
 
@@ -298,7 +298,7 @@ async def test_app_handle_request_asyncio_cancelled_error() -> None:
         raise asyncio.CancelledError()
 
     request = app.request_class(
-        "GET", "http", "/", b"", CIMultiDict(), "", "1.1", send_push_promise=no_op_push
+        "GET", "http", "/", b"", Headers(), "", "1.1", send_push_promise=no_op_push
     )
     with pytest.raises(asyncio.CancelledError):
         await app.handle_request(request)
@@ -312,9 +312,7 @@ async def test_app_handle_websocket_asyncio_cancelled_error() -> None:
     async def index() -> NoReturn:
         raise asyncio.CancelledError()
 
-    websocket = app.websocket_class(
-        "/", b"", "wss", CIMultiDict(), "", "1.1", None, None, None, None
-    )
+    websocket = app.websocket_class("/", b"", "wss", Headers(), "", "1.1", None, None, None, None)
     with pytest.raises(asyncio.CancelledError):
         await app.handle_websocket(websocket)
 

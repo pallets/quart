@@ -22,9 +22,9 @@ INSTALL_REQUIRES = [
     "hypercorn >= 0.7.0",
     "itsdangerous",
     "jinja2",
-    "multidict",
     "sortedcontainers",
     "toml",
+    "werkzeug",
 ]
 
 setup(

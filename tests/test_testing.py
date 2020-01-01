@@ -1,9 +1,9 @@
 from typing import Optional
 
 import pytest
+from werkzeug.datastructures import Headers
 
 from quart import jsonify, Quart, redirect, request, Response, session
-from quart.datastructures import CIMultiDict
 from quart.exceptions import BadRequest
 from quart.testing import (
     make_test_body_with_headers,
@@ -60,19 +60,19 @@ def test_build_headers_path_and_query_string_with_query_string_error() -> None:
 def test_make_test_body_with_headers_data() -> None:
     body, headers = make_test_body_with_headers(data="data")
     assert body == b"data"
-    assert headers == CIMultiDict()
+    assert headers == Headers()
 
 
 def test_make_test_body_with_headers_form() -> None:
     body, headers = make_test_body_with_headers(form={"a": "b"})
     assert body == b"a=b"
-    assert headers == CIMultiDict({"Content-Type": "application/x-www-form-urlencoded"})
+    assert headers == Headers({"Content-Type": "application/x-www-form-urlencoded"})
 
 
 def test_make_test_body_with_headers_json() -> None:
     body, headers = make_test_body_with_headers(json={"a": "b"})
     assert body == b'{"a": "b"}'
-    assert headers == CIMultiDict({"Content-Type": "application/json"})
+    assert headers == Headers({"Content-Type": "application/json"})
 
 
 def test_make_test_body_with_headers_argument_error() -> None:
@@ -83,18 +83,15 @@ def test_make_test_body_with_headers_argument_error() -> None:
 @pytest.mark.parametrize(
     "headers, expected",
     [
+        (None, Headers({"Remote-Addr": "127.0.0.1", "User-Agent": "Quart", "host": "localhost"}),),
         (
-            None,
-            CIMultiDict({"Remote-Addr": "127.0.0.1", "User-Agent": "Quart", "host": "localhost"}),
-        ),
-        (
-            CIMultiDict({"Remote-Addr": "1.2.3.4", "User-Agent": "Quarty", "host": "quart.com"}),
-            CIMultiDict({"Remote-Addr": "1.2.3.4", "User-Agent": "Quarty", "host": "quart.com"}),
+            Headers({"Remote-Addr": "1.2.3.4", "User-Agent": "Quarty", "host": "quart.com"}),
+            Headers({"Remote-Addr": "1.2.3.4", "User-Agent": "Quarty", "host": "quart.com"}),
         ),
     ],
 )
 def test_build_headers_path_and_query_string_headers_defaults(
-    headers: CIMultiDict, expected: CIMultiDict
+    headers: Headers, expected: Headers
 ) -> None:
     result, path, query_string = make_test_headers_path_and_query_string(
         Quart(__name__), "/path", headers

@@ -4,9 +4,9 @@ from sys import version_info
 from typing import Generator
 
 import pytest
+from werkzeug.datastructures import Headers
 
 from quart.app import Quart
-from quart.datastructures import CIMultiDict
 from quart.sessions import NullSession, SecureCookieSession, SecureCookieSessionInterface
 from quart.testing import no_op_push
 from quart.wrappers import Request, Response
@@ -67,9 +67,7 @@ async def test_secure_cookie_session_interface_open_session() -> None:
     app.secret_key = "secret"
     response = Response("")
     await interface.save_session(app, session, response)
-    request = Request(
-        "GET", "http", "/", b"", CIMultiDict(), "", "1.1", send_push_promise=no_op_push
-    )
+    request = Request("GET", "http", "/", b"", Headers(), "", "1.1", send_push_promise=no_op_push)
     request.headers["Cookie"] = response.headers["Set-Cookie"]
     new_session = await interface.open_session(app, request)
     assert new_session == session

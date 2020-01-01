@@ -4,7 +4,8 @@ from functools import partial
 from typing import Any, AnyStr, Callable, cast, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
 from urllib.parse import urlparse
 
-from .datastructures import CIMultiDict, Headers
+from werkzeug.datastructures import Headers
+
 from .debug import traceback_response
 from .wrappers import Request, Response, sentinel, Websocket  # noqa: F401
 
@@ -37,7 +38,7 @@ class ASGIHTTPConnection:
                 return
 
     def _create_request_from_scope(self, send: Callable) -> Request:
-        headers = CIMultiDict()
+        headers = Headers()
         headers["Remote-Addr"] = (self.scope.get("client") or ["<local>"])[0]
         for name, value in self.scope["headers"]:
             headers.add(name.decode("latin1").title(), value.decode("latin1"))
@@ -121,7 +122,7 @@ class ASGIWebsocketConnection:
                 return
 
     def _create_websocket_from_scope(self, send: Callable) -> Websocket:
-        headers = CIMultiDict()
+        headers = Headers()
         headers["Remote-Addr"] = (self.scope.get("client") or ["<local>"])[0]
         for name, value in self.scope["headers"]:
             headers.add(name.decode("latin1").title(), value.decode("latin1"))

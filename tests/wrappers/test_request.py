@@ -3,8 +3,8 @@ from typing import Tuple
 from urllib.parse import urlencode
 
 import pytest
+from werkzeug.datastructures import Headers
 
-from quart.datastructures import CIMultiDict, Headers
 from quart.exceptions import RequestEntityTooLarge, RequestTimeout
 from quart.testing import no_op_push
 from quart.wrappers.request import Body, Request
@@ -75,7 +75,7 @@ async def test_body_exceeds_max_content_length() -> None:
 @pytest.mark.asyncio
 async def test_request_exceeds_max_content_length() -> None:
     max_content_length = 5
-    headers = CIMultiDict()
+    headers = Headers()
     headers["Content-Length"] = str(max_content_length + 1)
     request = Request(
         "POST",
@@ -99,7 +99,7 @@ async def test_request_get_data_timeout() -> None:
         "http",
         "/",
         b"",
-        CIMultiDict(),
+        Headers(),
         "",
         "1.1",
         body_timeout=1,
@@ -116,7 +116,7 @@ async def test_request_values() -> None:
         "http",
         "/",
         b"a=b&a=c",
-        CIMultiDict({"host": "quart.com", "Content-Type": "application/x-www-form-urlencoded"}),
+        Headers({"host": "quart.com", "Content-Type": "application/x-www-form-urlencoded"}),
         "",
         "1.1",
         send_push_promise=no_op_push,
@@ -139,7 +139,7 @@ async def test_request_send_push_promise() -> None:
         "http",
         "/",
         b"a=b&a=c",
-        CIMultiDict(
+        Headers(
             {
                 "host": "quart.com",
                 "Content-Type": "application/x-www-form-urlencoded",

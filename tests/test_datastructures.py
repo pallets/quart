@@ -1,4 +1,4 @@
-from typing import List, Type, Union
+from typing import List
 
 import pytest
 
@@ -7,15 +7,12 @@ from quart.datastructures import (
     Accept,
     AcceptOption,
     CharsetAccept,
-    CIMultiDict,
     ContentRange,
     ContentSecurityPolicy,
     ETags,
-    Headers,
     HeaderSet,
     LanguageAccept,
     MIMEAccept,
-    MultiDict,
     Range,
     RangeSet,
     RequestAccessControl,
@@ -23,64 +20,6 @@ from quart.datastructures import (
     ResponseAccessControl,
     ResponseCacheControl,
 )
-
-
-@pytest.mark.parametrize("dict_class", [CIMultiDict, MultiDict])
-def test_multidict_getlist(dict_class: Union[Type[CIMultiDict], Type[MultiDict]]) -> None:
-    data = dict_class()
-    data.add("x", "y")
-    data.add("x", "z")
-    assert data.getlist("x") == ["y", "z"]
-    assert data.getlist("z") == []
-
-
-@pytest.mark.parametrize("dict_class", [CIMultiDict, MultiDict])
-def test_multidict_type_conversion(dict_class: Union[Type[CIMultiDict], Type[MultiDict]]) -> None:
-    data = dict_class()
-    data["x"] = "2"
-    data["y"] = "b"
-    data.add("z", "2")
-    data.add("z", "b")
-    assert data.get("x", type=int) == 2
-    assert data.get("y", default=None, type=int) is None
-    assert data.getlist("z", type=int) == [2]
-
-
-@pytest.mark.parametrize("dict_class", [CIMultiDict, MultiDict])
-def test_multidict_to_dict(dict_class: Union[Type[CIMultiDict], Type[MultiDict]]) -> None:
-    data = dict_class()
-    data["x"] = "2"
-    data.add("z", "2")
-    data.add("z", "b")
-    assert data.to_dict() == {"x": "2", "z": "b"}
-    assert data.to_dict(flat=False) == {"x": ["2"], "z": ["2", "b"]}
-
-
-def test_headers_bytes() -> None:
-    headers = Headers()
-    headers[b"X-Foo"] = b"something"
-    headers.add(b"X-Bar", b"something")
-    headers.setdefault(b"X-Bob", "something")
-
-    assert headers["x-foo"] == "something"
-    assert headers["x-bar"] == "something"
-    assert headers["x-bob"] == "something"
-    headers.add("X-Foo", "different")
-    assert headers.getlist("X-Foo") == ["something", "different"]
-
-
-def test_headers_non_strings() -> None:
-    headers = Headers()
-    headers["X-Foo"] = 12
-    headers["X-Bar"] = True
-    assert headers["x-foo"] == "12"
-    assert headers["x-bar"] == "True"
-
-
-def test_headers_add_kwargs() -> None:
-    headers = Headers()
-    headers.add("Content-Disposition", "attachment", filename="abc")
-    assert headers["content-disposition"] == "attachment; filename=abc"
 
 
 def test_accept() -> None:

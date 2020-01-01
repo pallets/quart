@@ -4,8 +4,10 @@ from cgi import FieldStorage, parse_header
 from typing import Any, AnyStr, Awaitable, Callable, Generator, List, Optional, TYPE_CHECKING, Union
 from urllib.parse import parse_qs
 
+from werkzeug.datastructures import CombinedMultiDict, Headers, MultiDict
+
 from ._base import BaseRequestWebsocket, JSONMixin
-from ..datastructures import CIMultiDict, FileStorage, Headers, MultiDict
+from ..datastructures import FileStorage
 
 if TYPE_CHECKING:
     from ..routing import Rule  # noqa
@@ -131,7 +133,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
         scheme: str,
         path: str,
         query_string: bytes,
-        headers: CIMultiDict,
+        headers: Headers,
         root_path: str,
         http_version: str,
         *,
@@ -189,12 +191,9 @@ class Request(BaseRequestWebsocket, JSONMixin):
         return await self.get_data()
 
     @property
-    async def values(self) -> MultiDict:
-        result = MultiDict()
-        result.update(self.args)
-        for key, value in (await self.form).items():
-            result.add(key, value)
-        return result
+    async def values(self) -> CombinedMultiDict:
+        form = await self.form
+        return CombinedMultiDict([self.args, form])
 
     @property
     async def form(self) -> MultiDict:
@@ -239,7 +238,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
         elif content_type == "multipart/form-data":
             field_storage = FieldStorage(
                 io.BytesIO(raw_data),
-                headers=self.headers,
+                headers=self.headers,  # type: ignore
                 environ={"REQUEST_METHOD": "POST"},
                 limit=len(raw_data),
             )
@@ -306,7 +305,7 @@ class Websocket(BaseRequestWebsocket):
         path: str,
         query_string: bytes,
         scheme: str,
-        headers: CIMultiDict,
+        headers: Headers,
         root_path: str,
         http_version: str,
         subprotocols: List[str],
@@ -352,9 +351,7 @@ class Websocket(BaseRequestWebsocket):
         await self._send(data)
 
     async def accept(
-        self,
-        headers: Optional[Union[dict, CIMultiDict, Headers]] = None,
-        subprotocol: Optional[str] = None,
+        self, headers: Optional[Union[dict, Headers]] = None, subprotocol: Optional[str] = None,
     ) -> None:
         """Manually chose to accept the websocket connection.
 

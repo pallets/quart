@@ -22,13 +22,12 @@ from wsgiref.handlers import format_date_time
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
 from aiofiles.threadpool import AsyncFileIO
+from werkzeug.datastructures import Headers
 
 from ._base import _BaseRequestResponse, JSONMixin
 from ..datastructures import (
-    CIMultiDict,
     ContentRange,
     ContentSecurityPolicy,
-    Headers,
     HeaderSet,
     Range,
     ResponseAccessControl,
@@ -297,7 +296,7 @@ class Response(_BaseRequestResponse, JSONMixin):
         self,
         response: Union[ResponseBody, AnyStr, Iterable],
         status: Optional[int] = None,
-        headers: Optional[Union[dict, CIMultiDict, Headers]] = None,
+        headers: Optional[Union[dict, Headers]] = None,
         mimetype: Optional[str] = None,
         content_type: Optional[str] = None,
     ) -> None:
@@ -483,13 +482,13 @@ class Response(_BaseRequestResponse, JSONMixin):
     def access_control(self, value: ResponseAccessControl) -> None:
         max_age = value.max_age
         if max_age is None:
-            self.headers.pop("Access-Control-Max-Age", None)
+            self.headers.pop("Access-Control-Max-Age", None)  # type: ignore
         else:
             self.headers["Access-Control-Max-Age"] = max_age
         if value.allow_credentials:
             self.headers["Access-Control-Allow-Credentials"] = "true"
         else:
-            self.headers.pop("Access-Control-Allow-Credentials", None)
+            self.headers.pop("Access-Control-Allow-Credentials", None)  # type: ignore
         self._set_or_pop_header("Access-Control-Allow-Headers", value.allow_headers.to_header())
         self._set_or_pop_header("Access-Control-Allow-Methods", value.allow_methods.to_header())
         self._set_or_pop_header("Access-Control-Allow-Origin", value.allow_origin.to_header())
@@ -717,7 +716,7 @@ class Response(_BaseRequestResponse, JSONMixin):
 
     def _set_or_pop_header(self, key: str, value: str) -> None:
         if value == "":
-            self.headers.pop(key, None)
+            self.headers.pop(key, None)  # type: ignore
         else:
             self.headers[key] = value
 

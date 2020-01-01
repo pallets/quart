@@ -5,7 +5,8 @@ from http.cookies import SimpleCookie
 from typing import Any, AnyStr, AsyncGenerator, List, Optional, Tuple, TYPE_CHECKING, Union
 from urllib.parse import unquote, urlencode
 
-from .datastructures import CIMultiDict, Headers
+from werkzeug.datastructures import Headers
+
 from .exceptions import BadRequest
 from .json import dumps
 from .utils import create_cookie
@@ -52,9 +53,9 @@ class _TestingWebsocket:
 def make_test_headers_path_and_query_string(
     app: "Quart",
     path: str,
-    headers: Optional[Union[dict, CIMultiDict]] = None,
+    headers: Optional[Union[dict, Headers]] = None,
     query_string: Optional[dict] = None,
-) -> Tuple[CIMultiDict, str, bytes]:
+) -> Tuple[Headers, str, bytes]:
     """Make the headers and path with defaults for testing.
 
     Arguments:
@@ -67,11 +68,11 @@ def make_test_headers_path_and_query_string(
             query_string can be determined from the path.
     """
     if headers is None:
-        headers = CIMultiDict()
-    elif isinstance(headers, CIMultiDict):
+        headers = Headers()
+    elif isinstance(headers, Headers):
         headers = headers
     elif headers is not None:
-        headers = CIMultiDict(headers)
+        headers = Headers(headers)
     headers.setdefault("Remote-Addr", "127.0.0.1")
     headers.setdefault("User-Agent", "Quart")
     headers.setdefault("host", app.config["SERVER_NAME"] or "localhost")
@@ -90,7 +91,7 @@ def make_test_body_with_headers(
     form: Optional[dict] = None,
     json: Any = sentinel,
     app: Optional["Quart"] = None,
-) -> Tuple[bytes, CIMultiDict]:
+) -> Tuple[bytes, Headers]:
     """Make the body bytes with associated headers.
 
     Arguments:
@@ -103,7 +104,7 @@ def make_test_body_with_headers(
 
     request_data = b""
 
-    headers = CIMultiDict()
+    headers = Headers()
 
     if isinstance(data, str):
         request_data = data.encode("utf-8")
@@ -154,7 +155,7 @@ class QuartClient:
         path: str,
         *,
         method: str = "GET",
-        headers: Optional[Union[dict, CIMultiDict]] = None,
+        headers: Optional[Union[dict, Headers]] = None,
         data: Optional[AnyStr] = None,
         form: Optional[dict] = None,
         query_string: Optional[dict] = None,
@@ -221,7 +222,7 @@ class QuartClient:
         self,
         path: str,
         method: str = "GET",
-        headers: Optional[Union[dict, CIMultiDict]] = None,
+        headers: Optional[Union[dict, Headers]] = None,
         data: Optional[AnyStr] = None,
         form: Optional[dict] = None,
         query_string: Optional[dict] = None,
@@ -235,7 +236,10 @@ class QuartClient:
         )
 
         request_data, body_headers = make_test_body_with_headers(data, form, json, self.app)
-        headers.update(**body_headers)
+        # Replace with headers.update(**body_headers) when Werkzeug
+        # supports https://github.com/pallets/werkzeug/pull/1687
+        for key, value in body_headers.items():
+            headers[key] = value
 
         if self.cookie_jar is not None:
             for cookie in self.cookie_jar.output(header="").split("\r\n"):
@@ -254,7 +258,7 @@ class QuartClient:
         request.body.set_result(request_data)
         response = await self._handle_request(request)
         if self.cookie_jar is not None and "Set-Cookie" in response.headers:
-            self.cookie_jar.load(";".join(response.headers.getall("Set-Cookie")))
+            self.cookie_jar.load(";".join(response.headers.getlist("Set-Cookie")))
         return response
 
     async def _handle_request(self, request: Request) -> Response:
@@ -358,7 +362,7 @@ class QuartClient:
         self,
         path: str,
         *,
-        headers: Optional[Union[dict, CIMultiDict]] = None,
+        headers: Optional[Union[dict, Headers]] = None,
         query_string: Optional[dict] = None,
         scheme: str = "http",
         subprotocols: Optional[List[str]] = None,

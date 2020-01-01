@@ -7,17 +7,16 @@ from typing import Any, AnyStr, Dict, List, Optional, TYPE_CHECKING, Union
 from urllib.parse import parse_qs, ParseResult, urlunparse
 from urllib.request import parse_http_list, parse_keqv_list
 
+from werkzeug.datastructures import Headers, MultiDict
+
 from ..datastructures import (
     Accept,
     Authorization,
     CharsetAccept,
-    CIMultiDict,
     ETags,
-    Headers,
     IfRange,
     LanguageAccept,
     MIMEAccept,
-    MultiDict,
     Range,
     RequestAccessControl,
     RequestCacheControl,
@@ -113,7 +112,7 @@ class _BaseRequestResponse:
 
     charset = url_charset = "utf-8"
 
-    def __init__(self, headers: Optional[Union[dict, CIMultiDict, Headers]]) -> None:
+    def __init__(self, headers: Optional[Union[dict, Headers]]) -> None:
         self.headers: Headers
         if headers is None:
             self.headers = Headers()
@@ -168,7 +167,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
         scheme: str,
         path: str,
         query_string: bytes,
-        headers: CIMultiDict,
+        headers: Headers,
         root_path: str,
         http_version: str,
     ) -> None:
@@ -189,7 +188,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
             scheme: The URL scheme, http or https.
         """
         super().__init__(headers)
-        self.args = MultiDict()
+        self.args: MultiDict = MultiDict()
         for key, values in parse_qs(query_string.decode("ascii"), keep_blank_values=True).items():
             for value in values:
                 self.args.add(key, value)
@@ -329,7 +328,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
     def cookies(self) -> Dict[str, str]:
         """The parsed cookies attached to this request."""
         cookies: SimpleCookie = SimpleCookie()
-        for cookie in self.headers.getall("Cookie"):
+        for cookie in self.headers.getlist("Cookie"):
             cookies.load(cookie)
         return {key: cookie.value for key, cookie in cookies.items()}
 
