@@ -238,7 +238,8 @@ class QuartClient:
         headers.update(**body_headers)
 
         if self.cookie_jar is not None:
-            headers.add("Cookie", self.cookie_jar.output(header=""))
+            for cookie in self.cookie_jar.output(header="").split("\r\n"):
+                headers.add("Cookie", cookie)
 
         request = self.app.request_class(
             method,

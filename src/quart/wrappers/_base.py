@@ -329,7 +329,8 @@ class BaseRequestWebsocket(_BaseRequestResponse):
     def cookies(self) -> Dict[str, str]:
         """The parsed cookies attached to this request."""
         cookies: SimpleCookie = SimpleCookie()
-        cookies.load(self.headers.get("Cookie", ""))
+        for cookie in self.headers.getall("Cookie"):
+            cookies.load(cookie)
         return {key: cookie.value for key, cookie in cookies.items()}
 
     @property
