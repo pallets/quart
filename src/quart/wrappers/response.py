@@ -505,10 +505,10 @@ class Response(_BaseRequestResponse, JSONMixin):
     @property
     def age(self) -> Optional[int]:
         try:
-            value = self.headers.get("Age", "")
+            value = int(self.headers.get("Age", ""))
         except (TypeError, ValueError):
             return None
-        return int(value) if value > 0 else None
+        return value if value > 0 else None
 
     @age.setter
     def age(self, value: Union[int, timedelta]) -> None:

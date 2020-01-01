@@ -22,7 +22,7 @@ class ASGIHTTPConnection:
         request = self._create_request_from_scope(send)
         receiver_task = asyncio.ensure_future(self.handle_messages(request, receive))
         handler_task = asyncio.ensure_future(self.handle_request(request, send))
-        _, pending = await asyncio.wait(  # type: ignore
+        _, pending = await asyncio.wait(
             [handler_task, receiver_task], return_when=asyncio.FIRST_COMPLETED
         )
         await _cancel_tasks(pending)
@@ -108,7 +108,7 @@ class ASGIWebsocketConnection:
         websocket = self._create_websocket_from_scope(send)
         receiver_task = asyncio.ensure_future(self.handle_messages(receive))
         handler_task = asyncio.ensure_future(self.handle_websocket(websocket, send))
-        _, pending = await asyncio.wait(  # type: ignore
+        _, pending = await asyncio.wait(
             [handler_task, receiver_task], return_when=asyncio.FIRST_COMPLETED
         )
         await _cancel_tasks(pending)
