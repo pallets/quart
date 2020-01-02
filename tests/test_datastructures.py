@@ -4,15 +4,10 @@ import pytest
 
 from quart.datastructures import (
     _CacheControl,
-    Accept,
-    AcceptOption,
-    CharsetAccept,
     ContentRange,
     ContentSecurityPolicy,
     ETags,
     HeaderSet,
-    LanguageAccept,
-    MIMEAccept,
     Range,
     RangeSet,
     RequestAccessControl,
@@ -20,69 +15,6 @@ from quart.datastructures import (
     ResponseAccessControl,
     ResponseCacheControl,
 )
-
-
-def test_accept() -> None:
-    accept = Accept(
-        "application/vnd.google-earth.kml+xml;googleearth=context.kml,"
-        "application/vnd.google-earth.kmz;googleearth=context.kmz;q=0.7"
-    )
-    assert accept.options == [
-        AcceptOption("application/vnd.google-earth.kml+xml", 1.0, {"googleearth": "context.kml"}),
-        AcceptOption("application/vnd.google-earth.kmz", 0.7, {"googleearth": "context.kmz"}),
-    ]
-
-
-def test_accept_best_match() -> None:
-    accept = Accept("gzip, deflate, br;q=0.9, *;q=0.8")
-    assert accept.best_match(["gzip", "defalte"]) == "gzip"
-    assert accept.best_match(["br", "deflate"]) == "deflate"
-    assert accept.best_match(["bizarre"]) == "bizarre"
-
-
-def test_accept_best() -> None:
-    accept = Accept("gzip, deflate, br;q=0.9, *;q=0.8")
-    assert accept.best == "gzip"
-
-
-def test_accept_quality() -> None:
-    accept = Accept("gzip, deflate, br;q=0.9")
-    assert accept.quality("gzip") == 1.0
-    assert accept.quality("bizarre") == 0.0
-
-
-def test_accept___getitem__() -> None:  # noqa: N807
-    accept = Accept("gzip, deflate, br;q=0.9, *;q=0.8")
-    assert accept["gzip"] == 1.0
-    assert accept["bizarre"] == 0.8
-
-
-def test_accept___contains__() -> None:  # noqa: N807
-    accept = Accept("gzip, deflate, br;q=0.9, *;q=0.8")
-    assert "gzip" in accept
-    assert "bizzare" in accept
-
-
-def test_charset_accept_best_match() -> None:
-    accept = CharsetAccept("ISO-8859-1")
-    assert accept.best_match(["ISO-8859-1"]) == "ISO-8859-1"
-
-
-def test_language_accept_best_match() -> None:
-    accept = LanguageAccept("en-GB,en-US;q=0.8,en;q=0.6")
-    assert accept.best_match(["en-GB", "en-US"]) == "en-GB"
-    assert accept.best_match(["en"]) == "en"
-
-
-def test_mime_accept_best_match() -> None:
-    accept = MIMEAccept("text/html,application/xml;q=0.9,application/*;q=0.8,image/webp,*/*;q=0.7")
-    assert accept.best_match(["text/html", "image/webp"]) == "text/html"
-    assert accept.best_match(["application/xml", "text/html"]) == "text/html"
-    assert accept.best_match(["application/jpg"]) == "application/jpg"
-    assert accept.best_match(["bizarre/other"]) == "bizarre/other"
-
-    accept = MIMEAccept("text/*")
-    assert accept.best_match(["application/xml", "text/html"]) == "text/html"
 
 
 def test_cache_control() -> None:

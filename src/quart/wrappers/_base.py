@@ -6,20 +6,18 @@ from typing import Any, AnyStr, Dict, List, Optional, TYPE_CHECKING, Union
 from urllib.parse import parse_qs, ParseResult, urlunparse
 from urllib.request import parse_http_list
 
-from werkzeug.datastructures import Authorization, Headers, MultiDict
-from werkzeug.http import parse_authorization_header
-
-from ..datastructures import (
+from werkzeug.datastructures import (
     Accept,
+    Authorization,
     CharsetAccept,
-    ETags,
-    IfRange,
+    Headers,
     LanguageAccept,
     MIMEAccept,
-    Range,
-    RequestAccessControl,
-    RequestCacheControl,
+    MultiDict,
 )
+from werkzeug.http import parse_accept_header, parse_authorization_header
+
+from ..datastructures import ETags, IfRange, Range, RequestAccessControl, RequestCacheControl
 from ..json import loads
 
 if TYPE_CHECKING:
@@ -224,19 +222,19 @@ class BaseRequestWebsocket(_BaseRequestResponse):
 
     @property
     def accept_charsets(self) -> CharsetAccept:
-        return CharsetAccept(self.headers.get("Accept-Charset", ""))
+        return parse_accept_header(self.headers.get("Accept-Charset"), CharsetAccept)
 
     @property
     def accept_encodings(self) -> Accept:
-        return Accept(self.headers.get("Accept-Encoding", ""))
+        return parse_accept_header(self.headers.get("Accept-Encoding"), Accept)
 
     @property
     def accept_languages(self) -> LanguageAccept:
-        return LanguageAccept(self.headers.get("Accept-Language", ""))
+        return parse_accept_header(self.headers.get("Accept-Language"), LanguageAccept)
 
     @property
     def accept_mimetypes(self) -> MIMEAccept:
-        return MIMEAccept(self.headers.get("Accept", ""))
+        return parse_accept_header(self.headers.get("Accept"), MIMEAccept)
 
     @property
     def access_control(self) -> RequestAccessControl:

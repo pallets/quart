@@ -1,6 +1,4 @@
-import codecs
 import io
-import re
 from cgi import parse_header
 from datetime import datetime
 from email.utils import parsedate_to_datetime
@@ -98,107 +96,6 @@ class FileStorage:
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: {self.filename} ({self.content_type}))>"
-
-
-class AcceptOption(NamedTuple):
-    value: str
-    quality: float
-    parameters: dict
-
-
-class Accept:
-    def __init__(self, header_value: str) -> None:
-        self.options: List[AcceptOption] = []
-        for accept_option in parse_http_list(header_value):
-            option, params = parse_header(accept_option)
-            quality = float(params.pop("q", 1.0))
-            self.options.append(AcceptOption(option, quality, params))
-
-    @property
-    def best(self) -> str:
-        options = sorted(
-            self.options,
-            key=lambda option: (option.value != "*", option.quality, option.value),
-            reverse=True,
-        )
-        return options[0].value
-
-    def best_match(self, matches: List[str], default: Optional[str] = None) -> Optional[str]:
-        best_match = AcceptOption(default, -1.0, {})
-        for possible_match in matches:
-            for option in self.options:
-                if (
-                    self._values_match(possible_match, option.value)
-                    and option.quality > best_match.quality
-                ):
-                    best_match = AcceptOption(possible_match, option.quality, {})
-        return best_match.value
-
-    def quality(self, key: str) -> float:
-        for option in self.options:
-            if self._values_match(key, option.value):
-                return option.quality
-        return 0.0
-
-    def _values_match(self, lhs: str, rhs: str) -> bool:
-        return rhs == "*" or lhs.lower() == rhs.lower()
-
-    def __getitem__(self, key: str) -> float:
-        return self.quality(key)
-
-    def __contains__(self, key: str) -> bool:
-        for option in self.options:
-            if self._values_match(key, option.value):
-                return True
-        return False
-
-
-class CharsetAccept(Accept):
-    def _values_match(self, lhs: str, rhs: str) -> bool:
-        try:
-            lhs_normalised = codecs.lookup(lhs).name
-        except LookupError:
-            lhs_normalised = lhs.lower()
-
-        try:
-            rhs_normalised = codecs.lookup(rhs).name
-        except LookupError:
-            rhs_normalised = rhs.lower()
-
-        return rhs == "*" or lhs_normalised == rhs_normalised
-
-
-class LanguageAccept(Accept):
-    def _values_match(self, lhs: str, rhs: str) -> bool:
-        lhs_normalised = re.split(r"[_-]", lhs.lower())
-        rhs_normalised = re.split(r"[_-]", rhs.lower())
-        return rhs == "*" or lhs_normalised == rhs_normalised
-
-
-class MIMEAccept(Accept):
-    def _values_match(self, lhs: str, rhs: str) -> bool:
-        if rhs == "*":
-            rhs_normalised = ["*", "*"]
-        else:
-            rhs_normalised = rhs.lower().split("/", 1)
-
-        if lhs == "*":
-            lhs_normalised = ["*", "*"]
-        else:
-            try:
-                lhs_normalised = lhs.lower().split("/", 1)
-            except ValueError:
-                return False
-
-        full_wildcard_allowed = (
-            lhs_normalised[0] == lhs_normalised[1] == "*"
-            or rhs_normalised[0] == rhs_normalised[1] == "*"
-        )
-        wildcard_allowed = lhs_normalised[0] == rhs_normalised[0] and (
-            lhs_normalised[1] == "*" or rhs_normalised[1] == "*"
-        )
-        match_allowed = lhs_normalised == rhs_normalised
-        return full_wildcard_allowed or wildcard_allowed or match_allowed
 
 
 class _Directive:
