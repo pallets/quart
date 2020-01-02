@@ -1,17 +1,16 @@
-from base64 import b64decode
 from cgi import parse_header
 from datetime import datetime
 from email.utils import parsedate_to_datetime
 from http.cookies import SimpleCookie
 from typing import Any, AnyStr, Dict, List, Optional, TYPE_CHECKING, Union
 from urllib.parse import parse_qs, ParseResult, urlunparse
-from urllib.request import parse_http_list, parse_keqv_list
+from urllib.request import parse_http_list
 
-from werkzeug.datastructures import Headers, MultiDict
+from werkzeug.datastructures import Authorization, Headers, MultiDict
+from werkzeug.http import parse_authorization_header
 
 from ..datastructures import (
     Accept,
-    Authorization,
     CharsetAccept,
     ETags,
     IfRange,
@@ -250,29 +249,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
     @property
     def authorization(self) -> Optional[Authorization]:
         header = self.headers.get("Authorization", "")
-        try:
-            type_, value = header.split(None, 1)
-            type_ = type_.lower()
-        except ValueError:
-            return None
-        else:
-            if type_ == "basic":
-                try:
-                    username, password = b64decode(value.encode()).decode().split(":", 1)
-                except ValueError:
-                    return None
-                else:
-                    return Authorization(username=username, password=password)
-            elif type_ == "digest":
-                items = parse_http_list(value)
-                params = parse_keqv_list(items)
-                for key in "username", "realm", "nonce", "uri", "response":
-                    if key not in params:
-                        return None
-                if ("cnonce" in params or "nc" in params) and "qop" not in params:
-                    return None
-                return Authorization(**params)
-        return None
+        return parse_authorization_header(header)
 
     @property
     def cache_control(self) -> RequestCacheControl:
