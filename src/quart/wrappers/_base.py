@@ -248,8 +248,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
 
     @property
     def authorization(self) -> Optional[Authorization]:
-        header = self.headers.get("Authorization", "")
-        return parse_authorization_header(header)
+        return parse_authorization_header(self.headers.get("Authorization"))
 
     @property
     def cache_control(self) -> RequestCacheControl:
