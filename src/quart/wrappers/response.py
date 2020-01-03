@@ -22,11 +22,23 @@ from wsgiref.handlers import format_date_time
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
 from aiofiles.threadpool import AsyncFileIO
-from werkzeug.datastructures import ContentRange, Headers, Range, ResponseCacheControl
-from werkzeug.http import dump_cookie, parse_cache_control_header, parse_content_range_header
+from werkzeug.datastructures import (  # type: ignore
+    ContentRange,
+    ContentSecurityPolicy,
+    Headers,
+    Range,
+    ResponseCacheControl,
+)
+from werkzeug.http import (  # type: ignore
+    dump_cookie,
+    dump_csp_header,
+    parse_cache_control_header,
+    parse_content_range_header,
+    parse_csp_header,
+)
 
 from .base import _BaseRequestResponse, JSONMixin
-from ..datastructures import ContentSecurityPolicy, HeaderSet, ResponseAccessControl
+from ..datastructures import HeaderSet, ResponseAccessControl
 from ..utils import file_path_to_path, run_sync_iterable
 
 if TYPE_CHECKING:
@@ -610,13 +622,11 @@ class Response(_BaseRequestResponse, JSONMixin):
         def on_update(content_security_policy: ContentSecurityPolicy) -> None:
             self.content_security_policy = content_security_policy
 
-        return ContentSecurityPolicy.from_header(
-            self.headers.get("Content-Security-Policy", ""), on_update
-        )
+        return parse_csp_header(self.headers.get("Content-Security-Policy"), on_update)
 
     @content_security_policy.setter
     def content_security_policy(self, value: ContentSecurityPolicy) -> None:
-        self._set_or_pop_header("Content-Security-Policy", value.to_header())
+        self._set_or_pop_header("Content-Security-Policy", dump_csp_header(value))
 
     @property
     def content_security_policy_report_only(self) -> ContentSecurityPolicy:

@@ -1,20 +1,4 @@
-from quart.datastructures import (
-    ContentSecurityPolicy,
-    HeaderSet,
-    RequestAccessControl,
-    ResponseAccessControl,
-)
-
-
-def test_content_security_policy() -> None:
-    csp = ContentSecurityPolicy.from_header("font-src 'self'; media-src *")
-    assert csp.font_src == "'self'"
-    assert csp.media_src == "*"
-    assert csp.to_header() == "font-src 'self'; media-src *"
-    csp = ContentSecurityPolicy()
-    csp.default_src = "* 'self' quart.com"
-    csp.img_src = "'none'"
-    assert csp.to_header() == "default-src * 'self' quart.com; img-src 'none'"
+from quart.datastructures import HeaderSet, RequestAccessControl, ResponseAccessControl
 
 
 def test_header_set() -> None:
