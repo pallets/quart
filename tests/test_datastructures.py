@@ -1,43 +1,9 @@
 from quart.datastructures import (
-    _CacheControl,
     ContentSecurityPolicy,
-    ETags,
     HeaderSet,
     RequestAccessControl,
-    RequestCacheControl,
     ResponseAccessControl,
-    ResponseCacheControl,
 )
-
-
-def test_cache_control() -> None:
-    cache_control = _CacheControl()
-    cache_control.no_cache = True
-    cache_control.no_store = False
-    cache_control.max_age = 2
-    assert cache_control.to_header() == "no-cache,max-age=2"
-
-
-def test_request_cache_control() -> None:
-    cache_control = RequestCacheControl.from_header("no-transform,no-cache,min-fresh=2")
-    assert cache_control.no_transform is True
-    assert cache_control.no_cache is True
-    assert cache_control.min_fresh == 2  # type: ignore
-
-
-def test_response_cache_control() -> None:
-    updated = False
-
-    def on_update(_: object) -> None:
-        nonlocal updated
-        updated = True
-
-    cache_control = ResponseCacheControl.from_header("public, max-age=2592000", on_update)
-    assert cache_control.public is True  # type: ignore
-    assert cache_control.max_age == 2592000
-    assert updated is False
-    cache_control.max_age = 2
-    assert updated is True
 
 
 def test_content_security_policy() -> None:
@@ -49,14 +15,6 @@ def test_content_security_policy() -> None:
     csp.default_src = "* 'self' quart.com"
     csp.img_src = "'none'"
     assert csp.to_header() == "default-src * 'self' quart.com; img-src 'none'"
-
-
-def test_etags() -> None:
-    etags = ETags.from_header('W/"67ab43", "54ed21"')
-    assert etags.weak == {"67ab43"}
-    assert etags.strong == {"54ed21"}
-    assert "54ed21" in etags
-    assert etags.to_header() == 'W/"67ab43","54ed21"'
 
 
 def test_header_set() -> None:

@@ -10,21 +10,25 @@ from werkzeug.datastructures import (
     Accept,
     Authorization,
     CharsetAccept,
+    ETags,
     Headers,
     IfRange,
     LanguageAccept,
     MIMEAccept,
     MultiDict,
     Range,
+    RequestCacheControl,
 )
 from werkzeug.http import (
     parse_accept_header,
     parse_authorization_header,
+    parse_cache_control_header,
+    parse_etags,
     parse_if_range_header,
     parse_range_header,
 )
 
-from ..datastructures import ETags, RequestAccessControl, RequestCacheControl
+from ..datastructures import RequestAccessControl
 from ..json import loads
 
 if TYPE_CHECKING:
@@ -257,8 +261,8 @@ class BaseRequestWebsocket(_BaseRequestResponse):
 
     @property
     def cache_control(self) -> RequestCacheControl:
-        return RequestCacheControl.from_header(  # type: ignore
-            self.headers.get("Cache-Control", "")
+        return parse_cache_control_header(
+            self.headers.get("Cache-Control"), None, RequestCacheControl
         )
 
     @property
@@ -329,7 +333,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
 
     @property
     def if_match(self) -> ETags:
-        return ETags.from_header(self.headers.get("If-Match", ""))
+        return parse_etags(self.headers.get("If-Match"))
 
     @property
     def if_modified_since(self) -> Optional[datetime]:
@@ -340,7 +344,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
 
     @property
     def if_none_match(self) -> ETags:
-        return ETags.from_header(self.headers.get("If-None-Match", ""))
+        return parse_etags(self.headers.get("If-None-Match"))
 
     @property
     def if_range(self) -> IfRange:

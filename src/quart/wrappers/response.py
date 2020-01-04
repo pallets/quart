@@ -22,16 +22,11 @@ from wsgiref.handlers import format_date_time
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
 from aiofiles.threadpool import AsyncFileIO
-from werkzeug.datastructures import ContentRange, Headers, Range
-from werkzeug.http import parse_content_range_header
+from werkzeug.datastructures import ContentRange, Headers, Range, ResponseCacheControl
+from werkzeug.http import parse_cache_control_header, parse_content_range_header
 
 from ._base import _BaseRequestResponse, JSONMixin
-from ..datastructures import (
-    ContentSecurityPolicy,
-    HeaderSet,
-    ResponseAccessControl,
-    ResponseCacheControl,
-)
+from ..datastructures import ContentSecurityPolicy, HeaderSet, ResponseAccessControl
 from ..utils import create_cookie, file_path_to_path, run_sync_iterable
 
 if TYPE_CHECKING:
@@ -532,8 +527,8 @@ class Response(_BaseRequestResponse, JSONMixin):
         def on_update(cache_control: ResponseCacheControl) -> None:
             self.cache_control = cache_control
 
-        return ResponseCacheControl.from_header(  # type: ignore
-            self.headers.get("Cache-Control", ""), on_update
+        return parse_cache_control_header(
+            self.headers.get("Cache-Control"), on_update, ResponseCacheControl
         )
 
     @cache_control.setter

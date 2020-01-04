@@ -78,7 +78,7 @@ class PackageStatic:
             return None
 
     def get_send_file_max_age(self, filename: str) -> int:
-        return current_app.send_file_max_age_default.total_seconds()
+        return int(current_app.send_file_max_age_default.total_seconds())
 
     async def send_static_file(self, filename: str) -> Response:
         if not self.has_static_folder:

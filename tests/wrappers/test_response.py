@@ -154,7 +154,7 @@ def test_response_cache_control() -> None:
     response.cache_control.max_age = 2
     assert response.headers["Cache-Control"] == "max-age=2"
     response.cache_control.no_cache = True
-    assert response.headers["Cache-Control"] == "max-age=2,no-cache"
+    assert response.headers["Cache-Control"] == "max-age=2, no-cache"
 
 
 @given(

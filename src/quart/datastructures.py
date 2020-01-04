@@ -2,8 +2,8 @@ import io
 from cgi import parse_header
 from functools import wraps
 from shutil import copyfileobj
-from typing import Any, BinaryIO, Callable, Dict, Iterable, Optional, Set, Type
-from urllib.request import parse_http_list, parse_keqv_list
+from typing import Any, BinaryIO, Callable, Dict, Iterable, Optional, Type
+from urllib.request import parse_http_list
 
 
 class FileStorage:
@@ -100,56 +100,6 @@ class _Directive:
             instance._on_update(instance)  # type: ignore
 
 
-class _CacheControl:
-    no_cache = _Directive("no-cache", bool)
-    no_store = _Directive("no-store", bool)
-    no_transform = _Directive("no-transform", bool)
-    max_age = _Directive("max-age", int)
-
-    def __init__(self, on_update: Optional[Callable] = None) -> None:
-        self._on_update = on_update
-        self._directives: Dict[str, Any] = {}
-
-    @classmethod
-    def from_header(
-        cls: Type["_CacheControl"], header: str, on_update: Optional[Callable] = None
-    ) -> "_CacheControl":
-        cache_control = cls(on_update)
-        for item in parse_http_list(header):
-            if "=" in item:
-                for key, value in parse_keqv_list([item]).items():
-                    cache_control._directives[key] = value
-            else:
-                cache_control._directives[item] = True
-        return cache_control
-
-    def to_header(self) -> str:
-        header = ""
-        for directive, value in self._directives.items():
-            if isinstance(value, bool):
-                if value:
-                    header += f"{directive},"
-            else:
-                header += f"{directive}={value},"
-        return header.strip(",")
-
-
-class RequestCacheControl(_CacheControl):
-    max_stale = _Directive("max-stale", int)
-    min_fresh = _Directive("min-fresh", int)
-    no_transform = _Directive("no-transform", bool)
-    only_if_cached = _Directive("only-if-cached", bool)
-
-
-class ResponseCacheControl(_CacheControl):
-    immutable = _Directive("immutable", bool)
-    must_revalidate = _Directive("must-revalidate", bool)
-    private = _Directive("private", bool)
-    proxy_revalidate = _Directive("proxy-revalidate", bool)
-    public = _Directive("public", bool)
-    s_maxage = _Directive("s-maxage", int)
-
-
 class ContentSecurityPolicy:
     base_uri = _Directive("base-uri", str)
     child_src = _Directive("child-src", str)
@@ -199,44 +149,6 @@ class ContentSecurityPolicy:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.to_header()})"
-
-
-class ETags:
-    def __init__(
-        self, weak: Optional[Set[str]] = None, strong: Optional[Set[str]] = None, star: bool = False
-    ) -> None:
-        self.weak = weak or set()
-        self.strong = strong or set()
-        self.star = star
-
-    def __contains__(self, etag: str) -> bool:
-        return self.star or etag in self.strong
-
-    @classmethod
-    def from_header(cls: Type["ETags"], header: str) -> "ETags":
-        header = header.strip()
-        weak = set()
-        strong = set()
-        if header == "*":
-            return ETags(star=True)
-        else:
-            for item in parse_http_list(header):
-                if item.upper().startswith("W/"):
-                    weak.add(item[2:].strip('"'))
-                else:
-                    strong.add(item.strip('"'))
-            return ETags(weak, strong)
-
-    def to_header(self) -> str:
-        if self.star:
-            return "*"
-        else:
-            header = ""
-            for tag in self.weak:
-                header += f'W/"{tag}",'
-            for tag in self.strong:
-                header += f'"{tag}",'
-            return header.strip(",")
 
 
 def _on_update(method: Callable) -> Callable:
