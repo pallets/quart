@@ -15,3 +15,5 @@ here,
   support.
 - `Webargs-Quart <https://github.com/esfoobar/webargs-quart>`_ Webargs
   parsing for Quart.
+- `Quart-session <https://github.com/xmrdsc/quart-session>`_ server
+  side session support.
