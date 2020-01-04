@@ -6,6 +6,7 @@ from .blueprints import Blueprint
 from .config import Config
 from .ctx import (
     after_this_request,
+    copy_current_app_context,
     copy_current_request_context,
     copy_current_websocket_context,
     has_app_context,
@@ -69,6 +70,7 @@ __all__ = (
     "before_render_template",
     "Blueprint",
     "Config",
+    "copy_current_app_context",
     "copy_current_request_context",
     "copy_current_websocket_context",
     "current_app",
