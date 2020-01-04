@@ -1,24 +1,9 @@
 import io
 from cgi import parse_header
-from datetime import datetime
-from email.utils import parsedate_to_datetime
 from functools import wraps
 from shutil import copyfileobj
-from typing import (
-    Any,
-    BinaryIO,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    NamedTuple,
-    Optional,
-    Set,
-    Type,
-    Union,
-)
+from typing import Any, BinaryIO, Callable, Dict, Iterable, Optional, Set, Type
 from urllib.request import parse_http_list, parse_keqv_list
-from wsgiref.handlers import format_date_time
 
 
 class FileStorage:
@@ -254,70 +239,6 @@ class ETags:
             return header.strip(",")
 
 
-class IfRange:
-    def __init__(self, etag: Optional[str] = None, date: Optional[datetime] = None) -> None:
-        self.etag = etag
-        self.date = date
-
-    @classmethod
-    def from_header(cls: Type["IfRange"], header: str) -> "IfRange":
-        try:
-            return IfRange(date=parsedate_to_datetime(header))
-        except TypeError:  # Not a date format
-            return IfRange(etag=header.strip('"'))
-
-    def to_header(self) -> str:
-        if self.etag is not None:
-            return f'"{self.etag}"'
-        elif self.date is not None:
-            return format_date_time(self.date.timestamp())
-        else:
-            return ""
-
-
-class RangeSet(NamedTuple):
-    begin: int
-    end: Optional[int]
-
-
-class Range:
-    def __init__(self, units: str, ranges: List[RangeSet]) -> None:
-        self.units = units
-        self.ranges = ranges
-
-    @classmethod
-    def from_header(cls: Type["Range"], header: str) -> "Range":
-        try:
-            units, raw_ranges = header.split("=", 1)
-        except ValueError:
-            return cls("", [])
-
-        units = units.strip().lower()
-        ranges = []
-        for range_set in parse_http_list(raw_ranges):
-            if range_set.startswith("-"):
-                ranges.append(RangeSet(int(range_set), None))
-            elif range_set.endswith("-"):
-                ranges.append(RangeSet(int(range_set[:-1]), None))
-            elif "-" in range_set:
-                begin, end = range_set.split("-")
-                ranges.append(RangeSet(int(begin), int(end)))
-            else:
-                ranges.append(RangeSet(0, int(range_set)))
-        return Range(units, ranges)
-
-    def to_header(self) -> str:
-        header = f"{self.units}="
-        for range_set in self.ranges:
-            header += f"{range_set.begin}"
-            if range_set.begin >= 0:
-                header += "-"
-            if range_set.end is not None:
-                header += f"{range_set.end}"
-            header += ","
-        return header.strip(",")
-
-
 def _on_update(method: Callable) -> Callable:
     @wraps(method)
     def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
@@ -350,90 +271,6 @@ class HeaderSet(set):
     pop = _on_update(set.pop)
     remove = _on_update(set.remove)
     update = _on_update(set.update)
-
-
-class _ContentRangeSpec:
-    def __init__(self, name: str, converter: Callable) -> None:
-        self.name = name
-        self.converter = converter
-
-    def __get__(self, instance: object, owner: type = None) -> Any:
-        if instance is None:
-            return self
-        result = instance._specs.get(self.name)  # type: ignore
-        if result is not None:
-            return self.converter(result)
-        else:
-            return None
-
-    def __set__(self, instance: object, value: Any) -> None:
-        instance._specs[self.name] = value  # type: ignore
-        if instance._on_update is not None:  # type: ignore
-            instance._on_update(instance)  # type: ignore
-
-
-class ContentRange:
-    units = _ContentRangeSpec("units", str)
-    start = _ContentRangeSpec("start", int)
-    stop = _ContentRangeSpec("stop", int)
-    length = _ContentRangeSpec("length", int)
-
-    def __init__(
-        self,
-        units: Optional[str],
-        start: Optional[int],
-        stop: Optional[int],
-        length: Optional[Union[int, str]] = None,
-        on_update: Optional[Callable] = None,
-    ) -> None:
-        self._on_update = on_update
-        self._specs: Dict[str, Any] = {}
-        self.units = units
-        self.start = start
-        self.stop = stop
-        self.length = length
-
-    @classmethod
-    def from_header(
-        cls: Type["ContentRange"], header: str, on_update: Optional[Callable] = None
-    ) -> "ContentRange":
-        try:
-            units, range_spec = header.split(None, 1)
-        except ValueError:
-            return cls(None, None, None)
-
-        try:
-            range_, length = range_spec.split("/", 1)
-            length = int(length)  # type: ignore
-        except ValueError:
-            return cls(None, None, None)
-
-        if range_ == "*":
-            return cls(units, None, None, length, on_update)
-
-        try:
-            start, stop = range_.split("-", 1)
-            start = int(start)  # type: ignore
-            stop = int(stop)  # type: ignore
-        except ValueError:
-            return cls(None, None, None)
-
-        return cls(units, start, stop, length, on_update)  # type: ignore
-
-    def to_header(self) -> str:
-        if self.units is None:
-            return ""
-        length = self.length or "*"
-        if self.start is None:
-            return f"{self.units} */{length}"
-        else:
-            return f"{self.units} {self.start}-{self.stop}/{length}"
-
-    def __eq__(self, other: object) -> bool:
-        return self.__class__ == other.__class__ and self._specs == other._specs  # type: ignore
-
-    def __ne__(self, other: object) -> bool:
-        return not self.__eq__(other)
 
 
 class RequestAccessControl:

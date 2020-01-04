@@ -22,14 +22,13 @@ from wsgiref.handlers import format_date_time
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
 from aiofiles.threadpool import AsyncFileIO
-from werkzeug.datastructures import Headers
+from werkzeug.datastructures import ContentRange, Headers, Range
+from werkzeug.http import parse_content_range_header
 
 from ._base import _BaseRequestResponse, JSONMixin
 from ..datastructures import (
-    ContentRange,
     ContentSecurityPolicy,
     HeaderSet,
-    Range,
     ResponseAccessControl,
     ResponseCacheControl,
 )
@@ -592,7 +591,7 @@ class Response(_BaseRequestResponse, JSONMixin):
         def on_update(cache_range: ContentRange) -> None:
             self.content_range = cache_range
 
-        return ContentRange.from_header(self.headers.get("Content-Range", ""), on_update)
+        return parse_content_range_header(self.headers.get("Content-Range"), on_update)
 
     @content_range.setter
     def content_range(self, value: ContentRange) -> None:

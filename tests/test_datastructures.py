@@ -1,15 +1,8 @@
-from typing import List
-
-import pytest
-
 from quart.datastructures import (
     _CacheControl,
-    ContentRange,
     ContentSecurityPolicy,
     ETags,
     HeaderSet,
-    Range,
-    RangeSet,
     RequestAccessControl,
     RequestCacheControl,
     ResponseAccessControl,
@@ -66,21 +59,6 @@ def test_etags() -> None:
     assert etags.to_header() == 'W/"67ab43","54ed21"'
 
 
-@pytest.mark.parametrize(
-    "header, expected_ranges",
-    [
-        ("bytes=500-600,601-999", [RangeSet(500, 600), RangeSet(601, 999)]),
-        ("bytes=-999", [RangeSet(-999, None)]),
-        ("bytes=0-", [RangeSet(0, None)]),
-    ],
-)
-def test_range(header: str, expected_ranges: List[RangeSet]) -> None:
-    range_ = Range.from_header(header)
-    assert range_.units == "bytes"
-    assert range_.ranges == expected_ranges
-    assert range_.to_header() == header
-
-
 def test_header_set() -> None:
     updated = False
 
@@ -93,24 +71,6 @@ def test_header_set() -> None:
     assert updated is False
     header_set.add("PUT")
     assert updated
-
-
-def test_content_range() -> None:
-    updated = False
-
-    def on_update(_: HeaderSet) -> None:
-        nonlocal updated
-        updated = True
-
-    content_range = ContentRange.from_header("bytes 0-499/1234", on_update=on_update)
-    assert content_range.units == "bytes"
-    assert content_range.start == 0
-    assert content_range.stop == 499
-    assert content_range.length == 1234
-    content_range.start = 734
-    content_range.stop = 1233
-    assert updated
-    assert content_range.to_header() == "bytes 734-1233/1234"
 
 
 def test_request_access_control() -> None:

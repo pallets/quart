@@ -11,13 +11,20 @@ from werkzeug.datastructures import (
     Authorization,
     CharsetAccept,
     Headers,
+    IfRange,
     LanguageAccept,
     MIMEAccept,
     MultiDict,
+    Range,
 )
-from werkzeug.http import parse_accept_header, parse_authorization_header
+from werkzeug.http import (
+    parse_accept_header,
+    parse_authorization_header,
+    parse_if_range_header,
+    parse_range_header,
+)
 
-from ..datastructures import ETags, IfRange, Range, RequestAccessControl, RequestCacheControl
+from ..datastructures import ETags, RequestAccessControl, RequestCacheControl
 from ..json import loads
 
 if TYPE_CHECKING:
@@ -337,7 +344,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
 
     @property
     def if_range(self) -> IfRange:
-        return IfRange.from_header(self.headers.get("If-Range", ""))
+        return parse_if_range_header(self.headers.get("If-Range"))
 
     @property
     def max_forwards(self) -> Optional[str]:
@@ -349,7 +356,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
 
     @property
     def range(self) -> Range:
-        return Range.from_header(self.headers.get("Range", ""))
+        return parse_range_header(self.headers.get("Range"))
 
     @property
     def referrer(self) -> Optional[str]:

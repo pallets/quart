@@ -5,11 +5,11 @@ from pathlib import Path
 from typing import Any, AsyncGenerator
 
 import pytest
+from werkzeug.datastructures import Range
 
 import hypothesis.strategies as strategies
 from hypothesis import given
 from py._path.local import LocalPath
-from quart.datastructures import ContentRange, Range, RangeSet
 from quart.exceptions import RequestRangeNotSatisfiable
 from quart.wrappers.response import DataBody, FileBody, IOBody, IterableBody, Response
 
@@ -118,15 +118,18 @@ async def test_response_body() -> None:
 @pytest.mark.asyncio
 async def test_response_make_conditional() -> None:
     response = Response(b"abcdef")
-    await response.make_conditional(Range("bytes", [RangeSet(0, 3)]))
+    await response.make_conditional(Range("bytes", [(0, 3)]))
     assert b"abc" == (await response.get_data())  # type: ignore
     assert response.status_code == 206
     assert response.accept_ranges == "bytes"
-    assert response.content_range == ContentRange("bytes", 0, 2, 6)
+    assert response.content_range.units == "bytes"
+    assert response.content_range.start == 0
+    assert response.content_range.stop == 2
+    assert response.content_range.length == 6
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("range_", [Range("", {}), Range("bytes", [RangeSet(0, 6)])])
+@pytest.mark.parametrize("range_", [Range("", {}), Range("bytes", [(0, 6)])])
 async def test_response_make_conditional_no_condition(range_: Range) -> None:
     response = Response(b"abcdef")
     await response.make_conditional(range_)
@@ -138,11 +141,7 @@ async def test_response_make_conditional_no_condition(range_: Range) -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "range_",
-    [
-        Range("seconds", [RangeSet(0, 3)]),
-        Range("bytes", [RangeSet(0, 2), RangeSet(3, 5)]),
-        Range("bytes", [RangeSet(0, 8)]),
-    ],
+    [Range("seconds", [(0, 3)]), Range("bytes", [(0, 2), (3, 5)]), Range("bytes", [(0, 8)])],
 )
 async def test_response_make_conditional_not_satisfiable(range_: Range) -> None:
     response = Response(b"abcdef")
