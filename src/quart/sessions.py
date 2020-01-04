@@ -229,7 +229,7 @@ class SecureCookieSessionInterface(SessionInterface):
     ) -> Optional[SecureCookieSession]:
         """Open a secure cookie based session.
 
-        This will return None if a signing serializer is not availabe,
+        This will return None if a signing serializer is not available,
         usually if the config SECRET_KEY is not set.
         """
         signer = self.get_signing_serializer(app)
