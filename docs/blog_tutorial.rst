@@ -130,7 +130,7 @@ command. This is achieved via the following ``blog.py`` additions,
         engine.row_factory = sqlite3.Row
         return engine
 
-    @app.cli.command()
+    @app.cli.command('init_db')
     def init_db():
         """Create an empty database."""
         db = connect_db()
