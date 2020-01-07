@@ -161,7 +161,7 @@ the existing ``/`` view-function in ``blog.py``),
 .. code-block:: python
    :caption: blog.py
 
-    from quart import render_template
+    from quart import render_template, g
 
     def get_db():
         if not hasattr(g, 'sqlite_db'):
