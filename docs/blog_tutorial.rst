@@ -130,7 +130,7 @@ command. This is achieved via the following ``blog.py`` additions,
         engine.row_factory = sqlite3.Row
         return engine
 
-    @app.cli.command()
+    @app.cli.command('init_db')
     def init_db():
         """Create an empty database."""
         db = connect_db()
@@ -161,7 +161,7 @@ the existing ``/`` view-function in ``blog.py``),
 .. code-block:: python
    :caption: blog.py
 
-    from quart import render_template
+    from quart import render_template, g
 
     def get_db():
         if not hasattr(g, 'sqlite_db'):
