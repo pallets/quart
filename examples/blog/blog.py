@@ -66,7 +66,7 @@ def connect_db():
     return engine
 
 
-@app.cli.command()
+@app.cli.command('init_db')
 def init_db():
     """Create an empty database."""
     _init_db()
