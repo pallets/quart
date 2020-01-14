@@ -1,32 +1,37 @@
-from cgi import parse_header
 from datetime import datetime
 from email.utils import parsedate_to_datetime
 from http.cookies import SimpleCookie
 from typing import Any, AnyStr, Dict, List, Optional, TYPE_CHECKING, Union
-from urllib.parse import parse_qs, ParseResult, urlunparse
-from urllib.request import parse_http_list
+from urllib.parse import ParseResult, urlunparse
 
 from werkzeug.datastructures import (
     Accept,
     Authorization,
+    CallbackDict,
     CharsetAccept,
     ETags,
     Headers,
+    HeaderSet,
     IfRange,
     LanguageAccept,
     MIMEAccept,
-    MultiDict,
     Range,
     RequestCacheControl,
 )
 from werkzeug.http import (
+    dump_options_header,
     parse_accept_header,
     parse_authorization_header,
     parse_cache_control_header,
     parse_etags,
     parse_if_range_header,
+    parse_list_header,
+    parse_options_header,
     parse_range_header,
+    parse_set_header,
 )
+from werkzeug.urls import url_decode
+from werkzeug.utils import get_content_type
 
 from ..datastructures import RequestAccessControl
 from ..json import loads
@@ -130,25 +135,22 @@ class _BaseRequestResponse:
     @property
     def mimetype(self) -> str:
         """Returns the mimetype parsed from the Content-Type header."""
-        return parse_header(self.headers.get("Content-Type", ""))[0]
+        return parse_options_header(self.headers.get("Content-Type"))[0]
 
     @mimetype.setter
     def mimetype(self, value: str) -> None:
         """Set the mimetype to the value."""
-        if (
-            value.startswith("text/")
-            or value == "application/xml"
-            or (value.startswith("application/") and value.endswith("+xml"))
-        ):
-            mimetype = f"{value}; charset={self.charset}"
-        else:
-            mimetype = value
-        self.headers["Content-Type"] = mimetype
+        self.headers["Content-Type"] = get_content_type(value, self.charset)
 
     @property
     def mimetype_params(self) -> Dict[str, str]:
         """Returns the params parsed from the Content-Type header."""
-        return parse_header(self.headers.get("Content-Type", ""))[1]
+
+        def _on_update(value: Dict[str, Any]) -> None:
+            self.headers["Content-Type"] = dump_options_header(self.mimetype, value)
+
+        value = parse_options_header(self.headers.get("Content-Type"))[1]
+        return CallbackDict(value, _on_update)
 
     async def get_data(self, raw: bool = True) -> AnyStr:
         raise NotImplementedError()
@@ -165,6 +167,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
             matching.
     """
 
+    encoding_errors = "replace"
     routing_exception: Optional[Exception] = None
     url_rule: Optional["Rule"] = None
     view_args: Optional[Dict[str, Any]] = None
@@ -196,10 +199,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
             scheme: The URL scheme, http or https.
         """
         super().__init__(headers)
-        self.args: MultiDict = MultiDict()
-        for key, values in parse_qs(query_string.decode("ascii"), keep_blank_values=True).items():
-            for value in values:
-                self.args.add(key, value)
+        self.args = url_decode(query_string, self.url_charset, errors=self.encoding_errors)
         self.path = path
         self.query_string = query_string
         self.scheme = scheme
@@ -320,7 +320,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
     @property
     def access_route(self) -> List[str]:
         if "X-Forwarded-For" in self.headers:
-            return parse_http_list(self.headers["X-Forwarded-For"])
+            return parse_list_header(self.headers["X-Forwarded-For"])
         else:
             return [self.remote_addr]
 
@@ -355,8 +355,8 @@ class BaseRequestWebsocket(_BaseRequestResponse):
         return self.headers.get("Max-Forwards")
 
     @property
-    def pragma(self) -> List[str]:
-        return parse_http_list(self.headers.get("Pragma", ""))
+    def pragma(self) -> HeaderSet:
+        return parse_set_header(self.headers.get("Pragma"))
 
     @property
     def range(self) -> Range:
