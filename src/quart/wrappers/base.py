@@ -13,6 +13,8 @@ from werkzeug.datastructures import (
     Headers,
     HeaderSet,
     IfRange,
+    ImmutableList,
+    ImmutableMultiDict,
     LanguageAccept,
     MIMEAccept,
     Range,
@@ -168,6 +170,16 @@ class BaseRequestWebsocket(_BaseRequestResponse):
     """
 
     encoding_errors = "replace"
+
+    # Storage class for dict data, e.g.
+    dict_storage_class = ImmutableMultiDict
+
+    # Storage class for list data, e.g. access route
+    list_storage_class = ImmutableList
+
+    # Storage class for parameter data, e.g. args
+    parameter_storage_class = ImmutableMultiDict
+
     routing_exception: Optional[Exception] = None
     url_rule: Optional["Rule"] = None
     view_args: Optional[Dict[str, Any]] = None
@@ -199,7 +211,12 @@ class BaseRequestWebsocket(_BaseRequestResponse):
             scheme: The URL scheme, http or https.
         """
         super().__init__(headers)
-        self.args = url_decode(query_string, self.url_charset, errors=self.encoding_errors)
+        self.args = url_decode(
+            query_string,
+            self.url_charset,
+            errors=self.encoding_errors,
+            cls=self.parameter_storage_class,
+        )
         self.path = path
         self.query_string = query_string
         self.scheme = scheme
@@ -315,14 +332,14 @@ class BaseRequestWebsocket(_BaseRequestResponse):
         cookies: SimpleCookie = SimpleCookie()
         for cookie in self.headers.getlist("Cookie"):
             cookies.load(cookie)
-        return {key: cookie.value for key, cookie in cookies.items()}
+        return self.dict_storage_class((key, cookie.value) for key, cookie in cookies.items())
 
     @property
     def access_route(self) -> List[str]:
         if "X-Forwarded-For" in self.headers:
-            return parse_list_header(self.headers["X-Forwarded-For"])
+            return self.list_storage_class(parse_list_header(self.headers["X-Forwarded-For"]))
         else:
-            return [self.remote_addr]
+            return self.list_storage_class([self.remote_addr])
 
     @property
     def date(self) -> Optional[datetime]:
