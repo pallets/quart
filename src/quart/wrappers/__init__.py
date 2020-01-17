@@ -1,4 +1,4 @@
-from ._base import BaseRequestWebsocket, JSONMixin
+from .base import BaseRequestWebsocket, JSONMixin
 from .request import Body, Request, Websocket
 from .response import Response, sentinel
 

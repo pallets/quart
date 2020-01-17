@@ -25,7 +25,7 @@ from aiofiles.threadpool import AsyncFileIO
 from werkzeug.datastructures import ContentRange, Headers, Range, ResponseCacheControl
 from werkzeug.http import parse_cache_control_header, parse_content_range_header
 
-from ._base import _BaseRequestResponse, JSONMixin
+from .base import _BaseRequestResponse, JSONMixin
 from ..datastructures import ContentSecurityPolicy, HeaderSet, ResponseAccessControl
 from ..utils import create_cookie, file_path_to_path, run_sync_iterable
 

@@ -3,7 +3,7 @@ from base64 import b64encode
 import pytest
 from werkzeug.datastructures import Headers
 
-from quart.wrappers._base import _BaseRequestResponse, BaseRequestWebsocket
+from quart.wrappers.base import _BaseRequestResponse, BaseRequestWebsocket
 
 
 def test_basic_authorization() -> None:

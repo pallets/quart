@@ -6,7 +6,7 @@ from urllib.parse import parse_qs
 
 from werkzeug.datastructures import CombinedMultiDict, Headers, MultiDict
 
-from ._base import BaseRequestWebsocket, JSONMixin
+from .base import BaseRequestWebsocket, JSONMixin
 from ..datastructures import FileStorage
 
 if TYPE_CHECKING:
