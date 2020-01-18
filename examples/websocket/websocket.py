@@ -38,7 +38,7 @@ async def ws():
 
 @app.websocket('/api/v2/ws')
 @collect_websocket
-async def ws(queue):
+async def ws_v2(queue):
     while True:
         data = await queue.get()
         await websocket.send(data)
