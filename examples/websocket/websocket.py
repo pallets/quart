@@ -19,7 +19,7 @@ def collect_websocket(func):
             connected_websockets.remove(queue)
     return wrapper
 
-def broadcast(message):
+async def broadcast(message):
     for queue in connected_websockets:
         await queue.put(message)
 
