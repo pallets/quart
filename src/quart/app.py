@@ -214,33 +214,45 @@ class Quart(PackageStatic):
 
         self.config = self.make_config(instance_relative_config)
 
-        self.after_request_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
-        self.after_serving_funcs: List[Callable] = []
-        self.after_websocket_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
-        self.before_first_request_funcs: List[Callable] = []
-        self.before_request_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
-        self.before_serving_funcs: List[Callable] = []
-        self.before_websocket_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
+        self.after_request_funcs: Dict[
+            AppOrBlueprintKey, List[Callable[[Response], Awaitable[None]]]
+        ] = defaultdict(list)
+        self.after_serving_funcs: List[Callable[[], Awaitable[None]]] = []
+        self.after_websocket_funcs: Dict[
+            AppOrBlueprintKey, List[Callable[[Response], Awaitable[None]]]
+        ] = defaultdict(list)
+        self.before_first_request_funcs: List[Callable[[], Awaitable[None]]] = []
+        self.before_request_funcs: Dict[
+            AppOrBlueprintKey, List[Callable[[], Awaitable[None]]]
+        ] = defaultdict(list)
+        self.before_serving_funcs: List[Callable[[], Awaitable[None]]] = []
+        self.before_websocket_funcs: Dict[
+            AppOrBlueprintKey, List[Callable[[], Awaitable[None]]]
+        ] = defaultdict(list)
         self.blueprints: Dict[str, Blueprint] = OrderedDict()
-        self.error_handler_spec: Dict[AppOrBlueprintKey, Dict[Exception, Callable]] = defaultdict(
-            dict
-        )  # noqa: E501
+        self.error_handler_spec: Dict[
+            AppOrBlueprintKey, Dict[Exception, Callable[[Exception], Awaitable[None]]]
+        ] = defaultdict(dict)
         self.extensions: Dict[str, Any] = {}
-        self.shell_context_processors: List[Callable] = []
-        self.teardown_appcontext_funcs: List[Callable] = []
-        self.teardown_request_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(
-            list
-        )  # noqa: E501
-        self.teardown_websocket_funcs: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(
-            list
-        )  # noqa: E501
-        self.template_context_processors: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(
-            list
-        )  # noqa: E501
-        self.url_build_error_handlers: List[Callable] = []
+        self.shell_context_processors: List[Callable[[], None]] = []
+        self.teardown_appcontext_funcs: List[
+            Callable[[Optional[BaseException]], Awaitable[None]]
+        ] = []
+        self.teardown_request_funcs: Dict[
+            AppOrBlueprintKey, List[Callable[[Optional[BaseException]], Awaitable[None]]]
+        ] = defaultdict(list)
+        self.teardown_websocket_funcs: Dict[
+            AppOrBlueprintKey, List[Callable[[Optional[BaseException]], Awaitable[None]]]
+        ] = defaultdict(list)
+        self.template_context_processors: Dict[
+            AppOrBlueprintKey, List[Callable[[], Awaitable[Dict[str, Any]]]]
+        ] = defaultdict(list)
+        self.url_build_error_handlers: List[Callable[[Exception, str, dict], str]] = []
         self.url_default_functions: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
         self.url_map = Map(host_matching)
-        self.url_value_preprocessors: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
+        self.url_value_preprocessors: Dict[
+            AppOrBlueprintKey, List[Callable[[str, dict], None]]
+        ] = defaultdict(list)
         self.view_functions: Dict[str, Callable] = {}
 
         self._got_first_request = False
@@ -453,12 +465,15 @@ class Quart(PackageStatic):
     ) -> Callable:
         """Add a route to the application.
 
-        This is designed to be used as a decorator. An example usage,
+        This is designed to be used as a decorator, if used to
+        decorate a synchronous function, the function will be wrapped
+        in :func:`~quart.utils.run_sync` and run in a thread executor
+        (with the wrapped function returned). An example usage,
 
         .. code-block:: python
 
             @app.route('/')
-            def route():
+            async def route():
                 ...
 
         Arguments:
@@ -621,12 +636,15 @@ class Quart(PackageStatic):
     ) -> Callable:
         """Add a websocket to the application.
 
-        This is designed to be used as a decorator. An example usage,
+        This is designed to be used as a decorator, if used to
+        decorate a synchronous function, the function will be wrapped
+        in :func:`~quart.utils.run_sync` and run in a thread executor
+        (with the wrapped function returned). An example usage,
 
         .. code-block:: python
 
             @app.websocket('/')
-            def websocket_route():
+            async def websocket_route():
                 ...
 
         Arguments:
@@ -724,12 +742,15 @@ class Quart(PackageStatic):
     def endpoint(self, endpoint: str) -> Callable:
         """Register a function as an endpoint.
 
-        This is designed to be used as a decorator. An example usage,
+        This is designed to be used as a decorator, if used to
+        decorate a synchronous function, the function will be wrapped
+        in :func:`~quart.utils.run_sync` and run in a thread executor
+        (with the wrapped function returned). An example usage,
 
         .. code-block:: python
 
             @app.endpoint('name')
-            def endpoint():
+            async def endpoint():
                 ...
 
         Arguments:
@@ -739,7 +760,7 @@ class Quart(PackageStatic):
         def decorator(func: Callable) -> Callable:
             handler = self.ensure_async(func)
             self.view_functions[endpoint] = handler
-            return func
+            return handler
 
         return decorator
 
@@ -765,7 +786,10 @@ class Quart(PackageStatic):
         return decorator
 
     def register_error_handler(
-        self, error: Union[Type[Exception], int], func: Callable, name: AppOrBlueprintKey = None
+        self,
+        error: Union[Type[Exception], int],
+        func: Union[Callable[[Exception], None], Callable[[Exception], Awaitable[None]]],
+        name: AppOrBlueprintKey = None,
     ) -> None:
         """Register a function as an error handler.
 
@@ -909,22 +933,30 @@ class Quart(PackageStatic):
         """
         self.jinja_env.globals[name or func.__name__] = func
 
-    def context_processor(self, func: Callable, name: AppOrBlueprintKey = None) -> Callable:
+    def context_processor(
+        self,
+        func: Union[Callable[[], Dict[str, Any]], Callable[[], Awaitable[Dict[str, Any]]]],
+        name: AppOrBlueprintKey = None,
+    ) -> Callable[[], Awaitable[Dict[str, Any]]]:
         """Add a template context processor.
 
-        This is designed to be used as a decorator. An example usage,
+        This is designed to be used as a decorator, if used to
+        decorate a synchronous function, the function will be wrapped
+        in :func:`~quart.utils.run_sync` and run in a thread executor
+        (with the wrapped function returned). An example usage,
 
         .. code-block:: python
 
             @app.context_processor
-            def update_context(context):
+            async def update_context(context):
                 return context
 
         """
-        self.template_context_processors[name].append(self.ensure_async(func))
-        return func
+        handler = self.ensure_async(func)
+        self.template_context_processors[name].append(handler)
+        return handler
 
-    def shell_context_processor(self, func: Callable) -> Callable:
+    def shell_context_processor(self, func: Callable[[], None]) -> Callable:
         """Add a shell context processor.
 
         This is designed to be used as a decorator. An example usage,
@@ -953,7 +985,9 @@ class Quart(PackageStatic):
         self.url_default_functions[name].append(func)
         return func
 
-    def url_value_preprocessor(self, func: Callable, name: AppOrBlueprintKey = None) -> Callable:
+    def url_value_preprocessor(
+        self, func: Callable[[str, dict], None], name: AppOrBlueprintKey = None
+    ) -> Callable:
         """Add a url value preprocessor.
 
         This is designed to be used as a decorator. An example usage,
@@ -993,14 +1027,18 @@ class Quart(PackageStatic):
                 return result
         raise error
 
-    def _find_exception_handler(self, error: Exception) -> Optional[Callable]:
+    def _find_exception_handler(
+        self, error: Exception
+    ) -> Optional[Callable[[Exception], Awaitable[None]]]:
         if _request_ctx_stack.top is not None:
             blueprint = _request_ctx_stack.top.request.blueprint
         elif _websocket_ctx_stack.top is not None:
             blueprint = _websocket_ctx_stack.top.websocket.blueprint
         else:
             blueprint = None
-        handler = _find_exception_handler(error, self.error_handler_spec.get(blueprint, {}))
+        handler = _find_exception_handler(
+            error, self.error_handler_spec.get(blueprint, {})  # type: ignore
+        )
         if handler is None:
             handler = _find_exception_handler(error, self.error_handler_spec[None])
         return handler
@@ -1094,53 +1132,76 @@ class Quart(PackageStatic):
             websocket_ = _websocket_ctx_stack.top.websocket
             self.logger.error(f"Exception on websocket {websocket_.path}", exc_info=exception_info)
 
-    def before_request(self, func: Callable, name: AppOrBlueprintKey = None) -> Callable:
+    def before_request(
+        self,
+        func: Union[Callable[[], None], Callable[[], Awaitable[None]]],
+        name: AppOrBlueprintKey = None,
+    ) -> Callable[[], Awaitable[None]]:
         """Add a before request function.
 
-        This is designed to be used as a decorator. An example usage,
+        This is designed to be used as a decorator, if used to
+        decorate a synchronous function, the function will be wrapped
+        in :func:`~quart.utils.run_sync` and run in a thread executor
+        (with the wrapped function returned). An example usage,
 
         .. code-block:: python
 
             @app.before_request
-            def func():
+            async def func():
                 ...
 
         Arguments:
             func: The before request function itself.
             name: Optional blueprint key name.
+
         """
         handler = self.ensure_async(func)
         self.before_request_funcs[name].append(handler)
-        return func
+        return handler
 
-    def before_websocket(self, func: Callable, name: AppOrBlueprintKey = None) -> Callable:
+    def before_websocket(
+        self,
+        func: Union[Callable[[], None], Callable[[], Awaitable[None]]],
+        name: AppOrBlueprintKey = None,
+    ) -> Callable[[], Awaitable[None]]:
         """Add a before websocket function.
 
-        This is designed to be used as a decorator. An example usage,
+        This is designed to be used as a decorator, if used to
+        decorate a synchronous function, the function will be wrapped
+        in :func:`~quart.utils.run_sync` and run in a thread executor
+        (with the wrapped function returned). An example usage,
 
         .. code-block:: python
 
             @app.before_websocket
-            def func():
+            async def func():
                 ...
 
         Arguments:
             func: The before websocket function itself.
             name: Optional blueprint key name.
+
         """
         handler = self.ensure_async(func)
         self.before_websocket_funcs[name].append(handler)
-        return func
+        return handler
 
-    def before_first_request(self, func: Callable, name: AppOrBlueprintKey = None) -> Callable:
+    def before_first_request(
+        self,
+        func: Union[Callable[[], None], Callable[[], Awaitable[None]]],
+        name: AppOrBlueprintKey = None,
+    ) -> Callable[[], Awaitable[None]]:
         """Add a before **first** request function.
 
-        This is designed to be used as a decorator. An example usage,
+        This is designed to be used as a decorator, if used to
+        decorate a synchronous function, the function will be wrapped
+        in :func:`~quart.utils.run_sync` and run in a thread executor
+        (with the wrapped function returned). An example usage,
 
         .. code-block:: python
 
             @app.before_first_request
-            def func():
+            async def func():
                 ...
 
         Arguments:
@@ -1149,20 +1210,25 @@ class Quart(PackageStatic):
         """
         handler = self.ensure_async(func)
         self.before_first_request_funcs.append(handler)
-        return func
+        return handler
 
-    def before_serving(self, func: Callable) -> Callable:
+    def before_serving(
+        self, func: Union[Callable[[], None], Callable[[], Awaitable[None]]]
+    ) -> Callable[[], Awaitable[None]]:
         """Add a before serving function.
 
         This will allow the function provided to be called once before
         anything is served (before any byte is received).
 
-        This is designed to be used as a decorator. An example usage,
+        This is designed to be used as a decorator, if used to
+        decorate a synchronous function, the function will be wrapped
+        in :func:`~quart.utils.run_sync` and run in a thread executor
+        (with the wrapped function returned). An example usage,
 
         .. code-block:: python
 
             @app.before_serving
-            def func():
+            async def func():
                 ...
 
         Arguments:
@@ -1170,17 +1236,24 @@ class Quart(PackageStatic):
         """
         handler = self.ensure_async(func)
         self.before_serving_funcs.append(handler)
-        return func
+        return handler
 
-    def after_request(self, func: Callable, name: AppOrBlueprintKey = None) -> Callable:
+    def after_request(
+        self,
+        func: Union[Callable[[Response], None], Callable[[Response], Awaitable[None]]],
+        name: AppOrBlueprintKey = None,
+    ) -> Callable[[Response], Awaitable[None]]:
         """Add an after request function.
 
-        This is designed to be used as a decorator. An example usage,
+        This is designed to be used as a decorator, if used to
+        decorate a synchronous function, the function will be wrapped
+        in :func:`~quart.utils.run_sync` and run in a thread executor
+        (with the wrapped function returned). An example usage,
 
         .. code-block:: python
 
             @app.after_request
-            def func(response):
+            async def func(response):
                 return response
 
         Arguments:
@@ -1189,17 +1262,24 @@ class Quart(PackageStatic):
         """
         handler = self.ensure_async(func)
         self.after_request_funcs[name].append(handler)
-        return func
+        return handler
 
-    def after_websocket(self, func: Callable, name: AppOrBlueprintKey = None) -> Callable:
+    def after_websocket(
+        self,
+        func: Union[Callable[[Response], None], Callable[[Response], Awaitable[None]]],
+        name: AppOrBlueprintKey = None,
+    ) -> Callable[[Response], Awaitable[None]]:
         """Add an after websocket function.
 
-        This is designed to be used as a decorator. An example usage,
+        This is designed to be used as a decorator, if used to
+        decorate a synchronous function, the function will be wrapped
+        in :func:`~quart.utils.run_sync` and run in a thread executor
+        (with the wrapped function returned). An example usage,
 
         .. code-block:: python
 
             @app.after_websocket
-            def func(response):
+            async def func(response):
                 return response
 
         Arguments:
@@ -1208,39 +1288,53 @@ class Quart(PackageStatic):
         """
         handler = self.ensure_async(func)
         self.after_websocket_funcs[name].append(handler)
-        return func
+        return handler
 
-    def after_serving(self, func: Callable) -> Callable:
+    def after_serving(
+        self, func: Union[Callable[[], None], Callable[[], Awaitable[None]]]
+    ) -> Callable[[], Awaitable[None]]:
         """Add a after serving function.
 
         This will allow the function provided to be called once after
         anything is served (after last byte is sent).
 
-        This is designed to be used as a decorator. An example usage,
+        This is designed to be used as a decorator, if used to
+        decorate a synchronous function, the function will be wrapped
+        in :func:`~quart.utils.run_sync` and run in a thread executor
+        (with the wrapped function returned). An example usage,
 
         .. code-block:: python
 
             @app.after_serving
-            def func():
+            async def func():
                 ...
 
         Arguments:
             func: The function itself.
-
         """
         handler = self.ensure_async(func)
         self.after_serving_funcs.append(handler)
-        return func
+        return handler
 
-    def teardown_request(self, func: Callable, name: AppOrBlueprintKey = None) -> Callable:
+    def teardown_request(
+        self,
+        func: Union[
+            Callable[[Optional[BaseException]], None],
+            Callable[[Optional[BaseException]], Awaitable[None]],
+        ],
+        name: AppOrBlueprintKey = None,
+    ) -> Callable[[Optional[BaseException]], Awaitable[None]]:
         """Add a teardown request function.
 
-        This is designed to be used as a decorator. An example usage,
+        This is designed to be used as a decorator, if used to
+        decorate a synchronous function, the function will be wrapped
+        in :func:`~quart.utils.run_sync` and run in a thread executor
+        (with the wrapped function returned). An example usage,
 
         .. code-block:: python
 
             @app.teardown_request
-            def func():
+            async def func():
                 ...
 
         Arguments:
@@ -1249,17 +1343,27 @@ class Quart(PackageStatic):
         """
         handler = self.ensure_async(func)
         self.teardown_request_funcs[name].append(handler)
-        return func
+        return handler
 
-    def teardown_websocket(self, func: Callable, name: AppOrBlueprintKey = None) -> Callable:
+    def teardown_websocket(
+        self,
+        func: Union[
+            Callable[[Optional[BaseException]], None],
+            Callable[[Optional[BaseException]], Awaitable[None]],
+        ],
+        name: AppOrBlueprintKey = None,
+    ) -> Callable[[Optional[BaseException]], Awaitable[None]]:
         """Add a teardown websocket function.
 
-        This is designed to be used as a decorator. An example usage,
+        This is designed to be used as a decorator, if used to
+        decorate a synchronous function, the function will be wrapped
+        in :func:`~quart.utils.run_sync` and run in a thread executor
+        (with the wrapped function returned). An example usage,
 
         .. code-block:: python
 
             @app.teardown_websocket
-            def func():
+            async def func():
                 ...
 
         Arguments:
@@ -1268,17 +1372,26 @@ class Quart(PackageStatic):
         """
         handler = self.ensure_async(func)
         self.teardown_websocket_funcs[name].append(handler)
-        return func
+        return handler
 
-    def teardown_appcontext(self, func: Callable) -> Callable:
+    def teardown_appcontext(
+        self,
+        func: Union[
+            Callable[[Optional[BaseException]], None],
+            Callable[[Optional[BaseException]], Awaitable[None]],
+        ],
+    ) -> Callable[[Optional[BaseException]], Awaitable[None]]:
         """Add a teardown app (context) function.
 
-        This is designed to be used as a decorator. An example usage,
+        This is designed to be used as a decorator, if used to
+        decorate a synchronous function, the function will be wrapped
+        in :func:`~quart.utils.run_sync` and run in a thread executor
+        (with the wrapped function returned). An example usage,
 
         .. code-block:: python
 
             @app.teardown_appcontext
-            def func():
+            async def func():
                 ...
 
         Arguments:
@@ -1287,7 +1400,7 @@ class Quart(PackageStatic):
         """
         handler = self.ensure_async(func)
         self.teardown_appcontext_funcs.append(handler)
-        return func
+        return handler
 
     def register_blueprint(self, blueprint: Blueprint, url_prefix: Optional[str] = None) -> None:
         """Register a blueprint on the app.
@@ -1359,7 +1472,7 @@ class Quart(PackageStatic):
             functions = chain(functions, self.teardown_request_funcs[blueprint])  # type: ignore
 
         for function in functions:
-            await function(exc=exc)
+            await function(exc)
         await request_tearing_down.send(self, exc=exc)
 
     async def do_teardown_websocket(
@@ -1380,7 +1493,7 @@ class Quart(PackageStatic):
             functions = chain(functions, self.teardown_websocket_funcs[blueprint])  # type: ignore
 
         for function in functions:
-            await function(exc=exc)
+            await function(exc)
         await websocket_tearing_down.send(self, exc=exc)
 
     async def do_teardown_appcontext(self, exc: Optional[BaseException]) -> None:
