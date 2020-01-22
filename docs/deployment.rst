@@ -7,8 +7,11 @@ It is not recommended to run Quart directly (via
 :meth:`~quart.app.Quart.run`) in production. Instead it is recommended
 that Quart be run using `Hypercorn
 <https://gitlab.com/pgjones/hypercorn>`_ or an alternative ASGI
-server. Hypercorn is installed with Quart and is used to serve
-requests by default (e.g. with :meth:`~quart.app.Quart.run`).
+server. This is becuase the :meth:`~quart.app.Quart.run` enables
+features that help development yet slow production
+performance. Hypercorn is installed with Quart and will be used to
+serve requests in development mode by default (e.g. with
+:meth:`~quart.app.Quart.run`).
 
 To use Quart with an ASGI server simply point the server at the Quart
 application, for example for a simple application in a file called
