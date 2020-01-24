@@ -149,6 +149,7 @@ class Quart(PackageStatic):
     }
     json_decoder = JSONDecoder
     json_encoder = JSONEncoder
+    lock_class = asyncio.Lock
     permanent_session_lifetime = ConfigAttribute(
         "PERMANENT_SESSION_LIFETIME", converter=_convert_timedelta
     )
@@ -256,7 +257,7 @@ class Quart(PackageStatic):
         self.view_functions: Dict[str, Callable] = {}
 
         self._got_first_request = False
-        self._first_request_lock = asyncio.Lock()
+        self._first_request_lock = self.lock_class()
         self._jinja_env: Optional[Environment] = None
         self._logger: Optional[Logger] = None
 
