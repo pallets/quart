@@ -30,7 +30,7 @@ async def test_ascii_dumps(as_ascii: bool, expected: str) -> None:
 
 @given(
     value=strategies.one_of(
-        strategies.datetimes(),
+        strategies.datetimes(min_value=datetime(1900, 1, 1)),
         strategies.uuids(),
         strategies.binary(),
         strategies.tuples(strategies.integers()),
