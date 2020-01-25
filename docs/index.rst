@@ -61,6 +61,7 @@ How-To Guides
    blueprints.rst
    command_line.rst
    configuration.rst
+   disconnections.rst
    event_loop.rst
    flask_extensions.rst
    flask_migration.rst
