@@ -1009,10 +1009,10 @@ class Quart(PackageStatic):
         This is used to assist when building urls, see
         :func:`~quart.helpers.url_for`.
         """
-        functions = self.url_value_preprocessors[None]
+        functions = self.url_default_functions[None]
         if "." in endpoint:
             blueprint = endpoint.rsplit(".", 1)[0]
-            functions = chain(functions, self.url_value_preprocessors[blueprint])  # type: ignore
+            functions = chain(functions, self.url_default_functions[blueprint])  # type: ignore
 
         for function in functions:
             function(endpoint, values)

@@ -2,7 +2,7 @@ from typing import cast
 
 import pytest
 
-from quart import abort, jsonify, Quart, request, Response, ResponseReturnValue, websocket
+from quart import abort, jsonify, Quart, request, Response, ResponseReturnValue, url_for, websocket
 from quart.testing import WebsocketResponse
 
 
@@ -32,6 +32,10 @@ def app() -> Quart:
     async def error() -> ResponseReturnValue:
         abort(409)
         return "OK"
+
+    @app.route("/param/<param>")
+    async def param() -> ResponseReturnValue:
+        return param
 
     @app.errorhandler(409)
     async def generic_http_handler(_: Exception) -> ResponseReturnValue:
@@ -98,6 +102,16 @@ async def test_generic_error(app: Quart) -> None:
     response = await test_client.get("/error/")
     assert response.status_code == 409
     assert b"Something Unique" in (await response.get_data())  # type: ignore
+
+
+@pytest.mark.asyncio
+async def test_url_defaults(app: Quart) -> None:
+    @app.url_defaults
+    def defaults(_: str, values: dict) -> None:
+        values["param"] = "hello"
+
+    async with app.test_request_context("/"):
+        assert url_for("param") == "/param/hello"
 
 
 @pytest.mark.asyncio
