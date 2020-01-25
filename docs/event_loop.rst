@@ -43,7 +43,15 @@ development is to pass the loop to the ``app.run`` method,
     third_party = ThirdParty(loop)
     app.run(loop=loop)
 
-the Hypercorn solution is to utilise the `Hypercorn API
+or to use the ``app.run_task`` method,
+
+.. code-block:: python
+
+    loop = asyncio.get_event_loop()
+    third_party = ThirdParty(loop)
+    loop.run_until_complete(app.run_task())
+
+the Hypercorn (production) solution is to utilise the `Hypercorn API
 <https://pgjones.gitlab.io/hypercorn/api_usage.html>`_ to do the
 following,
 

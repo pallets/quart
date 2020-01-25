@@ -13,6 +13,7 @@ from typing import (
     Awaitable,
     Callable,
     cast,
+    Coroutine,
     Dict,
     IO,
     Iterable,
@@ -1576,7 +1577,6 @@ class Quart(PackageStatic):
             ca_certs: Path to the SSL CA certificate file.
             certfile: Path to the SSL certificate file.
             keyfile: Path to the SSL key file.
-
         """
         if kwargs:
             warnings.warn(
@@ -1584,7 +1584,46 @@ class Quart(PackageStatic):
                 "They may be supported by Hypercorn, which is the ASGI server Quart "
                 "uses by default. This method is meant for development and debugging."
             )
+        task = self.run_task(host, port, debug, use_reloader, ca_certs, certfile, keyfile)
 
+        scheme = "https" if certfile is not None and keyfile is not None else "http"
+        print(f"Running on {scheme}://{host}:{port} (CTRL + C to quit)")  # noqa: T001, T002
+
+        if loop is not None:
+            loop.set_debug(debug or False)
+            loop.run_until_complete(task)
+        else:
+            asyncio.run(task, debug=debug or False)
+
+    def run_task(
+        self,
+        host: str = "127.0.0.1",
+        port: int = 5000,
+        debug: Optional[bool] = None,
+        use_reloader: bool = True,
+        ca_certs: Optional[str] = None,
+        certfile: Optional[str] = None,
+        keyfile: Optional[str] = None,
+    ) -> Coroutine[None, None, None]:
+        """Return a task that when awaited runs this application.
+
+        This is best used for development only, see Hypercorn for
+        production servers.
+
+        Arguments:
+            host: Hostname to listen on. By default this is loopback
+                only, use 0.0.0.0 to have the server listen externally.
+            port: Port number to listen on.
+            debug: If set enable (or disable) debug mode and debug output.
+            use_reloader: Automatically reload on code changes.
+            loop: Asyncio loop to create the server in, if None, take default one.
+                If specified it is the caller's responsibility to close and cleanup the
+                loop.
+            ca_certs: Path to the SSL CA certificate file.
+            certfile: Path to the SSL certificate file.
+            keyfile: Path to the SSL key file.
+
+        """
         config = HyperConfig()
         config.access_log_format = "%(h)s %(r)s %(s)s %(b)s %(D)s"
         config.accesslog = create_serving_logger()
@@ -1597,16 +1636,7 @@ class Quart(PackageStatic):
         config.keyfile = keyfile
         config.use_reloader = use_reloader
 
-        scheme = "https" if config.ssl_enabled else "http"
-        print(  # noqa: T001, T002
-            "Running on {}://{} (CTRL + C to quit)".format(scheme, config.bind[0])
-        )
-
-        if loop is not None:
-            loop.set_debug(debug or False)
-            loop.run_until_complete(serve(self, config))
-        else:
-            asyncio.run(serve(self, config), debug=config.debug)
+        return serve(self, config)
 
     def test_client(self) -> QuartClient:
         """Creates and returns a test client."""
