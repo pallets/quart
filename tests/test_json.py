@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 import pytest
@@ -37,4 +38,7 @@ async def test_ascii_dumps(as_ascii: bool, expected: str) -> None:
 )
 def test_jsonserializer(value: Any) -> None:
     serializer = TaggedJSONSerializer()
+    if isinstance(value, datetime):
+        # The serializer is not precise to microseconds
+        value = value.replace(microsecond=0)
     assert serializer.loads(serializer.dumps(value)) == value
