@@ -60,7 +60,6 @@ and known to work with quart,
 - `Flask-Mail <https://github.com/mattupstate/flask-mail>`_
 - `Flask-Mako <http://github.com/benselme/flask-mako/>`_
 - `Flask-Seasurf <https://github.com/maxcountryman/flask-seasurf/>`_
-- `Flask-SQLAlchemy <https://github.com/mitsuhiko/flask-sqlalchemy/>`_
 - `Flask-WTF <https://github.com/lepture/flask-wtf>`_
 
 Broken extensions
@@ -76,3 +75,6 @@ with quart,
   as it subclasses the Quart (app) class with synchronous methods
   overriding asynchronous methods. Try `Quart-OpenApi
   <https://github.com/factset/quart-openapi/>`_ instead.
+- `Flask-SQLAlchemy <https://github.com/mitsuhiko/flask-sqlalchemy/>`_
+  as it relies on thread isolation, which Quart does not support. Try
+  `Databases <https://github.com/encode/databases>`_ instead.
