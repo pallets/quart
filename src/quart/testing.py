@@ -1,15 +1,16 @@
 import asyncio
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
-from http.cookies import SimpleCookie
+from http.cookiejar import CookieJar
 from typing import Any, AnyStr, AsyncGenerator, List, Optional, Tuple, TYPE_CHECKING, Union
 from urllib.parse import unquote, urlencode
+from urllib.request import Request as U2Request
 
 from werkzeug.datastructures import Headers
+from werkzeug.http import dump_cookie
 
 from .exceptions import BadRequest
 from .json import dumps
-from .utils import create_cookie
 from .wrappers import Request, Response
 
 if TYPE_CHECKING:
@@ -48,6 +49,27 @@ class _TestingWebsocket:
         await asyncio.sleep(0)  # Give serving task an opportunity to respond
         if self.task.done() and self.task.result() is not None:
             raise WebsocketResponse(self.task.result())
+
+
+class _TestWrapper:
+    def __init__(self, headers: Headers) -> None:
+        self.headers = headers
+
+    def get_all(self, name: str, default: Optional[Any] = None) -> List[str]:
+        name = name.lower()
+        result = []
+        for key, value in self.headers:
+            if key.lower() == name:
+                result.append(value)
+        return result or default or []
+
+
+class _TestCookieJarResponse:
+    def __init__(self, headers: Headers) -> None:
+        self.headers = headers
+
+    def info(self) -> _TestWrapper:
+        return _TestWrapper(self.headers)
 
 
 def make_test_headers_path_and_query_string(
@@ -142,9 +164,9 @@ class QuartClient:
     """
 
     def __init__(self, app: "Quart", use_cookies: bool = True) -> None:
-        self.cookie_jar: Optional[SimpleCookie]
+        self.cookie_jar: Optional[CookieJar]
         if use_cookies:
-            self.cookie_jar = SimpleCookie()
+            self.cookie_jar = CookieJar()
         else:
             self.cookie_jar = None
         self.app = app
@@ -242,8 +264,8 @@ class QuartClient:
             headers[key] = value
 
         if self.cookie_jar is not None:
-            for cookie in self.cookie_jar.output(header="").split("\r\n"):
-                headers.add("Cookie", cookie)
+            for cookie in self.cookie_jar:
+                headers.add("cookie", f"{cookie.name}={cookie.value}")
 
         request = self.app.request_class(
             method,
@@ -257,8 +279,11 @@ class QuartClient:
         )
         request.body.set_result(request_data)
         response = await self._handle_request(request)
-        if self.cookie_jar is not None and "Set-Cookie" in response.headers:
-            self.cookie_jar.load(";".join(response.headers.getlist("Set-Cookie")))
+        if self.cookie_jar is not None:
+            self.cookie_jar.extract_cookies(
+                _TestCookieJarResponse(response.headers),  # type: ignore
+                U2Request(request.url),
+            )
         return response
 
     async def _handle_request(self, request: Request) -> Response:
@@ -333,6 +358,7 @@ class QuartClient:
 
     def set_cookie(
         self,
+        server_name: str,
         key: str,
         value: str = "",
         max_age: Optional[Union[int, timedelta]] = None,
@@ -342,20 +368,35 @@ class QuartClient:
         secure: bool = False,
         httponly: bool = False,
         samesite: str = None,
+        charset: str = "utf-8",
     ) -> None:
         """Set a cookie in the cookie jar.
 
         The arguments are the standard cookie morsels and this is a
         wrapper around the stdlib SimpleCookie code.
         """
-        cookie = create_cookie(
-            key, value, max_age, expires, path, domain, secure, httponly, samesite
+        cookie = dump_cookie(
+            key,
+            value=value,
+            max_age=max_age,
+            expires=expires,
+            path=path,
+            domain=domain,
+            secure=secure,
+            httponly=httponly,
+            charset=charset,
+            # samesite=samesite,
         )
-        self.cookie_jar = cookie
+        self.cookie_jar.extract_cookies(
+            _TestCookieJarResponse(Headers([("set-cookie", cookie)])),  # type: ignore
+            U2Request(f"http://{server_name}{path}"),
+        )
 
-    def delete_cookie(self, key: str, path: str = "/", domain: Optional[str] = None) -> None:
+    def delete_cookie(
+        self, server_name: str, key: str, path: str = "/", domain: Optional[str] = None
+    ) -> None:
         """Delete a cookie (set to expire immediately)."""
-        self.set_cookie(key, expires=datetime.utcnow(), max_age=0, path=path, domain=domain)
+        self.set_cookie(server_name, key, expires=0, max_age=0, path=path, domain=domain)
 
     @asynccontextmanager
     async def websocket(

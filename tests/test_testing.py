@@ -226,7 +226,7 @@ async def test_set_cookie() -> None:
         return jsonify({"foo": request.cookies.get("foo")})
 
     client = Client(app)
-    client.set_cookie("foo", "bar")
+    client.set_cookie("localhost", "foo", "bar")
     response = await client.get("/")
     assert (await response.get_json()) == {"foo": "bar"}
 

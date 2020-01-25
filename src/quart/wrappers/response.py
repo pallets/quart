@@ -23,11 +23,11 @@ from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
 from aiofiles.threadpool import AsyncFileIO
 from werkzeug.datastructures import ContentRange, Headers, Range, ResponseCacheControl
-from werkzeug.http import parse_cache_control_header, parse_content_range_header
+from werkzeug.http import dump_cookie, parse_cache_control_header, parse_content_range_header
 
 from .base import _BaseRequestResponse, JSONMixin
 from ..datastructures import ContentSecurityPolicy, HeaderSet, ResponseAccessControl
-from ..utils import create_cookie, file_path_to_path, run_sync_iterable
+from ..utils import file_path_to_path, run_sync_iterable
 
 if TYPE_CHECKING:
     from ..routing import Rule  # noqa
@@ -285,6 +285,7 @@ class Response(_BaseRequestResponse, JSONMixin):
     implicit_sequence_conversion = True
     io_body_class = IOBody
     iterable_body_class = IterableBody
+    max_cookie_size = 4093
 
     def __init__(
         self,
@@ -414,7 +415,7 @@ class Response(_BaseRequestResponse, JSONMixin):
         key: str,
         value: AnyStr = "",  # type: ignore
         max_age: Optional[Union[int, timedelta]] = None,
-        expires: Optional[datetime] = None,
+        expires: Optional[Union[int, float, datetime]] = None,
         path: str = "/",
         domain: Optional[str] = None,
         secure: bool = False,
@@ -428,14 +429,26 @@ class Response(_BaseRequestResponse, JSONMixin):
         """
         if isinstance(value, bytes):
             value = value.decode()  # type: ignore
-        cookie = create_cookie(
-            key, value, max_age, expires, path, domain, secure, httponly, samesite  # type: ignore
+        self.headers.add(
+            "Set-Cookie",
+            dump_cookie(
+                key,
+                value=value,
+                max_age=max_age,
+                expires=expires,
+                path=path,
+                domain=domain,
+                secure=secure,
+                httponly=httponly,
+                charset=self.charset,
+                # max_size=self.max_cookie_size,
+                # samesite=samesite,
+            ),
         )
-        self.headers.add("Set-Cookie", cookie.output(header=""))
 
     def delete_cookie(self, key: str, path: str = "/", domain: Optional[str] = None) -> None:
         """Delete a cookie (set to expire immediately)."""
-        self.set_cookie(key, expires=datetime.utcnow(), max_age=0, path=path, domain=domain)
+        self.set_cookie(key, expires=0, max_age=0, path=path, domain=domain)
 
     async def add_etag(self, overwrite: bool = False, weak: bool = False) -> None:
         if overwrite or "etag" not in self.headers:
