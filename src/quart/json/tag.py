@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type
 from uuid import UUID
 
 from jinja2 import Markup
-from werkzeug.http import http_date, parse_date
+from werkzeug.http import parse_date
 
 from quart.json import dumps, loads
 
@@ -121,12 +121,9 @@ class TagUUID(JSONTag):
 
 def _parse_datetime(value: str) -> datetime:
     try:
-        return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f")
+        return datetime.fromisoformat(value)
     except ValueError:
-        try:
-            return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f%z")
-        except ValueError:
-            return parse_date(value)
+        return parse_date(value)
 
 
 class TagDateTime(JSONTag):
@@ -136,7 +133,7 @@ class TagDateTime(JSONTag):
         return isinstance(value, datetime)
 
     def to_json(self, value: datetime) -> str:
-        return http_date(value)
+        return value.isoformat(timespec="microseconds")
 
     def to_python(self, value: str) -> datetime:
         return _parse_datetime(value)
