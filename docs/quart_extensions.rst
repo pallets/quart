@@ -6,8 +6,17 @@ Using Quart Extensions
 There are a number of extensions for Quart, some of which are listed
 here,
 
+- `Quart-compress <https://github.com/AceFire6/quart-compress>`_
+  compress your application's responses with gzip.
+- `Quart-compress2
+  <https://github.com/DahlitzFlorian/quart-compress>`_ A package to
+  compress responses in your Quart app with gzip .
 - `Quart-CORS <https://gitlab.com/pgjones/quart-cors>`_ Cross Origin
   Resource Sharing (access control) support.
+- `Quart-events <https://github.com/smithk86/quart-events>`_ event
+  broadcasting via WebSockets or SSE.
+- `Quart-minify <https://github.com/AceFire6/quart_minify/>`_ minify
+  quart response for HTML, JS, CSS and less.
 - `Quart-OpenApi <https://github.com/factset/quart-openapi/>`_ RESTful
   API building.
 - `Quart-Rate-Limiter
