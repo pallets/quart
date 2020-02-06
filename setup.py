@@ -24,7 +24,7 @@ INSTALL_REQUIRES = [
     "jinja2",
     "sortedcontainers",
     "toml",
-    "werkzeug",
+    "werkzeug >= 1.0.0",
 ]
 
 setup(
