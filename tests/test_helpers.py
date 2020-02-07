@@ -91,8 +91,8 @@ async def test_url_for(app: Quart) -> None:
 @pytest.mark.asyncio
 async def test_url_for_host_matching(host_matched_app: Quart) -> None:
     async with host_matched_app.app_context():
-        assert url_for("index") == "http://localhost/"
-        assert url_for("host") == "http://quart.com/"
+        assert url_for("index", _external=True) == "http:///"
+        assert url_for("host", _external=True) == "http://quart.com/"
 
 
 @pytest.mark.asyncio

@@ -7,6 +7,7 @@ from urllib.parse import unquote, urlencode
 from urllib.request import Request as U2Request
 
 from werkzeug.datastructures import Headers
+from werkzeug.exceptions import BadRequest as WBadRequest
 from werkzeug.http import dump_cookie
 
 from .exceptions import BadRequest
@@ -405,7 +406,7 @@ class QuartClient:
         *,
         headers: Optional[Union[dict, Headers]] = None,
         query_string: Optional[dict] = None,
-        scheme: str = "http",
+        scheme: str = "ws",
         subprotocols: Optional[List[str]] = None,
         root_path: str = "",
         http_version: str = "1.1",
@@ -430,8 +431,9 @@ class QuartClient:
             websocket_client.accept,
         )
         adapter = self.app.create_url_adapter(websocket)
-        url_rule, _ = adapter.match()
-        if not url_rule.is_websocket:
+        try:
+            adapter.match()
+        except WBadRequest:
             raise BadRequest()
 
         websocket_client.task = asyncio.ensure_future(self.app.handle_websocket(websocket))

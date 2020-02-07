@@ -75,7 +75,7 @@ def test_add_url_rule_methods(
     result.update(required_methods)
     if "GET" in result:
         result.add("HEAD")
-    assert app.url_map.endpoints["end"][0].methods == result
+    assert app.url_map._rules_by_endpoint["end"][0].methods == result  # type: ignore
 
 
 @pytest.mark.parametrize(
@@ -104,16 +104,15 @@ def test_add_url_rule_automatic_options(
     route.provide_automatic_options = func_automatic  # type: ignore
 
     app.add_url_rule("/", "end", route, methods, provide_automatic_options=arg_automatic)
-    assert app.url_map.endpoints["end"][0].methods == expected_methods
-    assert app.url_map.endpoints["end"][0].provide_automatic_options == expected_automatic
+    assert app.url_map._rules_by_endpoint["end"][0].methods == expected_methods  # type: ignore
+    assert app.url_map._rules_by_endpoint["end"][0].provide_automatic_options == expected_automatic  # type: ignore  # noqa: E501
 
 
 @pytest.mark.asyncio
 async def test_host_matching() -> None:
     app = Quart(__name__, static_host="quart.com", host_matching=True)
-    app.config["SERVER_NAME"] = "quart.com"
 
-    @app.route("/")
+    @app.route("/", host="quart.com")
     async def route() -> str:
         return ""
 
@@ -127,7 +126,7 @@ async def test_host_matching() -> None:
 
 @pytest.mark.asyncio
 async def test_subdomain() -> None:
-    app = Quart(__name__, static_host="quart.com", host_matching=True)
+    app = Quart(__name__, subdomain_matching=True)
     app.config["SERVER_NAME"] = "quart.com"
 
     @app.route("/", subdomain="<subdomain>")
@@ -137,41 +136,6 @@ async def test_subdomain() -> None:
     test_client = app.test_client()
     response = await test_client.get("/", headers={"host": "sub.quart.com"})
     assert (await response.get_data(raw=False)) == "sub"
-
-
-@pytest.mark.parametrize(
-    "host_matching, server_name, subdomain, host, error",
-    [
-        (False, None, "foo", None, RuntimeError),
-        (False, None, None, "foo", RuntimeError),
-        (True, None, "foo", "foo", ValueError),
-        (True, None, "foo", None, RuntimeError),
-        (True, None, None, None, RuntimeError),
-    ],
-    ids=[
-        "No host matching with subdomain",
-        "No host matching with host",
-        "Host and subdomain",
-        "No server name with subdomain",
-        "No host and no server name with host matching",
-    ],
-)
-def test_add_url_rule_host_and_subdomain_errors(
-    host_matching: bool,
-    server_name: Optional[str],
-    subdomain: Optional[str],
-    host: Optional[str],
-    error: Exception,
-) -> None:
-    static_host = "quart.com" if host_matching else None
-    app = Quart(__name__, static_host=static_host, host_matching=host_matching)
-    app.config["SERVER_NAME"] = server_name
-
-    def route() -> str:
-        return ""
-
-    with pytest.raises(error):
-        app.add_url_rule("/", view_func=route, subdomain=subdomain, host=host)
 
 
 @pytest.mark.asyncio
@@ -298,7 +262,14 @@ async def test_app_handle_request_asyncio_cancelled_error() -> None:
         raise asyncio.CancelledError()
 
     request = app.request_class(
-        "GET", "http", "/", b"", Headers(), "", "1.1", send_push_promise=no_op_push
+        "GET",
+        "http",
+        "/",
+        b"",
+        Headers([("host", "quart.com")]),
+        "",
+        "1.1",
+        send_push_promise=no_op_push,
     )
     with pytest.raises(asyncio.CancelledError):
         await app.handle_request(request)
@@ -312,7 +283,9 @@ async def test_app_handle_websocket_asyncio_cancelled_error() -> None:
     async def index() -> NoReturn:
         raise asyncio.CancelledError()
 
-    websocket = app.websocket_class("/", b"", "wss", Headers(), "", "1.1", None, None, None, None)
+    websocket = app.websocket_class(
+        "/", b"", "wss", Headers([("host", "quart.com")]), "", "1.1", None, None, None, None
+    )
     with pytest.raises(asyncio.CancelledError):
         await app.handle_websocket(websocket)
 

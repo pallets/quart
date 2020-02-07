@@ -29,6 +29,7 @@ from typing import (
 from hypercorn.asyncio import serve
 from hypercorn.config import Config as HyperConfig
 from werkzeug.datastructures import Headers
+from werkzeug.routing import Map, MapAdapter, Rule
 
 from .asgi import ASGIHTTPConnection, ASGILifespan, ASGIWebsocketConnection
 from .blueprints import Blueprint
@@ -56,7 +57,6 @@ from .helpers import (
 )
 from .json import JSONDecoder, JSONEncoder, jsonify, tojson_filter
 from .logging import create_logger, create_serving_logger
-from .routing import Map, MapAdapter, Rule
 from .sessions import SecureCookieSession, SecureCookieSessionInterface, Session
 from .signals import (
     appcontext_tearing_down,
@@ -131,6 +131,7 @@ class Quart(PackageStatic):
             SESSION_COOKIE_NAME, use to specify the cookie name for session
             data.
         session_interface: The class to use as the session interface.
+        url_map_class: The class to map rules to endpoints.
         url_rule_class: The class to use for URL rules.
         websocket_class: The class to use for websockets.
 
@@ -164,6 +165,7 @@ class Quart(PackageStatic):
     session_interface = SecureCookieSessionInterface()
     test_client_class = QuartClient
     testing = ConfigAttribute("TESTING")
+    url_map_class = Map
     url_rule_class = Rule
     websocket_class = Websocket
 
@@ -174,6 +176,7 @@ class Quart(PackageStatic):
         static_folder: Optional[str] = "static",
         static_host: Optional[str] = None,
         host_matching: bool = False,
+        subdomain_matching: bool = False,
         template_folder: Optional[str] = "templates",
         root_path: Optional[str] = None,
         instance_path: Optional[str] = None,
@@ -251,7 +254,8 @@ class Quart(PackageStatic):
         ] = defaultdict(list)
         self.url_build_error_handlers: List[Callable[[Exception, str, dict], str]] = []
         self.url_default_functions: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
-        self.url_map = Map(host_matching)
+        self.url_map = self.url_map_class(host_matching=host_matching)
+        self.subdomain_matching = subdomain_matching
         self.url_value_preprocessors: Dict[
             AppOrBlueprintKey, List[Callable[[str, dict], None]]
         ] = defaultdict(list)
@@ -264,7 +268,7 @@ class Quart(PackageStatic):
 
         self.cli = AppGroup(self.name)
         if self.has_static_folder:
-            if static_host is None and host_matching:
+            if bool(static_host) != host_matching:
                 raise ValueError(
                     "static_host must be set if there is a static folder and host_matching is "
                     "enabled"
@@ -368,19 +372,45 @@ class Quart(PackageStatic):
         otherwise the app configuration.
         """
         if request is not None:
-            host = request.host
-            return self.url_map.bind_to_request(
-                request.is_secure,
+            subdomain = (
+                (self.url_map.default_subdomain or None) if not self.subdomain_matching else None
+            )
+            # The following functionality is in the MapAdapter
+            # bind_to_environ in Werkzeug
+            host = self.config["SERVER_NAME"] or request.host
+            if request.scheme in {"http", "ws"} and host.endswith(":80"):
+                host = host[:-3]
+            elif request.scheme in {"https", "wss"} and host.endswith(":443"):
+                host = host[:-4]
+
+            if subdomain is None and not self.url_map.host_matching:
+                request_host_parts = request.host.split(".")
+                config_host_parts = host.split(".")
+                offset = -len(config_host_parts)
+
+                if request_host_parts[offset:] != config_host_parts:
+                    warnings.warn(
+                        f"Current server name '{request.host}' doesn't match configured"
+                        f" server name '{host}'",
+                        stacklevel=2,
+                    )
+                    subdomain = "<invalid>"
+                else:
+                    subdomain = ".".join(filter(None, request_host_parts[:offset]))
+
+            return self.url_map.bind(
                 host,
+                request.root_path,
+                subdomain,
+                request.scheme,
                 request.method,
                 request.path,
                 request.query_string,
-                isinstance(request, self.websocket_class),
-                request.root_path,
             )
 
         if self.config["SERVER_NAME"] is not None:
-            return self.url_map.bind(self.config["PREFER_SECURE_URLS"], self.config["SERVER_NAME"])
+            scheme = "https" if self.config["PREFER_SECURE_URLS"] else "http"
+            return self.url_map.bind(self.config["SERVER_NAME"], url_scheme=scheme)
         return None
 
     def create_jinja_environment(self) -> Environment:
@@ -530,6 +560,7 @@ class Quart(PackageStatic):
         provide_automatic_options: Optional[bool] = None,
         is_websocket: bool = False,
         strict_slashes: bool = True,
+        merge_slashes: Optional[bool] = None,
     ) -> None:
         """Add a route/url rule to the application.
 
@@ -567,6 +598,8 @@ class Quart(PackageStatic):
                 OPTION handling.
             strict_slashes: Strictly match the trailing slash present in the
                 path. Will redirect a leaf (no slash) to a branch (with slash).
+            merge_slashes: Merge consecutive slashes to a single slash (unless
+                as part of the path variable).
         """
         endpoint = endpoint or _endpoint_from_view_func(view_func)
         handler = self.ensure_async(view_func)
@@ -588,35 +621,20 @@ class Quart(PackageStatic):
 
         methods.update(required_methods)
 
-        if not self.url_map.host_matching and (host is not None or subdomain is not None):
-            raise RuntimeError("Cannot use host or subdomain without host matching enabled.")
-        if host is not None and subdomain is not None:
-            raise ValueError("Cannot set host and subdomain, please choose one or the other")
-
-        if subdomain is not None:
-            if self.config["SERVER_NAME"] is None:
-                raise RuntimeError("SERVER_NAME config is required to use subdomain in a route.")
-            host = f"{subdomain}.{self.config['SERVER_NAME']}"
-        elif host is None and self.url_map.host_matching:
-            host = self.config["SERVER_NAME"]
-            if host is None:
-                raise RuntimeError(
-                    "Cannot add a route with host matching enabled without either a specified "
-                    "host or a config SERVER_NAME"
-                )
-
-        self.url_map.add(
-            self.url_rule_class(
-                path,
-                methods,
-                endpoint,
-                host=host,
-                provide_automatic_options=automatic_options,
-                defaults=defaults,
-                is_websocket=is_websocket,
-                strict_slashes=strict_slashes,
-            )
+        rule = self.url_rule_class(  # type: ignore
+            path,
+            methods=methods,
+            endpoint=endpoint,
+            host=host,
+            subdomain=subdomain,
+            defaults=defaults,
+            websocket=is_websocket,
+            strict_slashes=strict_slashes,
+            merge_slashes=merge_slashes,
         )
+        rule.provide_automatic_options = automatic_options  # type: ignore
+        self.url_map.add(rule)
+
         if handler is not None:
             old_handler = self.view_functions.get(endpoint)
             if getattr(old_handler, "_quart_async_wrapper", False):

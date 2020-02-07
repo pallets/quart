@@ -4,6 +4,12 @@ from unittest.mock import Mock
 
 import pytest
 from werkzeug.datastructures import Headers
+from werkzeug.exceptions import (
+    BadRequest as WBadRequest,
+    MethodNotAllowed as WMethodNotAllowed,
+    NotFound as WNotFound,
+)
+from werkzeug.routing import RequestRedirect as WRequestRedirect
 
 from quart.app import Quart
 from quart.ctx import (
@@ -30,7 +36,16 @@ def test_request_context_match() -> None:
     rule = Rule("/", {"GET"}, "index")
     url_adapter.match.return_value = (rule, {"arg": "value"})
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
-    request = Request("GET", "http", "/", b"", Headers(), "", "1.1", send_push_promise=no_op_push)
+    request = Request(
+        "GET",
+        "http",
+        "/",
+        b"",
+        Headers([("host", "quart.com")]),
+        "",
+        "1.1",
+        send_push_promise=no_op_push,
+    )
     RequestContext(app, request)
     assert request.url_rule == rule
     assert request.view_args == {"arg": "value"}
@@ -39,9 +54,10 @@ def test_request_context_match() -> None:
 @pytest.mark.parametrize(
     "exception_type, exception_instance",
     [
-        (MethodNotAllowed, MethodNotAllowed(["GET"])),
-        (NotFound, NotFound()),
-        (RedirectRequired, RedirectRequired("/")),
+        (BadRequest, WBadRequest()),
+        (MethodNotAllowed, WMethodNotAllowed(["GET"])),
+        (NotFound, WNotFound()),
+        (RedirectRequired, WRequestRedirect("/")),
     ],
 )
 def test_request_context_matching_error(
@@ -51,7 +67,16 @@ def test_request_context_matching_error(
     url_adapter = Mock()
     url_adapter.match.side_effect = exception_instance
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
-    request = Request("GET", "http", "/", b"", Headers(), "", "1.1", send_push_promise=no_op_push)
+    request = Request(
+        "GET",
+        "http",
+        "/",
+        b"",
+        Headers([("host", "quart.com")]),
+        "",
+        "1.1",
+        send_push_promise=no_op_push,
+    )
     RequestContext(app, request)
     assert isinstance(request.routing_exception, exception_type)  # type: ignore
 
@@ -59,9 +84,18 @@ def test_request_context_matching_error(
 def test_bad_request_if_websocket_route() -> None:
     app = Quart(__name__)
     url_adapter = Mock()
-    url_adapter.match.side_effect = BadRequest()
+    url_adapter.match.side_effect = WBadRequest()
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
-    request = Request("GET", "http", "/", b"", Headers(), "", "1.1", send_push_promise=no_op_push)
+    request = Request(
+        "GET",
+        "http",
+        "/",
+        b"",
+        Headers([("host", "quart.com")]),
+        "",
+        "1.1",
+        send_push_promise=no_op_push,
+    )
     RequestContext(app, request)
     assert isinstance(request.routing_exception, BadRequest)
 
@@ -230,7 +264,16 @@ def test_copy_current_websocket_context_error() -> None:
 async def test_overlapping_request_ctx() -> None:
     app = Quart(__name__)
 
-    request = Request("GET", "http", "/", b"", Headers(), "", "1.1", send_push_promise=no_op_push)
+    request = Request(
+        "GET",
+        "http",
+        "/",
+        b"",
+        Headers([("host", "quart.com")]),
+        "",
+        "1.1",
+        send_push_promise=no_op_push,
+    )
     ctx1 = app.request_context(request)
     await ctx1.__aenter__()
     ctx2 = app.request_context(request)
@@ -244,7 +287,9 @@ async def test_overlapping_request_ctx() -> None:
 async def test_overlapping_websocket_ctx() -> None:
     app = Quart(__name__)
 
-    websocket = Websocket("/", b"", "ws", Headers(), "", "1.1", [], None, None, None)
+    websocket = Websocket(
+        "/", b"", "ws", Headers([("host", "quart.com")]), "", "1.1", [], None, None, None
+    )
     ctx1 = app.websocket_context(websocket)
     await ctx1.__aenter__()
     ctx2 = app.websocket_context(websocket)

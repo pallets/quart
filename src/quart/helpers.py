@@ -184,12 +184,19 @@ def url_for(
         raise ValueError("External must be True for scheme usage")
 
     app_context.app.inject_url_defaults(endpoint, values)
+
+    old_scheme = None
+    if _scheme is not None:
+        old_scheme = url_adapter.url_scheme
+        url_adapter.url_scheme = _scheme
+
     try:
-        url = url_adapter.build(
-            endpoint, values, method=_method, scheme=_scheme, external=_external
-        )
+        url = url_adapter.build(endpoint, values, method=_method, force_external=_external)
     except BuildError as error:
         return app_context.app.handle_url_build_error(error, endpoint, values)
+    finally:
+        if old_scheme is not None:
+            url_adapter.url_scheme = old_scheme
 
     if _anchor is not None:
         quoted_anchor = quote(_anchor)

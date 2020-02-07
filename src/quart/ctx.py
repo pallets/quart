@@ -2,6 +2,13 @@ from functools import wraps
 from types import TracebackType
 from typing import Any, Callable, cast, Iterator, List, Optional, TYPE_CHECKING  # noqa: F401
 
+from werkzeug.exceptions import (
+    BadRequest as WBadRequest,
+    MethodNotAllowed as WMethodNotAllowed,
+    NotFound as WNotFound,
+)
+from werkzeug.routing import RequestRedirect as WRequestRedirect
+
 from .exceptions import BadRequest, MethodNotAllowed, NotFound, RedirectRequired
 from .globals import _app_ctx_stack, _request_ctx_stack, _websocket_ctx_stack
 from .sessions import Session  # noqa
@@ -45,9 +52,19 @@ class _BaseRequestWebsocketContext:
             (
                 self.request_websocket.url_rule,
                 self.request_websocket.view_args,
-            ) = self.url_adapter.match()  # noqa
-        except (BadRequest, NotFound, MethodNotAllowed, RedirectRequired) as error:
-            self.request_websocket.routing_exception = error
+            ) = self.url_adapter.match(
+                return_rule=True
+            )  # noqa
+        except WBadRequest:
+            self.request_websocket.routing_exception = BadRequest()
+        except WNotFound:
+            self.request_websocket.routing_exception = NotFound()
+        except WMethodNotAllowed as error:
+            new_error = MethodNotAllowed(error.valid_methods)
+            self.request_websocket.routing_exception = new_error
+        except WRequestRedirect as error:
+            new_error = RedirectRequired(error.new_url)  # type: ignore
+            self.request_websocket.routing_exception = new_error
 
     async def __aenter__(self) -> "_BaseRequestWebsocketContext":
         app_ctx = _app_ctx_stack.top
