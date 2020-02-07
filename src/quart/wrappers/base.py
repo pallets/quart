@@ -35,7 +35,6 @@ from werkzeug.http import (
 from werkzeug.urls import url_decode
 from werkzeug.utils import get_content_type
 
-from ..datastructures import RequestAccessControl
 from ..json import loads
 
 if TYPE_CHECKING:
@@ -265,14 +264,6 @@ class BaseRequestWebsocket(_BaseRequestResponse):
         return parse_accept_header(self.headers.get("Accept"), MIMEAccept)
 
     @property
-    def access_control(self) -> RequestAccessControl:
-        return RequestAccessControl.from_headers(
-            self.headers.get("Origin", ""),
-            self.headers.get("Access-Control-Request-Headers", ""),
-            self.headers.get("Access-Control-Request-Method", ""),
-        )
-
-    @property
     def authorization(self) -> Optional[Authorization]:
         return parse_authorization_header(self.headers.get("Authorization"))
 
@@ -389,3 +380,17 @@ class BaseRequestWebsocket(_BaseRequestResponse):
             return parsedate_to_datetime(self.headers["If-Unmodified-Since"])
         else:
             return None
+
+    @property
+    def origin(self) -> Optional[str]:
+        return self.headers.get("Origin")
+
+    @property
+    def access_control_request_headers(self) -> Optional[HeaderSet]:
+        if "Access-Control-Request-Headers" in self.headers:
+            return parse_set_header(self.headers["Access-Control-Request-Headers"])
+        return None
+
+    @property
+    def access_control_request_method(self) -> Optional[str]:
+        return self.headers.get("Access-Control-Request-Method")

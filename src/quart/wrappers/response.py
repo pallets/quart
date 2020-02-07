@@ -26,19 +26,21 @@ from werkzeug.datastructures import (  # type: ignore
     ContentRange,
     ContentSecurityPolicy,
     Headers,
+    HeaderSet,
     Range,
     ResponseCacheControl,
 )
 from werkzeug.http import (  # type: ignore
     dump_cookie,
     dump_csp_header,
+    dump_header,
     parse_cache_control_header,
     parse_content_range_header,
     parse_csp_header,
+    parse_set_header,
 )
 
 from .base import _BaseRequestResponse, JSONMixin
-from ..datastructures import HeaderSet, ResponseAccessControl
 from ..utils import file_path_to_path, run_sync_iterable
 
 if TYPE_CHECKING:
@@ -483,35 +485,69 @@ class Response(_BaseRequestResponse, JSONMixin):
             self.headers["ETag"] = f'"{etag}"'
 
     @property
-    def access_control(self) -> ResponseAccessControl:
-        def on_update(value: ResponseAccessControl) -> None:
-            self.access_control = value
+    def access_control_allow_credentials(self) -> bool:
+        """Whether credentials can be shared by the browser to
+        JavaScript code. As part of the preflight request it indicates
+        whether credentials can be used on the cross origin request.
+        """
+        return "Access-Control-Allow-Credentials" in self.headers
 
-        return ResponseAccessControl.from_headers(
-            self.headers.get("Access-Control-Allow-Credentials", ""),
-            self.headers.get("Access-Control-Allow-Headers", ""),
-            self.headers.get("Access-Control-Allow-Methods", ""),
-            self.headers.get("Access-Control-Allow-Origin", ""),
-            self.headers.get("Access-Control-Expose-Headers", ""),
-            self.headers.get("Access-Control-Max-Age", ""),
-            on_update=on_update,
-        )
-
-    @access_control.setter
-    def access_control(self, value: ResponseAccessControl) -> None:
-        max_age = value.max_age
-        if max_age is None:
-            self.headers.pop("Access-Control-Max-Age", None)  # type: ignore
-        else:
-            self.headers["Access-Control-Max-Age"] = max_age
-        if value.allow_credentials:
+    @access_control_allow_credentials.setter
+    def access_control_allow_credentials(self, value: bool) -> None:
+        if value is True:
             self.headers["Access-Control-Allow-Credentials"] = "true"
         else:
             self.headers.pop("Access-Control-Allow-Credentials", None)  # type: ignore
-        self._set_or_pop_header("Access-Control-Allow-Headers", value.allow_headers.to_header())
-        self._set_or_pop_header("Access-Control-Allow-Methods", value.allow_methods.to_header())
-        self._set_or_pop_header("Access-Control-Allow-Origin", value.allow_origin.to_header())
-        self._set_or_pop_header("Access-Control-Expose-Headers", value.expose_headers.to_header())
+
+    @property
+    def access_control_allow_headers(self) -> Optional[HeaderSet]:
+        if "Access-Control-Allow-Headers" in self.headers:
+            return parse_set_header(self.headers["Access-Control-Allow-Headers"])
+        return None
+
+    @access_control_allow_headers.setter
+    def access_control_allow_headers(self, value: HeaderSet) -> None:
+        self.headers["Access-Control-Allow-Headers"] = dump_header(value)
+
+    @property
+    def access_control_allow_methods(self) -> Optional[HeaderSet]:
+        if "Access-Control-Allow-Methods" in self.headers:
+            return parse_set_header(self.headers["Access-Control-Allow-Methods"])
+        return None
+
+    @access_control_allow_methods.setter
+    def access_control_allow_methods(self, value: HeaderSet) -> None:
+        self.headers["Access-Control-Allow-Headers"] = dump_header(value)
+
+    @property
+    def access_control_allow_origin(self) -> Optional[HeaderSet]:
+        if "Access-Control-Allow-Origin" in self.headers:
+            return parse_set_header(self.headers["Access-Control-Allow-Origin"])
+        return None
+
+    @access_control_allow_origin.setter
+    def access_control_allow_origin(self, value: HeaderSet) -> None:
+        self.headers["Access-Control-Allow-Origin"] = dump_header(value)
+
+    @property
+    def access_control_expose_headers(self) -> Optional[HeaderSet]:
+        if "Access-Control-Expose-Headers" in self.headers:
+            return parse_set_header(self.headers["Access-Control-Expose-Headers"])
+        return None
+
+    @access_control_expose_headers.setter
+    def access_control_expose_headers(self, value: HeaderSet) -> None:
+        self.headers["Access-Control-Expose-Headers"] = dump_header(value)
+
+    @property
+    def access_control_max_age(self) -> Optional[int]:
+        if "Access-Control-Max-Age" in self.headers:
+            return int(self.headers["Access-Control-Max-Age"])
+        return None
+
+    @access_control_max_age.setter
+    def access_control_max_age(self, value: int) -> None:
+        self.headers["Access-Control-Max-Age"] = str(int)
 
     @property
     def accept_ranges(self) -> Optional[str]:
@@ -541,7 +577,7 @@ class Response(_BaseRequestResponse, JSONMixin):
         def on_update(header_set: HeaderSet) -> None:
             self.allow = header_set
 
-        return HeaderSet.from_header(self.headers.get("Allow", ""), on_update=on_update)
+        return parse_set_header(self.headers.get("Allow"), on_update=on_update)
 
     @allow.setter
     def allow(self, value: HeaderSet) -> None:
@@ -573,7 +609,7 @@ class Response(_BaseRequestResponse, JSONMixin):
         def on_update(header_set: HeaderSet) -> None:
             self.content_language = header_set
 
-        return HeaderSet.from_header(self.headers.get("Content-Language", ""), on_update=on_update)
+        return parse_set_header(self.headers.get("Content-Language"), on_update=on_update)
 
     @content_language.setter
     def content_language(self, value: HeaderSet) -> None:
@@ -721,7 +757,7 @@ class Response(_BaseRequestResponse, JSONMixin):
         def on_update(header_set: HeaderSet) -> None:
             self.vary = header_set
 
-        return HeaderSet.from_header(self.headers.get("Vary", ""), on_update=on_update)
+        return parse_set_header(self.headers.get("Vary"), on_update=on_update)
 
     @vary.setter
     def vary(self, value: HeaderSet) -> None:
