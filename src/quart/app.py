@@ -1853,7 +1853,7 @@ class Quart(PackageStatic):
         if request_.routing_exception is not None:
             raise request_.routing_exception
 
-        if request_.method == "OPTIONS" and request_.url_rule.provide_automatic_options:
+        if request_.method == "OPTIONS" and request_.url_rule.provide_automatic_options:  # type: ignore # noqa: E501
             return await self.make_default_options_response()
 
         handler = self.view_functions[request_.url_rule.endpoint]

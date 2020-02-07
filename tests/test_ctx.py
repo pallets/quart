@@ -9,7 +9,7 @@ from werkzeug.exceptions import (
     MethodNotAllowed as WMethodNotAllowed,
     NotFound as WNotFound,
 )
-from werkzeug.routing import RequestRedirect as WRequestRedirect
+from werkzeug.routing import RequestRedirect as WRequestRedirect, Rule
 
 from quart.app import Quart
 from quart.ctx import (
@@ -25,7 +25,6 @@ from quart.ctx import (
 )
 from quart.exceptions import BadRequest, MethodNotAllowed, NotFound, RedirectRequired
 from quart.globals import g, request, websocket
-from quart.routing import Rule
 from quart.testing import make_test_headers_path_and_query_string, no_op_push
 from quart.wrappers import Request, Websocket
 
@@ -33,7 +32,7 @@ from quart.wrappers import Request, Websocket
 def test_request_context_match() -> None:
     app = Quart(__name__)
     url_adapter = Mock()
-    rule = Rule("/", {"GET"}, "index")
+    rule = Rule("/", methods={"GET"}, endpoint="index")
     url_adapter.match.return_value = (rule, {"arg": "value"})
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
     request = Request(

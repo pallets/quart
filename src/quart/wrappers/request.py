@@ -10,7 +10,7 @@ from .base import BaseRequestWebsocket, JSONMixin
 from ..datastructures import FileStorage
 
 if TYPE_CHECKING:
-    from ..routing import Rule  # noqa
+    from werkzeug.routing import Rule  # noqa
 
 SERVER_PUSH_HEADERS_TO_COPY = {
     "accept",

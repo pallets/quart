@@ -6,9 +6,10 @@ from pathlib import Path
 from typing import Any, Callable, List, Optional, Tuple, Union
 from urllib.parse import quote
 
+from werkzeug.routing import BuildError
+
 from .ctx import _app_ctx_stack, _request_ctx_stack
 from .globals import current_app, request, session
-from .routing import BuildError
 from .signals import message_flashed
 from .wrappers import Response
 

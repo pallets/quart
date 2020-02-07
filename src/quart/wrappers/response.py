@@ -44,7 +44,7 @@ from .base import _BaseRequestResponse, JSONMixin
 from ..utils import file_path_to_path, run_sync_iterable
 
 if TYPE_CHECKING:
-    from ..routing import Rule  # noqa
+    from werkzeug.routing import Rule  # noqa
 
 sentinel = object()
 

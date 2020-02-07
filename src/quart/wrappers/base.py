@@ -38,7 +38,7 @@ from werkzeug.utils import get_content_type
 from ..json import loads
 
 if TYPE_CHECKING:
-    from ..routing import Rule  # noqa
+    from werkzeug.routing import Rule  # noqa
 
 sentinel = object()
 
