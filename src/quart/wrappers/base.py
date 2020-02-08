@@ -367,7 +367,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
         return parse_set_header(self.headers.get("Pragma"))
 
     @property
-    def range(self) -> Range:
+    def range(self) -> Optional[Range]:
         return parse_range_header(self.headers.get("Range"))
 
     @property

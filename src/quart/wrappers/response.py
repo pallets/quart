@@ -382,7 +382,7 @@ class Response(_BaseRequestResponse, JSONMixin):
             self.content_length = len(bytes_data)
 
     async def make_conditional(
-        self, request_range: Range, max_partial_size: Optional[int] = None
+        self, request_range: Optional[Range], max_partial_size: Optional[int] = None
     ) -> None:
         """Make the response conditional to the
 
@@ -393,7 +393,7 @@ class Response(_BaseRequestResponse, JSONMixin):
 
         """
         self.accept_ranges = "bytes"  # Advertise this ability
-        if len(request_range.ranges) == 0:  # Not a conditional request
+        if request_range is None or len(request_range.ranges) == 0:  # Not a conditional request
             return
 
         if request_range.units != "bytes" or len(request_range.ranges) > 1:
