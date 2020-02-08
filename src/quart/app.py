@@ -222,11 +222,11 @@ class Quart(PackageStatic):
         self.config = self.make_config(instance_relative_config)
 
         self.after_request_funcs: Dict[
-            AppOrBlueprintKey, List[Callable[[Response], Awaitable[None]]]
+            AppOrBlueprintKey, List[Callable[[Response], Awaitable[Response]]]
         ] = defaultdict(list)
         self.after_serving_funcs: List[Callable[[], Awaitable[None]]] = []
         self.after_websocket_funcs: Dict[
-            AppOrBlueprintKey, List[Callable[[Response], Awaitable[None]]]
+            AppOrBlueprintKey, List[Callable[[Response], Awaitable[Optional[Response]]]]
         ] = defaultdict(list)
         self.before_first_request_funcs: List[Callable[[], Awaitable[None]]] = []
         self.before_request_funcs: Dict[
@@ -1232,7 +1232,7 @@ class Quart(PackageStatic):
 
     def after_request(
         self,
-        func: Union[Callable[[Response], None], Callable[[Response], Awaitable[None]]],
+        func: Union[Callable[[Response], Response], Callable[[Response], Awaitable[Response]]],
         name: AppOrBlueprintKey = None,
     ) -> Callable[[Response], Awaitable[None]]:
         """Add an after request function.
@@ -1258,7 +1258,10 @@ class Quart(PackageStatic):
 
     def after_websocket(
         self,
-        func: Union[Callable[[Response], None], Callable[[Response], Awaitable[None]]],
+        func: Union[
+            Callable[[Response], Optional[Response]],
+            Callable[[Response], Awaitable[Optional[Response]]],
+        ],
         name: AppOrBlueprintKey = None,
     ) -> Callable[[Response], Awaitable[None]]:
         """Add an after websocket function.
