@@ -81,7 +81,7 @@ from .testing import (
     sentinel,
 )
 from .typing import FilePath, ResponseReturnValue
-from .utils import file_path_to_path, run_sync
+from .utils import file_path_to_path, is_coroutine_function, run_sync
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
@@ -1429,7 +1429,7 @@ class Quart(PackageStatic):
         run. Before Quart 0.11 this did not run the synchronous code
         in an executor.
         """
-        if asyncio.iscoroutinefunction(func):
+        if is_coroutine_function(func):
             return func
         else:
             return run_sync(func)

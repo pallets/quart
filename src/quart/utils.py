@@ -1,4 +1,7 @@
 import asyncio
+import functools
+import inspect
+import sys
 import warnings
 from contextvars import copy_context
 from functools import partial, wraps
@@ -31,7 +34,7 @@ def ensure_coroutine(func: Callable) -> Callable:
         "Synchronous functions will not be supported in 0.13 onwards.",
         DeprecationWarning,
     )
-    if asyncio.iscoroutinefunction(func):
+    if is_coroutine_function(func):
         return func
     else:
         async_func = asyncio.coroutine(func)
@@ -96,3 +99,32 @@ def run_sync_iterable(iterable: Generator[Any, None, None]) -> AsyncGenerator[An
                 return
 
     return _gen_wrapper()
+
+
+def is_coroutine_function(func: Any) -> bool:
+    # Python < 3.8 does not correctly determine partially wrapped
+    # coroutine functions are coroutine functions, hence the need for
+    # this to exist. Code taken from CPython.
+    if sys.version_info >= (3, 8):
+        return asyncio.iscoroutinefunction(func)
+    else:
+        # Note that there is something special about the CoroutineMock
+        # such that it isn't determined as a coroutine function
+        # without an explicit check.
+        try:
+            from asynctest.mock import CoroutineMock
+
+            if isinstance(func, CoroutineMock):
+                return True
+        except ImportError:
+            # Not testing, no asynctest to import
+            pass
+
+        while inspect.ismethod(func):
+            func = func.__func__
+        while isinstance(func, functools.partial):
+            func = func.func
+        if not inspect.isfunction(func):
+            return False
+        result = bool(func.__code__.co_flags & inspect.CO_COROUTINE)
+        return result or getattr(func, "_is_coroutine", None) is asyncio.coroutines._is_coroutine  # type: ignore # noqa: E501
