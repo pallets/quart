@@ -513,17 +513,15 @@ class Response(_BaseRequestResponse, JSONMixin):
 
     @access_control_allow_methods.setter
     def access_control_allow_methods(self, value: HeaderSet) -> None:
-        self.headers["Access-Control-Allow-Headers"] = dump_header(value)
+        self.headers["Access-Control-Allow-Methods"] = dump_header(value)
 
     @property
-    def access_control_allow_origin(self) -> Optional[HeaderSet]:
-        if "Access-Control-Allow-Origin" in self.headers:
-            return parse_set_header(self.headers["Access-Control-Allow-Origin"])
-        return None
+    def access_control_allow_origin(self) -> Optional[str]:
+        return self.headers.get("Access-Control-Allow-Origin")
 
     @access_control_allow_origin.setter
-    def access_control_allow_origin(self, value: HeaderSet) -> None:
-        self.headers["Access-Control-Allow-Origin"] = dump_header(value)
+    def access_control_allow_origin(self, value: str) -> None:
+        self.headers["Access-Control-Allow-Origin"] = value
 
     @property
     def access_control_expose_headers(self) -> Optional[HeaderSet]:
@@ -543,7 +541,7 @@ class Response(_BaseRequestResponse, JSONMixin):
 
     @access_control_max_age.setter
     def access_control_max_age(self, value: int) -> None:
-        self.headers["Access-Control-Max-Age"] = str(int)
+        self.headers["Access-Control-Max-Age"] = str(value)
 
     @property
     def accept_ranges(self) -> Optional[str]:
