@@ -1,3 +1,41 @@
+0.11.0 2020-02-08
+-----------------
+
+*This contains all the Bugfixes in the 0.6 branch.*
+
+* Allow relative root_path values.
+* Add a TooManyRequests, 429, exception.
+* Run synchronous code via a Thread Pool Executor. This means that
+  sync route handlers, before request, and more, are run in a
+  thread. **This is a major change.**
+* Add an asgi_app method for middleware usage, for example
+  ``quart_app.asgi_app = Middleware(quart_app.asgi_app)``.
+* Add a ``run_sync`` function to run synchronous code in a thread
+  pool with the Quart contexts present.
+* Bugfix set cookies on redirects when testing.
+* Bugfix follow the Flask API for dumps/loads.
+* Support loading configuration with a custom loader, ``from_file``
+  this allows for toml format configurations (among others).
+* Bugfix match the Werkzeug API in redirect.
+* Bugfix Respect QUART_DEBUG when using ``quart run``.
+* Follow the Flask exception propagation rules, ensuring exceptions
+  are propogated in testing.
+* Support Python 3.8.
+* Redirect with a 308 rather than 301 (following Flask/Werkzeug).
+* Add a _QUART_PATCHED marker to all patched modules.
+* Bugfix ensure multiple cookies are respected during testing.
+* Switch to Werkzeug for datastructures and header parsing and
+  dumping. **This is a major change.**
+* Make the lock class customisable by the app subclass, this allows
+  Quart-Trio to override the lock type.
+* Add a run_task method to Quart (app) class. This is a task based on
+  the run method assumptions that can be awaited or run as desired.
+* Switch JSON tag datetime format to allow reading of Flask encoded
+  tags.
+* Switch to Werkzeug's cookie code. **This is a major change.**
+* Switch to Werkzeug's routing code. **This is a major change.**
+* Add signal handling to run method, but not the run_task method.
+
 0.6.15 2019-10-17
 -----------------
 
