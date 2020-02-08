@@ -1,4 +1,5 @@
 import asyncio
+import signal
 import sys
 import warnings
 from collections import defaultdict, OrderedDict
@@ -1573,16 +1574,47 @@ class Quart(PackageStatic):
                 "They may be supported by Hypercorn, which is the ASGI server Quart "
                 "uses by default. This method is meant for development and debugging."
             )
-        task = self.run_task(host, port, debug, use_reloader, ca_certs, certfile, keyfile)
+
+        if loop is None:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        loop.set_debug(debug or False)
+
+        shutdown_event = asyncio.Event()
+
+        def _signal_handler(*_: Any) -> None:
+            shutdown_event.set()
+
+        try:
+            loop.add_signal_handler(signal.SIGTERM, _signal_handler)
+            loop.add_signal_handler(signal.SIGINT, _signal_handler)
+        except (AttributeError, NotImplementedError):
+            pass
+
+        task = self.run_task(
+            host,
+            port,
+            debug,
+            use_reloader,
+            ca_certs,
+            certfile,
+            keyfile,
+            shutdown_trigger=shutdown_event.wait,  # type: ignore
+        )
 
         scheme = "https" if certfile is not None and keyfile is not None else "http"
         print(f"Running on {scheme}://{host}:{port} (CTRL + C to quit)")  # noqa: T001, T002
 
-        if loop is not None:
-            loop.set_debug(debug or False)
+        try:
             loop.run_until_complete(task)
-        else:
-            asyncio.run(task, debug=debug or False)
+        finally:
+            try:
+                _cancel_all_tasks(loop)
+                loop.run_until_complete(loop.shutdown_asyncgens())
+            finally:
+                asyncio.set_event_loop(None)
+                loop.close()
 
     def run_task(
         self,
@@ -1593,6 +1625,7 @@ class Quart(PackageStatic):
         ca_certs: Optional[str] = None,
         certfile: Optional[str] = None,
         keyfile: Optional[str] = None,
+        shutdown_trigger: Optional[Callable[..., Awaitable[None]]] = None,
     ) -> Coroutine[None, None, None]:
         """Return a task that when awaited runs this application.
 
@@ -1625,7 +1658,7 @@ class Quart(PackageStatic):
         config.keyfile = keyfile
         config.use_reloader = use_reloader
 
-        return serve(self, config)
+        return serve(self, config, shutdown_trigger=shutdown_trigger)
 
     def test_client(self) -> QuartClient:
         """Creates and returns a test client."""
@@ -2057,3 +2090,23 @@ def _find_exception_handler(
         if isinstance(error, exception):  # type: ignore
             return handler
     return None
+
+
+def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
+    tasks = [task for task in asyncio.all_tasks(loop) if not task.done()]
+    if not tasks:
+        return
+
+    for task in tasks:
+        task.cancel()
+    loop.run_until_complete(asyncio.gather(*tasks, loop=loop, return_exceptions=True))
+
+    for task in tasks:
+        if not task.cancelled() and task.exception() is not None:
+            loop.call_exception_handler(
+                {
+                    "message": "unhandled exception during shutdown",
+                    "exception": task.exception(),
+                    "task": task,
+                }
+            )
