@@ -38,7 +38,7 @@ from werkzeug.utils import get_content_type
 from ..json import loads
 
 if TYPE_CHECKING:
-    from werkzeug.routing import Rule  # noqa
+    from ..routing import QuartRule  # noqa
 
 sentinel = object()
 
@@ -180,7 +180,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
     parameter_storage_class = ImmutableMultiDict
 
     routing_exception: Optional[Exception] = None
-    url_rule: Optional["Rule"] = None
+    url_rule: Optional["QuartRule"] = None
     view_args: Optional[Dict[str, Any]] = None
 
     def __init__(

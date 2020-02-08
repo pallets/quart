@@ -14,7 +14,6 @@ from typing import (
     Iterable,
     Optional,
     Tuple,
-    TYPE_CHECKING,
     Union,
 )
 from wsgiref.handlers import format_date_time
@@ -42,9 +41,6 @@ from werkzeug.http import (  # type: ignore
 
 from .base import _BaseRequestResponse, JSONMixin
 from ..utils import file_path_to_path, run_sync_iterable
-
-if TYPE_CHECKING:
-    from werkzeug.routing import Rule  # noqa
 
 sentinel = object()
 

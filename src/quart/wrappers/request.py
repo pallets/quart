@@ -1,16 +1,13 @@
 import asyncio
 import io
 from cgi import FieldStorage, parse_header
-from typing import Any, AnyStr, Awaitable, Callable, Generator, List, Optional, TYPE_CHECKING, Union
+from typing import Any, AnyStr, Awaitable, Callable, Generator, List, Optional, Union
 from urllib.parse import parse_qs
 
 from werkzeug.datastructures import CombinedMultiDict, Headers, MultiDict
 
 from .base import BaseRequestWebsocket, JSONMixin
 from ..datastructures import FileStorage
-
-if TYPE_CHECKING:
-    from werkzeug.routing import Rule  # noqa
 
 SERVER_PUSH_HEADERS_TO_COPY = {
     "accept",

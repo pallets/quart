@@ -29,7 +29,7 @@ from typing import (
 from hypercorn.asyncio import serve
 from hypercorn.config import Config as HyperConfig
 from werkzeug.datastructures import Headers
-from werkzeug.routing import Map, MapAdapter, Rule
+from werkzeug.routing import MapAdapter
 
 from .asgi import ASGIHTTPConnection, ASGILifespan, ASGIWebsocketConnection
 from .blueprints import Blueprint
@@ -57,6 +57,7 @@ from .helpers import (
 )
 from .json import JSONDecoder, JSONEncoder, jsonify, tojson_filter
 from .logging import create_logger, create_serving_logger
+from .routing import QuartMap, QuartRule
 from .sessions import SecureCookieSession, SecureCookieSessionInterface, Session
 from .signals import (
     appcontext_tearing_down,
@@ -165,8 +166,8 @@ class Quart(PackageStatic):
     session_interface = SecureCookieSessionInterface()
     test_client_class = QuartClient
     testing = ConfigAttribute("TESTING")
-    url_map_class = Map
-    url_rule_class = Rule
+    url_map_class = QuartMap
+    url_rule_class = QuartRule
     websocket_class = Websocket
 
     def __init__(
@@ -375,38 +376,8 @@ class Quart(PackageStatic):
             subdomain = (
                 (self.url_map.default_subdomain or None) if not self.subdomain_matching else None
             )
-            # The following functionality is in the MapAdapter
-            # bind_to_environ in Werkzeug
-            host = self.config["SERVER_NAME"] or request.host
-            if request.scheme in {"http", "ws"} and host.endswith(":80"):
-                host = host[:-3]
-            elif request.scheme in {"https", "wss"} and host.endswith(":443"):
-                host = host[:-4]
 
-            if subdomain is None and not self.url_map.host_matching:
-                request_host_parts = request.host.split(".")
-                config_host_parts = host.split(".")
-                offset = -len(config_host_parts)
-
-                if request_host_parts[offset:] != config_host_parts:
-                    warnings.warn(
-                        f"Current server name '{request.host}' doesn't match configured"
-                        f" server name '{host}'",
-                        stacklevel=2,
-                    )
-                    subdomain = "<invalid>"
-                else:
-                    subdomain = ".".join(filter(None, request_host_parts[:offset]))
-
-            return self.url_map.bind(
-                host,
-                request.root_path,
-                subdomain,
-                request.scheme,
-                request.method,
-                request.path,
-                request.query_string,
-            )
+            return self.url_map.bind_to_request(request, subdomain, self.config["SERVER_NAME"])
 
         if self.config["SERVER_NAME"] is not None:
             scheme = "https" if self.config["PREFER_SECURE_URLS"] else "http"
@@ -621,7 +592,7 @@ class Quart(PackageStatic):
 
         methods.update(required_methods)
 
-        rule = self.url_rule_class(  # type: ignore
+        rule = self.url_rule_class(
             path,
             methods=methods,
             endpoint=endpoint,
@@ -631,8 +602,8 @@ class Quart(PackageStatic):
             websocket=is_websocket,
             strict_slashes=strict_slashes,
             merge_slashes=merge_slashes,
+            provide_automatic_options=automatic_options,
         )
-        rule.provide_automatic_options = automatic_options  # type: ignore
         self.url_map.add(rule)
 
         if handler is not None:
@@ -1853,7 +1824,7 @@ class Quart(PackageStatic):
         if request_.routing_exception is not None:
             raise request_.routing_exception
 
-        if request_.method == "OPTIONS" and request_.url_rule.provide_automatic_options:  # type: ignore # noqa: E501
+        if request_.method == "OPTIONS" and request_.url_rule.provide_automatic_options:
             return await self.make_default_options_response()
 
         handler = self.view_functions[request_.url_rule.endpoint]
