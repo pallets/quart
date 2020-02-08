@@ -28,6 +28,30 @@ will result in the sync function being run in a thread. Note that you
 are still within the :ref:`contexts`, and hence you can still access
 the ``request``, ``current_app`` and other globals.
 
+The following functionality accepts syncronous functions and will run
+them in a thread,
+
+- Route handlers
+- Endpoint handlers
+- Error handlers
+- Context processors
+- Before request
+- Before websocket
+- Before first request
+- Before serving
+- After request
+- After websocket
+- After serving
+- Teardown request
+- Teardown websocket
+- Teardown app context
+- Open session
+- Make null session
+- Save session
+
+Context usage
+-------------
+
 Whilst you can access the ``request`` and other globals in synchronous
 routes you will be unable to await coroutine functions. To work around
 this Quart provides :meth:`~quart.app.Quart.run_sync` which can be
