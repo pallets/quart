@@ -1,3 +1,10 @@
+0.11.1 2020-02-09
+-----------------
+
+* Bugfix cors header accessors and setters.
+* Bugfix iscoroutinefunction with Python3.7.
+* Bugfix after request/websocket function typing.
+
 0.11.0 2020-02-08
 -----------------
 
