@@ -1,7 +1,8 @@
 import inspect
 import sys
 
-from .templating import render_template_string
+from jinja2 import Template
+
 from .wrappers import Response
 
 TEMPLATE = """
@@ -105,5 +106,6 @@ async def traceback_response() -> Response:
         tb = tb.tb_next
 
     name = type_.__name__
-    html = await render_template_string(TEMPLATE, frames=reversed(frames), name=name, value=value)
+    template = Template(TEMPLATE)
+    html = template.render(frames=reversed(frames), name=name, value=value)
     return Response(html, 500)
