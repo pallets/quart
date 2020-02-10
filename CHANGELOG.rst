@@ -1,3 +1,11 @@
+0.11.2 2020-02-10
+-----------------
+
+* Bugfix debug traceback rendering.
+* Bugfix multipart/form-data parsing.
+* Bugfix uncomment cookie parameters.
+* Bugfix add await to the LocalProxy mappings.
+
 0.11.1 2020-02-09
 -----------------
 
