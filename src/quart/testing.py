@@ -376,7 +376,7 @@ class QuartClient:
         The arguments are the standard cookie morsels and this is a
         wrapper around the stdlib SimpleCookie code.
         """
-        cookie = dump_cookie(
+        cookie = dump_cookie(  # type: ignore
             key,
             value=value,
             max_age=max_age,
@@ -386,7 +386,7 @@ class QuartClient:
             secure=secure,
             httponly=httponly,
             charset=charset,
-            # samesite=samesite,
+            samesite=samesite,
         )
         self.cookie_jar.extract_cookies(
             _TestCookieJarResponse(Headers([("set-cookie", cookie)])),  # type: ignore

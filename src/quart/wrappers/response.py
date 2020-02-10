@@ -441,7 +441,7 @@ class Response(_BaseRequestResponse, JSONMixin):
             value = value.decode()  # type: ignore
         self.headers.add(
             "Set-Cookie",
-            dump_cookie(
+            dump_cookie(  # type: ignore
                 key,
                 value=value,
                 max_age=max_age,
@@ -451,8 +451,8 @@ class Response(_BaseRequestResponse, JSONMixin):
                 secure=secure,
                 httponly=httponly,
                 charset=self.charset,
-                # max_size=self.max_cookie_size,
-                # samesite=samesite,
+                max_size=self.max_cookie_size,
+                samesite=samesite,
             ),
         )
 
