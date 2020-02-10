@@ -179,3 +179,4 @@ class LocalProxy:
     __rdivmod__ = lambda x, o: x._get_current_object().__rdivmod__(o)  # noqa: E731
     __copy__ = lambda x: copy.copy(x._get_current_object())  # noqa: E731
     __deepcopy__ = lambda x, memo: copy.deepcopy(x._get_current_object(), memo)  # noqa: E731
+    __await__ = lambda x: x._get_current_object().__await__()  # noqa: E731
