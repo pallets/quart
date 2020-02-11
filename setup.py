@@ -22,7 +22,6 @@ INSTALL_REQUIRES = [
     "hypercorn >= 0.7.0",
     "itsdangerous",
     "jinja2",
-    "sortedcontainers",
     "toml",
     "werkzeug >= 1.0.0",
 ]
