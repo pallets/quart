@@ -21,7 +21,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../'))
 
-from quart.__about__ import __version__
+from importlib.metadata import version as meta_version
 
 # -- General configuration ------------------------------------------------
 
@@ -56,7 +56,7 @@ author = 'Philip Jones'
 # built documents.
 #
 # The short X.Y version.
-version = __version__
+version = meta_version("quart")
 # The full version, including alpha/beta/rc tags.
 release = version
 
