@@ -1,3 +1,4 @@
+from __future__ import annotations
 from http import HTTPStatus
 from typing import cast, Iterable, NoReturn, Optional, Union
 

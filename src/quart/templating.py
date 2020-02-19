@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, TYPE_CHECKING, Union
 
 from jinja2 import BaseLoader, Environment as BaseEnvironment, Template, TemplateNotFound

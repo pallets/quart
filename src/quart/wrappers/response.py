@@ -1,3 +1,4 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime

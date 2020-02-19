@@ -1,3 +1,4 @@
+from __future__ import annotations
 import quart.flask_patch.app  # isort:skip
 import quart.flask_patch.globals  # isort:skip # noqa: F401
 import quart.views  # isort:skip # noqa: F401

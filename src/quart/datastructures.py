@@ -1,3 +1,4 @@
+from __future__ import annotations
 import io
 from cgi import parse_header
 from shutil import copyfileobj

@@ -1,3 +1,4 @@
+from __future__ import annotations
 from base64 import b64decode, b64encode
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Type
