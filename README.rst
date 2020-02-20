@@ -131,7 +131,7 @@ replace of ``flask`` to ``quart`` and then adding ``async`` and
 details.
 
 
-.. |Build Status| image:: https://gitlab.com/pgjones/quart/badges/master/build.svg
+.. |Build Status| image:: https://gitlab.com/pgjones/quart/badges/master/pipeline.svg
    :target: https://gitlab.com/pgjones/quart/commits/master
 
 .. |docs| image:: https://img.shields.io/badge/docs-passing-brightgreen.svg
