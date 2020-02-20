@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import List
 
 import pytest
-
 from py._path.local import LocalPath
+
 from quart import Quart
 from quart.exceptions import NotFound
 from quart.static import safe_join, send_file, send_from_directory

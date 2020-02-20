@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from jinja2 import escape, Markup
 
 from .__about__ import __version__

@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import hashlib
 from collections.abc import MutableMapping
 from datetime import datetime

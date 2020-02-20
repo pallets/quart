@@ -1,9 +1,9 @@
 from typing import Any
 
-import pytest
-
 import hypothesis.strategies as strategies
+import pytest
 from hypothesis import given
+
 from quart.app import Quart
 from quart.json import dumps, htmlsafe_dumps
 from quart.json.tag import TaggedJSONSerializer

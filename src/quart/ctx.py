@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from functools import wraps
 from types import TracebackType
 from typing import Any, Callable, cast, Iterator, List, Optional, TYPE_CHECKING  # noqa: F401

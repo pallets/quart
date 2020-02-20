@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import asyncio
 import functools
 import inspect
@@ -128,4 +129,4 @@ def is_coroutine_function(func: Any) -> bool:
         if not inspect.isfunction(func):
             return False
         result = bool(func.__code__.co_flags & inspect.CO_COROUTINE)
-        return result or getattr(func, "_is_coroutine", None) is asyncio.coroutines._is_coroutine  # type: ignore # noqa: E501
+        return result or getattr(func, "_is_coroutine", None) is asyncio.coroutines._is_coroutine

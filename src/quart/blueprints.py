@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from functools import update_wrapper
 from json import JSONDecoder, JSONEncoder
 from typing import Callable, Iterable, List, Optional, Type, TYPE_CHECKING, Union

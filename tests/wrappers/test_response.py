@@ -4,12 +4,12 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any, AsyncGenerator
 
-import pytest
-from werkzeug.datastructures import Range
-
 import hypothesis.strategies as strategies
+import pytest
 from hypothesis import given
 from py._path.local import LocalPath
+from werkzeug.datastructures import Range
+
 from quart.exceptions import RequestRangeNotSatisfiable
 from quart.wrappers.response import DataBody, FileBody, IOBody, IterableBody, Response
 
