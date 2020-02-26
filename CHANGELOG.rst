@@ -1,3 +1,8 @@
+0.11.3 2020-02-26
+-----------------
+
+* Bugfix lowercase header names passed to cgi FieldStorage.
+
 0.11.2 2020-02-10
 -----------------
 
