@@ -235,7 +235,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
         elif content_type == "multipart/form-data":
             field_storage = FieldStorage(
                 io.BytesIO(raw_data),
-                headers={**self.headers},  # type: ignore
+                headers={name.lower(): value for name, value in self.headers.items()},
                 environ={"REQUEST_METHOD": "POST"},
                 limit=len(raw_data),
             )
