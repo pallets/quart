@@ -52,10 +52,13 @@ def loads(object_: str, app: Optional["Quart"] = None, **kwargs: Any) -> Any:
 
 
 def htmlsafe_dumps(object_: Any, **kwargs: Any) -> str:
-    # Note in the below the ascii characters are replaced with a
-    # unicode similar version.
-    result = dumps(object_, **kwargs).replace("<", "<").replace(">", ">")
-    return result.replace("&", "&").replace("'", "'")
+    return (
+        dumps(object_, **kwargs)
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("&", "\\u0026")
+        .replace("'", "\\u0027")
+    )
 
 
 def tojson_filter(object_: Any, **kwargs: Any) -> Markup:

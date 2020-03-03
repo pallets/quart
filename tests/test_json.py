@@ -11,11 +11,11 @@ from quart.json.tag import TaggedJSONSerializer
 
 def test_htmlsafe_dumps() -> None:
     script = htmlsafe_dumps("</script>")
-    assert script != "</script>"
-    assert script == '"</script>"'  # Has unicode characters
+    assert script != '"</script>"'
+    assert script == '"\\u003c/script\\u003e"'
     escape = htmlsafe_dumps("&'")
-    assert escape != "&'"
-    assert escape == '"&\'"'  # Has unicode characters
+    assert escape != '"&\'"'
+    assert escape == '"\\u0026\\u0027"'
 
 
 @pytest.mark.parametrize("as_ascii, expected", [(True, '"\\ud83c\\udf8a"'), (False, '"🎊"')])
