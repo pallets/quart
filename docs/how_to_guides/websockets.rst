@@ -64,6 +64,28 @@ independent tasks,
 The gather line is critical, as without it the websocket function
 would return triggering Quart to send a HTTP response.
 
+Detecting disconnection
+-----------------------
+
+When a client disconnects a ``CancelledError`` is raised, which can be
+caught to handle the disconnect,
+
+.. code-block:: python
+
+    @app.websocket('/ws')
+    async def ws():
+        try:
+            while True:
+                data = await websocket.receive()
+                await websocket.send(data)
+        except asyncio.CancelledError:
+            # Handle disconnection here
+            raise
+
+.. warning::
+
+    The ``CancelledError`` must be re-raised.
+
 Testing websockets
 ------------------
 
