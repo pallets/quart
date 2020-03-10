@@ -23,84 +23,19 @@ You are very welcome to open `issues
 <https://gitlab.com/pgjones/quart/issues>`_ or propose `merge requests
 <https://gitlab.com/pgjones/quart/merge_requests>`_.
 
-Flask Documentation
-~~~~~~~~~~~~~~~~~~~
-
 As Quart is an implementation of the Flask API the `Flask
 documentation <http://flask.pocoo.org/docs/>`_ is a great source of
 help for Quart. The Flask documentation is so good that you may be
 better placed consulting it first then returning here to check how
 Quart differs.
 
-Tutorials
----------
+Contents
+--------
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
-   installation.rst
-   quickstart.rst
-   AsyncProgressBar_tutorial.rst
-   blog_tutorial.rst
-   broadcast_tutorial.rst
-   flask_ext_tutorial.rst
-   http2_tutorial.rst
-   video_tutorial.rst
-   websocket_tutorial.rst
-   deployment.rst
-   large_application.rst
-   asyncio.rst
-
-How-To Guides
--------------
-
-.. toctree::
-   :maxdepth: 1
-
-   background_tasks.rst
-   blueprints.rst
-   command_line.rst
-   configuration.rst
-   disconnections.rst
-   event_loop.rst
-   flask_extensions.rst
-   flask_migration.rst
-   json_encoding.rst
-   logging.rst
-   middleware.rst
-   request_body.rst
-   routing.rst
-   session_storage.rst
-   startup_shutdown.rst
-   streaming_response.rst
-   sync_code.rst
-   templating.rst
-   testing.rst
-   quart_extensions.rst
-   using_http2.rst
-   websockets.rst
-
-Discussion Points
------------------
-
-.. toctree::
-   :maxdepth: 1
-
-   async_compatibility.rst
-   contexts.rst
-   design_choices.rst
-   dos_mitigations.rst
-   flask_evolution.rst
-   globals.rst
-   python_versions.rst
-   websockets_discussion.rst
-
-Reference
----------
-
-.. toctree::
-   :maxdepth: 1
-
-   api.rst
-   logo.rst
-   response_values.rst
+   tutorials/index.rst
+   how_to_guides/index.rst
+   discussion/index.rst
+   reference/index.rst

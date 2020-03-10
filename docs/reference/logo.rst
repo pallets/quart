@@ -22,5 +22,5 @@ The logo itself has a lot of meaning, as expressed by @koddr,
     me!.
 
 
-.. image:: _static/logo.png
+.. image:: ../_static/logo.png
    :alt: Quart logo

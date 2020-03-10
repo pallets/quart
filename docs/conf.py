@@ -35,7 +35,7 @@ from importlib.metadata import version as meta_version
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+# templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -48,7 +48,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Quart'
-copyright = '2017, Philip Jones'
+copyright = '2017-2020 Philip Jones'
 author = 'Philip Jones'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -84,23 +84,23 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-import solar_theme
 
-html_theme = 'solar_theme'
-html_theme_path = [solar_theme.theme_path]
+html_theme = "pandas_sphinx_theme"
+html_logo = "_static/logo_short.png"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
-
-html_sidebars = {
-    'index': ['localtoc.html', 'searchbox.html', 'relations.html', 'source.html'],
-    '**': [
-        'sidebar.html', 'localtoc.html', 'searchbox.html', 'relations.html', 'source.html',
-    ],
+html_theme_options = {
+  "external_links": [
+      {"name": "Source code", "url": "https://gitlab.com/pgjones/quart"},
+      {"name": "Issues", "url": "https://gitlab.com/pgjones/quart/issues"},
+      {"name": "Flask documentation", "url": "http://flask.pocoo.org/docs/"},
+  ]
 }
+
+# html_sidebars = {}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
