@@ -68,7 +68,7 @@ Context testing
 ---------------
 
 It is often necessary to test something within the app or request
-:doc:`contexts`.  This is simple enough for the app context,
+contexts.  This is simple enough for the app context,
 
 .. code-block:: python
 

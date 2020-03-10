@@ -12,7 +12,7 @@ the Hyper Text Transfer Protocol used to transfer web data.
     Hypercorn, does.
 
 To use HTTP/2 in development you will need to create some SSL
-certificates and run Quart with SSL. See the :doc:`http2_tutorial`.
+certificates and run Quart with SSL.
 
 Server push or push promises
 ----------------------------
