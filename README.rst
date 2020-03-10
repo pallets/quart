@@ -59,6 +59,9 @@ if the above is in a file called ``app.py`` it can be run as,
 
     $ python app.py
 
+Also see this `cheatsheet
+<https://pgjones.gitlab.io/quart/reference/cheatsheet.html>`_.
+
 To deploy in a production setting see the `deployment
 <https://pgjones.gitlab.io/quart/deployment.html>`_ documentation.
 
