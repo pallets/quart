@@ -6,6 +6,8 @@ Using Quart Extensions
 There are a number of extensions for Quart, some of which are listed
 here,
 
+- `Quart-Auth <https://gitlab.com/pgjones/quart-auth>`_ Secure cookie
+  sessions, allows login, authentication and logout.
 - `Quart-compress <https://github.com/AceFire6/quart-compress>`_
   compress your application's responses with gzip.
 - `Quart-compress2
