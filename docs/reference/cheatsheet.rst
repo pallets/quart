@@ -127,3 +127,16 @@ Abort
     @app.route("/hello")
     async def hello():
         abort(409)
+
+
+HTTP/2 & HTTP/3 Server Push
+---------------------------
+
+.. code-block:: python
+
+    from quart import make_push_promise, url_for
+
+    @app.route("/hello")
+    async def hello():
+        await make_push_promise(url_for('static', filename='css/minimal.css'))
+        ...
