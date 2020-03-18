@@ -82,8 +82,8 @@ Request
         request.headers["X-Bob"]
         request.args.get("a")  # Query string e.g. example.com/hello?a=2
         await request.get_data()  # Full raw body
-        await request.form["name"]
-        await request.get_json()["key"]
+        (await request.form)["name"]
+        (await request.get_json())["key"]
         request.cookies.get("name")
 
 WebSocket
