@@ -16,9 +16,9 @@ apps. This is possible as the Quart API is a superset of the `Flask
 Quart aims to be a complete web microframework, as it supports
 HTTP/1.1, HTTP/2 and websockets. Quart is very extendable and has a
 number of known `extensions
-<https://pgjones.gitlab.io/quart/quart_extensions.html>`_ and works
+<https://pgjones.gitlab.io/quart/how_to_guides/quart_extensions.html>`_ and works
 with many of the `Flask extensions
-<https://pgjones.gitlab.io/quart/flask_extensions.html>`_.
+<https://pgjones.gitlab.io/quart/how_to_guides/flask_extensions.html>`_.
 
 Quickstart
 ----------
@@ -31,7 +31,7 @@ Quart can be installed via `pip
     $ pip install quart
 
 and requires Python 3.7.0 or higher (see `python version support
-<https://pgjones.gitlab.io/quart/python_versions.html>`_ for
+<https://pgjones.gitlab.io/quart/discussion/python_versions.html>`_ for
 reasoning).
 
 A minimal Quart example is,
@@ -63,7 +63,7 @@ Also see this `cheatsheet
 <https://pgjones.gitlab.io/quart/reference/cheatsheet.html>`_.
 
 To deploy in a production setting see the `deployment
-<https://pgjones.gitlab.io/quart/deployment.html>`_ documentation.
+<https://pgjones.gitlab.io/quart/tutorials/deployment.html>`_ documentation.
 
 Features
 --------
