@@ -85,7 +85,7 @@ todo_include_todos = False
 # a list of builtin themes.
 #
 
-html_theme = "pandas_sphinx_theme"
+html_theme = "pydata_sphinx_theme"
 html_logo = "_static/logo_short.png"
 
 # Theme options are theme-specific and customize the look and feel of a theme
