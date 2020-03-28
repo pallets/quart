@@ -533,7 +533,7 @@ class Quart(PackageStatic):
         *,
         provide_automatic_options: Optional[bool] = None,
         is_websocket: bool = False,
-        strict_slashes: bool = True,
+        strict_slashes: Optional[bool] = None,
         merge_slashes: Optional[bool] = None,
     ) -> None:
         """Add a route/url rule to the application.
