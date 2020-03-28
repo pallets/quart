@@ -77,6 +77,8 @@ def _normalise_host(scheme: str, host: str) -> str:
     # It is not common to write port 80 or 443 for a hostname,
     # so strip it if present.
     if scheme in {"http", "ws"} and host.endswith(":80"):
-        return  host[:-3]
+        return host[:-3]
     elif scheme in {"https", "wss"} and host.endswith(":443"):
-        return  host[:-4]
+        return host[:-4]
+    else:
+        return host
