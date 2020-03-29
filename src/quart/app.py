@@ -467,7 +467,7 @@ class Quart(PackageStatic):
         subdomain: Optional[str] = None,
         *,
         provide_automatic_options: Optional[bool] = None,
-        strict_slashes: bool = True,
+        strict_slashes: Optional[bool] = None,
     ) -> Callable:
         """Add a route to the application.
 
@@ -626,7 +626,7 @@ class Quart(PackageStatic):
         host: Optional[str] = None,
         subdomain: Optional[str] = None,
         *,
-        strict_slashes: bool = True,
+        strict_slashes: Optional[bool] = None,
     ) -> Callable:
         """Add a websocket to the application.
 
@@ -684,7 +684,7 @@ class Quart(PackageStatic):
         host: Optional[str] = None,
         subdomain: Optional[str] = None,
         *,
-        strict_slashes: bool = True,
+        strict_slashes: Optional[bool] = None,
     ) -> None:
         """Add a websocket url rule to the application.
 

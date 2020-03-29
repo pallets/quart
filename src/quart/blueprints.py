@@ -62,7 +62,7 @@ class Blueprint(PackageStatic):
         subdomain: Optional[str] = None,
         *,
         provide_automatic_options: Optional[bool] = None,
-        strict_slashes: bool = True,
+        strict_slashes: Optional[bool] = None,
     ) -> Callable:
         """Add a route to the blueprint.
 
@@ -105,7 +105,7 @@ class Blueprint(PackageStatic):
         *,
         provide_automatic_options: Optional[bool] = None,
         is_websocket: bool = False,
-        strict_slashes: bool = True,
+        strict_slashes: Optional[bool] = None,
     ) -> None:
         """Add a route/url rule to the blueprint.
 
@@ -147,7 +147,7 @@ class Blueprint(PackageStatic):
         host: Optional[str] = None,
         subdomain: Optional[str] = None,
         *,
-        strict_slashes: bool = True,
+        strict_slashes: Optional[bool] = None,
     ) -> Callable:
         """Add a websocket to the blueprint.
 
@@ -185,7 +185,7 @@ class Blueprint(PackageStatic):
         host: Optional[str] = None,
         subdomain: Optional[str] = None,
         *,
-        strict_slashes: bool = True,
+        strict_slashes: Optional[bool] = None,
     ) -> None:
         """Add a websocket rule to the blueprint.
 
@@ -804,7 +804,7 @@ class BlueprintSetupState:
         *,
         provide_automatic_options: Optional[bool] = None,
         is_websocket: bool = False,
-        strict_slashes: bool = True,
+        strict_slashes: Optional[bool] = None,
     ) -> None:
         if self.url_prefix is not None:
             path = f"{self.url_prefix}{path}"
