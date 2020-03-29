@@ -1399,7 +1399,13 @@ class Quart(PackageStatic):
         self.teardown_appcontext_funcs.append(handler)
         return handler
 
-    def register_blueprint(self, blueprint: Blueprint, url_prefix: Optional[str] = None) -> None:
+    def register_blueprint(
+        self,
+        blueprint: Blueprint,
+        url_prefix: Optional[str] = None,
+        *,
+        subdomain: Optional[str] = None,
+    ) -> None:
         """Register a blueprint on the app.
 
         This results in the blueprint's routes, error handlers
@@ -1419,7 +1425,7 @@ class Quart(PackageStatic):
         else:
             self.blueprints[blueprint.name] = blueprint
             first_registration = True
-        blueprint.register(self, first_registration, url_prefix=url_prefix)
+        blueprint.register(self, first_registration, url_prefix=url_prefix, subdomain=subdomain)
 
     def iter_blueprints(self) -> ValuesView[Blueprint]:
         """Return a iterator over the blueprints."""

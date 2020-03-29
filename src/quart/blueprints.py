@@ -739,10 +739,17 @@ class Blueprint(PackageStatic):
         self.record(update_wrapper(wrapper, func))
 
     def register(
-        self, app: "Quart", first_registration: bool, *, url_prefix: Optional[str] = None
+        self,
+        app: "Quart",
+        first_registration: bool,
+        *,
+        url_prefix: Optional[str] = None,
+        subdomain: Optional[str] = None,
     ) -> None:
         """Register this blueprint on the app given."""
-        state = self.make_setup_state(app, first_registration, url_prefix=url_prefix)
+        state = self.make_setup_state(
+            app, first_registration, url_prefix=url_prefix, subdomain=subdomain
+        )
 
         if self.has_static_folder:
             state.add_url_rule(
@@ -755,7 +762,12 @@ class Blueprint(PackageStatic):
             func(state)
 
     def make_setup_state(
-        self, app: "Quart", first_registration: bool, *, url_prefix: Optional[str] = None
+        self,
+        app: "Quart",
+        first_registration: bool,
+        *,
+        url_prefix: Optional[str] = None,
+        subdomain: Optional[str] = None,
     ) -> "BlueprintSetupState":
         """Return a blueprint setup state instance.
 
@@ -764,7 +776,9 @@ class Blueprint(PackageStatic):
                 of this blueprint on the app.
             url_prefix: An optional prefix to all rules
         """
-        return BlueprintSetupState(self, app, first_registration, url_prefix=url_prefix)
+        return BlueprintSetupState(
+            self, app, first_registration, url_prefix=url_prefix, subdomain=subdomain
+        )
 
 
 class BlueprintSetupState:
@@ -785,12 +799,15 @@ class BlueprintSetupState:
         app: "Quart",
         first_registration: bool,
         *,
+        subdomain: Optional[str] = None,
         url_prefix: Optional[str] = None,
     ) -> None:
         self.blueprint = blueprint
         self.app = app
         self.url_prefix = url_prefix or self.blueprint.url_prefix
         self.first_registration = first_registration
+        if subdomain is None:
+            self.subdomain = blueprint.subdomain
 
     def add_url_rule(
         self,
@@ -808,6 +825,8 @@ class BlueprintSetupState:
     ) -> None:
         if self.url_prefix is not None:
             path = f"{self.url_prefix}{path}"
+        if subdomain is None:
+            subdomain = self.subdomain
         endpoint = f"{self.blueprint.name}.{endpoint}"
         self.app.add_url_rule(
             path,
