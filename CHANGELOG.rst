@@ -1,3 +1,12 @@
+0.11.4 2020-03-29
+-----------------
+
+* Bugfix add a testing patch to ensure FlaskClient exists.
+* Security/Bugfix htmlsafe function.
+* Bugfix default to the map's strict slashes setting.
+* Bugfix host normalisation for route matching.
+* Bugfix add subdomain to the blueprint API.
+
 0.11.3 2020-02-26
 -----------------
 
