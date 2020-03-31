@@ -1,3 +1,9 @@
+0.11.5 2020-03-31
+-----------------
+
+* Bugfix ensure any exceptions are raised in the ASGI handling code.
+* Bugfix support url defaults in the blueprint API.
+
 0.11.4 2020-03-29
 -----------------
 
