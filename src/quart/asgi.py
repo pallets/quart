@@ -24,10 +24,11 @@ class ASGIHTTPConnection:
         request = self._create_request_from_scope(send)
         receiver_task = asyncio.ensure_future(self.handle_messages(request, receive))
         handler_task = asyncio.ensure_future(self.handle_request(request, send))
-        _, pending = await asyncio.wait(
+        done, pending = await asyncio.wait(
             [handler_task, receiver_task], return_when=asyncio.FIRST_COMPLETED
         )
         await _cancel_tasks(pending)
+        _raise_exceptions(done)
 
     async def handle_messages(self, request: Request, receive: Callable) -> None:
         while True:
@@ -110,10 +111,11 @@ class ASGIWebsocketConnection:
         websocket = self._create_websocket_from_scope(send)
         receiver_task = asyncio.ensure_future(self.handle_messages(receive))
         handler_task = asyncio.ensure_future(self.handle_websocket(websocket, send))
-        _, pending = await asyncio.wait(
+        done, pending = await asyncio.wait(
             [handler_task, receiver_task], return_when=asyncio.FIRST_COMPLETED
         )
         await _cancel_tasks(pending)
+        _raise_exceptions(done)
 
     async def handle_messages(self, receive: Callable) -> None:
         while True:
@@ -221,6 +223,10 @@ async def _cancel_tasks(tasks: Set[asyncio.Future]) -> None:
     for task in tasks:
         task.cancel()
     await asyncio.gather(*tasks, return_exceptions=True)
+    _raise_exceptions(tasks)
+
+
+def _raise_exceptions(tasks: Set[asyncio.Future]) -> None:
     # Raise any unexcepted exceptions
     for task in tasks:
         if not task.cancelled() and task.exception() is not None:
