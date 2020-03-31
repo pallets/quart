@@ -45,12 +45,16 @@ class Blueprint(PackageStatic):
         url_prefix: Optional[str] = None,
         subdomain: Optional[str] = None,
         root_path: Optional[str] = None,
+        url_defaults: Optional[dict] = None,
     ) -> None:
         super().__init__(import_name, template_folder, root_path, static_folder, static_url_path)
         self.name = name
         self.url_prefix = url_prefix
         self.deferred_functions: List[DeferedSetupFunction] = []
         self.subdomain = subdomain
+        if url_defaults is None:
+            url_defaults = {}
+        self.url_values_defaults = url_defaults
 
     def route(
         self,
@@ -801,6 +805,7 @@ class BlueprintSetupState:
         *,
         subdomain: Optional[str] = None,
         url_prefix: Optional[str] = None,
+        url_defaults: Optional[dict] = None,
     ) -> None:
         self.blueprint = blueprint
         self.app = app
@@ -808,6 +813,9 @@ class BlueprintSetupState:
         self.first_registration = first_registration
         if subdomain is None:
             self.subdomain = blueprint.subdomain
+        self.url_defaults = dict(self.blueprint.url_values_defaults)
+        if url_defaults is not None:
+            self.url_defaults.update(url_defaults)
 
     def add_url_rule(
         self,
@@ -828,12 +836,15 @@ class BlueprintSetupState:
         if subdomain is None:
             subdomain = self.subdomain
         endpoint = f"{self.blueprint.name}.{endpoint}"
+        url_defaults = self.url_defaults
+        if defaults is not None:
+            url_defaults.update(defaults)
         self.app.add_url_rule(
             path,
             endpoint,
             view_func,
             methods,
-            defaults,
+            url_defaults,
             host=host,
             subdomain=subdomain,
             provide_automatic_options=provide_automatic_options,
