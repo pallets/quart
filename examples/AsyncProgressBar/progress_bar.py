@@ -29,9 +29,10 @@ async def check_status():
     try:
         if await aredis.get('state') == b'running':
             if await aredis.get('processed') != await aredis.get('lastProcessed'):
+                processed = int(await aredis.get('processed'))
                 await aredis.set('percent', round(
-                    int(await aredis.get('processed')) / int(await aredis.get('length_of_work')) * 100, 2))
-                await aredis.set('lastProcessed', str(await aredis.get('processed')))
+                    processed / int(await aredis.get('length_of_work')) * 100, 2))
+                await aredis.set('lastProcessed', str(processed))
     except:
         pass
 
