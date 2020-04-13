@@ -84,14 +84,18 @@ def test_run_command(app: Mock) -> None:
     runner = CliRunner()
     os.environ["QUART_APP"] = "module:app"
     runner.invoke(cli, ["run"])
-    app.run.assert_called_once_with(debug=False, host="127.0.0.1", port=5000, use_reloader=True)
+    app.run.assert_called_once_with(
+        debug=False, host="127.0.0.1", port=5000, certfile=None, keyfile=None, use_reloader=True
+    )
 
 
 def test_run_command_development(dev_app: Mock, dev_env: None) -> None:
     runner = CliRunner()
     os.environ["QUART_APP"] = "module:app"
     runner.invoke(cli, ["run"])
-    dev_app.run.assert_called_once_with(debug=True, host="127.0.0.1", port=5000, use_reloader=True)
+    dev_app.run.assert_called_once_with(
+        debug=True, host="127.0.0.1", port=5000, certfile=None, keyfile=None, use_reloader=True
+    )
 
 
 def test_run_command_development_debug_disabled(
@@ -100,4 +104,6 @@ def test_run_command_development_debug_disabled(
     runner = CliRunner()
     os.environ["QUART_APP"] = "module:app"
     runner.invoke(cli, ["run"])
-    dev_app.run.assert_called_once_with(debug=False, host="127.0.0.1", port=5000, use_reloader=True)
+    dev_app.run.assert_called_once_with(
+        debug=False, host="127.0.0.1", port=5000, certfile=None, keyfile=None, use_reloader=True
+    )

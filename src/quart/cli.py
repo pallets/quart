@@ -185,11 +185,25 @@ class QuartGroup(AppGroup):
 @click.command("run", short_help="Start and run a development server.")
 @click.option("--host", "-h", default="127.0.0.1", help="The interface to serve on.")
 @click.option("--port", "-p", default=5000, help="The port to serve on.")
+@click.option(
+    "--certfile",
+    "--cert",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    help="The path of the certificate",
+)
+@click.option(
+    "--keyfile",
+    "--key",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    help="The path of the key",
+)
 @pass_script_info
-def run_command(info: ScriptInfo, host: str, port: int) -> None:
+def run_command(info: ScriptInfo, host: str, port: int, certfile: str, keyfile: str) -> None:
     debug = get_debug_flag()
     app = info.load_app()
-    app.run(debug=debug, host=host, port=port, use_reloader=True)
+    app.run(
+        debug=debug, host=host, port=port, certfile=certfile, keyfile=keyfile, use_reloader=True
+    )
 
 
 @click.command("shell", short_help="Open a shell within the app context.")
