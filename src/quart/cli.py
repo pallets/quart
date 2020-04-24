@@ -71,10 +71,24 @@ class ScriptInfo:
                     else:
                         raise
 
-                try:
+                is_function = app_name.endswith(')')
+                if is_function:  # e.g. "create_app()"
+                    # Make sure the function exists
+                    function_name = app_name[0:app_name.find('(')]
+                    try:
+                        eval(function_name, vars(module))
+                    except NameError:
+                        raise NoAppException()
+                        
+                    # Call the function and let errors bubble up
                     self._app = eval(app_name, vars(module))
-                except NameError:
-                    raise NoAppException()
+                    
+                else:  # e.g., "app"
+                    # Make sure the non-function member exists
+                    try:
+                        self._app = eval(app_name, vars(module))
+                    except NameError:
+                        raise NoAppException()
 
                 from .app import Quart
 
