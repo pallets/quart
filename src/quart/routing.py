@@ -69,7 +69,7 @@ class QuartMap(Map):
             request.scheme,
             request.method,
             request.path,
-            request.query_string,
+            request.query_string.decode(),
         )
 
 
