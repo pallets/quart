@@ -13,7 +13,7 @@ py38:
 pages:
   image: python:3.8
   script:
-  - pip install 'sphinx<3.0.2' pydata-sphinx-theme
+  - pip install sphinx pydata-sphinx-theme
   - python setup.py install
   - rm -rf docs/source && sphinx-apidoc -e -f -o docs/reference/source/ src/quart/
   - cd docs/ && make html && cd ../
