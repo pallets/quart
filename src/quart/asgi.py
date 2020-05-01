@@ -62,6 +62,7 @@ class ASGIHTTPConnection:
             max_content_length=self.app.config["MAX_CONTENT_LENGTH"],
             body_timeout=self.app.config["BODY_TIMEOUT"],
             send_push_promise=partial(self._send_push_promise, send),
+            scope=self.scope,
         )
 
     async def handle_request(self, request: Request, send: Callable) -> None:

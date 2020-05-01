@@ -205,3 +205,19 @@ def test__encode_headers() -> None:
 
 def test__convert_version() -> None:
     assert _convert_version("2.1") == [2, 1]
+
+
+def test_http_asgi_scope_from_request() -> None:
+    app = Quart(__name__)
+    scope = {
+        "headers": [(b"host", b"quart")],
+        "http_version": "1.0",
+        "method": "GET",
+        "scheme": "https",
+        "path": "/",
+        "query_string": b"",
+        "test_result": "PASSED",
+    }
+    connection = ASGIHTTPConnection(app, scope)
+    request = connection._create_request_from_scope(lambda: None)
+    assert request.scope["test_result"] == "PASSED"

@@ -139,6 +139,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
         max_content_length: Optional[int] = None,
         body_timeout: Optional[int] = None,
         send_push_promise: Callable[[str, Headers], Awaitable[None]],
+        scope: Optional[dict] = None,
     ) -> None:
         """Create a request object.
 
@@ -159,6 +160,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
                 body before timing out.
             send_push_promise: An awaitable to send a push promise based
                 off of this request (HTTP/2 feature).
+            scope: Underlying ASGI scope dictionary.
         """
         super().__init__(method, scheme, path, query_string, headers, root_path, http_version)
         self.body_timeout = body_timeout
@@ -166,6 +168,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
         self._form: Optional[MultiDict] = None
         self._files: Optional[MultiDict] = None
         self._send_push_promise = send_push_promise
+        self.scope = scope
 
     async def get_data(self, raw: bool = True) -> AnyStr:
         """The request body data."""
