@@ -742,18 +742,17 @@ class Blueprint(PackageStatic):
 
         self.record(update_wrapper(wrapper, func))
 
-    def register(
-        self,
-        app: "Quart",
-        first_registration: bool,
-        *,
-        url_prefix: Optional[str] = None,
-        subdomain: Optional[str] = None,
-    ) -> None:
-        """Register this blueprint on the app given."""
-        state = self.make_setup_state(
-            app, first_registration, url_prefix=url_prefix, subdomain=subdomain
-        )
+    def register(self, app: "Quart", options: dict, first_registration: bool = False) -> None:
+        """Register this blueprint on the app given.
+
+        Arguments:
+            app: The application this blueprint is being registered with.
+            options: Keyword arguments forwarded from
+                :meth:`~quart.Quart.register_blueprint`.
+            first_registration: Whether this is the first time this
+                blueprint has been registered on the application.
+        """
+        state = self.make_setup_state(app, options, first_registration)
 
         if self.has_static_folder:
             state.add_url_rule(
@@ -766,23 +765,19 @@ class Blueprint(PackageStatic):
             func(state)
 
     def make_setup_state(
-        self,
-        app: "Quart",
-        first_registration: bool,
-        *,
-        url_prefix: Optional[str] = None,
-        subdomain: Optional[str] = None,
+        self, app: "Quart", options: dict, first_registration: bool = False,
     ) -> "BlueprintSetupState":
         """Return a blueprint setup state instance.
 
         Arguments:
             first_registration: True if this is the first registration
                 of this blueprint on the app.
-            url_prefix: An optional prefix to all rules
+            options: Keyword arguments forwarded from
+                :meth:`~quart.Quart.register_blueprint`.
+            first_registration: Whether this is the first time this
+                blueprint has been registered on the application.
         """
-        return BlueprintSetupState(
-            self, app, first_registration, url_prefix=url_prefix, subdomain=subdomain
-        )
+        return BlueprintSetupState(self, app, options, first_registration)
 
 
 class BlueprintSetupState:
@@ -798,24 +793,16 @@ class BlueprintSetupState:
     """
 
     def __init__(
-        self,
-        blueprint: Blueprint,
-        app: "Quart",
-        first_registration: bool,
-        *,
-        subdomain: Optional[str] = None,
-        url_prefix: Optional[str] = None,
-        url_defaults: Optional[dict] = None,
+        self, blueprint: Blueprint, app: "Quart", options: dict, first_registration: bool,
     ) -> None:
         self.blueprint = blueprint
         self.app = app
-        self.url_prefix = url_prefix or self.blueprint.url_prefix
+        self.options = options
+        self.url_prefix = options.get("url_prefix") or blueprint.url_prefix
         self.first_registration = first_registration
-        if subdomain is None:
-            self.subdomain = blueprint.subdomain
+        self.subdomain = options.get("subdomain") or blueprint.subdomain
         self.url_defaults = dict(self.blueprint.url_values_defaults)
-        if url_defaults is not None:
-            self.url_defaults.update(url_defaults)
+        self.url_defaults.update(options.get("url_defaults", {}))
 
     def add_url_rule(
         self,

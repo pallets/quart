@@ -1399,13 +1399,7 @@ class Quart(PackageStatic):
         self.teardown_appcontext_funcs.append(handler)
         return handler
 
-    def register_blueprint(
-        self,
-        blueprint: Blueprint,
-        url_prefix: Optional[str] = None,
-        *,
-        subdomain: Optional[str] = None,
-    ) -> None:
+    def register_blueprint(self, blueprint: Blueprint, **options: Any) -> None:
         """Register a blueprint on the app.
 
         This results in the blueprint's routes, error handlers
@@ -1414,18 +1408,24 @@ class Quart(PackageStatic):
         Arguments:
             blueprint: The blueprint to register.
             url_prefix: Optional prefix to apply to all paths.
+            subdomain: Blueprint routes will match on this subdomain.
+            url_defaults: Blueprint routes will use these default values for view arguments.
+            options: Additional keyword arguments are passed to
+                    :class:`~quart.blueprints.BlueprintSetupState`. They can be
+                    accessed in :meth:`~quart.blueprints.Blueprint.record` callbacks.
         """
         first_registration = False
-        if blueprint.name in self.blueprints and self.blueprints[blueprint.name] is not blueprint:
-            raise RuntimeError(
-                f"Blueprint name '{blueprint.name}' "
-                f"is already registered by {self.blueprints[blueprint.name]}. "
-                "Blueprints must have unique names"
-            )
+        if blueprint.name in self.blueprints:
+            if self.blueprints[blueprint.name] is not blueprint:
+                raise RuntimeError(
+                    f"Blueprint name '{blueprint.name}' "
+                    f"is already registered by {self.blueprints[blueprint.name]}. "
+                    "Blueprints must have unique names"
+                )
         else:
             self.blueprints[blueprint.name] = blueprint
             first_registration = True
-        blueprint.register(self, first_registration, url_prefix=url_prefix, subdomain=subdomain)
+        blueprint.register(self, options, first_registration)
 
     def iter_blueprints(self) -> ValuesView[Blueprint]:
         """Return a iterator over the blueprints."""
