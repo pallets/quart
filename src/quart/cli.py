@@ -112,7 +112,7 @@ pass_script_info = click.make_pass_decorator(ScriptInfo, ensure=True)
 class AppGroup(click.Group):
     def group(self, *args: Any, **kwargs: Any) -> Any:
         kwargs.setdefault("cls", AppGroup)
-        return super().group(self, *args, **kwargs)
+        return super().group(*args, **kwargs)
 
 
 def get_version(ctx: Any, param: Any, value: Any) -> None:
