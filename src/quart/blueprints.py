@@ -802,7 +802,7 @@ class BlueprintSetupState:
         self.first_registration = first_registration
         self.subdomain = options.get("subdomain") or blueprint.subdomain
         self.url_defaults = dict(self.blueprint.url_values_defaults)
-        self.url_defaults.update(options.get("url_defaults", {}))
+        self.url_defaults.update(options.get("url_defaults", {}) or {})
 
     def add_url_rule(
         self,
