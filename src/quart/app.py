@@ -1399,7 +1399,15 @@ class Quart(PackageStatic):
         self.teardown_appcontext_funcs.append(handler)
         return handler
 
-    def register_blueprint(self, blueprint: Blueprint, **options: Any) -> None:
+    def register_blueprint(
+        self,
+        blueprint: Blueprint,
+        *,
+        url_prefix: Optional[str] = None,
+        url_defaults: Dict[str, Any] = None,
+        subdomain: Optional[str] = None,
+        **options: Any,
+    ) -> None:
         """Register a blueprint on the app.
 
         This results in the blueprint's routes, error handlers
@@ -1408,11 +1416,8 @@ class Quart(PackageStatic):
         Arguments:
             blueprint: The blueprint to register.
             url_prefix: Optional prefix to apply to all paths.
-            subdomain: Blueprint routes will match on this subdomain.
             url_defaults: Blueprint routes will use these default values for view arguments.
-            options: Additional keyword arguments are passed to
-                    :class:`~quart.blueprints.BlueprintSetupState`. They can be
-                    accessed in :meth:`~quart.blueprints.Blueprint.record` callbacks.
+            subdomain: Blueprint routes will match on this subdomain.
         """
         first_registration = False
         if blueprint.name in self.blueprints:
@@ -1425,7 +1430,15 @@ class Quart(PackageStatic):
         else:
             self.blueprints[blueprint.name] = blueprint
             first_registration = True
-        blueprint.register(self, options, first_registration)
+
+        blueprint.register(
+            app=self,
+            options={
+                **dict(url_prefix=url_prefix, url_defaults=url_defaults, subdomain=subdomain),
+                **options,
+            },
+            first_registration=first_registration,
+        )
 
     def iter_blueprints(self) -> ValuesView[Blueprint]:
         """Return a iterator over the blueprints."""
