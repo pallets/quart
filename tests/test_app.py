@@ -32,14 +32,18 @@ def test_endpoint_overwrite() -> None:
     async def route3() -> str:
         return ""
 
-    app.add_url_rule("/a", "index", route, ["GET"])
-    app.add_url_rule("/a/a", "index", route, ["GET"])  # Should not assert, as same view func
+    app.add_url_rule("/a", "index", route, methods=["GET"])
+    app.add_url_rule(
+        "/a/a", "index", route, methods=["GET"]
+    )  # Should not assert, as same view func
     with pytest.raises(AssertionError):
-        app.add_url_rule("/a/b", "index", route2, ["GET"])
-    app.add_url_rule("/b", "async", route3, ["GET"])
-    app.add_url_rule("/b/a", "async", route3, ["GET"])  # Should not assert, as same view func
+        app.add_url_rule("/a/b", "index", route2, methods=["GET"])
+    app.add_url_rule("/b", "async", route3, methods=["GET"])
+    app.add_url_rule(
+        "/b/a", "async", route3, methods=["GET"]
+    )  # Should not assert, as same view func
     with pytest.raises(AssertionError):
-        app.add_url_rule("/b/b", "async", route2, ["GET"])
+        app.add_url_rule("/b/b", "async", route2, methods=["GET"])
 
 
 @pytest.mark.parametrize(
@@ -66,7 +70,7 @@ def test_add_url_rule_methods(
 
     non_func_methods = {"PATCH"} if not methods else None
     app.add_url_rule(
-        "/", "end", route, non_func_methods, provide_automatic_options=automatic_options
+        "/", "end", route, methods=non_func_methods, provide_automatic_options=automatic_options
     )
     result = {"PATCH"} if not methods else set()
     if automatic_options:
@@ -103,7 +107,7 @@ def test_add_url_rule_automatic_options(
 
     route.provide_automatic_options = func_automatic  # type: ignore
 
-    app.add_url_rule("/", "end", route, methods, provide_automatic_options=arg_automatic)
+    app.add_url_rule("/", "end", route, methods=methods, provide_automatic_options=arg_automatic)
     assert app.url_map._rules_by_endpoint["end"][0].methods == expected_methods  # type: ignore
     assert app.url_map._rules_by_endpoint["end"][0].provide_automatic_options == expected_automatic  # type: ignore  # noqa: E501
 
