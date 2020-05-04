@@ -12,7 +12,7 @@ class View:
     """Use to define routes within a class structure.
 
     A View subclass must implement the :meth:`dispatch_request` in
-    order to respond to requets. For automatic method finding based on
+    order to respond to requests. For automatic method finding based on
     the request HTTP Verb see :class:`MethodView`.
 
     An example usage is,
@@ -89,7 +89,7 @@ class MethodViewType(type):
 class MethodView(View, metaclass=MethodViewType):
     """A HTTP Method (verb) specific view class.
 
-    This has an implementation of :meth:`dispathc_request` such that
+    This has an implementation of :meth:`dispatch_request` such that
     it calls a method based on the verb i.e. GET requests are handled
     by a `get` method. For example,
 

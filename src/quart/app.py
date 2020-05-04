@@ -191,7 +191,7 @@ class Quart(PackageStatic):
         Use to create a new web application to which requests should
         be handled, as specified by the various attached url
         rules. See also :class:`~quart.static.PackageStatic` for
-        additional constructutor arguments.
+        additional constructor arguments.
 
         Arguments:
             import_name: The name at import of the application, use
@@ -243,7 +243,7 @@ class Quart(PackageStatic):
             AppOrBlueprintKey, Dict[Exception, Callable[[Exception], Awaitable[None]]]
         ] = defaultdict(dict)
         self.extensions: Dict[str, Any] = {}
-        self.shell_context_processors: List[Callable[[], None]] = []
+        self.shell_context_processors: List[Callable[[], Dict[str, Any]]] = []
         self.teardown_appcontext_funcs: List[
             Callable[[Optional[BaseException]], Awaitable[None]]
         ] = []
@@ -303,7 +303,7 @@ class Quart(PackageStatic):
         """Return true if exceptions should be propagated into debug pages.
 
         If false the exception will be handled. See the
-        ``PROPAGATE_EXCEPTIONS`` config settin.
+        ``PROPAGATE_EXCEPTIONS`` config setting.
         """
         propagate = self.config["PROPAGATE_EXCEPTIONS"]
         if propagate is not None:
@@ -341,7 +341,7 @@ class Quart(PackageStatic):
         return self._got_first_request
 
     def auto_find_instance_path(self) -> Path:
-        """Locates the instace_path if it was not provided
+        """Locates the instance_path if it was not provided
         """
         prefix, package_path = find_package(self.import_name)
         if prefix is None:
@@ -364,7 +364,7 @@ class Quart(PackageStatic):
 
         .. code-block:: python
 
-            with app.open_instance_resouce(path) as file_:
+            with app.open_instance_resource(path) as file_:
                 file_.read()
         """
         return open(self.instance_path / file_path_to_path(path), mode)
@@ -485,6 +485,8 @@ class Quart(PackageStatic):
         Arguments:
             path: The path to route on, should start with a ``/``.
             methods: List of HTTP verbs the function routes.
+            endpoint: Optional endpoint name, if not present the
+                function name is used.
             defaults: A dictionary of variables to provide automatically, use
                 to provide a simpler default path for a route, e.g. to allow
                 for ``/book`` rather than ``/book/0``,
@@ -550,10 +552,12 @@ class Quart(PackageStatic):
 
         Arguments:
             path: The path to route on, should start with a ``/``.
-            func: Callable that returns a response.
-            methods: List of HTTP verbs the function routes.
             endpoint: Optional endpoint name, if not present the
                 function name is used.
+            view_func: Callable that returns a response.
+            provide_automatic_options: Optionally False to prevent
+                OPTION handling.
+            methods: List of HTTP verbs the function routes.
             defaults: A dictionary of variables to provide automatically, use
                 to provide a simpler default path for a route, e.g. to allow
                 for ``/book`` rather than ``/book/0``,
@@ -568,10 +572,9 @@ class Quart(PackageStatic):
             host: The full host name for this route (should include subdomain
                 if needed) - cannot be used with subdomain.
             subdomain: A subdomain for this specific route.
-            provide_automatic_options: Optionally False to prevent
-                OPTION handling.
             strict_slashes: Strictly match the trailing slash present in the
                 path. Will redirect a leaf (no slash) to a branch (with slash).
+            is_websocket: Whether or not the view_func is a websocket.
             merge_slashes: Merge consecutive slashes to a single slash (unless
                 as part of the path variable).
         """
@@ -643,6 +646,8 @@ class Quart(PackageStatic):
 
         Arguments:
             path: The path to route on, should start with a ``/``.
+            endpoint: Optional endpoint name, if not present the
+                function name is used.
             defaults: A dictionary of variables to provide automatically, use
                 to provide a simpler default path for a route, e.g. to allow
                 for ``/book`` rather than ``/book/0``,
@@ -700,9 +705,9 @@ class Quart(PackageStatic):
 
         Arguments:
             path: The path to route on, should start with a ``/``.
-            func: Callable that returns a response.
             endpoint: Optional endpoint name, if not present the
                 function name is used.
+            view_func: Callable that returns a response.
             defaults: A dictionary of variables to provide automatically, use
                 to provide a simpler default path for a route, e.g. to allow
                 for ``/book`` rather than ``/book/0``,
@@ -1055,7 +1060,7 @@ class Quart(PackageStatic):
         Trapped errors are not handled by the
         :meth:`handle_http_exception`, but instead trapped by the
         outer most (or user handlers). This can be useful when
-        debuging to allow tracebacks to be viewed by the debug page.
+        debugging to allow tracebacks to be viewed by the debug page.
         """
         return self.config["TRAP_HTTP_EXCEPTIONS"]
 
@@ -1181,9 +1186,7 @@ class Quart(PackageStatic):
         return handler
 
     def before_first_request(
-        self,
-        func: Union[Callable[[], None], Callable[[], Awaitable[None]]],
-        name: AppOrBlueprintKey = None,
+        self, func: Union[Callable[[], None], Callable[[], Awaitable[None]]],
     ) -> Callable[[], Awaitable[None]]:
         """Add a before **first** request function.
 
@@ -1200,7 +1203,6 @@ class Quart(PackageStatic):
 
         Arguments:
             func: The before first request function itself.
-            name: Optional blueprint key name.
         """
         handler = self.ensure_async(func)
         self.before_first_request_funcs.append(handler)
@@ -1662,9 +1664,6 @@ class Quart(PackageStatic):
             port: Port number to listen on.
             debug: If set enable (or disable) debug mode and debug output.
             use_reloader: Automatically reload on code changes.
-            loop: Asyncio loop to create the server in, if None, take default one.
-                If specified it is the caller's responsibility to close and cleanup the
-                loop.
             ca_certs: Path to the SSL CA certificate file.
             certfile: Path to the SSL certificate file.
             keyfile: Path to the SSL key file.
@@ -2038,7 +2037,7 @@ class Quart(PackageStatic):
 
         Arguments:
             response: The response after the websocket is finalized.
-            webcoket_context: The websocket context, optional as Flask
+            websocket_context: The websocket context, optional as Flask
                 omits this argument.
         """
         websocket_ = (websocket_context or _websocket_ctx_stack.top).websocket

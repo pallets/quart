@@ -91,7 +91,7 @@ class RequestContext(_BaseRequestWebsocketContext):
     :func:`~quart.Quart.test_request_context` instead.
 
     Attributes:
-        _after_request_functions: List of functions to execute after the curret
+        _after_request_functions: List of functions to execute after the current
             request, see :func:`after_this_request`.
     """
 
@@ -122,7 +122,7 @@ class WebsocketContext(_BaseRequestWebsocketContext):
     :func:`~quart.Quart.test_websocket_context` instead.
 
     Attributes:
-        _after_websocket_functions: List of functions to execute after the curret
+        _after_websocket_functions: List of functions to execute after the current
             websocket, see :func:`after_this_websocket`.
     """
 

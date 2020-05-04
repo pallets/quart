@@ -9,7 +9,7 @@ from .static import PackageStatic
 if TYPE_CHECKING:
     from .app import Quart  # noqa
 
-DeferedSetupFunction = Callable[["BlueprintSetupState"], Callable]
+DeferredSetupFunction = Callable[["BlueprintSetupState"], Callable]
 
 
 class Blueprint(PackageStatic):
@@ -18,7 +18,7 @@ class Blueprint(PackageStatic):
     The application properties include routes, error handlers, and
     before and after request functions. It is useful to produce
     modular code as it allows the properties to be defined in a
-    blueprint thereby defering the addition of these properties to the
+    blueprint thereby deferring the addition of these properties to the
     app.
 
     Attributes:
@@ -50,7 +50,7 @@ class Blueprint(PackageStatic):
         super().__init__(import_name, template_folder, root_path, static_folder, static_url_path)
         self.name = name
         self.url_prefix = url_prefix
-        self.deferred_functions: List[DeferedSetupFunction] = []
+        self.deferred_functions: List[DeferredSetupFunction] = []
         self.subdomain = subdomain
         if url_defaults is None:
             url_defaults = {}
@@ -729,11 +729,11 @@ class Blueprint(PackageStatic):
         self.record_once(lambda state: state.app.url_defaults(func))
         return func
 
-    def record(self, func: DeferedSetupFunction) -> None:
+    def record(self, func: DeferredSetupFunction) -> None:
         """Used to register a deferred action."""
         self.deferred_functions.append(func)
 
-    def record_once(self, func: DeferedSetupFunction) -> None:
+    def record_once(self, func: DeferredSetupFunction) -> None:
         """Used to register a deferred action that happens only once."""
 
         def wrapper(state: "BlueprintSetupState") -> None:

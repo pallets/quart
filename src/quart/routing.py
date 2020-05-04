@@ -29,6 +29,7 @@ class QuartRule(Rule):
             methods=methods,
             endpoint=endpoint,
             strict_slashes=strict_slashes,
+            merge_slashes=merge_slashes,
             host=host,
             websocket=websocket,
         )

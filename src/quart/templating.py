@@ -67,7 +67,7 @@ class DispatchingJinjaLoader(BaseLoader):
                 yield loader
 
     def list_templates(self) -> List[str]:
-        """Returns a list of all avilable templates in environment.
+        """Returns a list of all available templates in environment.
 
         This considers the loaders on the :attr:`app` and blueprints.
         """

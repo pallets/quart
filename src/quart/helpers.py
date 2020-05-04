@@ -83,7 +83,7 @@ async def flash(message: str, category: str = "message") -> None:
             await flash('Login successful')
             return redirect(url_for('index'))
 
-    allows the index route to show the flashed messsages, without
+    allows the index route to show the flashed messages, without
     having to accept the message as an argument or otherwise.  See
     :func:`~quart.helpers.get_flashed_messages` for message retrieval.
     """

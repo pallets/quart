@@ -318,7 +318,7 @@ class Response(_BaseRequestResponse, JSONMixin):
 
         Arguments:
             response: The response data or iterable over the data.
-            status_code: Status code of the response.
+            status: Status code of the response.
             headers: Headers to attach to the response.
             mimetype: Mimetype of the response.
             content_type: Content-Type header value.

@@ -94,7 +94,7 @@ class PackageStatic:
 
         .. code-block:: python
 
-            with app.open_resouce(path) as file_:
+            with app.open_resource(path) as file_:
                 file_.read()
         """
         if mode not in {"r", "rb"}:
