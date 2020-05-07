@@ -2109,8 +2109,10 @@ class Quart(PackageStatic):
 def _find_exception_handler(
     error: Exception, exception_handlers: Dict[Exception, Callable]
 ) -> Optional[Callable]:
-    for exception, handler in exception_handlers.items():
-        if isinstance(error, exception):  # type: ignore
+    exc_class = type(error)
+    for cls in exc_class.__mro__:
+        handler = exception_handlers.get(cls)  # type: ignore
+        if handler is not None:
             return handler
     return None
 
