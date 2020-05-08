@@ -2,24 +2,28 @@
 # allow for Werkzeug HTTPExceptions to be considered in a special way
 # (like the quart HTTPException). In addition a Flask reference is
 # created.
-
-try:
-    from werkzeug.exceptions import HTTPException
-except ImportError:
-
-    class HTTPException:  # type: ignore
-        pass
-
+from typing import Union
 
 from quart import Response
 from quart.app import Quart
+from quart.exceptions import HTTPException as QuartHTTPException
+
+try:
+    from werkzeug.exceptions import HTTPException as WerkzeugHTTPException
+except ImportError:
+
+    class WerkzeugHTTPException:  # type: ignore
+        pass
+
 
 old_handle_user_exception = Quart.handle_user_exception
 
 
-async def new_handle_user_exception(self, error: Exception) -> Response:  # type: ignore
-    if isinstance(error, HTTPException):
-        return await self.handle_http_exception(error)
+async def new_handle_user_exception(
+    self: Quart, error: Union[Exception, WerkzeugHTTPException, QuartHTTPException],
+) -> Response:
+    if isinstance(error, WerkzeugHTTPException):
+        return await new_handle_http_exception(self, error)
     else:
         return await old_handle_user_exception(self, error)
 
@@ -28,8 +32,10 @@ Quart.handle_user_exception = new_handle_user_exception  # type: ignore
 old_handle_http_exception = Quart.handle_http_exception
 
 
-async def new_handle_http_exception(self, error: Exception) -> Response:  # type: ignore
-    if isinstance(error, HTTPException):
+async def new_handle_http_exception(
+    self: Quart, error: Union[WerkzeugHTTPException, QuartHTTPException],
+) -> Response:
+    if isinstance(error, WerkzeugHTTPException):
         handler = self._find_exception_handler(error)
         if handler is None:
             werkzeug_response = error.get_response()

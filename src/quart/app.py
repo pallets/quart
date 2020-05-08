@@ -82,7 +82,7 @@ from .testing import (
     QuartClient,
     sentinel,
 )
-from .typing import FilePath, ResponseReturnValue
+from .typing import FilePath, HeaderValue, ResponseReturnValue, StatusCode
 from .utils import file_path_to_path, is_coroutine_function, run_sync
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 
@@ -240,7 +240,7 @@ class Quart(PackageStatic):
         ] = defaultdict(list)
         self.blueprints: Dict[str, Blueprint] = OrderedDict()
         self.error_handler_spec: Dict[
-            AppOrBlueprintKey, Dict[Exception, Callable[[Exception], Awaitable[None]]]
+            AppOrBlueprintKey, Dict[Type[Exception], Callable[[Exception], Awaitable[Response]]]
         ] = defaultdict(dict)
         self.extensions: Dict[str, Any] = {}
         self.shell_context_processors: List[Callable[[], Dict[str, Any]]] = []
@@ -810,7 +810,7 @@ class Quart(PackageStatic):
         handler = self.ensure_async(func)
         if isinstance(error, int):
             error = all_http_exceptions[error]
-        self.error_handler_spec[name][error] = handler  # type: ignore
+        self.error_handler_spec[name][error] = handler
 
     def template_filter(self, name: Optional[str] = None) -> Callable:
         """Add a template filter.
@@ -1028,21 +1028,19 @@ class Quart(PackageStatic):
 
     def _find_exception_handler(
         self, error: Exception
-    ) -> Optional[Callable[[Exception], Awaitable[None]]]:
+    ) -> Optional[Callable[[Exception], Awaitable[Response]]]:
         if _request_ctx_stack.top is not None:
             blueprint = _request_ctx_stack.top.request.blueprint
         elif _websocket_ctx_stack.top is not None:
             blueprint = _websocket_ctx_stack.top.websocket.blueprint
         else:
             blueprint = None
-        handler = _find_exception_handler(
-            error, self.error_handler_spec.get(blueprint, {})  # type: ignore
-        )
+        handler = _find_exception_handler(error, self.error_handler_spec.get(blueprint, {}))
         if handler is None:
             handler = _find_exception_handler(error, self.error_handler_spec[None])
         return handler
 
-    async def handle_http_exception(self, error: Exception) -> Response:
+    async def handle_http_exception(self, error: HTTPException) -> Response:
         """Handle a HTTPException subclass error.
 
         This will attempt to find a handler for the error and if fails
@@ -1050,7 +1048,7 @@ class Quart(PackageStatic):
         """
         handler = self._find_exception_handler(error)
         if handler is None:
-            return error.get_response()  # type: ignore
+            return error.get_response()
         else:
             return await handler(error)
 
@@ -1776,18 +1774,18 @@ class Quart(PackageStatic):
 
         A ResponseValue is either a Response object (or subclass) or a str.
         """
-        status_or_headers = None
-        headers: Optional[dict] = None
-        status = None
+        status_or_headers: Optional[Union[StatusCode, HeaderValue]] = None
+        headers: Optional[HeaderValue] = None
+        status: Optional[StatusCode] = None
         if isinstance(result, tuple):
-            value, status_or_headers, headers = result + (None,) * (3 - len(result))  # type: ignore
+            value, status_or_headers, headers = result + (None,) * (3 - len(result))
         else:
             value = result
 
         if value is None:
             raise TypeError("The response value returned by the view function cannot be None")
 
-        if isinstance(status_or_headers, (dict, list)):
+        if isinstance(status_or_headers, (Headers, dict, list)):
             headers = status_or_headers
             status = None
         elif status_or_headers is not None:
@@ -1797,12 +1795,12 @@ class Quart(PackageStatic):
             if isinstance(value, dict):
                 response = jsonify(value)
             else:
-                response = self.response_class(value)  # type: ignore
+                response = self.response_class(value)
         else:
             response = value
 
         if status is not None:
-            response.status_code = int(status)  # type: ignore
+            response.status_code = int(status)
 
         if headers is not None:
             # Replace with response.headers.update(**headers) when
@@ -2107,8 +2105,9 @@ class Quart(PackageStatic):
 
 
 def _find_exception_handler(
-    error: Exception, exception_handlers: Dict[Exception, Callable]
-) -> Optional[Callable]:
+    error: Exception,
+    exception_handlers: Dict[Type[Exception], Callable[[Exception], Awaitable[Response]]],
+) -> Optional[Callable[[Exception], Awaitable[Response]]]:
     exc_class = type(error)
     for cls in exc_class.__mro__:
         handler = exception_handlers.get(cls)  # type: ignore
