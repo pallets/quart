@@ -1803,11 +1803,7 @@ class Quart(PackageStatic):
             response.status_code = int(status)
 
         if headers is not None:
-            # Replace with response.headers.update(**headers) when
-            # Werkzeug supports
-            # https://github.com/pallets/werkzeug/pull/1687
-            for key, value in headers.items():
-                response.headers[key] = value
+            response.headers.update(headers)  # type: ignore
 
         return response
 
@@ -2110,7 +2106,7 @@ def _find_exception_handler(
 ) -> Optional[Callable[[Exception], Awaitable[Response]]]:
     exc_class = type(error)
     for cls in exc_class.__mro__:
-        handler = exception_handlers.get(cls)  # type: ignore
+        handler = exception_handlers.get(cls)
         if handler is not None:
             return handler
     return None
