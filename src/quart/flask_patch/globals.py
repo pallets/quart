@@ -4,6 +4,7 @@ from werkzeug.datastructures import MultiDict
 
 from quart.globals import (
     _app_ctx_stack,
+    _ctx_lookup,
     _request_ctx_stack,
     current_app,
     g,
@@ -36,4 +37,22 @@ class FlaskRequestProxy(LocalProxy):
 
 request = FlaskRequestProxy(lambda: quart_request)
 
-__all__ = ("_app_ctx_stack", "_request_ctx_stack", "current_app", "g", "request", "session")
+
+def _lookup_app_object(name: str) -> Any:
+    return _ctx_lookup([_app_ctx_stack], name)
+
+
+def _lookup_req_object(name: str) -> Any:
+    return _ctx_lookup([_request_ctx_stack], name)
+
+
+__all__ = (
+    "_app_ctx_stack",
+    "_lookup_app_object",
+    "_lookup_req_object",
+    "_request_ctx_stack",
+    "current_app",
+    "g",
+    "request",
+    "session",
+)
