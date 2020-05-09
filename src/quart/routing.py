@@ -38,7 +38,7 @@ class QuartRule(Rule):
 
 class QuartMap(Map):
     def bind_to_request(
-        self, request: BaseRequestWebsocket, subdomain: Optional[str], server_name: Optional[str],
+        self, request: BaseRequestWebsocket, subdomain: Optional[str], server_name: Optional[str]
     ) -> MapAdapter:
         host: str
         if server_name is None:

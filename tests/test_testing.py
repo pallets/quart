@@ -83,7 +83,7 @@ def test_make_test_body_with_headers_argument_error() -> None:
 @pytest.mark.parametrize(
     "headers, expected",
     [
-        (None, Headers({"Remote-Addr": "127.0.0.1", "User-Agent": "Quart", "host": "localhost"}),),
+        (None, Headers({"Remote-Addr": "127.0.0.1", "User-Agent": "Quart", "host": "localhost"})),
         (
             Headers({"Remote-Addr": "1.2.3.4", "User-Agent": "Quarty", "host": "quart.com"}),
             Headers({"Remote-Addr": "1.2.3.4", "User-Agent": "Quarty", "host": "quart.com"}),

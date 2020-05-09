@@ -351,7 +351,7 @@ class Websocket(BaseRequestWebsocket):
         await self._send(data)
 
     async def accept(
-        self, headers: Optional[Union[dict, Headers]] = None, subprotocol: Optional[str] = None,
+        self, headers: Optional[Union[dict, Headers]] = None, subprotocol: Optional[str] = None
     ) -> None:
         """Manually chose to accept the websocket connection.
 

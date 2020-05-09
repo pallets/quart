@@ -1184,7 +1184,7 @@ class Quart(PackageStatic):
         return handler
 
     def before_first_request(
-        self, func: Union[Callable[[], None], Callable[[], Awaitable[None]]],
+        self, func: Union[Callable[[], None], Callable[[], Awaitable[None]]]
     ) -> Callable[[], Awaitable[None]]:
         """Add a before **first** request function.
 

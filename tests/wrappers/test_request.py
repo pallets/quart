@@ -95,15 +95,7 @@ async def test_request_exceeds_max_content_length() -> None:
 @pytest.mark.asyncio
 async def test_request_get_data_timeout() -> None:
     request = Request(
-        "POST",
-        "http",
-        "/",
-        b"",
-        Headers(),
-        "",
-        "1.1",
-        body_timeout=1,
-        send_push_promise=no_op_push,
+        "POST", "http", "/", b"", Headers(), "", "1.1", body_timeout=1, send_push_promise=no_op_push
     )
     with pytest.raises(RequestTimeout):
         await request.get_data()

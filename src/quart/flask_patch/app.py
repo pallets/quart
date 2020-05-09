@@ -20,7 +20,7 @@ old_handle_user_exception = Quart.handle_user_exception
 
 
 async def new_handle_user_exception(
-    self: Quart, error: Union[Exception, WerkzeugHTTPException, QuartHTTPException],
+    self: Quart, error: Union[Exception, WerkzeugHTTPException, QuartHTTPException]
 ) -> Response:
     if isinstance(error, WerkzeugHTTPException):
         return await new_handle_http_exception(self, error)
@@ -33,7 +33,7 @@ old_handle_http_exception = Quart.handle_http_exception
 
 
 async def new_handle_http_exception(
-    self: Quart, error: Union[WerkzeugHTTPException, QuartHTTPException],
+    self: Quart, error: Union[WerkzeugHTTPException, QuartHTTPException]
 ) -> Response:
     if isinstance(error, WerkzeugHTTPException):
         handler = self._find_exception_handler(error)

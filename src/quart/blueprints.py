@@ -765,7 +765,7 @@ class Blueprint(PackageStatic):
             func(state)
 
     def make_setup_state(
-        self, app: "Quart", options: dict, first_registration: bool = False,
+        self, app: "Quart", options: dict, first_registration: bool = False
     ) -> "BlueprintSetupState":
         """Return a blueprint setup state instance.
 
@@ -793,7 +793,7 @@ class BlueprintSetupState:
     """
 
     def __init__(
-        self, blueprint: Blueprint, app: "Quart", options: dict, first_registration: bool,
+        self, blueprint: Blueprint, app: "Quart", options: dict, first_registration: bool
     ) -> None:
         self.blueprint = blueprint
         self.app = app
