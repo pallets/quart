@@ -257,3 +257,25 @@ async def test_push_promise() -> None:
     test_client = app.test_client()
     await test_client.get("/")
     assert test_client.push_promises[0][0] == "/"
+
+
+@pytest.mark.asyncio
+async def test_session_transactions() -> None:
+    app = Quart(__name__)
+    app.secret_key = "secret"
+
+    @app.route("/")
+    def index() -> str:
+        return str(session["foo"])
+
+    test_client = app.test_client()
+
+    async with test_client.session_transaction() as local_session:
+        assert len(local_session) == 0
+        local_session["foo"] = [42]
+        assert len(local_session) == 1
+    response = await test_client.get("/")
+    assert (await response.get_data()) == b"[42]"  # type: ignore
+    async with test_client.session_transaction() as local_session:
+        assert len(local_session) == 1
+        assert local_session["foo"] == [42]

@@ -4,6 +4,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from http.cookiejar import CookieJar
+from types import TracebackType
 from typing import Any, AnyStr, AsyncGenerator, List, Optional, Tuple, TYPE_CHECKING, Union
 from urllib.parse import unquote, urlencode
 from urllib.request import Request as U2Request
@@ -13,7 +14,9 @@ from werkzeug.exceptions import BadRequest as WBadRequest
 from werkzeug.http import dump_cookie
 
 from .exceptions import BadRequest
+from .globals import _request_ctx_stack
 from .json import dumps
+from .sessions import Session
 from .wrappers import Request, Response
 
 if TYPE_CHECKING:
@@ -174,6 +177,7 @@ class QuartClient:
             self.cookie_jar = None
         self.app = app
         self.push_promises: List[Tuple[str, Headers]] = []
+        self.preserve_context = False
 
     async def open(
         self,
@@ -290,7 +294,9 @@ class QuartClient:
         return response
 
     async def _handle_request(self, request: Request) -> Response:
-        return await asyncio.ensure_future(self.app.handle_request(request))
+        return await asyncio.ensure_future(
+            self.app.handle_request(request, _preserve=self.preserve_context)
+        )
 
     async def _send_push_promise(self, path: str, headers: Headers) -> None:
         self.push_promises.append((path, headers))
@@ -438,9 +444,89 @@ class QuartClient:
         except WBadRequest:
             raise BadRequest()
 
-        websocket_client.task = asyncio.ensure_future(self.app.handle_websocket(websocket))
+        websocket_client.task = asyncio.ensure_future(
+            self.app.handle_websocket(websocket, _preserve=self.preserve_context)
+        )
 
         try:
             yield websocket_client
         finally:
             websocket_client.task.cancel()
+
+    @asynccontextmanager
+    async def session_transaction(
+        self,
+        path: str = "/",
+        *,
+        method: str = "GET",
+        headers: Optional[Union[dict, Headers]] = None,
+        query_string: Optional[dict] = None,
+        scheme: str = "http",
+        data: Optional[AnyStr] = None,
+        form: Optional[dict] = None,
+        json: Any = sentinel,
+        root_path: str = "",
+        http_version: str = "1.1",
+    ) -> AsyncGenerator[Session, None]:
+        if self.cookie_jar is None:
+            raise RuntimeError("Session transactions only make sense with cookies enabled.")
+
+        headers, path, query_string_bytes = make_test_headers_path_and_query_string(
+            self.app, path, headers, query_string
+        )
+        request_body, body_headers = make_test_body_with_headers(data, form, json)
+        headers.update(**body_headers)  # type: ignore
+
+        if self.cookie_jar is not None:
+            for cookie in self.cookie_jar:
+                headers.add("cookie", f"{cookie.name}={cookie.value}")
+
+        request = self.app.request_class(
+            method,
+            scheme,
+            path,
+            query_string_bytes,
+            headers,
+            root_path,
+            http_version,
+            send_push_promise=self._send_push_promise,
+        )
+        request.body.set_result(request_body)
+
+        original_request_ctx = _request_ctx_stack.top
+        async with self.app.request_context(request) as ctx:  # type: ignore
+            session_interface = self.app.session_interface
+            session = await session_interface.open_session(self.app, ctx.request)
+            if session is None:
+                raise RuntimeError("Error opening the sesion. Check the secret_key?")
+
+            _request_ctx_stack.push(original_request_ctx)
+            try:
+                yield session
+            finally:
+                _request_ctx_stack.pop()
+
+            response = self.app.response_class(b"")
+            if not session_interface.is_null_session(session):
+                await session_interface.save_session(self.app, session, response)
+            self.cookie_jar.extract_cookies(
+                _TestCookieJarResponse(response.headers),  # type: ignore
+                U2Request(ctx.request.url),
+            )
+
+    async def __aenter__(self) -> "QuartClient":
+        if self.preserve_context:
+            raise RuntimeError("Cannot nest client invocations")
+        self.preserve_context = True
+        return self
+
+    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+        self.preserve_context = False
+
+        while True:
+            top = _request_ctx_stack.top
+
+            if top is not None and top.preserved:
+                await top.pop(None)
+            else:
+                break

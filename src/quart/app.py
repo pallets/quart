@@ -1530,7 +1530,7 @@ class Quart(PackageStatic):
         """
         return AppContext(self)
 
-    def request_context(self, request: Request) -> RequestContext:
+    def request_context(self, request: Request, *, _preserve: bool = False) -> RequestContext:
         """Create and return a request context.
 
         Use the :meth:`test_request_context` whilst testing. This is
@@ -1544,9 +1544,11 @@ class Quart(PackageStatic):
         Arguments:
             request: A request to build a context around.
         """
-        return RequestContext(self, request)
+        return RequestContext(self, request, _preserve=_preserve)
 
-    def websocket_context(self, websocket: Websocket) -> WebsocketContext:
+    def websocket_context(
+        self, websocket: Websocket, *, _preserve: bool = False
+    ) -> WebsocketContext:
         """Create and return a websocket context.
 
         Use the :meth:`test_websocket_context` whilst testing. This is
@@ -1560,7 +1562,7 @@ class Quart(PackageStatic):
         Arguments:
             websocket: A websocket to build a context around.
         """
-        return WebsocketContext(self, websocket)
+        return WebsocketContext(self, websocket, _preserve=_preserve)
 
     def run(
         self,
@@ -1807,8 +1809,8 @@ class Quart(PackageStatic):
 
         return response
 
-    async def handle_request(self, request: Request) -> Response:
-        async with self.request_context(request) as request_context:
+    async def handle_request(self, request: Request, *, _preserve: bool = False) -> Response:
+        async with self.request_context(request, _preserve=_preserve) as request_context:
             try:
                 return await self.full_dispatch_request(request_context)
             except asyncio.CancelledError:
@@ -1928,8 +1930,10 @@ class Quart(PackageStatic):
             await self.save_session(session_, response)
         return response
 
-    async def handle_websocket(self, websocket: Websocket) -> Optional[Response]:
-        async with self.websocket_context(websocket) as websocket_context:
+    async def handle_websocket(
+        self, websocket: Websocket, *, _preserve: bool = False
+    ) -> Optional[Response]:
+        async with self.websocket_context(websocket, _preserve=_preserve) as websocket_context:
             try:
                 return await self.full_dispatch_websocket(websocket_context)
             except asyncio.CancelledError:

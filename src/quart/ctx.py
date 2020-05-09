@@ -31,12 +31,16 @@ class _BaseRequestWebsocketContext:
         session: The session information relating to this request.
     """
 
-    def __init__(self, app: "Quart", request_websocket: BaseRequestWebsocket) -> None:
+    def __init__(
+        self, app: "Quart", request_websocket: BaseRequestWebsocket, *, _preserve: bool = False
+    ) -> None:
         self.app = app
         self.request_websocket = request_websocket
         self.url_adapter = app.create_url_adapter(self.request_websocket)
         self.request_websocket.routing_exception = None
         self.session: Optional[Session] = None
+        self.preserved = False
+        self._should_preserve = _preserve
 
         self.match_request()
 
@@ -68,6 +72,15 @@ class _BaseRequestWebsocketContext:
             new_error = RedirectRequired(error.new_url)  # type: ignore
             self.request_websocket.routing_exception = new_error
 
+    async def pop(self, exc: BaseException) -> None:
+        await _app_ctx_stack.top.pop(exc)
+
+    async def auto_pop(self, exc: BaseException) -> None:
+        if self._should_preserve:
+            self.preserved = True
+        else:
+            await self.pop(exc)
+
     async def __aenter__(self) -> "_BaseRequestWebsocketContext":
         app_ctx = _app_ctx_stack.top
         if app_ctx is None:
@@ -80,7 +93,7 @@ class _BaseRequestWebsocketContext:
         return self
 
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
-        await _app_ctx_stack.top.pop(exc_value)
+        await self.auto_pop(exc_value)
 
 
 class RequestContext(_BaseRequestWebsocketContext):
@@ -95,23 +108,23 @@ class RequestContext(_BaseRequestWebsocketContext):
             request, see :func:`after_this_request`.
     """
 
-    def __init__(self, app: "Quart", request: Request) -> None:
-        super().__init__(app, request)
+    def __init__(self, app: "Quart", request: Request, *, _preserve: bool = False) -> None:
+        super().__init__(app, request, _preserve=_preserve)
         self._after_request_functions: List[Callable] = []
 
     @property
     def request(self) -> Request:
         return cast(Request, self.request_websocket)
 
+    async def pop(self, exc: BaseException) -> None:
+        await self.app.do_teardown_request(exc, self)
+        _request_ctx_stack.pop()
+        await super().pop(exc)
+
     async def __aenter__(self) -> "RequestContext":
         await super().__aenter__()
         _request_ctx_stack.push(self)
         return self
-
-    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
-        await self.app.do_teardown_request(exc_value, self)
-        _request_ctx_stack.pop()
-        await super().__aexit__(exc_type, exc_value, tb)
 
 
 class WebsocketContext(_BaseRequestWebsocketContext):
@@ -126,23 +139,23 @@ class WebsocketContext(_BaseRequestWebsocketContext):
             websocket, see :func:`after_this_websocket`.
     """
 
-    def __init__(self, app: "Quart", request: Websocket) -> None:
-        super().__init__(app, request)
+    def __init__(self, app: "Quart", request: Websocket, *, _preserve: bool = False) -> None:
+        super().__init__(app, request, _preserve=_preserve)
         self._after_websocket_functions: List[Callable] = []
 
     @property
     def websocket(self) -> Websocket:
         return cast(Websocket, self.request_websocket)
 
+    async def pop(self, exc: BaseException) -> None:
+        await self.app.do_teardown_websocket(exc, self)
+        _websocket_ctx_stack.pop()
+        await super().pop(exc)
+
     async def __aenter__(self) -> "WebsocketContext":
         await super().__aenter__()
         _websocket_ctx_stack.push(self)
         return self
-
-    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
-        await self.app.do_teardown_websocket(exc_value, self)
-        _websocket_ctx_stack.pop()
-        await super().__aexit__(exc_type, exc_value, tb)
 
 
 class AppContext:
