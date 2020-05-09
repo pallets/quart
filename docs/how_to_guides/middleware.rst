@@ -40,3 +40,9 @@ the presence of a header,
 
 This can then be extended and used with any ASGI Middleware and served
 with any ASGI server.
+
+.. warning::
+
+    Middleware runs before any Quart code, which means that if the
+    middleware returns a response no Quart functionality nor any Quart
+    extensions will run.
