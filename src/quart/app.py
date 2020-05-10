@@ -82,7 +82,7 @@ from .testing import (
     QuartClient,
     sentinel,
 )
-from .typing import FilePath, HeaderValue, ResponseReturnValue, StatusCode
+from .typing import FilePath, HeadersValue, ResponseReturnValue, StatusCode
 from .utils import file_path_to_path, is_coroutine_function, run_sync
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 
@@ -1776,8 +1776,8 @@ class Quart(PackageStatic):
 
         A ResponseValue is either a Response object (or subclass) or a str.
         """
-        status_or_headers: Optional[Union[StatusCode, HeaderValue]] = None
-        headers: Optional[HeaderValue] = None
+        status_or_headers: Optional[Union[StatusCode, HeadersValue]] = None
+        headers: Optional[HeadersValue] = None
         status: Optional[StatusCode] = None
         if isinstance(result, tuple):
             value, status_or_headers, headers = result + (None,) * (3 - len(result))
