@@ -58,7 +58,7 @@ class Blueprint(PackageStatic):
 
     def route(
         self,
-        path: str,
+        rule: str,
         methods: Optional[List[str]] = None,
         endpoint: Optional[str] = None,
         defaults: Optional[dict] = None,
@@ -83,7 +83,7 @@ class Blueprint(PackageStatic):
 
         def decorator(func: Callable) -> Callable:
             self.add_url_rule(
-                path,
+                rule,
                 endpoint,
                 func,
                 methods=methods,
@@ -99,7 +99,7 @@ class Blueprint(PackageStatic):
 
     def add_url_rule(
         self,
-        path: str,
+        rule: str,
         endpoint: Optional[str] = None,
         view_func: Optional[Callable] = None,
         *,
@@ -130,7 +130,7 @@ class Blueprint(PackageStatic):
             raise ValueError("Blueprint endpoints should not contain periods")
         self.record(
             lambda state: state.add_url_rule(
-                path,
+                rule,
                 endpoint,
                 view_func,
                 methods=methods,
@@ -145,7 +145,7 @@ class Blueprint(PackageStatic):
 
     def websocket(
         self,
-        path: str,
+        rule: str,
         endpoint: Optional[str] = None,
         defaults: Optional[dict] = None,
         host: Optional[str] = None,
@@ -168,7 +168,7 @@ class Blueprint(PackageStatic):
 
         def decorator(func: Callable) -> Callable:
             self.add_websocket(
-                path,
+                rule,
                 endpoint,
                 func,
                 defaults=defaults,
@@ -182,7 +182,7 @@ class Blueprint(PackageStatic):
 
     def add_websocket(
         self,
-        path: str,
+        rule: str,
         endpoint: Optional[str] = None,
         view_func: Optional[Callable] = None,
         defaults: Optional[dict] = None,
@@ -206,7 +206,7 @@ class Blueprint(PackageStatic):
             blueprint.add_websocket('/', route)
         """
         return self.add_url_rule(
-            path,
+            rule,
             endpoint,
             view_func,
             methods={"GET"},

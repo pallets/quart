@@ -459,7 +459,7 @@ class Quart(PackageStatic):
 
     def route(
         self,
-        path: str,
+        rule: str,
         methods: Optional[List[str]] = None,
         endpoint: Optional[str] = None,
         defaults: Optional[dict] = None,
@@ -483,7 +483,7 @@ class Quart(PackageStatic):
                 ...
 
         Arguments:
-            path: The path to route on, should start with a ``/``.
+            rule: The path to route on, should start with a ``/``.
             methods: List of HTTP verbs the function routes.
             endpoint: Optional endpoint name, if not present the
                 function name is used.
@@ -509,7 +509,7 @@ class Quart(PackageStatic):
 
         def decorator(func: Callable) -> Callable:
             self.add_url_rule(
-                path,
+                rule,
                 endpoint,
                 func,
                 provide_automatic_options=provide_automatic_options,
@@ -525,7 +525,7 @@ class Quart(PackageStatic):
 
     def add_url_rule(
         self,
-        path: str,
+        rule: str,
         endpoint: Optional[str] = None,
         view_func: Optional[Callable] = None,
         provide_automatic_options: Optional[bool] = None,
@@ -551,7 +551,7 @@ class Quart(PackageStatic):
             app.add_url_rule('/', route)
 
         Arguments:
-            path: The path to route on, should start with a ``/``.
+            rule: The path to route on, should start with a ``/``.
             endpoint: Optional endpoint name, if not present the
                 function name is used.
             view_func: Callable that returns a response.
@@ -599,7 +599,7 @@ class Quart(PackageStatic):
         methods.update(required_methods)
 
         rule = self.url_rule_class(
-            path,
+            rule,
             methods=methods,
             endpoint=endpoint,
             host=host,
@@ -623,7 +623,7 @@ class Quart(PackageStatic):
 
     def websocket(
         self,
-        path: str,
+        rule: str,
         endpoint: Optional[str] = None,
         defaults: Optional[dict] = None,
         host: Optional[str] = None,
@@ -645,7 +645,7 @@ class Quart(PackageStatic):
                 ...
 
         Arguments:
-            path: The path to route on, should start with a ``/``.
+            rule: The path to route on, should start with a ``/``.
             endpoint: Optional endpoint name, if not present the
                 function name is used.
             defaults: A dictionary of variables to provide automatically, use
@@ -668,7 +668,7 @@ class Quart(PackageStatic):
 
         def decorator(func: Callable) -> Callable:
             self.add_websocket(
-                path,
+                rule,
                 endpoint,
                 func,
                 defaults=defaults,
@@ -682,7 +682,7 @@ class Quart(PackageStatic):
 
     def add_websocket(
         self,
-        path: str,
+        rule: str,
         endpoint: Optional[str] = None,
         view_func: Optional[Callable] = None,
         defaults: Optional[dict] = None,
@@ -704,7 +704,7 @@ class Quart(PackageStatic):
             app.add_websocket('/', websocket_route)
 
         Arguments:
-            path: The path to route on, should start with a ``/``.
+            rule: The path to route on, should start with a ``/``.
             endpoint: Optional endpoint name, if not present the
                 function name is used.
             view_func: Callable that returns a response.
@@ -726,7 +726,7 @@ class Quart(PackageStatic):
                 path. Will redirect a leaf (no slash) to a branch (with slash).
         """
         return self.add_url_rule(
-            path,
+            rule,
             endpoint,
             view_func,
             methods={"GET"},
