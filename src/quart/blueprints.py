@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import update_wrapper
 from json import JSONDecoder, JSONEncoder
-from typing import Callable, Iterable, List, Optional, Type, TYPE_CHECKING, Union
+from typing import Any, Callable, Iterable, List, Optional, Type, TYPE_CHECKING, Union
 
 from .static import PackageStatic
 
@@ -44,8 +44,9 @@ class Blueprint(PackageStatic):
         template_folder: Optional[str] = None,
         url_prefix: Optional[str] = None,
         subdomain: Optional[str] = None,
-        root_path: Optional[str] = None,
         url_defaults: Optional[dict] = None,
+        root_path: Optional[str] = None,
+        **kwargs: Any,
     ) -> None:
         super().__init__(import_name, template_folder, root_path, static_folder, static_url_path)
         self.name = name
