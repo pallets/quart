@@ -3,25 +3,28 @@
 Startup and Shutdown
 ====================
 
-A provisional addition to the ASGI specification adds the ability for
-coroutines to be awaited before a byte is received, ``startup`` and
-after the final byte is sent ``shutdown``. This is particularly useful
-for creating and destroying connection pools. Quart provisionally
-supports this via :func:`~quart.app.Quart.before_serving` and
-:func:`~quart.app.Quart.after_serving` decorators which in the same
-way as :func:`~quart.app.Quart.before_first_request`.
+The `ASGI lifespan specification`_ includes the ability for awaiting
+coroutines before the first byte is received and after the final byte
+is sent, through the ``startup`` and ``shutdown`` lifespan events.
+This is particularly useful for creating and destroying connection
+pools.  Quart supports this via the decorators
+:func:`~quart.app.Quart.before_serving` and
+:func:`~quart.app.Quart.after_serving`, which function like
+:func:`~quart.app.Quart.before_first_request`.
+
+.. _ASGI lifespan specification: https://github.com/django/asgiref/blob/master/specs/lifespan.rst
 
 The decorated functions are all called within the app context,
 allowing ``current_app`` and ``g`` to be used.
 
-.. note::
+.. warning::
 
-    ``g`` should be used with caution as it will be reset after all
-    the ``before_serving`` functions have completed (it can be used
-    between functions). If you want to create something that is used
-    in routes try storing on the app instead.
+    Use ``g`` with caution, as it will reset after all the
+    ``before_serving`` functions complete. It can still be used within 
+    this context. If you want to create something used in routes, try
+    storing it on the app instead.
 
-To use this functionality simply do the following,
+To use this functionality simply do the following:
 
 .. code-block:: python
 
@@ -37,7 +40,7 @@ To use this functionality simply do the following,
     @app.route("/")
     async def index():
         app.db_pool.execute(...)
-        # g.something will not be available here
+        # g.something is not available here
 
     @app.after_serving
     async def create_db_pool():
@@ -46,21 +49,21 @@ To use this functionality simply do the following,
 Testing
 -------
 
-When testing a Quart app that utilises the ``before_serving`` and/or
-``after_serving`` functionality it is important to await the app
-``startup`` and ``shutdown`` methods as the default test client in
-Quart does not. An example, and recommended, pytest fixture is,
+Quart's default test client does not wait for the ``startup`` and
+``shutdown`` events. This must be manually added when testing a Quart
+app using the ``before_serving`` or ``after_serving`` decorators. A
+recommended pytest fixture is:
 
 .. code-block:: python
 
     @pytest.fixture(name="app", scope="function")
     async def _app():
-        app = ...  # However your app is created
+        app = create_app()  # Initialize app
         await app.startup()
         yield app
         await app.shutdown()
 
-the app fixture can then be used as normal,
+The app fixture can then be used as normal.
 
 .. code-block:: python
 
