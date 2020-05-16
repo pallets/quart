@@ -13,6 +13,7 @@ from werkzeug.datastructures import Headers
 from werkzeug.exceptions import BadRequest as WBadRequest
 from werkzeug.http import dump_cookie
 
+from .ctx import RequestContext
 from .exceptions import BadRequest
 from .globals import _request_ctx_stack
 from .json import dumps
@@ -294,9 +295,19 @@ class QuartClient:
         return response
 
     async def _handle_request(self, request: Request) -> Response:
-        return await asyncio.ensure_future(
-            self.app.handle_request(request, _preserve=self.preserve_context)
-        )
+        # In order to preserve the context it must be copied from the
+        # inner task.
+        async def _inner() -> Tuple[Response, RequestContext]:
+            response = await self.app.handle_request(request, _preserve=self.preserve_context)
+            ctx = None
+            if self.preserve_context:
+                ctx = _request_ctx_stack.top.copy()
+            return (response, ctx)
+
+        response, ctx = await asyncio.ensure_future(_inner())
+        if self.preserve_context:
+            _request_ctx_stack.push(ctx)
+        return response
 
     async def _send_push_promise(self, path: str, headers: Headers) -> None:
         self.push_promises.append((path, headers))

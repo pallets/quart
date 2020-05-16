@@ -32,20 +32,25 @@ class _BaseRequestWebsocketContext:
     """
 
     def __init__(
-        self, app: "Quart", request_websocket: BaseRequestWebsocket, *, _preserve: bool = False
+        self,
+        app: "Quart",
+        request_websocket: BaseRequestWebsocket,
+        session: Optional[Session] = None,
+        *,
+        _preserve: bool = False,
     ) -> None:
         self.app = app
         self.request_websocket = request_websocket
         self.url_adapter = app.create_url_adapter(self.request_websocket)
         self.request_websocket.routing_exception = None
-        self.session: Optional[Session] = None
+        self.session = session
         self.preserved = False
         self._should_preserve = _preserve
 
         self.match_request()
 
     def copy(self) -> "_BaseRequestWebsocketContext":
-        return self.__class__(self.app, self.request_websocket)
+        return self.__class__(self.app, self.request_websocket, self.session)
 
     def match_request(self) -> None:
         """Match the request against the adapter.
@@ -108,8 +113,15 @@ class RequestContext(_BaseRequestWebsocketContext):
             request, see :func:`after_this_request`.
     """
 
-    def __init__(self, app: "Quart", request: Request, *, _preserve: bool = False) -> None:
-        super().__init__(app, request, _preserve=_preserve)
+    def __init__(
+        self,
+        app: "Quart",
+        request: Request,
+        session: Optional[Session] = None,
+        *,
+        _preserve: bool = False,
+    ) -> None:
+        super().__init__(app, request, session, _preserve=_preserve)
         self._after_request_functions: List[Callable] = []
 
     @property
@@ -139,8 +151,15 @@ class WebsocketContext(_BaseRequestWebsocketContext):
             websocket, see :func:`after_this_websocket`.
     """
 
-    def __init__(self, app: "Quart", request: Websocket, *, _preserve: bool = False) -> None:
-        super().__init__(app, request, _preserve=_preserve)
+    def __init__(
+        self,
+        app: "Quart",
+        request: Websocket,
+        session: Optional[Session] = None,
+        *,
+        _preserve: bool = False,
+    ) -> None:
+        super().__init__(app, request, session, _preserve=_preserve)
         self._after_websocket_functions: List[Callable] = []
 
     @property

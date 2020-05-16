@@ -265,7 +265,7 @@ async def test_session_transactions() -> None:
     app.secret_key = "secret"
 
     @app.route("/")
-    def index() -> str:
+    async def index() -> str:
         return str(session["foo"])
 
     test_client = app.test_client()
@@ -279,3 +279,19 @@ async def test_session_transactions() -> None:
     async with test_client.session_transaction() as local_session:
         assert len(local_session) == 1
         assert local_session["foo"] == [42]
+
+
+@pytest.mark.asyncio
+async def test_with_usage() -> None:
+    app = Quart(__name__)
+    app.secret_key = "secret"
+
+    @app.route("/")
+    async def index() -> str:
+        session["hello"] = "world"
+        return "Hello"
+
+    async with app.test_client() as client:
+        await client.get("/")
+        assert request.method == "GET"
+        assert session["hello"] == "world"
