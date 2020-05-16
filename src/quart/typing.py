@@ -24,9 +24,7 @@ HeaderName = str
 HeaderValue = Union[str, List[str], Tuple[str, ...]]
 
 # the possible types for HTTP headers
-HeadersValue = Union[
-    "Headers", Dict[HeaderName, HeaderValue], List[Tuple[HeaderName, HeaderValue]],
-]
+HeadersValue = Union["Headers", Dict[HeaderName, HeaderValue], List[Tuple[HeaderName, HeaderValue]]]
 
 # The possible types returned by a route function.
 ResponseReturnValue = Union[

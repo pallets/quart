@@ -110,7 +110,8 @@ def test_add_url_rule_automatic_options(
     app.add_url_rule("/", "end", route, methods=methods, provide_automatic_options=arg_automatic)
     assert app.url_map._rules_by_endpoint["end"][0].methods == expected_methods  # type: ignore
     assert (
-        app.url_map._rules_by_endpoint["end"][0].provide_automatic_options == expected_automatic  # type: ignore  # noqa: E501
+        app.url_map._rules_by_endpoint["end"][0].provide_automatic_options  # type: ignore
+        == expected_automatic
     )
 
 
