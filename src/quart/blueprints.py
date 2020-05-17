@@ -826,7 +826,7 @@ class BlueprintSetupState:
         endpoint = f"{self.blueprint.name}.{endpoint}"
         url_defaults = self.url_defaults
         if defaults is not None:
-            url_defaults.update(defaults)
+            url_defaults = {**url_defaults, **defaults}
         self.app.add_url_rule(
             path,
             endpoint,
