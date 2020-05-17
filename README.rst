@@ -128,7 +128,7 @@ Migrating from Flask
 It should be possible to migrate to Quart from Flask by a find and
 replace of ``flask`` to ``quart`` and then adding ``async`` and
 ``await`` keywords. See the `docs
-<https://pgjones.gitlab.io/quart/flask_migration.html>`_ for full
+<https://pgjones.gitlab.io/quart/how_to_guides/flask_migration.html>`_ for full
 details.
 
 
