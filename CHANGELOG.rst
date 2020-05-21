@@ -1,3 +1,25 @@
+0.12.0 2020-05-21
+-----------------
+
+* Add certfile and keyfile arguments to cli.
+* Bugfix request host value returns an empty string rather than None
+  for HTTP/1.0 requests without a host header.
+* Bugfix type of query string argument to Werkzeug Map fixing a
+  TypeError.
+* Add ASGI scope dictionary to request.
+* Ensure that FlaskGroup exists when using flask_patch by patchin the
+  flask.cli module from quart.
+* Add quart.cli.with_appcontext matching the Flask API.
+* Make the quart.Blueprint registration api compatible with
+  flask.Blueprint.
+* Make the add_url_rule api match the flask API.
+* Resolve error handlers by most specific first (matches Flask).
+* Support test sessions and context preservation when testing.
+* Add lookup_app and lookup_request to flask patch globals.
+* Make quart.Blueprint API constructor fully compatible with
+  flask.Blueprint
+* Bugfix ensure (url) defaults aren't copied between blueprint routes.
+
 0.11.5 2020-03-31
 -----------------
 
