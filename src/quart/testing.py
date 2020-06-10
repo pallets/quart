@@ -433,6 +433,11 @@ class QuartClient:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self.app, path, headers, query_string
         )
+
+        if self.cookie_jar is not None:
+            for cookie in self.cookie_jar:
+                headers.add("cookie", f"{cookie.name}={cookie.value}")
+
         queue: asyncio.Queue = asyncio.Queue()
         websocket_client = _TestingWebsocket(queue)
 
