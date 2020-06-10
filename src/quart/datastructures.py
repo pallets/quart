@@ -59,7 +59,7 @@ class FileStorage:
             destination = open(destination, "wb")
             close_destination = True
         try:
-            copyfileobj(self.stream, destination, buffer_size)
+            copyfileobj(self.stream, destination, buffer_size)  # type: ignore
         finally:
             if close_destination:
                 destination.close()

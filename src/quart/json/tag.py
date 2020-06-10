@@ -45,8 +45,8 @@ class TagDict(JSONTag):
         return {key + "__": self.serializer.tag(value[key])}
 
     def to_python(self, value: str) -> Dict[str, Any]:
-        key, item = next(iter(value))
-        return {key[:-2]: item}
+        key, item = next(iter(value))  # type: ignore
+        return {key[:-2]: item}  # type: ignore
 
 
 class PassDict(JSONTag):
