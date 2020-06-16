@@ -150,7 +150,7 @@ And finally, broadcast the message, as so,
 
 .. code-block:: python
 
-    def broadcast(message):
+    async def broadcast(message):
         for queue in connected_websockets:
             await queue.put(message)
 
