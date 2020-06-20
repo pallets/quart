@@ -39,6 +39,9 @@ The flask extension must be limited to creating routes, using the
 request and rendering templates. Any other more advanced functionality
 may not work.
 
+Synchronous functions will not run in a separate thread (unlike Quart
+normally) and hence may block the event loop.
+
 Finally the flask_patching system also relies on patching asyncio, and
 hence other implementations or event loop policies are unlikely to
 work.

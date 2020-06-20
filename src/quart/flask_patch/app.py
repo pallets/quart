@@ -2,11 +2,13 @@
 # allow for Werkzeug HTTPExceptions to be considered in a special way
 # (like the quart HTTPException). In addition a Flask reference is
 # created.
-from typing import Union
+import asyncio
+from typing import Any, Awaitable, Callable, Union
 
 from quart import Response
 from quart.app import Quart
 from quart.exceptions import HTTPException as QuartHTTPException
+from quart.utils import is_coroutine_function
 
 try:
     from werkzeug.exceptions import HTTPException as WerkzeugHTTPException
@@ -53,6 +55,18 @@ async def new_handle_http_exception(
 
 
 Quart.handle_http_exception = new_handle_http_exception  # type: ignore
+
+
+def new_ensure_async(  # type: ignore
+    self, func: Callable[..., Any]
+) -> Callable[..., Awaitable[Any]]:
+    if is_coroutine_function(func):
+        return func
+    else:
+        return asyncio.coroutine(func)
+
+
+Quart.ensure_async = new_ensure_async  # type: ignore
 
 Flask = Quart
 
