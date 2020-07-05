@@ -3,9 +3,9 @@ from typing import NoReturn, Optional, Set
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
+from asynctest import Mock as AsyncMock
 from werkzeug.datastructures import Headers
 
-from asynctest import Mock as AsyncMock
 from quart.app import Quart
 from quart.globals import session, websocket
 from quart.sessions import SecureCookieSession, SessionInterface

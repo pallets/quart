@@ -1,8 +1,7 @@
 from typing import Any
 
-import hypothesis.strategies as strategies
 import pytest
-from hypothesis import given
+from hypothesis import given, strategies as strategies
 
 from quart.app import Quart
 from quart.json import dumps, htmlsafe_dumps

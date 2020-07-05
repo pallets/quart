@@ -4,9 +4,8 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any, AsyncGenerator
 
-import hypothesis.strategies as strategies
 import pytest
-from hypothesis import given
+from hypothesis import given, strategies as strategies
 from py._path.local import LocalPath
 from werkzeug.datastructures import Range
 

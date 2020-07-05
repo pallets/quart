@@ -2,9 +2,9 @@ import asyncio
 from typing import Optional
 
 import pytest
+from asynctest.mock import CoroutineMock
 from werkzeug.datastructures import Headers
 
-from asynctest.mock import CoroutineMock
 from quart import Quart
 from quart.asgi import (
     _convert_version,

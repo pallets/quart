@@ -5,6 +5,7 @@ from typing import Any, AnyStr, AsyncGenerator, Dict, Generator, List, Tuple, TY
 
 if TYPE_CHECKING:
     from werkzeug.datastructures import Headers  # noqa: F401
+
     from .wrappers.response import Response  # noqa: F401
 
 FilePath = Union[bytes, str, os.PathLike]
