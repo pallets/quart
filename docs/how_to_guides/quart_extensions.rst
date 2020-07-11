@@ -23,6 +23,8 @@ here,
   (MongoDB) support for Quart applications.
 - `Quart-OpenApi <https://github.com/factset/quart-openapi/>`_ RESTful
   API building.
+- `Quart-Rapidoc <https://github.com/marirs/quart-rapidoc>`_ API
+  documentation from OpenAPI Specification.
 - `Quart-Rate-Limiter
   <https://gitlab.com/pgjones/quart-rate-limiter>`_ Rate limiting
   support.
