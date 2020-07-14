@@ -458,9 +458,26 @@ class Response(_BaseRequestResponse, JSONMixin):
             ),
         )
 
-    def delete_cookie(self, key: str, path: str = "/", domain: Optional[str] = None) -> None:
+    def delete_cookie(
+        self,
+        key: str,
+        path: str = "/",
+        domain: Optional[str] = None,
+        secure: bool = False,
+        httponly: bool = False,
+        samesite: str = None,
+    ) -> None:
         """Delete a cookie (set to expire immediately)."""
-        self.set_cookie(key, expires=0, max_age=0, path=path, domain=domain)
+        self.set_cookie(
+            key,
+            expires=0,
+            max_age=0,
+            path=path,
+            domain=domain,
+            secure=secure,
+            httponly=httponly,
+            samesite=samesite,
+        )
 
     async def add_etag(self, overwrite: bool = False, weak: bool = False) -> None:
         if overwrite or "etag" not in self.headers:
