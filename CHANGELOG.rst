@@ -1,3 +1,13 @@
+0.13.0 2020-07-14
+-----------------
+
+* Bugfix set cookies from the testing jar for websockets.
+* Restore Flask-Patch sync handling to pre 0.11. This means that sync
+  route handlers, before request, and more, are **not** run in a
+  thread if Flask-Patch is used. This restores Flask-SQLAlchemy
+  support (with Flask-Patch).
+* Bugfix accept additional attributes to the delete cookie.
+
 0.12.0 2020-05-21
 -----------------
 
