@@ -17,6 +17,10 @@ from ._synchronise import sync_with_context
 
 class FlaskRequestProxy(LocalProxy):
     @property
+    def data(self) -> bytes:
+        return sync_with_context(self._get_current_object().data)
+
+    @property
     def form(self) -> MultiDict:
         return sync_with_context(self._get_current_object().form)
 
