@@ -150,27 +150,33 @@ class ASGIWebsocketConnection:
 
     async def handle_websocket(self, websocket: Websocket, send: Callable) -> None:
         response = await self.app.handle_websocket(websocket)
-        if (
-            response is not None
-            and not self._accepted
-            and "websocket.http.response" in self.scope.get("extensions", {})
-        ):
-            headers = [
-                (key.lower().encode(), value.encode()) for key, value in response.headers.items()
-            ]
-            await send(
-                {
-                    "type": "websocket.http.response.start",
-                    "status": response.status_code,
-                    "headers": headers,
-                }
-            )
-            async with response.response as body:
-                async for data in body:
-                    await send(
-                        {"type": "websocket.http.response.body", "body": data, "more_body": True}
-                    )
-            await send({"type": "websocket.http.response.body", "body": b"", "more_body": False})
+        if response is not None and not self._accepted:
+            if "websocket.http.response" in self.scope.get("extensions", {}):
+                headers = [
+                    (key.lower().encode(), value.encode())
+                    for key, value in response.headers.items()
+                ]
+                await send(
+                    {
+                        "type": "websocket.http.response.start",
+                        "status": response.status_code,
+                        "headers": headers,
+                    }
+                )
+                async with response.response as body:
+                    async for data in body:
+                        await send(
+                            {
+                                "type": "websocket.http.response.body",
+                                "body": data,
+                                "more_body": True,
+                            }
+                        )
+                await send(
+                    {"type": "websocket.http.response.body", "body": b"", "more_body": False}
+                )
+            else:
+                await send({"type": "websocket.close", "code": 1000})
         elif self._accepted:
             await send({"type": "websocket.close", "code": 1000})
 
