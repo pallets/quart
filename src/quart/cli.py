@@ -120,7 +120,15 @@ def with_appcontext(fn: Optional[Callable] = None) -> Callable:
     def decorator(__ctx: click.Context, *args: Any, **kwargs: Any) -> Any:
         async def _inner() -> Any:
             async with __ctx.ensure_object(ScriptInfo).load_app().app_context():
-                return __ctx.invoke(fn, *args, **kwargs)
+                try:
+                    return __ctx.invoke(fn, *args, **kwargs)
+                except RuntimeError as error:
+                    if error.args[0] == "Cannot run the event loop while another loop is running":
+                        print(  # noqa: T001, T002
+                            "The appcontext cannot be used with a command that runs an event loop. "
+                            "See quart#361 for more details"
+                        )
+                    raise
 
         return asyncio.run(_inner())
 
@@ -138,9 +146,9 @@ class AppGroup(click.Group):
     def command(self, *args: Any, **kwargs: Any) -> Callable:
         """This works exactly like the method of the same name on a regular
         :class:`click.Group` but it wraps callbacks in :func:`with_appcontext`
-        unless it's disabled by passing ``with_appcontext=False``.
+        if it's enabled by passing ``with_appcontext=True``.
         """
-        wrap_for_ctx = kwargs.pop("with_appcontext", True)
+        wrap_for_ctx = kwargs.pop("with_appcontext", False)
 
         def decorator(f: Callable) -> Callable:
             if wrap_for_ctx:
