@@ -682,9 +682,7 @@ class Response(_BaseRequestResponse, JSONMixin):
         def on_update(content_security_policy: ContentSecurityPolicy) -> None:
             self.content_security_policy_report_only = content_security_policy
 
-        return ContentSecurityPolicy.from_header(
-            self.headers.get("Content-Security-Policy-Report-Only", ""), on_update
-        )
+        return parse_csp_header(self.headers.get("Content-Security-Policy-Report-Only"), on_update)
 
     @content_security_policy_report_only.setter
     def content_security_policy_report_only(self, value: ContentSecurityPolicy) -> None:
