@@ -130,7 +130,7 @@ class IterableBody(ResponseBody):
         return self
 
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
-        pass
+        await self.iter.aclose()
 
     def __aiter__(self) -> AsyncIterator:
         return self.iter
