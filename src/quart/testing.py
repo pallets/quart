@@ -468,6 +468,10 @@ class QuartClient:
             yield websocket_client
         finally:
             websocket_client.task.cancel()
+            try:
+                await websocket_client.task
+            except asyncio.CancelledError:
+                pass
 
     @asynccontextmanager
     async def session_transaction(

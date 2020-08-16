@@ -177,6 +177,11 @@ class Request(BaseRequestWebsocket, JSONMixin):
             raw_data = await asyncio.wait_for(body_future, timeout=self.body_timeout)
         except asyncio.TimeoutError:
             body_future.cancel()
+            try:
+                await body_future
+            except asyncio.CancelledError:
+                pass
+
             from ..exceptions import RequestTimeout  # noqa Avoiding circular import
 
             raise RequestTimeout()
