@@ -19,9 +19,9 @@ locked_cached_property = property
 
 
 def get_debug_flag() -> bool:
-    """ Reads QUART_DEBUG environment variable to determine whether to run
-        the app in debug mode. If unset, and development mode has been
-        configured, it will be enabled automatically.
+    """Reads QUART_DEBUG environment variable to determine whether to run
+    the app in debug mode. If unset, and development mode has been
+    configured, it will be enabled automatically.
     """
     value = os.getenv("QUART_DEBUG", None)
 
@@ -242,8 +242,7 @@ def _endpoint_from_view_func(view_func: Callable) -> str:
 
 
 def find_package(name: str) -> Tuple[Optional[Path], Path]:
-    """Finds packages install prefix (or None) and it's containing Folder
-    """
+    """Finds packages install prefix (or None) and it's containing Folder"""
     module = name.split(".")[0]
     loader = pkgutil.get_loader(module)
     if name == "__main__" or loader is None:

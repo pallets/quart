@@ -341,8 +341,7 @@ class Quart(PackageStatic):
         return self._got_first_request
 
     def auto_find_instance_path(self) -> Path:
-        """Locates the instance_path if it was not provided
-        """
+        """Locates the instance_path if it was not provided"""
         prefix, package_path = find_package(self.import_name)
         if prefix is None:
             return package_path / "instance"

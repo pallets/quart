@@ -38,8 +38,7 @@ class LocalQueueHandler(QueueHandler):
 
 
 def _setup_logging_queue(*handlers: Handler) -> QueueHandler:
-    """Create a new LocalQueueHandler and start an associated QueueListener.
-    """
+    """Create a new LocalQueueHandler and start an associated QueueListener."""
     queue: Queue = Queue()
     queue_handler = LocalQueueHandler(queue)
 
