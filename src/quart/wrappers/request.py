@@ -10,6 +10,7 @@ from werkzeug.datastructures import CombinedMultiDict, Headers, MultiDict
 
 from .base import BaseRequestWebsocket, JSONMixin
 from ..datastructures import FileStorage
+from ..json import dumps, loads
 
 SERVER_PUSH_HEADERS_TO_COPY = {
     "accept",
@@ -354,6 +355,14 @@ class Websocket(BaseRequestWebsocket):
         await asyncio.sleep(0)
         await self.accept()
         await self._send(data)
+
+    async def receive_json(self) -> Any:
+        data = await self.receive()
+        return loads(data)
+
+    async def send_json(self, data: Any) -> None:
+        raw = dumps(data)
+        await self.send(raw)
 
     async def accept(
         self, headers: Optional[Union[dict, Headers]] = None, subprotocol: Optional[str] = None

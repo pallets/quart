@@ -1,2 +1,2 @@
 quart
-pillow==5.1.0
+pillow>=7.1.0
