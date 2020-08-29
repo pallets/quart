@@ -1,0 +1,3 @@
+Flask-SQLAlchemy
+Flask-WTF
+quart
