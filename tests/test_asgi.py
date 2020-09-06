@@ -2,7 +2,6 @@ import asyncio
 from typing import Optional
 
 import pytest
-from asynctest.mock import CoroutineMock
 from werkzeug.datastructures import Headers
 
 from quart import Quart
@@ -12,6 +11,12 @@ from quart.asgi import (
     ASGIHTTPConnection,
     ASGIWebsocketConnection,
 )
+
+try:
+    from unittest.mock import AsyncMock
+except ImportError:
+    # Python < 3.8
+    from mock import AsyncMock
 
 
 @pytest.mark.asyncio
@@ -173,7 +178,7 @@ async def test_websocket_accept_connection(
     scope: dict, headers: Headers, subprotocol: Optional[str], has_headers: bool
 ) -> None:
     connection = ASGIWebsocketConnection(Quart(__name__), scope)
-    mock_send = CoroutineMock()
+    mock_send = AsyncMock()
     await connection.accept_connection(mock_send, headers, subprotocol)
 
     if has_headers:

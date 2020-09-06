@@ -3,7 +3,6 @@ from typing import NoReturn, Optional, Set
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
-from asynctest import Mock as AsyncMock
 from werkzeug.datastructures import Headers
 
 from quart.app import Quart
@@ -14,6 +13,12 @@ from quart.typing import ResponseReturnValue
 from quart.wrappers import Response
 
 TEST_RESPONSE = Response("")
+
+try:
+    from unittest.mock import AsyncMock
+except ImportError:
+    # Python < 3.8
+    from mock import AsyncMock
 
 
 class SimpleException(Exception):

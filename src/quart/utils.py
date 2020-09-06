@@ -110,13 +110,13 @@ def is_coroutine_function(func: Any) -> bool:
     if sys.version_info >= (3, 8):
         return asyncio.iscoroutinefunction(func)
     else:
-        # Note that there is something special about the CoroutineMock
+        # Note that there is something special about the AsyncMock
         # such that it isn't determined as a coroutine function
         # without an explicit check.
         try:
-            from asynctest.mock import CoroutineMock
+            from mock import AsyncMock
 
-            if isinstance(func, CoroutineMock):
+            if isinstance(func, AsyncMock):
                 return True
         except ImportError:
             # Not testing, no asynctest to import

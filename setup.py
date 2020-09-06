@@ -53,7 +53,7 @@ setup(
     package_dir={"": "src"},
     py_modules=["quart"],
     install_requires=INSTALL_REQUIRES,
-    tests_require=INSTALL_REQUIRES + ["asynctest", "hypothesis", "pytest", "pytest-asyncio"],
+    tests_require=INSTALL_REQUIRES + ["hypothesis", "mock", "pytest", "pytest-asyncio"],
     extras_require={"dotenv": ["python-dotenv"]},
     entry_points={"console_scripts": ["quart=quart.cli:main"]},
     include_package_data=True,
