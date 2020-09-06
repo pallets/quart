@@ -3,10 +3,11 @@
 # (like the quart HTTPException). In addition a Flask reference is
 # created.
 import asyncio
-from typing import Any, Awaitable, Callable, Union
+from typing import Any, Awaitable, Callable, Optional, Union
 
 from quart import Response
 from quart.app import Quart
+from quart.ctx import _request_ctx_stack, RequestContext
 from quart.exceptions import HTTPException as QuartHTTPException
 from quart.utils import is_coroutine_function
 
@@ -18,6 +19,18 @@ except ImportError:
         pass
 
 
+old_full_dispatch_request = Quart.full_dispatch_request
+
+
+async def new_full_dispatch_request(
+    self: Quart, request_context: Optional[RequestContext] = None
+) -> Response:
+    request_ = (request_context or _request_ctx_stack.top).request
+    await request_.get_data()
+    return await old_full_dispatch_request(self, request_context)
+
+
+Quart.full_dispatch_request = new_full_dispatch_request  # type: ignore
 old_handle_user_exception = Quart.handle_user_exception
 
 
