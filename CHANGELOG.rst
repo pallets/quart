@@ -1,3 +1,15 @@
+0.13.1 2020-09-09
+-----------------
+
+* Bugfix add the data property to the patched request attributes.
+* Bugfix WebSocket ASGI rejection (for servers that don't support the
+  ASGI WebSocket response extension).
+* Bugfix don't wrap commands in with_appcontext by default.
+* Bugfix CSP parsing for the report-only header.
+* Bugfix wait for tasks to complete when cancelled.
+* Bugfix clean up the generator when the response exits.
+* Bugfix request data handling with Flask-Patch.
+
 0.13.0 2020-07-14
 -----------------
 
