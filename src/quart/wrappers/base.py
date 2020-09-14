@@ -35,6 +35,7 @@ from werkzeug.http import (
     parse_set_header,
 )
 from werkzeug.urls import url_decode
+from werkzeug.useragents import UserAgent
 from werkzeug.utils import get_content_type
 
 from ..json import loads
@@ -396,3 +397,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
     @property
     def access_control_request_method(self) -> Optional[str]:
         return self.headers.get("Access-Control-Request-Method")
+
+    @property
+    def user_agent(self) -> UserAgent:
+        return UserAgent(self.headers.get("User-Agent", ""))
