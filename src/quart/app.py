@@ -1678,6 +1678,10 @@ class Quart(PackageStatic):
             self.debug = debug
         config.errorlog = config.accesslog
         config.keyfile = keyfile
+        config.logconfig_dict = {
+            "root": {"level": "INFO", "handlers": []},
+            "disable_existing_loggers": False,
+        }
         config.use_reloader = use_reloader
 
         return serve(self, config, shutdown_trigger=shutdown_trigger)
