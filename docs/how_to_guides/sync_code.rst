@@ -67,7 +67,7 @@ used as so,
              # does something with data
              ...
 
-        result = await run_sync(sync_processor)
+        result = await run_sync(sync_processor)()
         return result
 
 this is similar to utilising the asyncio run_in_executor function,
