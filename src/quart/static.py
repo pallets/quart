@@ -200,11 +200,14 @@ async def send_file(
 
     """
     file_body: ResponseBody
+    file_size: int
     etag: Optional[str] = None
     if isinstance(filename_or_io, BytesIO):
         file_body = current_app.response_class.io_body_class(filename_or_io)
+        file_size = filename_or_io.getbuffer().nbytes
     else:
         file_path = file_path_to_path(filename_or_io)
+        file_size = file_path.stat().st_size
         if attachment_filename is None:
             attachment_filename = file_path.name
         file_body = current_app.response_class.file_body_class(file_path)
@@ -224,6 +227,7 @@ async def send_file(
         )
 
     response = current_app.response_class(file_body, mimetype=mimetype)
+    response.content_length = file_size
 
     if as_attachment:
         response.headers.add("Content-Disposition", "attachment", filename=attachment_filename)
