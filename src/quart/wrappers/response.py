@@ -15,14 +15,14 @@ from typing import (
     AsyncIterator,
     Iterable,
     Optional,
+    overload,
     Tuple,
     Union,
 )
 from wsgiref.handlers import format_date_time
 
 from aiofiles import open as async_open
-from aiofiles.base import AiofilesContextManager
-from aiofiles.threadpool import AsyncFileIO
+from aiofiles.threadpool.binary import AsyncBufferedIOBase, AsyncBufferedReader
 from werkzeug.datastructures import (  # type: ignore
     ContentRange,
     ContentSecurityPolicy,
@@ -43,6 +43,11 @@ from werkzeug.http import (  # type: ignore
 
 from .base import _BaseRequestResponse, JSONMixin
 from ..utils import file_path_to_path, run_sync_iterable
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal  # type: ignore
 
 sentinel = object()
 
@@ -165,27 +170,27 @@ class FileBody(ResponseBody):
         self.end = self.size
         if buffer_size is not None:
             self.buffer_size = buffer_size
-        self.file: Optional[AsyncFileIO] = None
-        self.file_manager: Optional[AiofilesContextManager] = None
+        self.file: Optional[AsyncBufferedIOBase] = None
+        self.file_manager: Optional[AsyncBufferedReader] = None
 
     async def __aenter__(self) -> "FileBody":
         self.file_manager = async_open(self.file_path, mode="rb")
-        self.file = await self.file_manager.__aenter__()
-        await self.file.seek(self.begin)
+        self.file = await self.file_manager.__aenter__()  # type: ignore
+        await self.file.seek(self.begin)  # type: ignore
         return self
 
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
-        await self.file_manager.__aexit__(exc_type, exc_value, tb)
+        await self.file_manager.__aexit__(exc_type, exc_value, tb)  # type: ignore
 
     def __aiter__(self) -> "FileBody":
         return self
 
     async def __anext__(self) -> bytes:
-        current = await self.file.tell()
+        current = await self.file.tell()  # type: ignore
         if current >= self.end:
             raise StopAsyncIteration()
         read_size = min(self.buffer_size, self.end - current)
-        chunk = await self.file.read(read_size)
+        chunk = await self.file.read(read_size)  # type: ignore
 
         if chunk:
             return chunk
@@ -353,12 +358,24 @@ class Response(_BaseRequestResponse, JSONMixin):
         else:
             self.response = self.iterable_body_class(response)
 
+    @overload
+    async def get_data(self, raw: Literal[True]) -> bytes:
+        ...
+
+    @overload
+    async def get_data(self, raw: Literal[False]) -> str:
+        ...
+
+    @overload
+    async def get_data(self, raw: bool = True) -> AnyStr:
+        ...
+
     async def get_data(self, raw: bool = True) -> AnyStr:
         """Return the body data."""
         if self.implicit_sequence_conversion:
             self.response = self.data_body_class(await self.response.convert_to_sequence())
         result = b"" if raw else ""
-        async with self.response as body:  # type: ignore
+        async with self.response as body:
             async for data in body:
                 if raw:
                     result += data
@@ -481,7 +498,7 @@ class Response(_BaseRequestResponse, JSONMixin):
 
     async def add_etag(self, overwrite: bool = False, weak: bool = False) -> None:
         if overwrite or "etag" not in self.headers:
-            self.set_etag(md5((await self.get_data())).hexdigest(), weak)
+            self.set_etag(md5((await self.get_data(raw=True))).hexdigest(), weak)
 
     def get_etag(self) -> Tuple[Optional[str], Optional[bool]]:
         etag = self.headers.get("ETag")

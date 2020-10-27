@@ -50,7 +50,7 @@ async def test_send_file_bytes_io() -> None:
     io_stream = BytesIO(b"something")
     async with app.app_context():
         response = await send_file(io_stream, mimetype="text/plain")
-    assert (await response.get_data(raw=True)) == b"something"  # type: ignore
+    assert (await response.get_data(raw=True)) == b"something"
 
 
 @pytest.mark.asyncio

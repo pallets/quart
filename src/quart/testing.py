@@ -514,7 +514,7 @@ class QuartClient:
         request.body.set_result(request_body)
 
         original_request_ctx = _request_ctx_stack.top
-        async with self.app.request_context(request) as ctx:  # type: ignore
+        async with self.app.request_context(request) as ctx:
             session_interface = self.app.session_interface
             session = await session_interface.open_session(self.app, ctx.request)
             if session is None:

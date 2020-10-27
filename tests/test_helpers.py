@@ -159,4 +159,4 @@ async def test_stream_with_context() -> None:
     test_client = app.test_client()
     response = await test_client.get("/")
     result = await response.get_data(raw=True)
-    assert result == b"GET /"  # type: ignore
+    assert result == b"GET /"

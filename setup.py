@@ -23,6 +23,7 @@ INSTALL_REQUIRES = [
     "itsdangerous",
     "jinja2",
     "toml",
+    "typing_extensions; python_version < '3.8'",
     "werkzeug >= 1.0.0",
 ]
 

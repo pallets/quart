@@ -248,7 +248,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
                 environ={"REQUEST_METHOD": "POST"},
                 limit=len(raw_data),
             )
-            for key in field_storage:  # type: ignore
+            for key in field_storage:
                 field_storage_key = field_storage[key]
                 if isinstance(field_storage_key, list):
                     for item in field_storage_key:
