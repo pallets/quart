@@ -5,6 +5,7 @@ import signal
 import sys
 import warnings
 from collections import defaultdict, OrderedDict
+from contextlib import asynccontextmanager
 from datetime import timedelta
 from itertools import chain
 from logging import Logger
@@ -13,6 +14,7 @@ from types import TracebackType
 from typing import (
     Any,
     AnyStr,
+    AsyncGenerator,
     Awaitable,
     Callable,
     cast,
@@ -1685,6 +1687,14 @@ class Quart(PackageStatic):
     def test_client(self) -> QuartClient:
         """Creates and returns a test client."""
         return self.test_client_class(self)
+
+    @asynccontextmanager
+    async def test_app(self) -> AsyncGenerator["Quart", None]:
+        await self.startup()
+        try:
+            yield self
+        finally:
+            await self.shutdown()
 
     def test_request_context(
         self,

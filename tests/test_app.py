@@ -377,3 +377,32 @@ async def test_propagation(debug: bool, testing: bool, raises: bool) -> None:
     else:
         response = await test_client.get("/")
         assert response.status_code == 500
+
+
+@pytest.mark.asyncio
+async def test_test_app() -> None:
+    startup = False
+    shutdown = False
+
+    app = Quart(__name__)
+
+    @app.before_serving
+    async def before() -> None:
+        nonlocal startup
+        startup = True
+
+    @app.after_serving
+    async def after() -> None:
+        nonlocal shutdown
+        shutdown = True
+
+    @app.route("/")
+    async def index() -> str:
+        return ""
+
+    async with app.test_app() as test_app:
+        assert startup
+        test_client = test_app.test_client()
+        await test_client.get("/")
+        assert not shutdown
+    assert shutdown

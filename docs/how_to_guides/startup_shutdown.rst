@@ -20,7 +20,7 @@ allowing ``current_app`` and ``g`` to be used.
 .. warning::
 
     Use ``g`` with caution, as it will reset after all the
-    ``before_serving`` functions complete. It can still be used within 
+    ``before_serving`` functions complete. It can still be used within
     this context. If you want to create something used in routes, try
     storing it on the app instead.
 
@@ -49,21 +49,20 @@ To use this functionality simply do the following:
 Testing
 -------
 
-Quart's default test client does not wait for the ``startup`` and
-``shutdown`` events. This must be manually added when testing a Quart
-app using the ``before_serving`` or ``after_serving`` decorators. A
-recommended pytest fixture is:
+Quart's test client works on a request lifespan and hence does not
+call ``before_serving`` or ``after_serving`` functions. Instead
+Quart's test app can be used, for example
 
 .. code-block:: python
 
     @pytest.fixture(name="app", scope="function")
     async def _app():
         app = create_app()  # Initialize app
-        await app.startup()
-        yield app
-        await app.shutdown()
+        async with app.test_app() as test_app:
+            yield test_app
 
-The app fixture can then be used as normal.
+The app fixture can then be used as normal, knowing that the
+``before_serving`` and ``after_serving`` functions have been called,
 
 .. code-block:: python
 
