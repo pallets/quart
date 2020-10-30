@@ -17,19 +17,19 @@ class TaskLocal:
         object.__setattr__(self, "_storage", ContextVar("storage"))
 
     def __getattr__(self, name: str) -> Any:
-        values = self._storage.get({})
+        values = self._storage.get({}).copy()
         try:
             return values[name]
         except KeyError:
             raise AttributeError(name)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        values = self._storage.get({})
+        values = self._storage.get({}).copy()
         values[name] = value
         self._storage.set(values)
 
     def __delattr__(self, name: str) -> None:
-        values = self._storage.get({})
+        values = self._storage.get({}).copy()
         try:
             del values[name]
             self._storage.set(values)

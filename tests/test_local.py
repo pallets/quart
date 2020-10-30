@@ -13,6 +13,8 @@ async def test_task_local() -> None:
     for _ in range(tasks):
         queue.put_nowait(None)
 
+    local_.test = 0
+
     async def _test_local(value: int) -> int:
         local_.test = value
         await queue.get()
