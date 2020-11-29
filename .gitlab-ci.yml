@@ -8,10 +8,16 @@ py38:
   image: python:3.8
   script:
   - pip install tox
-  - tox -e docs,format,mypy,py38,pep8,setuppy,manifest
+  - tox -e py38
+
+py39:
+  image: python:3.9
+  script:
+  - pip install tox
+  - tox -e docs,format,mypy,py39,pep8,setuppy,manifest
 
 pages:
-  image: python:3.8
+  image: python:3.9
   script:
   - pip install sphinx pydata-sphinx-theme
   - python setup.py install
