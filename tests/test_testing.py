@@ -3,7 +3,7 @@ from typing import Optional
 import pytest
 from werkzeug.datastructures import Headers
 
-from quart import jsonify, Quart, redirect, request, Response, session
+from quart import jsonify, Quart, redirect, request, Response, session, websocket
 from quart.exceptions import BadRequest
 from quart.testing import (
     make_test_body_with_headers,
@@ -295,3 +295,18 @@ async def test_with_usage() -> None:
         await client.get("/")
         assert request.method == "GET"
         assert session["hello"] == "world"
+
+
+@pytest.mark.asyncio
+async def test_websocket_json() -> None:
+    app = Quart(__name__)
+
+    @app.websocket("/ws/")
+    async def ws() -> None:
+        data = await websocket.receive_json()
+        await websocket.send_json(data)
+
+    async with app.test_client().websocket("/ws/") as test_websocket:
+        await test_websocket.send_json({"foo": "bar"})
+        data = await test_websocket.receive_json()
+        assert data == {"foo": "bar"}

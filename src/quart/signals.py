@@ -70,6 +70,14 @@ got_request_exception = _signals.signal("got-request-exception")
 # functions should have a signature of Callable[[Quart], None]
 websocket_started = _signals.signal("websocket-started")
 
+#: Called on receipt of a message over the websocket, connected
+# functions should have a signature of Callable[[AnyStr], None]
+websocket_received = _signals.signal("websocket-received")
+
+#: Called when a message has been sent over the websocket, connected
+# functions should have a signature of Callable[[AnyStr], None]
+websocket_sent = _signals.signal("websocket-sent")
+
 #: Called after a response is fully finalised, connected functions
 # should have a signature of Callable[[Quart, Optional[Response]], None]
 websocket_finished = _signals.signal("websocket-finished")

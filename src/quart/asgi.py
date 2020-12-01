@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from werkzeug.datastructures import Headers
 
 from .debug import traceback_response
+from .signals import websocket_received, websocket_sent
 from .wrappers import Request, Response, sentinel, Websocket  # noqa: F401
 
 if TYPE_CHECKING:
@@ -122,7 +123,9 @@ class ASGIWebsocketConnection:
         while True:
             event = await receive()
             if event["type"] == "websocket.receive":
-                await self.queue.put(event.get("bytes") or event["text"])
+                message = event.get("bytes") or event["text"]
+                await websocket_received.send(message)
+                await self.queue.put(message)
             elif event["type"] == "websocket.disconnect":
                 return
 
@@ -185,6 +188,7 @@ class ASGIWebsocketConnection:
             await send({"type": "websocket.send", "text": data})
         else:
             await send({"type": "websocket.send", "bytes": data})
+        await websocket_sent.send(data)
 
     async def accept_connection(
         self, send: Callable, headers: Headers, subprotocol: Optional[str]
