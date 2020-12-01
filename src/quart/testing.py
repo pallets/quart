@@ -16,7 +16,7 @@ from werkzeug.http import dump_cookie
 from .ctx import RequestContext
 from .exceptions import BadRequest
 from .globals import _request_ctx_stack
-from .json import dumps
+from .json import dumps, loads
 from .sessions import Session
 from .wrappers import Request, Response
 
@@ -46,6 +46,14 @@ class _TestingWebsocket:
     async def send(self, data: AnyStr) -> None:
         await self._check_for_response()
         await self.remote_queue.put(data)
+
+    async def receive_json(self) -> Any:
+        data = await self.receive()
+        return loads(data)
+
+    async def send_json(self, data: Any) -> None:
+        raw = dumps(data)
+        await self.send(raw)
 
     async def accept(self, headers: Headers, subprotocol: Optional[str]) -> None:
         self.accepted = True
