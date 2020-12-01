@@ -6,6 +6,11 @@
    :width: 300px
    :alt: Quart logo
 
+.. toctree::
+   :hidden:
+
+   index.rst
+
 Quart is a Python web microframework based on Asyncio. It is intended
 to provide the easiest way to use asyncio in a web context, especially
 with existing Flask apps. If you are new to Python you should start by
