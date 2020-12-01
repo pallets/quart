@@ -57,7 +57,7 @@ from .static import safe_join, send_file, send_from_directory
 from .templating import render_template, render_template_string
 from .typing import ResponseReturnValue
 from .utils import redirect
-from .wrappers import Request, Response
+from .wrappers import Request, Response, Websocket
 
 __all__ = (
     "__version__",
@@ -114,4 +114,5 @@ __all__ = (
     "websocket_finished",
     "websocket_started",
     "websocket_tearing_down",
+    "Websocket",
 )
