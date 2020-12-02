@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from functools import wraps
 from typing import Any, Callable, List, Optional, Tuple
 
 from blinker import NamedSignal, Namespace
 
-from .utils import ensure_coroutine
+from .utils import is_coroutine_function
 
 signals_available = True
 
@@ -21,7 +22,14 @@ class AsyncNamedSignal(NamedSignal):  # type: ignore
         return result
 
     def connect(self, receiver: Callable, *args: Any, **kwargs: Any) -> Callable:
-        handler = ensure_coroutine(receiver)
+        if is_coroutine_function(receiver):
+            handler = receiver
+        else:
+
+            @wraps(receiver)
+            async def handler(*a: Any, **k: Any) -> Any:
+                return receiver(*a, **k)
+
         if handler is not receiver and kwargs.get("weak", True):
             # Blinker will take a weakref to handler, which goes out
             # of scope with this method as it is a wrapper around the

@@ -4,7 +4,6 @@ import asyncio
 import functools
 import inspect
 import sys
-import warnings
 from contextvars import copy_context
 from functools import partial, wraps
 from inspect import isgenerator
@@ -28,20 +27,6 @@ You should be redirected to <a href="{location}">{location}</a>, if not please c
     """
 
     return current_app.response_class(body, status=code, headers={"Location": location})
-
-
-def ensure_coroutine(func: Callable) -> Callable:
-    warnings.warn(
-        "Please switch to using a coroutine function. "
-        "Synchronous functions will not be supported in 0.13 onwards.",
-        DeprecationWarning,
-    )
-    if is_coroutine_function(func):
-        return func
-    else:
-        async_func = asyncio.coroutine(func)
-        async_func._quart_async_wrapper = True  # type: ignore
-        return async_func
 
 
 def file_path_to_path(*paths: FilePath) -> Path:
