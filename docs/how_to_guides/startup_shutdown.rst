@@ -17,13 +17,6 @@ pools.  Quart supports this via the decorators
 The decorated functions are all called within the app context,
 allowing ``current_app`` and ``g`` to be used.
 
-.. warning::
-
-    Use ``g`` with caution, as it will reset after all the
-    ``before_serving`` functions complete. It can still be used within
-    this context. If you want to create something used in routes, try
-    storing it on the app instead.
-
 To use this functionality simply do the following:
 
 .. code-block:: python
@@ -40,7 +33,7 @@ To use this functionality simply do the following:
     @app.route("/")
     async def index():
         app.db_pool.execute(...)
-        # g.something is not available here
+        g.something.do_something_else()
 
     @app.after_serving
     async def create_db_pool():
