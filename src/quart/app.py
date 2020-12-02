@@ -1606,6 +1606,9 @@ class Quart(PackageStatic):
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
 
+        if debug is None:
+            debug = get_debug_flag()
+
         loop.set_debug(debug or False)
 
         shutdown_event = asyncio.Event()
@@ -1629,9 +1632,16 @@ class Quart(PackageStatic):
             keyfile,
             shutdown_trigger=shutdown_event.wait,  # type: ignore
         )
-
+        print(f" * Serving Quart app '{self.name}'")  # noqa: T001, T002
+        environment = get_env()
+        print(f" * Environment: {environment}")  # noqa: T001, T002
+        if environment == "production":
+            print(  # noqa: T001, T002
+                " * Please use an ASGI server (e.g. Hypercorn) directly in production"
+            )
+        print(f" * Debug mode: {debug or False}")  # noqa: T001, T002
         scheme = "https" if certfile is not None and keyfile is not None else "http"
-        print(f"Running on {scheme}://{host}:{port} (CTRL + C to quit)")  # noqa: T001, T002
+        print(f" * Running on {scheme}://{host}:{port} (CTRL + C to quit)")  # noqa: T001, T002
 
         try:
             loop.run_until_complete(task)
