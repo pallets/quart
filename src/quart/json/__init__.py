@@ -4,7 +4,7 @@ import json
 from datetime import date
 from email.utils import formatdate
 from time import mktime
-from typing import Any, Optional, Type, TYPE_CHECKING
+from typing import Any, Dict, IO, Optional, Type, TYPE_CHECKING
 from uuid import UUID
 
 from jinja2 import Markup
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from ..wrappers import Response  # noqa: F401
 
 
-def dumps(object_: Any, app: Optional["Quart"] = None, **kwargs: Any) -> str:
+def _dump_arg_defaults(kwargs: Dict[str, Any], app: Optional["Quart"] = None) -> Dict[str, Any]:
     json_encoder: Type[json.JSONEncoder] = JSONEncoder
     if app is None and _app_ctx_stack.top is not None:  # has_app_context requires a circular import
         app = current_app._get_current_object()
@@ -31,11 +31,20 @@ def dumps(object_: Any, app: Optional["Quart"] = None, **kwargs: Any) -> str:
         kwargs.setdefault("sort_keys", app.config["JSON_SORT_KEYS"])
     kwargs.setdefault("sort_keys", True)
     kwargs.setdefault("cls", json_encoder)
+    return kwargs
 
+
+def dumps(object_: Any, app: Optional["Quart"] = None, **kwargs: Any) -> str:
+    kwargs = _dump_arg_defaults(kwargs, app)
     return json.dumps(object_, **kwargs)
 
 
-def loads(object_: str, app: Optional["Quart"] = None, **kwargs: Any) -> Any:
+def dump(object_: Any, fp: IO[str], app: Optional["Quart"] = None, **kwargs: Any) -> None:
+    kwargs = _dump_arg_defaults(kwargs, app)
+    json.dump(object_, fp, **kwargs)
+
+
+def _load_arg_defaults(kwargs: Dict[str, Any], app: Optional["Quart"] = None) -> Dict[str, Any]:
     json_decoder: Type[json.JSONDecoder] = JSONDecoder
     if app is None and _app_ctx_stack.top is not None:  # has_app_context requires a circular import
         app = current_app._get_current_object()
@@ -47,8 +56,17 @@ def loads(object_: str, app: Optional["Quart"] = None, **kwargs: Any) -> Any:
             if blueprint is not None and blueprint.json_decoder is not None:
                 json_decoder = blueprint.json_decoder
     kwargs.setdefault("cls", json_decoder)
+    return kwargs
 
+
+def loads(object_: str, app: Optional["Quart"] = None, **kwargs: Any) -> Any:
+    kwargs = _load_arg_defaults(kwargs, app)
     return json.loads(object_, **kwargs)
+
+
+def load(fp: IO[str], app: Optional["Quart"] = None, **kwargs: Any) -> Any:
+    kwargs = _load_arg_defaults(kwargs, app)
+    return json.load(fp, **kwargs)
 
 
 def htmlsafe_dumps(object_: Any, **kwargs: Any) -> str:
