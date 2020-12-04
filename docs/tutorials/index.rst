@@ -7,13 +7,14 @@ Tutorials
 
    installation.rst
    quickstart.rst
-   AsyncProgressBar_tutorial.rst
+   asyncio.rst
+   developing.rst
    blog_tutorial.rst
+   websocket_tutorial.rst
    broadcast_tutorial.rst
+   deployment.rst
+   AsyncProgressBar_tutorial.rst
    flask_ext_tutorial.rst
    http2_tutorial.rst
    video_tutorial.rst
-   websocket_tutorial.rst
-   deployment.rst
    large_application.rst
-   asyncio.rst

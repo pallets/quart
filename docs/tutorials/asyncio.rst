@@ -1,7 +1,7 @@
 .. _asyncio:
 
-Asyncio
-=======
+Introduction to asyncio
+=======================
 
 Asyncio is the part of the Python standard library that provides an
 event loop with IO (input/output) operations. It exists to allow
