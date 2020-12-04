@@ -9,7 +9,19 @@ from functools import partial, wraps
 from inspect import isgenerator
 from os import PathLike
 from pathlib import Path
-from typing import Any, AsyncGenerator, Callable, Coroutine, Generator, List, TYPE_CHECKING, Union
+from typing import (
+    Any,
+    AsyncGenerator,
+    Callable,
+    Coroutine,
+    Generator,
+    List,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
+
+from werkzeug.datastructures import Headers
 
 from .globals import current_app
 from .typing import FilePath
@@ -115,3 +127,11 @@ def is_coroutine_function(func: Any) -> bool:
             return False
         result = bool(func.__code__.co_flags & inspect.CO_COROUTINE)
         return result or getattr(func, "_is_coroutine", None) is asyncio.coroutines._is_coroutine
+
+
+def encode_headers(headers: Headers) -> List[Tuple[bytes, bytes]]:
+    return [(key.lower().encode(), value.encode()) for key, value in headers.items()]
+
+
+def decode_headers(headers: List[Tuple[bytes, bytes]]) -> Headers:
+    return Headers([(key.decode(), value.decode()) for key, value in headers])

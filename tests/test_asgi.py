@@ -5,12 +5,8 @@ import pytest
 from werkzeug.datastructures import Headers
 
 from quart import Quart
-from quart.asgi import (
-    _convert_version,
-    _encode_headers,
-    ASGIHTTPConnection,
-    ASGIWebsocketConnection,
-)
+from quart.asgi import _convert_version, ASGIHTTPConnection, ASGIWebsocketConnection
+from quart.utils import encode_headers
 
 try:
     from unittest.mock import AsyncMock
@@ -186,7 +182,7 @@ async def test_websocket_accept_connection(
             {
                 "subprotocol": subprotocol,
                 "type": "websocket.accept",
-                "headers": _encode_headers(headers),
+                "headers": encode_headers(headers),
             }
         )
     else:
@@ -202,10 +198,6 @@ async def test_websocket_accept_connection_warns() -> None:
 
     with pytest.warns(None):
         await connection.accept_connection(mock_send, Headers({"a": "b"}), None)
-
-
-def test__encode_headers() -> None:
-    assert _encode_headers(Headers({"Foo": "Bar"})) == [(b"foo", b"Bar")]
 
 
 def test__convert_version() -> None:

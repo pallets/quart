@@ -85,6 +85,7 @@ async def test_request_exceeds_max_content_length() -> None:
         headers,
         "",
         "1.1",
+        {},
         max_content_length=max_content_length,
         send_push_promise=no_op_push,
     )
@@ -95,7 +96,16 @@ async def test_request_exceeds_max_content_length() -> None:
 @pytest.mark.asyncio
 async def test_request_get_data_timeout() -> None:
     request = Request(
-        "POST", "http", "/", b"", Headers(), "", "1.1", body_timeout=1, send_push_promise=no_op_push
+        "POST",
+        "http",
+        "/",
+        b"",
+        Headers(),
+        "",
+        "1.1",
+        {},
+        body_timeout=1,
+        send_push_promise=no_op_push,
     )
     with pytest.raises(RequestTimeout):
         await request.get_data()
@@ -111,6 +121,7 @@ async def test_request_values() -> None:
         Headers({"host": "quart.com", "Content-Type": "application/x-www-form-urlencoded"}),
         "",
         "1.1",
+        {},
         send_push_promise=no_op_push,
     )
     request.body.append(urlencode({"a": "d"}).encode())
@@ -142,6 +153,7 @@ async def test_request_send_push_promise() -> None:
         ),
         "",
         "2",
+        {},
         send_push_promise=_push,
     )
     await request.send_push_promise("/")

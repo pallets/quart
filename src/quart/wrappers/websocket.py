@@ -22,6 +22,7 @@ class Websocket(BaseRequestWebsocket):
         receive: Callable,
         send: Callable,
         accept: Callable,
+        scope: dict,
     ) -> None:
         """Create a request object.
 
@@ -35,10 +36,10 @@ class Websocket(BaseRequestWebsocket):
             http_version: The HTTP version of the request.
             subprotocols: The subprotocols requested.
             receive: Returns an awaitable of the current data
-
             accept: Idempotent callable to accept the websocket connection.
+            scope: Underlying ASGI scope dictionary.
         """
-        super().__init__("GET", scheme, path, query_string, headers, root_path, http_version)
+        super().__init__("GET", scheme, path, query_string, headers, root_path, http_version, scope)
         self._accept = accept
         self._receive = receive
         self._send = send

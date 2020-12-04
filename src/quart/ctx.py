@@ -36,8 +36,6 @@ class _BaseRequestWebsocketContext:
         app: "Quart",
         request_websocket: BaseRequestWebsocket,
         session: Optional[Session] = None,
-        *,
-        _preserve: bool = False,
     ) -> None:
         self.app = app
         self.request_websocket = request_websocket
@@ -45,7 +43,6 @@ class _BaseRequestWebsocketContext:
         self.request_websocket.routing_exception = None
         self.session = session
         self.preserved = False
-        self._should_preserve = _preserve
 
         self.match_request()
 
@@ -81,7 +78,7 @@ class _BaseRequestWebsocketContext:
         await _app_ctx_stack.top.pop(exc)
 
     async def auto_pop(self, exc: BaseException) -> None:
-        if self._should_preserve:
+        if self.request_websocket.scope.get("_quart._preserve_context", False):
             self.preserved = True
         else:
             await self.pop(exc)
@@ -118,10 +115,8 @@ class RequestContext(_BaseRequestWebsocketContext):
         app: "Quart",
         request: Request,
         session: Optional[Session] = None,
-        *,
-        _preserve: bool = False,
     ) -> None:
-        super().__init__(app, request, session, _preserve=_preserve)
+        super().__init__(app, request, session)
         self._after_request_functions: List[Callable] = []
 
     @property
@@ -156,10 +151,8 @@ class WebsocketContext(_BaseRequestWebsocketContext):
         app: "Quart",
         request: Websocket,
         session: Optional[Session] = None,
-        *,
-        _preserve: bool = False,
     ) -> None:
-        super().__init__(app, request, session, _preserve=_preserve)
+        super().__init__(app, request, session)
         self._after_websocket_functions: List[Callable] = []
 
     @property

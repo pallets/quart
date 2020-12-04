@@ -5,7 +5,6 @@ import signal
 import sys
 import warnings
 from collections import defaultdict, OrderedDict
-from contextlib import asynccontextmanager
 from datetime import timedelta
 from itertools import chain
 from logging import Logger
@@ -14,7 +13,6 @@ from types import TracebackType
 from typing import (
     Any,
     AnyStr,
-    AsyncGenerator,
     Awaitable,
     Callable,
     cast,
@@ -84,9 +82,10 @@ from .testing import (
     no_op_push,
     QuartClient,
     sentinel,
+    TestApp,
 )
 from .typing import FilePath, HeadersValue, ResponseReturnValue, StatusCode
-from .utils import file_path_to_path, is_coroutine_function, run_sync
+from .utils import encode_headers, file_path_to_path, is_coroutine_function, run_sync
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
@@ -170,6 +169,7 @@ class Quart(PackageStatic):
     )
     session_cookie_name = ConfigAttribute("SESSION_COOKIE_NAME")
     session_interface = SecureCookieSessionInterface()
+    test_app_class = TestApp
     test_client_class = QuartClient
     testing = ConfigAttribute("TESTING")
     url_map_class = QuartMap
@@ -1532,7 +1532,7 @@ class Quart(PackageStatic):
         """
         return AppContext(self)
 
-    def request_context(self, request: Request, *, _preserve: bool = False) -> RequestContext:
+    def request_context(self, request: Request) -> RequestContext:
         """Create and return a request context.
 
         Use the :meth:`test_request_context` whilst testing. This is
@@ -1546,11 +1546,9 @@ class Quart(PackageStatic):
         Arguments:
             request: A request to build a context around.
         """
-        return RequestContext(self, request, _preserve=_preserve)
+        return RequestContext(self, request)
 
-    def websocket_context(
-        self, websocket: Websocket, *, _preserve: bool = False
-    ) -> WebsocketContext:
+    def websocket_context(self, websocket: Websocket) -> WebsocketContext:
         """Create and return a websocket context.
 
         Use the :meth:`test_websocket_context` whilst testing. This is
@@ -1564,7 +1562,7 @@ class Quart(PackageStatic):
         Arguments:
             websocket: A websocket to build a context around.
         """
-        return WebsocketContext(self, websocket, _preserve=_preserve)
+        return WebsocketContext(self, websocket)
 
     def run(
         self,
@@ -1699,13 +1697,8 @@ class Quart(PackageStatic):
         """Creates and returns a test client."""
         return self.test_client_class(self)
 
-    @asynccontextmanager
-    async def test_app(self) -> AsyncGenerator["Quart", None]:
-        await self.startup()
-        try:
-            yield self
-        finally:
-            await self.shutdown()
+    def test_app(self) -> TestApp:
+        return self.test_app_class(self)
 
     def test_request_context(
         self,
@@ -1745,10 +1738,7 @@ class Quart(PackageStatic):
             self, path, headers, query_string
         )
         request_body, body_headers = make_test_body_with_headers(data, form, json)
-        # Replace with headers.update(**body_headers) when Werkzeug
-        # supports https://github.com/pallets/werkzeug/pull/1687
-        for key, value in body_headers.items():
-            headers[key] = value
+        headers.update(**body_headers)  # type: ignore
         request = self.request_class(
             method,
             scheme,
@@ -1758,6 +1748,18 @@ class Quart(PackageStatic):
             root_path,
             http_version,
             send_push_promise=send_push_promise,
+            scope={
+                "type": "http",
+                "http_version": http_version,
+                "asgi": {"spec_version": "2.1"},
+                "method": method,
+                "scheme": scheme,
+                "path": path,
+                "raw_path": path.encode("ascii"),
+                "query_string": query_string_bytes,
+                "root_path": root_path,
+                "headers": encode_headers(headers),
+            },
         )
         request.body.set_result(request_body)
         return self.request_context(request)
@@ -1829,14 +1831,17 @@ class Quart(PackageStatic):
 
         return response
 
-    async def handle_request(self, request: Request, *, _preserve: bool = False) -> Response:
-        async with self.request_context(request, _preserve=_preserve) as request_context:
+    async def handle_request(self, request: Request) -> Response:
+        async with self.request_context(request) as request_context:
             try:
                 return await self.full_dispatch_request(request_context)
             except asyncio.CancelledError:
                 raise  # CancelledErrors should be handled by serving code.
             except Exception as error:
                 return await self.handle_exception(error)
+            finally:
+                if request.scope.get("_quart._preserve_context", False):
+                    self._preserved_context = request_context.copy()
 
     async def full_dispatch_request(
         self, request_context: Optional[RequestContext] = None
@@ -1950,10 +1955,8 @@ class Quart(PackageStatic):
             await self.save_session(session_, response)
         return response
 
-    async def handle_websocket(
-        self, websocket: Websocket, *, _preserve: bool = False
-    ) -> Optional[Response]:
-        async with self.websocket_context(websocket, _preserve=_preserve) as websocket_context:
+    async def handle_websocket(self, websocket: Websocket) -> Optional[Response]:
+        async with self.websocket_context(websocket) as websocket_context:
             try:
                 return await self.full_dispatch_websocket(websocket_context)
             except asyncio.CancelledError:

@@ -4,11 +4,11 @@ import pytest
 from werkzeug.datastructures import Headers
 
 from quart import jsonify, Quart, redirect, request, Response, session, websocket
-from quart.exceptions import BadRequest
 from quart.testing import (
     make_test_body_with_headers,
     make_test_headers_path_and_query_string,
     QuartClient as Client,
+    WebsocketResponse,
 )
 
 
@@ -240,7 +240,7 @@ async def test_websocket_bad_request() -> None:
         return ""
 
     test_client = app.test_client()
-    with pytest.raises(BadRequest):
+    with pytest.raises(WebsocketResponse):
         async with test_client.websocket("/"):
             pass
 
@@ -255,7 +255,7 @@ async def test_push_promise() -> None:
         return ""
 
     test_client = app.test_client()
-    await test_client.get("/")
+    await test_client.get("/", http_version="2")
     assert test_client.push_promises[0][0] == "/"
 
 

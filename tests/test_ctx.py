@@ -44,6 +44,7 @@ def test_request_context_match() -> None:
         Headers([("host", "quart.com")]),
         "",
         "1.1",
+        {},
         send_push_promise=no_op_push,
     )
     RequestContext(app, request)
@@ -75,6 +76,7 @@ def test_request_context_matching_error(
         Headers([("host", "quart.com")]),
         "",
         "1.1",
+        {},
         send_push_promise=no_op_push,
     )
     RequestContext(app, request)
@@ -94,6 +96,7 @@ def test_bad_request_if_websocket_route() -> None:
         Headers([("host", "quart.com")]),
         "",
         "1.1",
+        {},
         send_push_promise=no_op_push,
     )
     RequestContext(app, request)
@@ -107,7 +110,7 @@ async def test_after_this_request() -> None:
     async with RequestContext(
         Quart(__name__),
         Request(
-            "GET", "http", path, query_string, headers, "", "1.1", send_push_promise=no_op_push
+            "GET", "http", path, query_string, headers, "", "1.1", {}, send_push_promise=no_op_push
         ),
     ) as context:
         after_this_request(lambda: "hello")
@@ -119,7 +122,7 @@ async def test_has_request_context() -> None:
     app = Quart(__name__)
     headers, path, query_string = make_test_headers_path_and_query_string(app, "/")
     request = Request(
-        "GET", "http", path, query_string, headers, "", "1.1", send_push_promise=no_op_push
+        "GET", "http", path, query_string, headers, "", "1.1", {}, send_push_promise=no_op_push
     )
     async with RequestContext(Quart(__name__), request):
         assert has_request_context() is True
@@ -272,6 +275,7 @@ async def test_overlapping_request_ctx() -> None:
         Headers([("host", "quart.com")]),
         "",
         "1.1",
+        {},
         send_push_promise=no_op_push,
     )
     ctx1 = app.request_context(request)
@@ -288,7 +292,7 @@ async def test_overlapping_websocket_ctx() -> None:
     app = Quart(__name__)
 
     websocket = Websocket(
-        "/", b"", "ws", Headers([("host", "quart.com")]), "", "1.1", [], None, None, None
+        "/", b"", "ws", Headers([("host", "quart.com")]), "", "1.1", [], None, None, None, {}
     )
     ctx1 = app.websocket_context(websocket)
     await ctx1.__aenter__()

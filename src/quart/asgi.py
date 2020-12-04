@@ -3,13 +3,14 @@ from __future__ import annotations
 import asyncio
 import warnings
 from functools import partial
-from typing import Any, AnyStr, Callable, cast, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Any, AnyStr, Callable, cast, Dict, List, Optional, Set, TYPE_CHECKING
 from urllib.parse import urlparse
 
 from werkzeug.datastructures import Headers
 
 from .debug import traceback_response
 from .signals import websocket_received, websocket_sent
+from .utils import encode_headers
 from .wrappers import Request, Response, sentinel, Websocket  # noqa: F401
 
 if TYPE_CHECKING:
@@ -70,7 +71,10 @@ class ASGIHTTPConnection:
         try:
             response = await self.app.handle_request(request)
         except Exception:
-            response = await traceback_response()
+            if self.app.propagate_exceptions:
+                raise
+            else:
+                response = await traceback_response()
 
         if response.timeout != sentinel:
             timeout = cast(Optional[float], response.timeout)
@@ -86,7 +90,7 @@ class ASGIHTTPConnection:
             {
                 "type": "http.response.start",
                 "status": response.status_code,
-                "headers": _encode_headers(response.headers),
+                "headers": encode_headers(response.headers),
             }
         )
 
@@ -98,7 +102,7 @@ class ASGIHTTPConnection:
     async def _send_push_promise(self, send: Callable, path: str, headers: Headers) -> None:
         if "http.response.push" in self.scope.get("extensions", {}):
             await send(
-                {"type": "http.response.push", "path": path, "headers": _encode_headers(headers)}
+                {"type": "http.response.push", "path": path, "headers": encode_headers(headers)}
             )
 
 
@@ -149,10 +153,18 @@ class ASGIWebsocketConnection:
             self.queue.get,
             partial(self.send_data, send),
             partial(self.accept_connection, send),
+            scope=self.scope,
         )
 
     async def handle_websocket(self, websocket: Websocket, send: Callable) -> None:
-        response = await self.app.handle_websocket(websocket)
+        try:
+            response = await self.app.handle_websocket(websocket)
+        except Exception:
+            if self.app.propagate_exceptions:
+                raise
+            else:
+                response = await traceback_response()
+
         if response is not None and not self._accepted:
             if "websocket.http.response" in self.scope.get("extensions", {}):
                 headers = [
@@ -197,7 +209,7 @@ class ASGIWebsocketConnection:
             message: Dict[str, Any] = {"subprotocol": subprotocol, "type": "websocket.accept"}
             spec_version = _convert_version(self.scope.get("asgi", {}).get("spec_version", "2.0"))
             if spec_version > [2, 0]:
-                message["headers"] = _encode_headers(headers)
+                message["headers"] = encode_headers(headers)
             elif headers:
                 warnings.warn("The ASGI Server does not support accept headers, headers not sent")
             await send(message)
@@ -242,10 +254,6 @@ def _raise_exceptions(tasks: Set[asyncio.Future]) -> None:
     for task in tasks:
         if not task.cancelled() and task.exception() is not None:
             raise task.exception()
-
-
-def _encode_headers(headers: Headers) -> List[Tuple[bytes, bytes]]:
-    return [(key.lower().encode(), value.encode()) for key, value in headers.items()]
 
 
 def _convert_version(raw: str) -> List[int]:

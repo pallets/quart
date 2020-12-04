@@ -9,7 +9,7 @@ from quart.wrappers.base import _BaseRequestResponse, BaseRequestWebsocket
 def test_basic_authorization() -> None:
     headers = Headers()
     headers["Authorization"] = "Basic {}".format(b64encode(b"identity:secret").decode("ascii"))
-    request = BaseRequestWebsocket("GET", "http", "/", b"", headers, "", "1.1")
+    request = BaseRequestWebsocket("GET", "http", "/", b"", headers, "", "1.1", {})
     auth = request.authorization
     assert auth.username == "identity"
     assert auth.password == "secret"
@@ -26,7 +26,7 @@ def test_digest_authorization() -> None:
         'response="abcd1235", '
         'opaque="abcd1236"'
     )
-    request = BaseRequestWebsocket("GET", "http", "/", b"", headers, "", "1.1")
+    request = BaseRequestWebsocket("GET", "http", "/", b"", headers, "", "1.1", {})
     auth = request.authorization
     assert auth.username == "identity"
     assert auth.realm == "realm@rea.lm"
@@ -110,7 +110,7 @@ def test_url_structure(
     expected_host_url: str,
 ) -> None:
     base_request_websocket = BaseRequestWebsocket(
-        method, scheme, path, query_string, Headers({"host": host}), "", "1.1"
+        method, scheme, path, query_string, Headers({"host": host}), "", "1.1", {}
     )
 
     assert base_request_websocket.path == expected_path
@@ -128,7 +128,7 @@ def test_url_structure(
 
 def test_query_string() -> None:
     base_request_websocket = BaseRequestWebsocket(
-        "GET", "http", "/", b"a=b&a=c&f", Headers({"host": "localhost"}), "", "1.1"
+        "GET", "http", "/", b"a=b&a=c&f", Headers({"host": "localhost"}), "", "1.1", {}
     )
     assert base_request_websocket.query_string == b"a=b&a=c&f"
     assert base_request_websocket.args.getlist("a") == ["b", "c"]

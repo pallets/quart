@@ -195,6 +195,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
         headers: Headers,
         root_path: str,
         http_version: str,
+        scope: dict,
     ) -> None:
         """Create a request or websocket base object.
 
@@ -207,6 +208,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
             root_path: The root path that should be prepended to all
                 routes.
             http_version: The HTTP version of the request.
+            scope: Underlying ASGI scope dictionary.
 
         Attributes:
             args: The query string arguments.
@@ -225,6 +227,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
         self.method = method
         self.root_path = root_path
         self.http_version = http_version
+        self.scope = scope
 
     @property
     def endpoint(self) -> Optional[str]:
