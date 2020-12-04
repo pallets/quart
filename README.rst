@@ -8,11 +8,11 @@ Quart
 
 Quart is an async Python web microframework. Using Quart you can,
 
- * render and serve HTML templates,
- * write (RESTful) JSON APIs,
- * serve WebSockets,
- * stream request and response data,
- * do pretty much anything over the HTTP or WebSocket protocols.
+* render and serve HTML templates,
+* write (RESTful) JSON APIs,
+* serve WebSockets,
+* stream request and response data,
+* do pretty much anything over the HTTP or WebSocket protocols.
 
 Quickstart
 ----------
