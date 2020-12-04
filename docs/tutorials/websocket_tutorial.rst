@@ -1,4 +1,4 @@
-.. blog_tutorial:
+.. _websocket_tutorial:
 
 Tutorial: Websockets
 ====================

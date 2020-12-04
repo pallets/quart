@@ -14,10 +14,10 @@ serve requests in development mode by default (e.g. with
 :meth:`~quart.app.Quart.run`).
 
 To use Quart with an ASGI server simply point the server at the Quart
-application, for example for a simple application in a file called
-``example.py``,
+application, for example,
 
 .. code-block:: python
+   :caption: example.py
 
     from quart import Quart
 
@@ -38,21 +38,13 @@ See the `Hypercorn docs <https://pgjones.gitlab.io/hypercorn/>`_.
 Alternative ASGI Servers
 ------------------------
 
-==================================================== ====== =========== ==================
-Server name                                          HTTP/2 Server Push Websocket Response
-==================================================== ====== =========== ==================
-`Hypercorn <https://gitlab.com/pgjones/hypercorn>`_  ✓      ✓           ✓
-`Uvicorn <https://github.com/encode/uvicorn>`_       ✗      ✗           ✗
-`Daphne <https://github.com/django/daphne>`_         ✓      ✗           ✗
-==================================================== ====== =========== ==================
-
-HTTP/2 deployment
------------------
-
-Most web browsers only support HTTP/2 over a TLS connection with
-TLSv1.2 or better and certain ciphers. So to use these features with
-Quart you must chose an ASGI server that implements HTTP/2 and use
-SSL.
+==================================================== ====== ====== =========== ==================
+Server name                                          HTTP/2 HTTP/3 Server Push Websocket Response
+==================================================== ====== ====== =========== ==================
+`Hypercorn <https://gitlab.com/pgjones/hypercorn>`_  ✓      ✓      ✓           ✓
+`Daphne <https://github.com/django/daphne>`_         ✓      ✗      ✗           ✗
+`Uvicorn <https://github.com/encode/uvicorn>`_       ✗      ✗      ✗           ✗
+==================================================== ====== ====== =========== ==================
 
 Serverless deployment
 ---------------------

@@ -6,19 +6,13 @@ Quart
 
 |Build Status| |docs| |pypi| |http| |python| |license| |chat|
 
-Quart is a Python `ASGI
-<https://github.com/django/asgiref/blob/master/specs/asgi.rst>`_ web
-microframework. It is intended to provide the easiest way to use
-asyncio functionality in a web context, especially with existing Flask
-apps. This is possible as the Quart API is a superset of the `Flask
-<https://github.com/pallets/flask>`_ API.
+Quart is an async Python web microframework. Using Quart you can,
 
-Quart aims to be a complete web microframework, as it supports
-HTTP/1.1, HTTP/2 and websockets. Quart is very extendable and has a
-number of known `extensions
-<https://pgjones.gitlab.io/quart/how_to_guides/quart_extensions.html>`_ and works
-with many of the `Flask extensions
-<https://pgjones.gitlab.io/quart/how_to_guides/flask_extensions.html>`_.
+ * render and serve HTML templates,
+ * write (RESTful) JSON APIs,
+ * serve WebSockets,
+ * stream request and response data,
+ * do pretty much anything over the HTTP or WebSocket protocols.
 
 Quickstart
 ----------
@@ -38,20 +32,26 @@ A minimal Quart example is,
 
 .. code-block:: python
 
-    from quart import Quart, websocket
+    from quart import Quart, render_template, websocket
 
     app = Quart(__name__)
 
-    @app.route('/')
+    @app.route("/")
     async def hello():
-        return 'hello'
+        return await render_template("index.html")
 
-    @app.websocket('/ws')
+    @app.route("/api")
+    async def json():
+        return {"hello": "world"}
+
+    @app.websocket("/ws")
     async def ws():
         while True:
-            await websocket.send('hello')
+            await websocket.send("hello")
+            await websocket.send_json({"hello": "world"})
 
-    app.run()
+    if __name__ == "__main__":
+        app.run()
 
 if the above is in a file called ``app.py`` it can be run as,
 
@@ -59,33 +59,16 @@ if the above is in a file called ``app.py`` it can be run as,
 
     $ python app.py
 
-Also see this `cheatsheet
-<https://pgjones.gitlab.io/quart/reference/cheatsheet.html>`_.
-
-To deploy in a production setting see the `deployment
-<https://pgjones.gitlab.io/quart/tutorials/deployment.html>`_ documentation.
-
-Features
---------
-
-Quart supports the full ASGI 3.0 specification as well as the
-websocket response and HTTP/2 server push extensions. For those of you
-familiar with Flask, Quart extends the Flask-API by adding support for,
-
-- HTTP/1.1 request streaming.
-- Websockets.
-- HTTP/2 server push.
-
-Note that not all ASGI servers support these features, for this reason
-the recommended server is `Hypercorn
-<https://gitlab.com/pgjones/hypercorn>`_.
+To deploy this app in a production setting see the `deployment
+<https://pgjones.gitlab.io/quart/tutorials/deployment.html>`_
+documentation.
 
 Contributing
 ------------
 
 Quart is developed on `GitLab <https://gitlab.com/pgjones/quart>`_. If
 you come across an issue, or have a feature request please open an
-`issue <https://gitlab.com/pgjones/quart/issues>`_.  If you want to
+`issue <https://gitlab.com/pgjones/quart/issues>`_. If you want to
 contribute a fix or the feature-implementation please do (typo fixes
 welcome), by proposing a `merge request
 <https://gitlab.com/pgjones/quart/merge_requests>`_.
@@ -106,21 +89,25 @@ this will check the code style and run the tests.
 Help
 ----
 
-The Quart `documentation <https://pgjones.gitlab.io/quart/>`_ is the
-best place to start, after that try searching `stack overflow
-<https://stackoverflow.com/questions/tagged/quart>`_, if you still
+The Quart `documentation <https://pgjones.gitlab.io/quart/>`_ or
+`cheatsheet
+<https://pgjones.gitlab.io/quart/reference/cheatsheet.html>`_ are the
+best places to start, after that try searching `stack overflow
+<https://stackoverflow.com/questions/tagged/quart>`_ or ask for help
+`on gitter <https://gitter.im/python-quart/lobby>`_. If you still
 can't find an answer please `open an issue
 <https://gitlab.com/pgjones/quart/issues>`_.
 
-API Compatibility with Flask
-----------------------------
+Relationship with Flask
+-----------------------
 
-The Flask API can be described as consisting of the Flask public and
-private APIs and Werkzeug upon which Flask is based. Quart is designed
-to be fully compatible with the Flask public API (aside from async and
-await keywords). Thereafter the aim is to be mostly compatible with
-the Flask private API and to provide no guarantees about the Werkzeug
-API.
+Quart is an asyncio reimplementation of the popular `Flask
+<http://flask.pocoo.org/>`_ microframework API. This means that if you
+understand Flask you understand Quart.
+
+Like Flask Quart has an ecosystem of extensions for more specific
+needs. In addition a number of the Flask flask_extensions work with
+Quart.
 
 Migrating from Flask
 ~~~~~~~~~~~~~~~~~~~~
@@ -128,8 +115,8 @@ Migrating from Flask
 It should be possible to migrate to Quart from Flask by a find and
 replace of ``flask`` to ``quart`` and then adding ``async`` and
 ``await`` keywords. See the `docs
-<https://pgjones.gitlab.io/quart/how_to_guides/flask_migration.html>`_ for full
-details.
+<https://pgjones.gitlab.io/quart/how_to_guides/flask_migration.html>`_
+for more help.
 
 
 .. |Build Status| image:: https://gitlab.com/pgjones/quart/badges/master/pipeline.svg

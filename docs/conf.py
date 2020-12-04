@@ -96,7 +96,6 @@ html_theme_options = {
   "external_links": [
       {"name": "Source code", "url": "https://gitlab.com/pgjones/quart"},
       {"name": "Issues", "url": "https://gitlab.com/pgjones/quart/issues"},
-      {"name": "Flask documentation", "url": "http://flask.pocoo.org/docs/"},
   ]
 }
 

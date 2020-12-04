@@ -1,4 +1,4 @@
-.. blog_tutorial:
+.. _blog_tutorial:
 
 Tutorial: A simple blog
 =======================
