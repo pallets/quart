@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Callable, Optional
 
 import pytest
 from werkzeug.datastructures import Headers
@@ -310,3 +310,43 @@ async def test_websocket_json() -> None:
         await test_websocket.send_json({"foo": "bar"})
         data = await test_websocket.receive_json()
         assert data == {"foo": "bar"}
+
+
+@pytest.mark.asyncio
+async def test_middleware() -> None:
+    app = Quart(__name__)
+
+    @app.route("/")
+    async def index() -> str:
+        return "Hello"
+
+    class OddMiddleware:
+        def __init__(self, app: Callable) -> None:
+            self.app = app
+
+        async def __call__(self, scope: dict, receive: Callable, send: Callable) -> None:
+            if scope["path"] != "/":
+                await send(
+                    {
+                        "type": "http.response.start",
+                        "status": 401,
+                        "headers": [(b"content-length", b"0")],
+                    }
+                )
+                await send(
+                    {
+                        "type": "http.response.body",
+                        "body": b"",
+                        "more_body": False,
+                    }
+                )
+            else:
+                await self.app(scope, receive, send)
+
+    app.asgi_app = OddMiddleware(app.asgi_app)  # type: ignore
+
+    client = app.test_client()
+    response = await client.get("/")
+    assert response.status_code == 200
+    response = await client.get("/odd")
+    assert response.status_code == 401
