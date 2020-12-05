@@ -20,7 +20,7 @@ a separate thread via the ``run_in_executor`` function.
     async def io_background_task():
         ...
 
-    async def cpu_background_task():
+    def cpu_background_task():
         ...
 
     @app.route('/jobs/', methods=['POST'])
