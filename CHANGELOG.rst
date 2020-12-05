@@ -1,3 +1,29 @@
+0.14.0 2020-12-05
+-----------------
+
+* Add user_agent property to requests/websockets - to easily extract
+  the user agent using Werkzeug's UserAgent class.
+* Bugfix set the content length when using send file - instead of
+  using chunked transfer encoding.
+* Introduce a test_app method - this should be used to ensure that
+  the startup & shutdown functions are run during testing.
+* Bugfix prevent local data sharing.
+* Officially support Python 3.9.
+* Add send and receive json to the test websocket client - allows a
+  simpler way for json to be sent and received using the app's encoder
+  and decoder.
+* Add signals for websocket message receipt and sending - specifically
+  the ``websocket_received`` and ``websocket_sent`` signals.
+* Add dump and load functions to the json module - as matching Flask.
+* Enhance the dev server output.
+* Change AppContext lifespan interaction - this pushes the app context
+  on startup and pops on shutdown meaning ``g`` is available
+  throughout without being cleared.
+* Major refactor of the testing system - this ensures that any
+  middleware and lifespans are correctly tested. It also introduces a
+  ``request`` method on the test client for a request connection (like
+  the websocket connection) for testing streaming.
+
 0.13.1 2020-09-09
 -----------------
 
