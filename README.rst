@@ -4,7 +4,7 @@ Quart
 .. image:: https://assets.gitlab-static.net/pgjones/quart/raw/master/artwork/logo.png
    :alt: Quart logo
 
-|Build Status| |docs| |pypi| |http| |python| |license| |chat|
+|Build Status| |docs| |pypi| |python| |license| |chat|
 
 Quart is an async Python web microframework. Using Quart you can,
 
@@ -127,9 +127,6 @@ for more help.
 
 .. |pypi| image:: https://img.shields.io/pypi/v/quart.svg
    :target: https://pypi.python.org/pypi/Quart/
-
-.. |http| image:: https://img.shields.io/badge/http-1.0,1.1,2-orange.svg
-   :target: https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol
 
 .. |python| image:: https://img.shields.io/pypi/pyversions/quart.svg
    :target: https://pypi.python.org/pypi/Quart/
