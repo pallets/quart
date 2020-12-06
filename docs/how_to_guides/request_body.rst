@@ -54,3 +54,31 @@ provides methods to iterate over the body,
 
     Iterating over the body consumes the data, so any further usage of
     the data is not possible unless it is saved during the iteration.
+
+Testing
+'''''''
+
+To test that a route consumes the body iteratively you will need to use
+the :meth:`~quart.testing.client.QuartClient.request` method,
+
+.. code-block:: python
+
+    async def test_stream() -> None:
+        test_client = app.test_client()
+        async with test_client.request(...) as connection:
+            await connection.send(b"data")
+            await connection.send_complete()
+        response = await connection.as_response()
+        assert response ...
+
+it also makes sense to check the code cleans up as you expect if the
+client disconnects whilst the request body is being sent,
+
+.. code-block:: python
+
+    async def test_stream_closed() -> None:
+        test_client = app.test_client()
+        async with test_client.request(...) as connection:
+            await connection.send(b"partial")
+            await connection.close()
+        # Check cleanup markers....

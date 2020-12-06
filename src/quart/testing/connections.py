@@ -47,6 +47,13 @@ class TestHTTPConnection:
     async def send_complete(self) -> None:
         await self._send_queue.put({"type": "http.request", "body": b"", "more_body": False})
 
+    async def receive(self) -> bytes:
+        data = await self._receive_queue.get()
+        if isinstance(data, Exception):
+            raise data
+        else:
+            return data
+
     async def close(self) -> None:
         await self._send_queue.put({"type": "http.disconnect"})
 

@@ -5,7 +5,7 @@ Streaming response
 
 Quart supports responses that are meant to be streamed to the client,
 rather than received in one block. If you are interested in streaming
-the request data see :ref:`request_body` or in two way streaming see
+the request data see :ref:`request_body` or for duplex streaming see
 :ref:`websockets`.
 
 To stream a response the view-function should return an asynchronous
@@ -48,3 +48,23 @@ Server Sent Events
 
 See the :ref:`broadcast_tutorial` for details on how to utilise server
 sent events.
+
+Testing
+'''''''
+
+The test client :meth:`~quart.testing.client.QuartClient.get` and
+associated methods will collate the entire streamed response. If you
+want to test that the route actually streams the response, or to test
+routes that stream until the client disconnects you will need to use
+the :meth:`~quart.testing.client.QuartClient.request` method,
+
+.. code-block:: python
+
+    async def test_stream() -> None:
+        test_client = app.test_client()
+        async with test_client.request(..) as connection:
+            data = await connection.receive()
+            assert data ...
+            assert connection.status_code == 200
+            ...
+            await connection.close()  # For infinite streams
