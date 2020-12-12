@@ -343,6 +343,19 @@ class Quart(PackageStatic):
         """Return if the app has received a request."""
         return self._got_first_request
 
+    @property
+    def templates_auto_reload(self) -> bool:
+        """Returns True if templates should auto reload."""
+        result = self.config["TEMPLATES_AUTO_RELOAD"]
+        if result is None:
+            return self.debug
+        else:
+            return result
+
+    @templates_auto_reload.setter
+    def templates_auto_reload(self, value: Optional[bool]) -> None:
+        self.config["TEMPLATES_AUTO_RELOAD"] = value
+
     def auto_find_instance_path(self) -> Path:
         """Locates the instance_path if it was not provided"""
         prefix, package_path = find_package(self.import_name)
@@ -400,7 +413,7 @@ class Quart(PackageStatic):
         if "autoescape" not in options:
             options["autoescape"] = self.select_jinja_autoescape
         if "auto_reload" not in options:
-            options["auto_reload"] = self.config["TEMPLATES_AUTO_RELOAD"] or self.debug
+            options["auto_reload"] = self.templates_auto_reload
         jinja_env = self.jinja_environment(self, **options)
         jinja_env.globals.update(
             {
