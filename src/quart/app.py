@@ -148,7 +148,6 @@ class Quart(PackageStatic):
     asgi_lifespan_class = ASGILifespan
     asgi_websocket_class = ASGIWebsocketConnection
     config_class = Config
-    debug = ConfigAttribute("DEBUG")
     env = ConfigAttribute("ENV")
     jinja_environment = Environment
     jinja_options = {
@@ -342,6 +341,19 @@ class Quart(PackageStatic):
     def got_first_request(self) -> bool:
         """Return if the app has received a request."""
         return self._got_first_request
+
+    @property
+    def debug(self) -> bool:
+        """Activate debug mode (extra checks, logging and reloading).
+
+        Should/must be False in production.
+        """
+        return self.config["DEBUG"]
+
+    @debug.setter
+    def debug(self, value: bool) -> None:
+        self.config["DEBUG"] = value
+        self.jinja_env.auto_reload = self.templates_auto_reload
 
     @property
     def templates_auto_reload(self) -> bool:
