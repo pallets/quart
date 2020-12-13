@@ -1,3 +1,11 @@
+0.14.1 2020-12-13
+-----------------
+
+* Bugfix add missing receive to test request connection and docs.
+* Bugfix Add the templates_auto_reload API.
+* Bugfix setting the debug property on the app now also sets the auto
+  reloading for the jinja environment.
+
 0.14.0 2020-12-05
 -----------------
 
