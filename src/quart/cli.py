@@ -11,14 +11,19 @@ from typing import Any, Callable, List, Optional, TYPE_CHECKING
 
 import click
 
-from .__about__ import __version__
 from .helpers import get_debug_flag
+
+try:
+    from importlib.metadata import version
+except ModuleNotFoundError:
+    from importlib_metadata import version  # type: ignore
 
 try:
     from dotenv import load_dotenv
 except ImportError:
     pass
 
+__version__ = version("quart")
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa: F401

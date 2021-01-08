@@ -14,15 +14,15 @@ py39:
   image: python:3.9
   script:
   - pip install tox
-  - tox -e docs,format,mypy,py39,pep8,setuppy,manifest
+  - tox -e docs,format,mypy,pep8,py39
 
 pages:
   image: python:3.9
   script:
-  - pip install sphinx pydata-sphinx-theme
-  - python setup.py install
-  - rm -rf docs/source && sphinx-apidoc -e -f -o docs/reference/source/ src/quart/
-  - cd docs/ && make html && cd ../
+  - pip install Sphinx pydata-sphinx-theme .
+  - rm -rf docs/source
+  - sphinx-apidoc -e -f -o docs/reference/source/ src/quart/
+  - sphinx-build -b html docs/ docs/_build/html/
   - mv docs/_build/html/ public/
   artifacts:
     paths:

@@ -3,7 +3,6 @@ from __future__ import annotations
 from jinja2 import escape, Markup
 from werkzeug.exceptions import abort
 
-from .__about__ import __version__
 from .app import Quart
 from .blueprints import Blueprint
 from .config import Config
@@ -62,7 +61,6 @@ from .utils import redirect
 from .wrappers import Request, Response, Websocket
 
 __all__ = (
-    "__version__",
     "_app_ctx_stack",
     "_request_ctx_stack",
     "_websocket_ctx_stack",

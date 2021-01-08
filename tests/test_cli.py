@@ -9,9 +9,8 @@ from _pytest.monkeypatch import MonkeyPatch
 from click.testing import CliRunner
 
 import quart.cli
-from quart.__about__ import __version__
 from quart.app import Quart
-from quart.cli import AppGroup, cli, NoAppException, ScriptInfo
+from quart.cli import __version__, AppGroup, cli, NoAppException, ScriptInfo
 
 
 @pytest.fixture(scope="module")
