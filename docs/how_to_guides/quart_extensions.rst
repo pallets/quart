@@ -30,5 +30,7 @@ here,
   support.
 - `Webargs-Quart <https://github.com/esfoobar/webargs-quart>`_ Webargs
   parsing for Quart.
+- `Quart-Schema <https://gitlab.com/pgjones/quart-schema>`_ Schema
+  validation and auto-generated API documentation.
 - `Quart-session <https://github.com/xmrdsc/quart-session>`_ server
   side session support.
