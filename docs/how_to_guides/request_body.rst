@@ -80,5 +80,5 @@ client disconnects whilst the request body is being sent,
         test_client = app.test_client()
         async with test_client.request(...) as connection:
             await connection.send(b"partial")
-            await connection.close()
+            await connection.disconnect()
         # Check cleanup markers....

@@ -23,6 +23,7 @@ class Websocket(BaseRequestWebsocket):
         receive: Callable,
         send: Callable,
         accept: Callable,
+        close: Callable,
         scope: WebsocketScope,
     ) -> None:
         """Create a request object.
@@ -42,6 +43,7 @@ class Websocket(BaseRequestWebsocket):
         """
         super().__init__("GET", scheme, path, query_string, headers, root_path, http_version, scope)
         self._accept = accept
+        self._close = close
         self._receive = receive
         self._send = send
         self._subprotocols = subprotocols
@@ -85,6 +87,9 @@ class Websocket(BaseRequestWebsocket):
         else:
             headers_ = Headers(headers)
         await self._accept(headers_, subprotocol)
+
+    async def close(self, code: int) -> None:
+        await self._close(code)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.path})"

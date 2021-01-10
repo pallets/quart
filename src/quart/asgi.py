@@ -183,6 +183,7 @@ class ASGIWebsocketConnection:
             self.queue.get,
             partial(self.send_data, send),
             partial(self.accept_connection, send),
+            partial(self.close_connection, send),
             scope=self.scope,
         )
 
@@ -257,6 +258,9 @@ class ASGIWebsocketConnection:
                 warnings.warn("The ASGI Server does not support accept headers, headers not sent")
             await send(message)
             self._accepted = True
+
+    async def close_connection(self, send: ASGISendCallable, code: int) -> None:
+        await send({"type": "websocket.close", "code": code})
 
 
 class ASGILifespan:

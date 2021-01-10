@@ -55,7 +55,7 @@ class TestHTTPConnection:
         else:
             return data
 
-    async def close(self) -> None:
+    async def disconnect(self) -> None:
         await self._send_queue.put({"type": "http.disconnect"})
 
     async def __aenter__(self) -> "TestHTTPConnection":
@@ -66,7 +66,7 @@ class TestHTTPConnection:
 
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
         if exc_type is not None:
-            await self.close()
+            await self.disconnect()
         await self._task
         while not self._receive_queue.empty():
             data = await self._receive_queue.get()
@@ -116,7 +116,7 @@ class TestWebsocketConnection:
         return self
 
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
-        await self.close()
+        await self.disconnect()
         await self._task
         while not self._receive_queue.empty():
             data = await self._receive_queue.get()
@@ -144,7 +144,10 @@ class TestWebsocketConnection:
         raw = dumps(data)
         await self.send(raw)
 
-    async def close(self) -> None:
+    async def close(self, code: int) -> None:
+        await self._send_queue.put({"type": "websocket.close", "code": code})
+
+    async def disconnect(self) -> None:
         await self._send_queue.put({"type": "websocket.disconnect"})
 
     async def _asgi_receive(self) -> ASGIReceiveEvent:

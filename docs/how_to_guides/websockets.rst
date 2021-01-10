@@ -86,6 +86,22 @@ caught to handle the disconnect,
 
     The ``CancelledError`` must be re-raised.
 
+Closing the connection
+----------------------
+
+An connection can be closed by awaiting the ``close`` method with the
+appropriate Websocket error code,
+
+.. code-block:: python
+
+    @app.websocket('/ws')
+    async def ws():
+        await websocket.accept()
+        await websocket.close(1000)
+
+if the websocket is closed before it is accepted the server will
+respond with a 403 HTTP response.
+
 Testing websockets
 ------------------
 

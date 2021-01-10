@@ -321,6 +321,7 @@ async def test_overlapping_websocket_ctx(websocket_scope: WebsocketScope) -> Non
         None,
         None,
         None,
+        None,
         websocket_scope,
     )
     ctx1 = app.websocket_context(websocket)

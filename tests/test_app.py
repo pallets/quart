@@ -310,6 +310,7 @@ async def test_app_handle_websocket_asyncio_cancelled_error(
         None,
         None,
         None,
+        None,
         websocket_scope,
     )
     with pytest.raises(asyncio.CancelledError):
