@@ -199,6 +199,7 @@ class QuartGroup(AppGroup):
         if add_default_commands:
             self.add_command(run_command)
             self.add_command(shell_command)
+            self.add_command(routes_command)
 
     def get_command(self, ctx: click.Context, name: str) -> click.Command:
         """Return the relevant command given the context and name.
@@ -262,6 +263,50 @@ def shell_command(info: ScriptInfo) -> None:
 
     banner = f"Python {sys.version} on {sys.platform} running {app.import_name}"
     code.interact(banner=banner, local=context)
+
+
+@click.command("routes", short_help="Show this app's routes.")
+@click.option(
+    "--sort",
+    "-s",
+    type=click.Choice({"endpoint", "methods", "rule", "match"}),
+    default="endpoint",
+    help="Order the routes by type, 'match' is the matching order when dispatching a request.",
+)
+@click.option("--all-methods", is_flag=True, help="Show HEAD and OPTIONS methods.")
+@pass_script_info
+def routes_command(info: ScriptInfo, sort: str, all_methods: bool) -> None:
+    app = info.load_app()
+    rules = list(app.url_map.iter_rules())
+    if len(rules) == 0:
+        click.echo("No routes were registered.")
+        return
+
+    ignored_methods = set() if all_methods else {"HEAD", "OPTIONS"}
+
+    if sort == "endpoint":
+        rules = sorted(rules, key=lambda rule: rule.endpoint)
+    elif sort == "rule":
+        rules = sorted(rules, key=lambda rule: rule.rule)
+    elif sort == "methods":
+        rules = sorted(rules, key=lambda rule: sorted(rule.methods))
+
+    headers = ("Endpoint", "Methods", "Websocket", "Rule")
+    rule_methods = [", ".join(sorted(rule.methods - ignored_methods)) for rule in rules]
+    widths = (
+        max(len(rule.endpoint) for rule in rules),
+        max(len(methods) for methods in rule_methods),
+        len("Websocket"),
+        max(len(rule.rule) for rule in rules),
+    )
+    widths = [max(len(header), width) for header, width in zip(headers, widths)]
+    row = "{{0:<{0}}} | {{1:<{1}}} | {{2:<{2}}} | {{3:<{3}}}".format(*widths)
+
+    click.echo(row.format(*headers).strip())
+    click.echo(row.format(*("-" * width for width in widths)))
+
+    for rule, methods in zip(rules, rule_methods):
+        click.echo(row.format(rule.endpoint, methods, str(rule.websocket), rule.rule).rstrip())
 
 
 cli = QuartGroup(
