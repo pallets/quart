@@ -49,7 +49,7 @@ class QuartMap(Map):
         host = _normalise_host(request.scheme, host)
 
         if subdomain is None and not self.host_matching:
-            request_host_parts = _normalise_host(request.scheme, request.host).split(".")
+            request_host_parts = _normalise_host(request.scheme, request.host.lower()).split(".")
             config_host_parts = host.split(".")
             offset = -len(config_host_parts)
 
