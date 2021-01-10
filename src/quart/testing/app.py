@@ -4,6 +4,8 @@ import asyncio
 from types import TracebackType
 from typing import Awaitable, TYPE_CHECKING
 
+from hypercorn.typing import ASGIReceiveEvent, ASGISendEvent, LifespanScope
+
 from .client import QuartClient
 
 if TYPE_CHECKING:
@@ -35,7 +37,7 @@ class TestApp:
         return self.app.test_client()
 
     async def startup(self) -> None:
-        scope = {"type": "lifespan", "asgi": {"spec_version": "2.0"}}
+        scope: LifespanScope = {"type": "lifespan", "asgi": {"spec_version": "2.0"}}
         self._task = asyncio.ensure_future(self.app(scope, self._asgi_receive, self._asgi_send))
         await self._app_queue.put({"type": "lifespan.startup"})
         await asyncio.wait_for(self._startup.wait(), timeout=self.startup_timeout)
@@ -52,10 +54,10 @@ class TestApp:
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
         await self.shutdown()
 
-    async def _asgi_receive(self) -> dict:
+    async def _asgi_receive(self) -> ASGIReceiveEvent:
         return await self._app_queue.get()
 
-    async def _asgi_send(self, message: dict) -> None:
+    async def _asgi_send(self, message: ASGISendEvent) -> None:
         if message["type"] == "lifespan.startup.complete":
             self._startup.set()
         elif message["type"] == "lifespan.shutdown.complete":

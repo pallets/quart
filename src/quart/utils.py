@@ -15,6 +15,7 @@ from typing import (
     Callable,
     Coroutine,
     Generator,
+    Iterable,
     List,
     Tuple,
     TYPE_CHECKING,
@@ -133,5 +134,5 @@ def encode_headers(headers: Headers) -> List[Tuple[bytes, bytes]]:
     return [(key.lower().encode(), value.encode()) for key, value in headers.items()]
 
 
-def decode_headers(headers: List[Tuple[bytes, bytes]]) -> Headers:
+def decode_headers(headers: Iterable[Tuple[bytes, bytes]]) -> Headers:
     return Headers([(key.decode(), value.decode()) for key, value in headers])

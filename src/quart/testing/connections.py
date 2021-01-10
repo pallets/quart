@@ -4,6 +4,7 @@ import asyncio
 from types import TracebackType
 from typing import Any, AnyStr, Awaitable, List, Optional, Tuple, TYPE_CHECKING
 
+from hypercorn.typing import ASGIReceiveEvent, ASGISendEvent, HTTPScope, WebsocketScope
 from werkzeug.datastructures import Headers
 
 from ..json import dumps, loads
@@ -29,7 +30,7 @@ class WebsocketResponse(Exception):
 
 
 class TestHTTPConnection:
-    def __init__(self, app: Quart, scope: dict, _preserve_context: bool = False) -> None:
+    def __init__(self, app: Quart, scope: HTTPScope, _preserve_context: bool = False) -> None:
         self.app = app
         self.headers: Optional[Headers] = None
         self.push_promises: List[Tuple[str, Headers]] = []
@@ -81,10 +82,10 @@ class TestHTTPConnection:
                 self.response_data.extend(data)
         return self.app.response_class(bytes(self.response_data), self.status_code, self.headers)
 
-    async def _asgi_receive(self) -> dict:
+    async def _asgi_receive(self) -> ASGIReceiveEvent:
         return await self._send_queue.get()
 
-    async def _asgi_send(self, message: dict) -> None:
+    async def _asgi_send(self, message: ASGISendEvent) -> None:
         if message["type"] == "http.response.start":
             self.headers = decode_headers(message["headers"])
             self.status_code = message["status"]
@@ -97,7 +98,7 @@ class TestHTTPConnection:
 
 
 class TestWebsocketConnection:
-    def __init__(self, app: Quart, scope: dict) -> None:
+    def __init__(self, app: Quart, scope: WebsocketScope) -> None:
         self.accepted = False
         self.app = app
         self.headers: Optional[Headers] = None
@@ -146,10 +147,10 @@ class TestWebsocketConnection:
     async def close(self) -> None:
         await self._send_queue.put({"type": "websocket.disconnect"})
 
-    async def _asgi_receive(self) -> dict:
+    async def _asgi_receive(self) -> ASGIReceiveEvent:
         return await self._send_queue.get()
 
-    async def _asgi_send(self, message: dict) -> None:
+    async def _asgi_send(self, message: ASGISendEvent) -> None:
         if message["type"] == "websocket.accept":
             self.accepted = True
         elif message["type"] == "websocket.send":
@@ -168,4 +169,6 @@ class TestWebsocketConnection:
                     )
                 )
         elif message["type"] == "websocket.close":
-            await self._receive_queue.put(WebsocketDisconnect(message.get("code", 1000)))
+            await self._receive_queue.put(
+                WebsocketDisconnect(message.get("code", 1000))  # type: ignore
+            )

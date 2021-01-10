@@ -4,6 +4,7 @@ from sys import version_info
 from typing import Generator
 
 import pytest
+from hypercorn.typing import HTTPScope
 from werkzeug.datastructures import Headers
 
 from quart.app import Quart
@@ -59,7 +60,7 @@ def test_null_session_no_modification() -> None:
 
 
 @pytest.mark.asyncio
-async def test_secure_cookie_session_interface_open_session() -> None:
+async def test_secure_cookie_session_interface_open_session(http_scope: HTTPScope) -> None:
     session = SecureCookieSession()
     session["something"] = "else"
     interface = SecureCookieSessionInterface()
@@ -68,7 +69,7 @@ async def test_secure_cookie_session_interface_open_session() -> None:
     response = Response("")
     await interface.save_session(app, session, response)
     request = Request(
-        "GET", "http", "/", b"", Headers(), "", "1.1", {}, send_push_promise=no_op_push
+        "GET", "http", "/", b"", Headers(), "", "1.1", http_scope, send_push_promise=no_op_push
     )
     request.headers["Cookie"] = response.headers["Set-Cookie"]
     new_session = await interface.open_session(app, request)

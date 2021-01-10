@@ -3,6 +3,7 @@ from typing import NoReturn, Optional, Set
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
+from hypercorn.typing import HTTPScope, WebsocketScope
 from werkzeug.datastructures import Headers
 
 from quart.app import Quart
@@ -266,7 +267,7 @@ async def test_app_after_request_handler_exception(basic_app: Quart) -> None:
 
 
 @pytest.mark.asyncio
-async def test_app_handle_request_asyncio_cancelled_error() -> None:
+async def test_app_handle_request_asyncio_cancelled_error(http_scope: HTTPScope) -> None:
     app = Quart(__name__)
 
     @app.route("/")
@@ -281,7 +282,7 @@ async def test_app_handle_request_asyncio_cancelled_error() -> None:
         Headers([("host", "quart.com")]),
         "",
         "1.1",
-        {},
+        http_scope,
         send_push_promise=no_op_push,
     )
     with pytest.raises(asyncio.CancelledError):
@@ -289,7 +290,9 @@ async def test_app_handle_request_asyncio_cancelled_error() -> None:
 
 
 @pytest.mark.asyncio
-async def test_app_handle_websocket_asyncio_cancelled_error() -> None:
+async def test_app_handle_websocket_asyncio_cancelled_error(
+    websocket_scope: WebsocketScope,
+) -> None:
     app = Quart(__name__)
 
     @app.websocket("/")
@@ -297,7 +300,17 @@ async def test_app_handle_websocket_asyncio_cancelled_error() -> None:
         raise asyncio.CancelledError()
 
     websocket = app.websocket_class(
-        "/", b"", "wss", Headers([("host", "quart.com")]), "", "1.1", None, None, None, None, {}
+        "/",
+        b"",
+        "wss",
+        Headers([("host", "quart.com")]),
+        "",
+        "1.1",
+        None,
+        None,
+        None,
+        None,
+        websocket_scope,
     )
     with pytest.raises(asyncio.CancelledError):
         await app.handle_websocket(websocket)

@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any, AnyStr, Callable, List, Optional, Union
 
+from hypercorn.typing import WebsocketScope
 from werkzeug.datastructures import Headers
 
 from .base import BaseRequestWebsocket
@@ -22,7 +23,7 @@ class Websocket(BaseRequestWebsocket):
         receive: Callable,
         send: Callable,
         accept: Callable,
-        scope: dict,
+        scope: WebsocketScope,
     ) -> None:
         """Create a request object.
 

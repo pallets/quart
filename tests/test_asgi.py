@@ -2,6 +2,7 @@ import asyncio
 from typing import Optional
 
 import pytest
+from hypercorn.typing import ASGIReceiveEvent, ASGISendEvent, HTTPScope, WebsocketScope
 from werkzeug.datastructures import Headers
 
 from quart import Quart
@@ -19,16 +20,23 @@ except ImportError:
 @pytest.mark.parametrize("headers, expected", [([(b"host", b"quart")], "quart"), ([], "")])
 async def test_http_1_0_host_header(headers: list, expected: str) -> None:
     app = Quart(__name__)
-    scope = {
-        "headers": headers,
+    scope: HTTPScope = {
+        "type": "http",
+        "asgi": {},
         "http_version": "1.0",
         "method": "GET",
         "scheme": "https",
         "path": "/",
+        "raw_path": b"/",
         "query_string": b"",
+        "root_path": "",
+        "headers": headers,
+        "client": ("127.0.0.1", 80),
+        "server": None,
+        "extensions": {},
     }
     connection = ASGIHTTPConnection(app, scope)
-    request = connection._create_request_from_scope(lambda: None)
+    request = connection._create_request_from_scope(lambda: None)  # type: ignore
     assert request.headers["host"] == expected
 
 
@@ -36,24 +44,31 @@ async def test_http_1_0_host_header(headers: list, expected: str) -> None:
 async def test_http_completion() -> None:
     # Ensure that the connecion callable returns on completion
     app = Quart(__name__)
-    scope = {
-        "headers": [(b"host", b"quart")],
+    scope: HTTPScope = {
+        "type": "http",
+        "asgi": {},
         "http_version": "1.1",
         "method": "GET",
         "scheme": "https",
         "path": "/",
+        "raw_path": b"/",
         "query_string": b"",
+        "root_path": "",
+        "headers": [(b"host", b"quart")],
+        "client": ("127.0.0.1", 80),
+        "server": None,
+        "extensions": {},
     }
     connection = ASGIHTTPConnection(app, scope)
 
     queue: asyncio.Queue = asyncio.Queue()
     queue.put_nowait({"type": "http.request", "body": b"", "more_body": False})
 
-    async def receive() -> dict:
+    async def receive() -> ASGIReceiveEvent:
         # This will block after returning the first and only entry
         return await queue.get()
 
-    async def send(message: dict) -> None:
+    async def send(message: ASGISendEvent) -> None:
         pass
 
     # This test fails if a timeout error is raised here
@@ -71,21 +86,28 @@ async def test_http_completion() -> None:
 async def test_http_request_without_body(request_message: dict) -> None:
     app = Quart(__name__)
 
-    scope = {
-        "headers": [(b"host", b"quart")],
+    scope: HTTPScope = {
+        "type": "http",
+        "asgi": {},
         "http_version": "1.0",
         "method": "GET",
         "scheme": "https",
         "path": "/",
+        "raw_path": b"/",
         "query_string": b"",
+        "root_path": "",
+        "headers": [(b"host", b"quart")],
+        "client": ("127.0.0.1", 80),
+        "server": None,
+        "extensions": {},
     }
     connection = ASGIHTTPConnection(app, scope)
-    request = connection._create_request_from_scope(lambda: None)
+    request = connection._create_request_from_scope(lambda: None)  # type: ignore
 
     queue: asyncio.Queue = asyncio.Queue()
     queue.put_nowait(request_message)
 
-    async def receive() -> dict:
+    async def receive() -> ASGIReceiveEvent:
         # This will block after returning the first and only entry
         return await queue.get()
 
@@ -102,13 +124,18 @@ async def test_http_request_without_body(request_message: dict) -> None:
 async def test_websocket_completion() -> None:
     # Ensure that the connecion callable returns on completion
     app = Quart(__name__)
-    scope = {
-        "headers": [(b"host", b"quart")],
+    scope: WebsocketScope = {
+        "type": "websocket",
+        "asgi": {},
         "http_version": "1.1",
-        "method": "GET",
         "scheme": "wss",
         "path": "/",
+        "raw_path": b"/",
         "query_string": b"",
+        "root_path": "",
+        "headers": [(b"host", b"quart")],
+        "client": ("127.0.0.1", 80),
+        "server": None,
         "subprotocols": [],
         "extensions": {"websocket.http.response": {}},
     }
@@ -117,11 +144,11 @@ async def test_websocket_completion() -> None:
     queue: asyncio.Queue = asyncio.Queue()
     queue.put_nowait({"type": "websocket.connect"})
 
-    async def receive() -> dict:
+    async def receive() -> ASGIReceiveEvent:
         # This will block after returning the first and only entry
         return await queue.get()
 
-    async def send(message: dict) -> None:
+    async def send(message: ASGISendEvent) -> None:
         pass
 
     # This test fails if a timeout error is raised here
@@ -130,33 +157,45 @@ async def test_websocket_completion() -> None:
 
 def test_http_path_from_absolute_target() -> None:
     app = Quart(__name__)
-    scope = {
-        "headers": [(b"host", b"quart")],
+    scope: HTTPScope = {
+        "type": "http",
+        "asgi": {},
         "http_version": "1.1",
         "method": "GET",
         "scheme": "https",
         "path": "http://quart/path",
+        "raw_path": b"/",
         "query_string": b"",
+        "root_path": "",
+        "headers": [(b"host", b"quart")],
+        "client": ("127.0.0.1", 80),
+        "server": None,
+        "extensions": {},
     }
     connection = ASGIHTTPConnection(app, scope)
-    request = connection._create_request_from_scope(lambda: None)
+    request = connection._create_request_from_scope(lambda: None)  # type: ignore
     assert request.path == "/path"
 
 
 def test_websocket_path_from_absolute_target() -> None:
     app = Quart(__name__)
-    scope = {
-        "headers": [(b"host", b"quart")],
+    scope: WebsocketScope = {
+        "type": "websocket",
+        "asgi": {},
         "http_version": "1.1",
-        "method": "GET",
         "scheme": "wss",
         "path": "ws://quart/path",
+        "raw_path": b"/",
         "query_string": b"",
+        "root_path": "",
+        "headers": [(b"host", b"quart")],
+        "client": ("127.0.0.1", 80),
+        "server": None,
         "subprotocols": [],
         "extensions": {"websocket.http.response": {}},
     }
     connection = ASGIWebsocketConnection(app, scope)
-    websocket = connection._create_websocket_from_scope(lambda: None)
+    websocket = connection._create_websocket_from_scope(lambda: None)  # type: ignore
     assert websocket.path == "/path"
 
 
@@ -173,7 +212,7 @@ def test_websocket_path_from_absolute_target() -> None:
 async def test_websocket_accept_connection(
     scope: dict, headers: Headers, subprotocol: Optional[str], has_headers: bool
 ) -> None:
-    connection = ASGIWebsocketConnection(Quart(__name__), scope)
+    connection = ASGIWebsocketConnection(Quart(__name__), scope)  # type: ignore
     mock_send = AsyncMock()
     await connection.accept_connection(mock_send, headers, subprotocol)
 
@@ -186,14 +225,16 @@ async def test_websocket_accept_connection(
             }
         )
     else:
-        mock_send.assert_called_with({"subprotocol": subprotocol, "type": "websocket.accept"})
+        mock_send.assert_called_with(
+            {"headers": [], "subprotocol": subprotocol, "type": "websocket.accept"}
+        )
 
 
 @pytest.mark.asyncio
-async def test_websocket_accept_connection_warns() -> None:
-    connection = ASGIWebsocketConnection(Quart(__name__), {})
+async def test_websocket_accept_connection_warns(websocket_scope: WebsocketScope) -> None:
+    connection = ASGIWebsocketConnection(Quart(__name__), websocket_scope)
 
-    async def mock_send(message: dict) -> None:
+    async def mock_send(message: ASGISendEvent) -> None:
         pass
 
     with pytest.warns(None):
@@ -215,6 +256,6 @@ def test_http_asgi_scope_from_request() -> None:
         "query_string": b"",
         "test_result": "PASSED",
     }
-    connection = ASGIHTTPConnection(app, scope)
-    request = connection._create_request_from_scope(lambda: None)
-    assert request.scope["test_result"] == "PASSED"
+    connection = ASGIHTTPConnection(app, scope)  # type: ignore
+    request = connection._create_request_from_scope(lambda: None)  # type: ignore
+    assert request.scope["test_result"] == "PASSED"  # type: ignore

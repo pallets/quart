@@ -3,6 +3,7 @@ from typing import cast
 from unittest.mock import Mock
 
 import pytest
+from hypercorn.typing import HTTPScope, WebsocketScope
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import (
     BadRequest as WBadRequest,
@@ -30,7 +31,7 @@ from quart.testing import make_test_headers_path_and_query_string, no_op_push
 from quart.wrappers import Request, Websocket
 
 
-def test_request_context_match() -> None:
+def test_request_context_match(http_scope: HTTPScope) -> None:
     app = Quart(__name__)
     url_adapter = Mock()
     rule = QuartRule("/", methods={"GET"}, endpoint="index")
@@ -44,7 +45,7 @@ def test_request_context_match() -> None:
         Headers([("host", "quart.com")]),
         "",
         "1.1",
-        {},
+        http_scope,
         send_push_promise=no_op_push,
     )
     RequestContext(app, request)
@@ -62,7 +63,9 @@ def test_request_context_match() -> None:
     ],
 )
 def test_request_context_matching_error(
-    exception_type: Exception, exception_instance: Exception
+    exception_type: Exception,
+    exception_instance: Exception,
+    http_scope: HTTPScope,
 ) -> None:
     app = Quart(__name__)
     url_adapter = Mock()
@@ -76,14 +79,14 @@ def test_request_context_matching_error(
         Headers([("host", "quart.com")]),
         "",
         "1.1",
-        {},
+        http_scope,
         send_push_promise=no_op_push,
     )
     RequestContext(app, request)
     assert isinstance(request.routing_exception, exception_type)  # type: ignore
 
 
-def test_bad_request_if_websocket_route() -> None:
+def test_bad_request_if_websocket_route(http_scope: HTTPScope) -> None:
     app = Quart(__name__)
     url_adapter = Mock()
     url_adapter.match.side_effect = WBadRequest()
@@ -96,7 +99,7 @@ def test_bad_request_if_websocket_route() -> None:
         Headers([("host", "quart.com")]),
         "",
         "1.1",
-        {},
+        http_scope,
         send_push_promise=no_op_push,
     )
     RequestContext(app, request)
@@ -104,13 +107,21 @@ def test_bad_request_if_websocket_route() -> None:
 
 
 @pytest.mark.asyncio
-async def test_after_this_request() -> None:
+async def test_after_this_request(http_scope: HTTPScope) -> None:
     app = Quart(__name__)
     headers, path, query_string = make_test_headers_path_and_query_string(app, "/")
     async with RequestContext(
         Quart(__name__),
         Request(
-            "GET", "http", path, query_string, headers, "", "1.1", {}, send_push_promise=no_op_push
+            "GET",
+            "http",
+            path,
+            query_string,
+            headers,
+            "",
+            "1.1",
+            http_scope,
+            send_push_promise=no_op_push,
         ),
     ) as context:
         after_this_request(lambda: "hello")
@@ -118,11 +129,19 @@ async def test_after_this_request() -> None:
 
 
 @pytest.mark.asyncio
-async def test_has_request_context() -> None:
+async def test_has_request_context(http_scope: HTTPScope) -> None:
     app = Quart(__name__)
     headers, path, query_string = make_test_headers_path_and_query_string(app, "/")
     request = Request(
-        "GET", "http", path, query_string, headers, "", "1.1", {}, send_push_promise=no_op_push
+        "GET",
+        "http",
+        path,
+        query_string,
+        headers,
+        "",
+        "1.1",
+        http_scope,
+        send_push_promise=no_op_push,
     )
     async with RequestContext(Quart(__name__), request):
         assert has_request_context() is True
@@ -264,7 +283,7 @@ def test_copy_current_websocket_context_error() -> None:
 
 
 @pytest.mark.asyncio
-async def test_overlapping_request_ctx() -> None:
+async def test_overlapping_request_ctx(http_scope: HTTPScope) -> None:
     app = Quart(__name__)
 
     request = Request(
@@ -275,7 +294,7 @@ async def test_overlapping_request_ctx() -> None:
         Headers([("host", "quart.com")]),
         "",
         "1.1",
-        {},
+        http_scope,
         send_push_promise=no_op_push,
     )
     ctx1 = app.request_context(request)
@@ -288,11 +307,21 @@ async def test_overlapping_request_ctx() -> None:
 
 
 @pytest.mark.asyncio
-async def test_overlapping_websocket_ctx() -> None:
+async def test_overlapping_websocket_ctx(websocket_scope: WebsocketScope) -> None:
     app = Quart(__name__)
 
     websocket = Websocket(
-        "/", b"", "ws", Headers([("host", "quart.com")]), "", "1.1", [], None, None, None, {}
+        "/",
+        b"",
+        "ws",
+        Headers([("host", "quart.com")]),
+        "",
+        "1.1",
+        [],
+        None,
+        None,
+        None,
+        websocket_scope,
     )
     ctx1 = app.websocket_context(websocket)
     await ctx1.__aenter__()

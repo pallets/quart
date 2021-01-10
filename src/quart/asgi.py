@@ -3,9 +3,26 @@ from __future__ import annotations
 import asyncio
 import warnings
 from functools import partial
-from typing import Any, AnyStr, Callable, cast, Dict, List, Optional, Set, TYPE_CHECKING
+from typing import AnyStr, cast, List, Optional, Set, TYPE_CHECKING
 from urllib.parse import urlparse
 
+from hypercorn.typing import (
+    ASGIReceiveCallable,
+    ASGISendCallable,
+    HTTPResponseBodyEvent,
+    HTTPResponseStartEvent,
+    HTTPScope,
+    LifespanScope,
+    LifespanShutdownCompleteEvent,
+    LifespanShutdownFailedEvent,
+    LifespanStartupCompleteEvent,
+    LifespanStartupFailedEvent,
+    WebsocketAcceptEvent,
+    WebsocketCloseEvent,
+    WebsocketResponseBodyEvent,
+    WebsocketResponseStartEvent,
+    WebsocketScope,
+)
 from werkzeug.datastructures import Headers
 
 from .debug import traceback_response
@@ -18,11 +35,11 @@ if TYPE_CHECKING:
 
 
 class ASGIHTTPConnection:
-    def __init__(self, app: "Quart", scope: dict) -> None:
+    def __init__(self, app: "Quart", scope: HTTPScope) -> None:
         self.app = app
         self.scope = scope
 
-    async def __call__(self, receive: Callable, send: Callable) -> None:
+    async def __call__(self, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None:
         request = self._create_request_from_scope(send)
         receiver_task = asyncio.ensure_future(self.handle_messages(request, receive))
         handler_task = asyncio.ensure_future(self.handle_request(request, send))
@@ -32,7 +49,7 @@ class ASGIHTTPConnection:
         await _cancel_tasks(pending)
         _raise_exceptions(done)
 
-    async def handle_messages(self, request: Request, receive: Callable) -> None:
+    async def handle_messages(self, request: Request, receive: ASGIReceiveCallable) -> None:
         while True:
             message = await receive()
             if message["type"] == "http.request":
@@ -42,7 +59,7 @@ class ASGIHTTPConnection:
             elif message["type"] == "http.disconnect":
                 return
 
-    def _create_request_from_scope(self, send: Callable) -> Request:
+    def _create_request_from_scope(self, send: ASGISendCallable) -> Request:
         headers = Headers()
         headers["Remote-Addr"] = (self.scope.get("client") or ["<local>"])[0]
         for name, value in self.scope["headers"]:
@@ -67,7 +84,7 @@ class ASGIHTTPConnection:
             scope=self.scope,
         )
 
-    async def handle_request(self, request: Request, send: Callable) -> None:
+    async def handle_request(self, request: Request, send: ASGISendCallable) -> None:
         try:
             response = await self.app.handle_request(request)
         except Exception:
@@ -85,21 +102,34 @@ class ASGIHTTPConnection:
         except asyncio.TimeoutError:
             pass
 
-    async def _send_response(self, send: Callable, response: Response) -> None:
+    async def _send_response(self, send: ASGISendCallable, response: Response) -> None:
         await send(
-            {
-                "type": "http.response.start",
-                "status": response.status_code,
-                "headers": encode_headers(response.headers),
-            }
+            cast(
+                HTTPResponseStartEvent,
+                {
+                    "type": "http.response.start",
+                    "status": response.status_code,
+                    "headers": encode_headers(response.headers),
+                },
+            )
         )
 
         async with response.response as body:
             async for data in body:
-                await send({"type": "http.response.body", "body": data, "more_body": True})
-        await send({"type": "http.response.body", "body": b"", "more_body": False})
+                await send(
+                    cast(
+                        HTTPResponseBodyEvent,
+                        {"type": "http.response.body", "body": data, "more_body": True},
+                    )
+                )
+        await send(
+            cast(
+                HTTPResponseBodyEvent,
+                {"type": "http.response.body", "body": b"", "more_body": False},
+            )
+        )
 
-    async def _send_push_promise(self, send: Callable, path: str, headers: Headers) -> None:
+    async def _send_push_promise(self, send: ASGISendCallable, path: str, headers: Headers) -> None:
         if "http.response.push" in self.scope.get("extensions", {}):
             await send(
                 {"type": "http.response.push", "path": path, "headers": encode_headers(headers)}
@@ -107,13 +137,13 @@ class ASGIHTTPConnection:
 
 
 class ASGIWebsocketConnection:
-    def __init__(self, app: "Quart", scope: dict) -> None:
+    def __init__(self, app: "Quart", scope: WebsocketScope) -> None:
         self.app = app
         self.scope = scope
         self.queue: asyncio.Queue = asyncio.Queue()
         self._accepted = False
 
-    async def __call__(self, receive: Callable, send: Callable) -> None:
+    async def __call__(self, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None:
         websocket = self._create_websocket_from_scope(send)
         receiver_task = asyncio.ensure_future(self.handle_messages(receive))
         handler_task = asyncio.ensure_future(self.handle_websocket(websocket, send))
@@ -123,7 +153,7 @@ class ASGIWebsocketConnection:
         await _cancel_tasks(pending)
         _raise_exceptions(done)
 
-    async def handle_messages(self, receive: Callable) -> None:
+    async def handle_messages(self, receive: ASGIReceiveCallable) -> None:
         while True:
             event = await receive()
             if event["type"] == "websocket.receive":
@@ -133,7 +163,7 @@ class ASGIWebsocketConnection:
             elif event["type"] == "websocket.disconnect":
                 return
 
-    def _create_websocket_from_scope(self, send: Callable) -> Websocket:
+    def _create_websocket_from_scope(self, send: ASGISendCallable) -> Websocket:
         headers = Headers()
         headers["Remote-Addr"] = (self.scope.get("client") or ["<local>"])[0]
         for name, value in self.scope["headers"]:
@@ -149,14 +179,14 @@ class ASGIWebsocketConnection:
             headers,
             self.scope.get("root_path", ""),
             self.scope.get("http_version", "1.1"),
-            self.scope.get("subprotocols", []),
+            list(self.scope.get("subprotocols", [])),
             self.queue.get,
             partial(self.send_data, send),
             partial(self.accept_connection, send),
             scope=self.scope,
         )
 
-    async def handle_websocket(self, websocket: Websocket, send: Callable) -> None:
+    async def handle_websocket(self, websocket: Websocket, send: ASGISendCallable) -> None:
         try:
             response = await self.app.handle_websocket(websocket)
         except Exception:
@@ -172,41 +202,54 @@ class ASGIWebsocketConnection:
                     for key, value in response.headers.items()
                 ]
                 await send(
-                    {
-                        "type": "websocket.http.response.start",
-                        "status": response.status_code,
-                        "headers": headers,
-                    }
+                    cast(
+                        WebsocketResponseStartEvent,
+                        {
+                            "type": "websocket.http.response.start",
+                            "status": response.status_code,
+                            "headers": headers,
+                        },
+                    )
                 )
                 async with response.response as body:
                     async for data in body:
                         await send(
-                            {
-                                "type": "websocket.http.response.body",
-                                "body": data,
-                                "more_body": True,
-                            }
+                            cast(
+                                WebsocketResponseBodyEvent,
+                                {
+                                    "type": "websocket.http.response.body",
+                                    "body": data,
+                                    "more_body": True,
+                                },
+                            )
                         )
                 await send(
-                    {"type": "websocket.http.response.body", "body": b"", "more_body": False}
+                    cast(
+                        WebsocketResponseBodyEvent,
+                        {"type": "websocket.http.response.body", "body": b"", "more_body": False},
+                    )
                 )
             else:
-                await send({"type": "websocket.close", "code": 1000})
+                await send(cast(WebsocketCloseEvent, {"type": "websocket.close", "code": 1000}))
         elif self._accepted:
-            await send({"type": "websocket.close", "code": 1000})
+            await send(cast(WebsocketCloseEvent, {"type": "websocket.close", "code": 1000}))
 
-    async def send_data(self, send: Callable, data: AnyStr) -> None:
+    async def send_data(self, send: ASGISendCallable, data: AnyStr) -> None:
         if isinstance(data, str):
-            await send({"type": "websocket.send", "text": data})
+            await send({"type": "websocket.send", "bytes": None, "text": data})
         else:
-            await send({"type": "websocket.send", "bytes": data})
+            await send({"type": "websocket.send", "bytes": data, "text": None})
         await websocket_sent.send(data)
 
     async def accept_connection(
-        self, send: Callable, headers: Headers, subprotocol: Optional[str]
+        self, send: ASGISendCallable, headers: Headers, subprotocol: Optional[str]
     ) -> None:
         if not self._accepted:
-            message: Dict[str, Any] = {"subprotocol": subprotocol, "type": "websocket.accept"}
+            message: WebsocketAcceptEvent = {
+                "headers": [],
+                "subprotocol": subprotocol,
+                "type": "websocket.accept",
+            }
             spec_version = _convert_version(self.scope.get("asgi", {}).get("spec_version", "2.0"))
             if spec_version > [2, 0]:
                 message["headers"] = encode_headers(headers)
@@ -217,26 +260,40 @@ class ASGIWebsocketConnection:
 
 
 class ASGILifespan:
-    def __init__(self, app: "Quart", scope: dict) -> None:
+    def __init__(self, app: "Quart", scope: LifespanScope) -> None:
         self.app = app
 
-    async def __call__(self, receive: Callable, send: Callable) -> None:
+    async def __call__(self, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None:
         while True:
             event = await receive()
             if event["type"] == "lifespan.startup":
                 try:
                     await self.app.startup()
                 except Exception as error:
-                    await send({"type": "lifespan.startup.failed", "message": str(error)})
+                    await send(
+                        cast(
+                            LifespanStartupFailedEvent,
+                            {"type": "lifespan.startup.failed", "message": str(error)},
+                        ),
+                    )
                 else:
-                    await send({"type": "lifespan.startup.complete"})
+                    await send(
+                        cast(LifespanStartupCompleteEvent, {"type": "lifespan.startup.complete"})
+                    )
             elif event["type"] == "lifespan.shutdown":
                 try:
                     await self.app.shutdown()
                 except Exception as error:
-                    await send({"type": "lifespan.shutdown.failed", "message": str(error)})
+                    await send(
+                        cast(
+                            LifespanShutdownFailedEvent,
+                            {"type": "lifespan.shutdown.failed", "message": str(error)},
+                        ),
+                    )
                 else:
-                    await send({"type": "lifespan.shutdown.complete"})
+                    await send(
+                        cast(LifespanShutdownCompleteEvent, {"type": "lifespan.shutdown.complete"}),
+                    )
                 break
 
 

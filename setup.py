@@ -19,7 +19,7 @@ INSTALL_REQUIRES = [
     "aiofiles",
     "blinker",
     "click",
-    "hypercorn >= 0.7.0",
+    "hypercorn >= 0.11.2",
     "itsdangerous",
     "jinja2",
     "toml",

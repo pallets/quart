@@ -6,6 +6,7 @@ from http.cookies import SimpleCookie
 from typing import Any, AnyStr, Dict, List, Optional, TYPE_CHECKING, Union
 from urllib.parse import ParseResult, urlunparse
 
+from hypercorn.typing import WWWScope
 from werkzeug.datastructures import (
     Accept,
     Authorization,
@@ -195,7 +196,7 @@ class BaseRequestWebsocket(_BaseRequestResponse):
         headers: Headers,
         root_path: str,
         http_version: str,
-        scope: dict,
+        scope: WWWScope,
     ) -> None:
         """Create a request or websocket base object.
 

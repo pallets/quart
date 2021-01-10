@@ -6,6 +6,7 @@ from cgi import FieldStorage, parse_header
 from typing import Any, AnyStr, Awaitable, Callable, Generator, Optional
 from urllib.parse import parse_qs
 
+from hypercorn.typing import HTTPScope
 from werkzeug.datastructures import CombinedMultiDict, Headers, MultiDict
 
 from .base import BaseRequestWebsocket, JSONMixin
@@ -135,7 +136,7 @@ class Request(BaseRequestWebsocket, JSONMixin):
         headers: Headers,
         root_path: str,
         http_version: str,
-        scope: dict,
+        scope: HTTPScope,
         *,
         max_content_length: Optional[int] = None,
         body_timeout: Optional[int] = None,

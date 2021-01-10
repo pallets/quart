@@ -31,6 +31,7 @@ from typing import (
 
 from hypercorn.asyncio import serve
 from hypercorn.config import Config as HyperConfig
+from hypercorn.typing import ASGIReceiveCallable, ASGISendCallable, Scope
 from werkzeug.datastructures import Headers
 from werkzeug.routing import MapAdapter
 
@@ -1784,6 +1785,9 @@ class Quart(PackageStatic):
                 "query_string": query_string_bytes,
                 "root_path": root_path,
                 "headers": encode_headers(headers),
+                "extensions": {},
+                "client": None,
+                "server": None,
             },
         )
         request.body.set_result(request_body)
@@ -1865,7 +1869,7 @@ class Quart(PackageStatic):
             except Exception as error:
                 return await self.handle_exception(error)
             finally:
-                if request.scope.get("_quart._preserve_context", False):
+                if request.scope.get("_quart._preserve_context", False):  # type: ignore
                     self._preserved_context = request_context.copy()
 
     async def full_dispatch_request(
@@ -2107,7 +2111,9 @@ class Quart(PackageStatic):
                 await self.save_session(session_, response)
         return response
 
-    async def __call__(self, scope: dict, receive: Callable, send: Callable) -> None:
+    async def __call__(
+        self, scope: Scope, receive: ASGIReceiveCallable, send: ASGISendCallable
+    ) -> None:
         """Called by ASGI servers.
 
         The related :meth:`~quart.app.Quart.asgi_app` is called,
@@ -2116,7 +2122,9 @@ class Quart(PackageStatic):
         """
         await self.asgi_app(scope, receive, send)
 
-    async def asgi_app(self, scope: dict, receive: Callable, send: Callable) -> None:
+    async def asgi_app(
+        self, scope: Scope, receive: ASGIReceiveCallable, send: ASGISendCallable
+    ) -> None:
         """This handles ASGI calls, it can be wrapped in middleware.
 
         When using middleware with Quart it is preferable to wrap this
@@ -2129,12 +2137,13 @@ class Quart(PackageStatic):
             app.asgi_app = middleware(app.asgi_app)
 
         """
+        asgi_handler: Union[ASGIHTTPConnection, ASGILifespan, ASGIWebsocketConnection]
         if scope["type"] == "http":
             asgi_handler = self.asgi_http_class(self, scope)
         elif scope["type"] == "websocket":
-            asgi_handler = self.asgi_websocket_class(self, scope)  # type: ignore
+            asgi_handler = self.asgi_websocket_class(self, scope)
         elif scope["type"] == "lifespan":
-            asgi_handler = self.asgi_lifespan_class(self, scope)  # type: ignore
+            asgi_handler = self.asgi_lifespan_class(self, scope)
         else:
             raise RuntimeError("ASGI Scope type is unknown")
         await asgi_handler(receive, send)
