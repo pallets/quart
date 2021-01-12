@@ -84,7 +84,17 @@ from .testing import (
     sentinel,
     TestApp,
 )
-from .typing import FilePath, HeadersValue, ResponseReturnValue, StatusCode
+from .typing import (
+    ASGIHTTPProtocol,
+    ASGILifespanProtocol,
+    ASGIWebsocketProtocol,
+    FilePath,
+    HeadersValue,
+    ResponseReturnValue,
+    StatusCode,
+    TestAppProtocol,
+    TestClientProtocol,
+)
 from .utils import encode_headers, file_path_to_path, is_coroutine_function, run_sync
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 
@@ -142,6 +152,12 @@ class Quart(PackageStatic):
         websocket_class: The class to use for websockets.
 
     """
+
+    asgi_http_class: Type[ASGIHTTPProtocol]
+    asgi_lifespan_class: Type[ASGILifespanProtocol]
+    asgi_websocket_class: Type[ASGIWebsocketProtocol]
+    test_app_class: Type[TestAppProtocol]
+    test_client_class: Type[TestClientProtocol]
 
     app_ctx_globals_class = _AppCtxGlobals
     asgi_http_class = ASGIHTTPConnection
@@ -1718,11 +1734,11 @@ class Quart(PackageStatic):
 
         return serve(self, config, shutdown_trigger=shutdown_trigger)
 
-    def test_client(self) -> QuartClient:
+    def test_client(self) -> TestClientProtocol:
         """Creates and returns a test client."""
         return self.test_client_class(self)
 
-    def test_app(self) -> TestApp:
+    def test_app(self) -> TestAppProtocol:
         return self.test_app_class(self)
 
     def test_request_context(
@@ -2136,7 +2152,7 @@ class Quart(PackageStatic):
             app.asgi_app = middleware(app.asgi_app)
 
         """
-        asgi_handler: Union[ASGIHTTPConnection, ASGILifespan, ASGIWebsocketConnection]
+        asgi_handler: Union[ASGIHTTPProtocol, ASGILifespanProtocol, ASGIWebsocketProtocol]
         if scope["type"] == "http":
             asgi_handler = self.asgi_http_class(self, scope)
         elif scope["type"] == "websocket":

@@ -1,11 +1,41 @@
 from __future__ import annotations
 
 import os
-from typing import Any, AnyStr, AsyncGenerator, Dict, Generator, List, Tuple, TYPE_CHECKING, Union
+from datetime import datetime, timedelta
+from types import TracebackType
+from typing import (
+    Any,
+    AnyStr,
+    AsyncContextManager,
+    AsyncGenerator,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TYPE_CHECKING,
+    Union,
+)
+
+from hypercorn.typing import (
+    ASGIReceiveCallable,
+    ASGISendCallable,
+    HTTPScope,
+    LifespanScope,
+    WebsocketScope,
+)
+
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol  # type: ignore
 
 if TYPE_CHECKING:
     from werkzeug.datastructures import Headers  # noqa: F401
 
+    from .app import Quart
+    from .sessions import Session
     from .wrappers.response import Response  # noqa: F401
 
 FilePath = Union[bytes, str, os.PathLike]
@@ -34,3 +64,223 @@ ResponseReturnValue = Union[
     Tuple[ResponseValue, StatusCode],
     Tuple[ResponseValue, StatusCode, HeadersValue],
 ]
+
+
+class ASGIHTTPProtocol(Protocol):
+    def __init__(self, app: Quart, scope: HTTPScope) -> None:
+        ...
+
+    async def __call__(self, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None:
+        ...
+
+
+class ASGILifespanProtocol(Protocol):
+    def __init__(self, app: Quart, scope: LifespanScope) -> None:
+        ...
+
+    async def __call__(self, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None:
+        ...
+
+
+class ASGIWebsocketProtocol(Protocol):
+    def __init__(self, app: Quart, scope: WebsocketScope) -> None:
+        ...
+
+    async def __call__(self, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None:
+        ...
+
+
+class TestHTTPConnectionProtocol(Protocol):
+    push_promises: List[Tuple[str, Headers]]
+
+    def __init__(self, app: Quart, scope: HTTPScope, _preserve_context: bool = False) -> None:
+        ...
+
+    async def send(self, data: bytes) -> None:
+        ...
+
+    async def send_complete(self) -> None:
+        ...
+
+    async def receive(self) -> bytes:
+        ...
+
+    async def disconnect(self) -> None:
+        ...
+
+    async def __aenter__(self) -> TestHTTPConnectionProtocol:
+        ...
+
+    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+        ...
+
+    async def as_response(self) -> Response:
+        ...
+
+
+class TestWebsocketConnectionProtocol(Protocol):
+    def __init__(self, app: Quart, scope: WebsocketScope) -> None:
+        ...
+
+    async def __aenter__(self) -> TestWebsocketConnectionProtocol:
+        ...
+
+    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+        ...
+
+    async def receive(self) -> AnyStr:
+        ...
+
+    async def send(self, data: AnyStr) -> None:
+        ...
+
+    async def receive_json(self) -> Any:
+        ...
+
+    async def send_json(self, data: Any) -> None:
+        ...
+
+    async def close(self, code: int) -> None:
+        ...
+
+    async def disconnect(self) -> None:
+        ...
+
+
+class TestClientProtocol(Protocol):
+    http_connection_class: Type[TestHTTPConnectionProtocol]
+    push_promises: List[Tuple[str, Headers]]
+    websocket_connection_class: Type[TestWebsocketConnectionProtocol]
+
+    def __init__(self, app: Quart, use_cookies: bool = True) -> None:
+        ...
+
+    async def open(
+        self,
+        path: str,
+        *,
+        method: str = "GET",
+        headers: Optional[Union[dict, Headers]] = None,
+        data: Optional[AnyStr] = None,
+        form: Optional[dict] = None,
+        query_string: Optional[dict] = None,
+        json: Any = None,
+        scheme: str = "http",
+        follow_redirects: bool = False,
+        root_path: str = "",
+        http_version: str = "1.1",
+    ) -> Response:
+        ...
+
+    def request(
+        self,
+        path: str,
+        *,
+        method: str = "GET",
+        headers: Optional[Union[dict, Headers]] = None,
+        query_string: Optional[dict] = None,
+        scheme: str = "http",
+        root_path: str = "",
+        http_version: str = "1.1",
+    ) -> TestHTTPConnectionProtocol:
+        ...
+
+    def websocket(
+        self,
+        path: str,
+        *,
+        headers: Optional[Union[dict, Headers]] = None,
+        query_string: Optional[dict] = None,
+        scheme: str = "ws",
+        subprotocols: Optional[List[str]] = None,
+        root_path: str = "",
+        http_version: str = "1.1",
+    ) -> TestWebsocketConnectionProtocol:
+        ...
+
+    async def delete(self, *args: Any, **kwargs: Any) -> Response:
+        ...
+
+    async def get(self, *args: Any, **kwargs: Any) -> Response:
+        ...
+
+    async def head(self, *args: Any, **kwargs: Any) -> Response:
+        ...
+
+    async def options(self, *args: Any, **kwargs: Any) -> Response:
+        ...
+
+    async def patch(self, *args: Any, **kwargs: Any) -> Response:
+        ...
+
+    async def post(self, *args: Any, **kwargs: Any) -> Response:
+        ...
+
+    async def put(self, *args: Any, **kwargs: Any) -> Response:
+        ...
+
+    async def trace(self, *args: Any, **kwargs: Any) -> Response:
+        ...
+
+    def set_cookie(
+        self,
+        server_name: str,
+        key: str,
+        value: str = "",
+        max_age: Optional[Union[int, timedelta]] = None,
+        expires: Optional[Union[int, float, datetime]] = None,
+        path: str = "/",
+        domain: Optional[str] = None,
+        secure: bool = False,
+        httponly: bool = False,
+        samesite: str = None,
+        charset: str = "utf-8",
+    ) -> None:
+        ...
+
+    def delete_cookie(
+        self, server_name: str, key: str, path: str = "/", domain: Optional[str] = None
+    ) -> None:
+        ...
+
+    def session_transaction(
+        self,
+        path: str = "/",
+        *,
+        method: str = "GET",
+        headers: Optional[Union[dict, Headers]] = None,
+        query_string: Optional[dict] = None,
+        scheme: str = "http",
+        data: Optional[AnyStr] = None,
+        form: Optional[dict] = None,
+        json: Any = None,
+        root_path: str = "",
+        http_version: str = "1.1",
+    ) -> AsyncContextManager[Session]:
+        ...
+
+    async def __aenter__(self) -> TestClientProtocol:
+        ...
+
+    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+        ...
+
+
+class TestAppProtocol(Protocol):
+    def __init__(self, app: Quart) -> None:
+        ...
+
+    def test_client(self) -> TestClientProtocol:
+        ...
+
+    async def startup(self) -> None:
+        ...
+
+    async def shutdown(self) -> None:
+        ...
+
+    async def __aenter__(self) -> TestAppProtocol:
+        ...
+
+    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+        ...

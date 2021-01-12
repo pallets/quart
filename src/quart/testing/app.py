@@ -6,7 +6,7 @@ from typing import Awaitable, TYPE_CHECKING
 
 from hypercorn.typing import ASGIReceiveEvent, ASGISendEvent, LifespanScope
 
-from .client import QuartClient
+from ..typing import TestClientProtocol
 
 if TYPE_CHECKING:
     from ..app import Quart  # noqa
@@ -33,7 +33,7 @@ class TestApp:
         self._app_queue: asyncio.Queue = asyncio.Queue()
         self._task: Awaitable[None] = None
 
-    def test_client(self) -> "QuartClient":
+    def test_client(self) -> TestClientProtocol:
         return self.app.test_client()
 
     async def startup(self) -> None:

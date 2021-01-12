@@ -13,6 +13,7 @@ from typing import (
     Optional,
     overload,
     Tuple,
+    Type,
     TYPE_CHECKING,
     Union,
 )
@@ -26,6 +27,7 @@ from .connections import TestHTTPConnection, TestWebsocketConnection
 from .utils import make_test_body_with_headers, make_test_headers_path_and_query_string, sentinel
 from ..globals import _request_ctx_stack
 from ..sessions import Session
+from ..typing import TestHTTPConnectionProtocol, TestWebsocketConnectionProtocol
 from ..utils import encode_headers
 from ..wrappers import Response
 
@@ -60,6 +62,9 @@ class _TestCookieJarResponse:
 
 
 class QuartClient:
+    http_connection_class: Type[TestHTTPConnectionProtocol]
+    websocket_connection_class: Type[TestWebsocketConnectionProtocol]
+
     http_connection_class = TestHTTPConnection
     websocket_connection_class = TestWebsocketConnection
 
@@ -125,7 +130,7 @@ class QuartClient:
         scheme: str = "http",
         root_path: str = "",
         http_version: str = "1.1",
-    ) -> TestHTTPConnection:
+    ) -> TestHTTPConnectionProtocol:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self.app, path, headers, query_string
         )
@@ -144,7 +149,7 @@ class QuartClient:
         subprotocols: Optional[List[str]] = None,
         root_path: str = "",
         http_version: str = "1.1",
-    ) -> TestWebsocketConnection:
+    ) -> TestWebsocketConnectionProtocol:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self.app, path, headers, query_string
         )
