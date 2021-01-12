@@ -40,7 +40,6 @@ from .blueprints import Blueprint
 from .cli import AppGroup
 from .config import Config, ConfigAttribute, DEFAULT_CONFIG
 from .ctx import (
-    _app_ctx_stack,
     _AppCtxGlobals,
     _request_ctx_stack,
     _websocket_ctx_stack,
@@ -2151,17 +2150,14 @@ class Quart(PackageStatic):
     async def startup(self) -> None:
         self._got_first_request = False
 
-        app_ctx = self.app_context()
-        await app_ctx.push()
-
-        for func in self.before_serving_funcs:
-            await func()
+        async with self.app_context():
+            for func in self.before_serving_funcs:
+                await func()
 
     async def shutdown(self) -> None:
-        for func in self.after_serving_funcs:
-            await func()
-        app_ctx = _app_ctx_stack.top
-        await app_ctx.pop(None)
+        async with self.app_context():
+            for func in self.after_serving_funcs:
+                await func()
 
 
 def _find_exception_handler(
