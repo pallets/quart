@@ -321,8 +321,8 @@ async def test_app_handle_websocket_asyncio_cancelled_error(
 def _session_app() -> Quart:
     app = Quart(__name__)
     app.session_interface = AsyncMock(spec=SessionInterface)
-    app.session_interface.open_session.return_value = SecureCookieSession()  # type: ignore
-    app.session_interface.is_null_session.return_value = False  # type: ignore
+    app.session_interface.open_session.return_value = SecureCookieSession()
+    app.session_interface.is_null_session.return_value = False
 
     @app.route("/")
     async def route() -> str:

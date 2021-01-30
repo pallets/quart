@@ -22,6 +22,7 @@ from typing import (
 from wsgiref.handlers import format_date_time
 
 from aiofiles import open as async_open
+from aiofiles.base import AiofilesContextManager
 from aiofiles.threadpool.binary import AsyncBufferedIOBase, AsyncBufferedReader
 from werkzeug.datastructures import (  # type: ignore
     ContentRange,
@@ -171,26 +172,26 @@ class FileBody(ResponseBody):
         if buffer_size is not None:
             self.buffer_size = buffer_size
         self.file: Optional[AsyncBufferedIOBase] = None
-        self.file_manager: Optional[AsyncBufferedReader] = None
+        self.file_manager: AiofilesContextManager[None, None, AsyncBufferedReader] = None
 
     async def __aenter__(self) -> "FileBody":
         self.file_manager = async_open(self.file_path, mode="rb")
-        self.file = await self.file_manager.__aenter__()  # type: ignore
-        await self.file.seek(self.begin)  # type: ignore
+        self.file = await self.file_manager.__aenter__()
+        await self.file.seek(self.begin)
         return self
 
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
-        await self.file_manager.__aexit__(exc_type, exc_value, tb)  # type: ignore
+        await self.file_manager.__aexit__(exc_type, exc_value, tb)
 
     def __aiter__(self) -> "FileBody":
         return self
 
     async def __anext__(self) -> bytes:
-        current = await self.file.tell()  # type: ignore
+        current = await self.file.tell()
         if current >= self.end:
             raise StopAsyncIteration()
         read_size = min(self.buffer_size, self.end - current)
-        chunk = await self.file.read(read_size)  # type: ignore
+        chunk = await self.file.read(read_size)
 
         if chunk:
             return chunk

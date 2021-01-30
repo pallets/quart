@@ -3,6 +3,7 @@ from typing import Tuple
 from urllib.parse import urlencode
 
 import pytest
+from hypercorn.typing import HTTPScope
 from werkzeug.datastructures import Headers
 
 from quart.exceptions import RequestEntityTooLarge, RequestTimeout
@@ -23,7 +24,7 @@ async def test_full_body() -> None:
     limit = 3
     semaphore = asyncio.Semaphore(limit)
     asyncio.ensure_future(_fill_body(body, semaphore, limit))
-    assert b"012" == await body  # type: ignore
+    assert b"012" == await body
 
 
 @pytest.mark.asyncio
@@ -33,11 +34,11 @@ async def test_body_streaming() -> None:
     semaphore = asyncio.Semaphore(0)
     asyncio.ensure_future(_fill_body(body, semaphore, limit))
     index = 0
-    async for data in body:  # type: ignore
+    async for data in body:
         semaphore.release()
         assert data == b"%d" % index
         index += 1
-    assert b"" == await body  # type: ignore
+    assert b"" == await body
 
 
 @pytest.mark.asyncio
@@ -58,9 +59,9 @@ async def test_body_streaming_no_data() -> None:
     body = Body(None, None)
     semaphore = asyncio.Semaphore(0)
     asyncio.ensure_future(_fill_body(body, semaphore, 0))
-    async for _ in body:  # type: ignore # noqa: F841
+    async for _ in body:  # noqa: F841
         assert False  # Should not reach this
-    assert b"" == await body  # type: ignore
+    assert b"" == await body
 
 
 @pytest.mark.asyncio
@@ -73,7 +74,7 @@ async def test_body_exceeds_max_content_length() -> None:
 
 
 @pytest.mark.asyncio
-async def test_request_exceeds_max_content_length() -> None:
+async def test_request_exceeds_max_content_length(http_scope: HTTPScope) -> None:
     max_content_length = 5
     headers = Headers()
     headers["Content-Length"] = str(max_content_length + 1)
@@ -85,7 +86,7 @@ async def test_request_exceeds_max_content_length() -> None:
         headers,
         "",
         "1.1",
-        {},
+        http_scope,
         max_content_length=max_content_length,
         send_push_promise=no_op_push,
     )
@@ -94,7 +95,7 @@ async def test_request_exceeds_max_content_length() -> None:
 
 
 @pytest.mark.asyncio
-async def test_request_get_data_timeout() -> None:
+async def test_request_get_data_timeout(http_scope: HTTPScope) -> None:
     request = Request(
         "POST",
         "http",
@@ -103,7 +104,7 @@ async def test_request_get_data_timeout() -> None:
         Headers(),
         "",
         "1.1",
-        {},
+        http_scope,
         body_timeout=1,
         send_push_promise=no_op_push,
     )
@@ -112,7 +113,7 @@ async def test_request_get_data_timeout() -> None:
 
 
 @pytest.mark.asyncio
-async def test_request_values() -> None:
+async def test_request_values(http_scope: HTTPScope) -> None:
     request = Request(
         "GET",
         "http",
@@ -121,7 +122,7 @@ async def test_request_values() -> None:
         Headers({"host": "quart.com", "Content-Type": "application/x-www-form-urlencoded"}),
         "",
         "1.1",
-        {},
+        http_scope,
         send_push_promise=no_op_push,
     )
     request.body.append(urlencode({"a": "d"}).encode())
@@ -130,7 +131,7 @@ async def test_request_values() -> None:
 
 
 @pytest.mark.asyncio
-async def test_request_send_push_promise() -> None:
+async def test_request_send_push_promise(http_scope: HTTPScope) -> None:
     push_promise: Tuple[str, Headers] = None
 
     async def _push(path: str, headers: Headers) -> None:
@@ -153,7 +154,7 @@ async def test_request_send_push_promise() -> None:
         ),
         "",
         "2",
-        {},
+        http_scope,
         send_push_promise=_push,
     )
     await request.send_push_promise("/")

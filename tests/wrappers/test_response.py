@@ -102,7 +102,7 @@ def test_response_status(status: Any, expected: int) -> None:
 
 def test_response_status_error() -> None:
     with pytest.raises(ValueError) as error_info:
-        Response(b"Body", "200 OK")
+        Response(b"Body", "200 OK")  # type: ignore
     assert str(error_info.value) == "Quart  does not support non-integer status values"
 
 
