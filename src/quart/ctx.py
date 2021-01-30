@@ -74,6 +74,16 @@ class _BaseRequestWebsocketContext:
             new_error = RedirectRequired(error.new_url)  # type: ignore
             self.request_websocket.routing_exception = new_error
 
+    async def push(self) -> None:
+        app_ctx = _app_ctx_stack.top
+        if app_ctx is None:
+            app_ctx = self.app.app_context()
+        await app_ctx.push()
+
+        self.session = await self.app.open_session(self.request_websocket)
+        if self.session is None:
+            self.session = await self.app.make_null_session()
+
     async def pop(self, exc: BaseException) -> None:
         await _app_ctx_stack.top.pop(exc)
 
@@ -84,14 +94,7 @@ class _BaseRequestWebsocketContext:
             await self.pop(exc)
 
     async def __aenter__(self) -> "_BaseRequestWebsocketContext":
-        app_ctx = _app_ctx_stack.top
-        if app_ctx is None:
-            app_ctx = self.app.app_context()
-        await app_ctx.push()
-
-        self.session = await self.app.open_session(self.request_websocket)
-        if self.session is None:
-            self.session = await self.app.make_null_session()
+        await self.push()
         return self
 
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
@@ -123,14 +126,17 @@ class RequestContext(_BaseRequestWebsocketContext):
     def request(self) -> Request:
         return cast(Request, self.request_websocket)
 
+    async def push(self) -> None:
+        await super().push()
+        _request_ctx_stack.push(self)
+
     async def pop(self, exc: BaseException) -> None:
         await self.app.do_teardown_request(exc, self)
         _request_ctx_stack.pop()
         await super().pop(exc)
 
     async def __aenter__(self) -> "RequestContext":
-        await super().__aenter__()
-        _request_ctx_stack.push(self)
+        await self.push()
         return self
 
 
@@ -159,14 +165,17 @@ class WebsocketContext(_BaseRequestWebsocketContext):
     def websocket(self) -> Websocket:
         return cast(Websocket, self.request_websocket)
 
+    async def push(self) -> None:
+        await super().push()
+        _websocket_ctx_stack.push(self)
+
     async def pop(self, exc: BaseException) -> None:
         await self.app.do_teardown_websocket(exc, self)
         _websocket_ctx_stack.pop()
         await super().pop(exc)
 
     async def __aenter__(self) -> "WebsocketContext":
-        await super().__aenter__()
-        _websocket_ctx_stack.push(self)
+        await self.push()
         return self
 
 
