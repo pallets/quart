@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from functools import partial
 
 from werkzeug.datastructures import Headers

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, AnyStr
 
 from werkzeug.datastructures import MultiDict

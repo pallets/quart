@@ -2,6 +2,8 @@
 # allow for Werkzeug HTTPExceptions to be considered in a special way
 # (like the quart HTTPException). In addition a Flask reference is
 # created.
+from __future__ import annotations
+
 import asyncio
 from typing import Any, Awaitable, Callable, Optional, Union
 

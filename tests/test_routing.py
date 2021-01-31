@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 from hypercorn.typing import HTTPScope
 from werkzeug.datastructures import Headers

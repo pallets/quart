@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from contextlib import contextmanager
 from http.cookies import SimpleCookie
 from sys import version_info
