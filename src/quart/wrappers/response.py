@@ -24,7 +24,7 @@ from wsgiref.handlers import format_date_time
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
 from aiofiles.threadpool.binary import AsyncBufferedIOBase, AsyncBufferedReader
-from werkzeug.datastructures import (  # type: ignore
+from werkzeug.datastructures import (
     ContentRange,
     ContentSecurityPolicy,
     Headers,
@@ -32,7 +32,7 @@ from werkzeug.datastructures import (  # type: ignore
     Range,
     ResponseCacheControl,
 )
-from werkzeug.http import (  # type: ignore
+from werkzeug.http import (
     dump_cookie,
     dump_csp_header,
     dump_header,
@@ -461,7 +461,7 @@ class Response(_BaseRequestResponse, JSONMixin):
             value = value.decode()  # type: ignore
         self.headers.add(
             "Set-Cookie",
-            dump_cookie(  # type: ignore
+            dump_cookie(
                 key,
                 value=value,
                 max_age=max_age,
@@ -530,7 +530,7 @@ class Response(_BaseRequestResponse, JSONMixin):
         if value is True:
             self.headers["Access-Control-Allow-Credentials"] = "true"
         else:
-            self.headers.pop("Access-Control-Allow-Credentials", None)  # type: ignore
+            self.headers.pop("Access-Control-Allow-Credentials", None)
 
     @property
     def access_control_allow_headers(self) -> Optional[HeaderSet]:
@@ -798,7 +798,7 @@ class Response(_BaseRequestResponse, JSONMixin):
 
     def _set_or_pop_header(self, key: str, value: str) -> None:
         if value == "":
-            self.headers.pop(key, None)  # type: ignore
+            self.headers.pop(key, None)
         else:
             self.headers[key] = value
 

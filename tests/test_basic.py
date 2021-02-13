@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import cast
 
 import pytest
+from werkzeug.wrappers import Response as WerkzeugResponse
 
 from quart import abort, jsonify, Quart, request, Response, ResponseReturnValue, url_for, websocket
 from quart.testing import WebsocketResponse
@@ -29,6 +30,10 @@ def app() -> Quart:
     async def implicit_json() -> ResponseReturnValue:
         data = await request.get_json()
         return data
+
+    @app.route("/werkzeug/")
+    async def werkzeug() -> ResponseReturnValue:
+        return WerkzeugResponse(b"Hello")
 
     @app.route("/error/")
     async def error() -> ResponseReturnValue:
@@ -96,6 +101,14 @@ async def test_implicit_json(app: Quart) -> None:
     response = await test_client.post("/implicit_json/", json={"value": "json"})
     assert response.status_code == 200
     assert b'{"value":"json"}' == (await response.get_data())  # type: ignore
+
+
+@pytest.mark.asyncio
+async def test_werkzeug(app: Quart) -> None:
+    test_client = app.test_client()
+    response = await test_client.get("/werkzeug/")
+    assert response.status_code == 200
+    assert b"Hello" == (await response.get_data())  # type: ignore
 
 
 @pytest.mark.asyncio

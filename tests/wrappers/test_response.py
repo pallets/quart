@@ -130,7 +130,7 @@ async def test_response_make_conditional() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("range_", [Range("", {}), Range("bytes", [(0, 6)])])
+@pytest.mark.parametrize("range_", [Range("", []), Range("bytes", [(0, 6)])])
 async def test_response_make_conditional_no_condition(range_: Range) -> None:
     response = Response(b"abcdef")
     await response.make_conditional(range_)

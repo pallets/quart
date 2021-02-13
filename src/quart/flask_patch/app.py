@@ -7,69 +7,25 @@ from __future__ import annotations
 import asyncio
 from typing import Any, Awaitable, Callable, Optional, Union
 
+from werkzeug.wrappers import Response as WerkzeugResponse
+
 from quart import Response
 from quart.app import Quart
 from quart.ctx import _request_ctx_stack, RequestContext
-from quart.exceptions import HTTPException as QuartHTTPException
 from quart.utils import is_coroutine_function
-
-try:
-    from werkzeug.exceptions import HTTPException as WerkzeugHTTPException
-except ImportError:
-
-    class WerkzeugHTTPException:  # type: ignore
-        pass
-
 
 old_full_dispatch_request = Quart.full_dispatch_request
 
 
 async def new_full_dispatch_request(
     self: Quart, request_context: Optional[RequestContext] = None
-) -> Response:
+) -> Union[Response, WerkzeugResponse]:
     request_ = (request_context or _request_ctx_stack.top).request
     await request_.get_data()
     return await old_full_dispatch_request(self, request_context)
 
 
 Quart.full_dispatch_request = new_full_dispatch_request  # type: ignore
-old_handle_user_exception = Quart.handle_user_exception
-
-
-async def new_handle_user_exception(
-    self: Quart, error: Union[Exception, WerkzeugHTTPException, QuartHTTPException]
-) -> Response:
-    if isinstance(error, WerkzeugHTTPException):
-        return await new_handle_http_exception(self, error)
-    else:
-        return await old_handle_user_exception(self, error)
-
-
-Quart.handle_user_exception = new_handle_user_exception  # type: ignore
-old_handle_http_exception = Quart.handle_http_exception
-
-
-async def new_handle_http_exception(
-    self: Quart, error: Union[WerkzeugHTTPException, QuartHTTPException]
-) -> Response:
-    if isinstance(error, WerkzeugHTTPException):
-        handler = self._find_error_handler(error)
-        if handler is None:
-            werkzeug_response = error.get_response()
-            return await self.make_response(
-                (
-                    werkzeug_response.get_data(),
-                    werkzeug_response.status_code,
-                    werkzeug_response.headers,
-                )
-            )
-        else:
-            return await handler(error)
-    else:
-        return await old_handle_http_exception(self, error)
-
-
-Quart.handle_http_exception = new_handle_http_exception  # type: ignore
 
 
 def new_ensure_async(  # type: ignore

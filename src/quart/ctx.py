@@ -61,7 +61,7 @@ class _BaseRequestWebsocketContext:
             (
                 self.request_websocket.url_rule,
                 self.request_websocket.view_args,
-            ) = self.url_adapter.match(
+            ) = self.url_adapter.match(  # type: ignore
                 return_rule=True
             )  # noqa
         except WBadRequest:

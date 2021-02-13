@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import asyncio
-from typing import NoReturn, Optional, Set
+from typing import NoReturn, Optional, Set, Union
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from hypercorn.typing import HTTPScope, WebsocketScope
 from werkzeug.datastructures import Headers
+from werkzeug.wrappers import Response as WerkzeugResponse
 
 from quart.app import Quart
 from quart.globals import session, websocket
@@ -87,7 +88,7 @@ def test_add_url_rule_methods(
     result.update(required_methods)
     if "GET" in result:
         result.add("HEAD")
-    assert app.url_map._rules_by_endpoint["end"][0].methods == result  # type: ignore
+    assert app.url_map._rules_by_endpoint["end"][0].methods == result
 
 
 @pytest.mark.parametrize(
@@ -116,7 +117,7 @@ def test_add_url_rule_automatic_options(
     route.provide_automatic_options = func_automatic  # type: ignore
 
     app.add_url_rule("/", "end", route, methods=methods, provide_automatic_options=arg_automatic)
-    assert app.url_map._rules_by_endpoint["end"][0].methods == expected_methods  # type: ignore
+    assert app.url_map._rules_by_endpoint["end"][0].methods == expected_methods
     assert (
         app.url_map._rules_by_endpoint["end"][0].provide_automatic_options  # type: ignore
         == expected_automatic
@@ -167,9 +168,16 @@ async def test_subdomain() -> None:
             Response("hello", 201, headers={"X-Header": "bob"}),
             False,
         ),
+        (
+            (WerkzeugResponse("hello"), 201, {"X-Header": "bob"}),
+            WerkzeugResponse("hello", 201, {"X-Header": "bob"}),
+            False,
+        ),
     ],
 )
-async def test_make_response(result: ResponseReturnValue, expected: Response, raises: bool) -> None:
+async def test_make_response(
+    result: ResponseReturnValue, expected: Union[Response, WerkzeugResponse], raises: bool
+) -> None:
     app = Quart(__name__)
     app.config["RESPONSE_TIMEOUT"] = None
     try:
@@ -180,7 +188,10 @@ async def test_make_response(result: ResponseReturnValue, expected: Response, ra
     else:
         assert set(response.headers.keys()) == set(expected.headers.keys())
         assert response.status_code == expected.status_code
-        assert (await response.get_data()) == (await expected.get_data())
+        if isinstance(response, Response):
+            assert (await response.get_data()) == (await expected.get_data())  # type: ignore
+        elif isinstance(response, WerkzeugResponse):
+            assert response.get_data() == expected.get_data()
 
 
 @pytest.mark.parametrize(

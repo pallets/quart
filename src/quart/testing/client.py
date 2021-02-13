@@ -241,7 +241,7 @@ class QuartClient:
         The arguments are the standard cookie morsels and this is a
         wrapper around the stdlib SimpleCookie code.
         """
-        cookie = dump_cookie(  # type: ignore
+        cookie = dump_cookie(
             key,
             value=value,
             max_age=max_age,
@@ -357,7 +357,7 @@ class QuartClient:
             self.app, path, headers, query_string
         )
         request_data, body_headers = make_test_body_with_headers(data, form, json, self.app)
-        headers.update(**body_headers)  # type: ignore
+        headers.update(**body_headers)
 
         if self.cookie_jar is not None:
             for cookie in self.cookie_jar:

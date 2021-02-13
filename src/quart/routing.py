@@ -22,7 +22,7 @@ class QuartRule(Rule):
         websocket: bool = False,
         provide_automatic_options: bool = False,
     ) -> None:
-        super().__init__(  # type: ignore
+        super().__init__(
             string,
             defaults=defaults,
             subdomain=subdomain,

@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import warnings
 from functools import partial
-from typing import AnyStr, cast, List, Optional, Set, TYPE_CHECKING
+from typing import AnyStr, cast, List, Optional, Set, TYPE_CHECKING, Union
 from urllib.parse import urlparse
 
 from hypercorn.typing import (
@@ -24,6 +24,7 @@ from hypercorn.typing import (
     WebsocketScope,
 )
 from werkzeug.datastructures import Headers
+from werkzeug.wrappers import Response as WerkzeugResponse
 
 from .debug import traceback_response
 from .signals import websocket_received, websocket_sent
@@ -93,7 +94,7 @@ class ASGIHTTPConnection:
             else:
                 response = await traceback_response()
 
-        if response.timeout != sentinel:
+        if isinstance(response, Response) and response.timeout != sentinel:
             timeout = cast(Optional[float], response.timeout)
         else:
             timeout = self.app.config["RESPONSE_TIMEOUT"]
@@ -102,7 +103,9 @@ class ASGIHTTPConnection:
         except asyncio.TimeoutError:
             pass
 
-    async def _send_response(self, send: ASGISendCallable, response: Response) -> None:
+    async def _send_response(
+        self, send: ASGISendCallable, response: Union[Response, WerkzeugResponse]
+    ) -> None:
         await send(
             cast(
                 HTTPResponseStartEvent,
@@ -114,14 +117,23 @@ class ASGIHTTPConnection:
             )
         )
 
-        async with response.response as body:
-            async for data in body:
+        if isinstance(response, WerkzeugResponse):
+            for data in response.response:
                 await send(
                     cast(
                         HTTPResponseBodyEvent,
                         {"type": "http.response.body", "body": data, "more_body": True},
                     )
                 )
+        else:
+            async with response.response as body:
+                async for data in body:
+                    await send(
+                        cast(
+                            HTTPResponseBodyEvent,
+                            {"type": "http.response.body", "body": data, "more_body": True},
+                        )
+                    )
         await send(
             cast(
                 HTTPResponseBodyEvent,
@@ -212,8 +224,8 @@ class ASGIWebsocketConnection:
                         },
                     )
                 )
-                async with response.response as body:
-                    async for data in body:
+                if isinstance(response, WerkzeugResponse):
+                    for data in response.response:
                         await send(
                             cast(
                                 WebsocketResponseBodyEvent,
@@ -224,6 +236,19 @@ class ASGIWebsocketConnection:
                                 },
                             )
                         )
+                elif isinstance(response, Response):
+                    async with response.response as body:
+                        async for data in body:
+                            await send(
+                                cast(
+                                    WebsocketResponseBodyEvent,
+                                    {
+                                        "type": "websocket.http.response.body",
+                                        "body": data,
+                                        "more_body": True,
+                                    },
+                                )
+                            )
                 await send(
                     cast(
                         WebsocketResponseBodyEvent,

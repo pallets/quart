@@ -34,6 +34,7 @@ from hypercorn.config import Config as HyperConfig
 from hypercorn.typing import ASGIReceiveCallable, ASGISendCallable, Scope
 from werkzeug.datastructures import Headers
 from werkzeug.routing import MapAdapter
+from werkzeug.wrappers import Response as WerkzeugResponse
 
 from .asgi import ASGIHTTPConnection, ASGILifespan, ASGIWebsocketConnection
 from .blueprints import Blueprint
@@ -909,7 +910,7 @@ class Quart(Scaffold):
             raise error
         return await handler(error)
 
-    async def handle_exception(self, error: Exception) -> Response:
+    async def handle_exception(self, error: Exception) -> Union[Response, WerkzeugResponse]:
         """Handle an uncaught exception.
 
         By default this switches the error response to a 500 internal
@@ -930,7 +931,9 @@ class Quart(Scaffold):
         else:
             return await self.finalize_request(await handler(error), from_error_handler=True)
 
-    async def handle_websocket_exception(self, error: Exception) -> Optional[Response]:
+    async def handle_websocket_exception(
+        self, error: Exception
+    ) -> Optional[Union[Response, WerkzeugResponse]]:
         """Handle an uncaught exception.
 
         By default this logs the exception and then re-raises it.
@@ -1131,7 +1134,9 @@ class Quart(Scaffold):
         """Create and return a null session."""
         return await self.ensure_async(self.session_interface.make_null_session)(self)
 
-    async def save_session(self, session: Session, response: Response) -> None:
+    async def save_session(
+        self, session: Session, response: Union[Response, WerkzeugResponse]
+    ) -> None:
         """Saves the session to the response."""
         await self.ensure_async(self.session_interface.save_session)(self, session, response)
 
@@ -1401,7 +1406,7 @@ class Quart(Scaffold):
             self, path, headers, query_string
         )
         request_body, body_headers = make_test_body_with_headers(data, form, json)
-        headers.update(**body_headers)  # type: ignore
+        headers.update(**body_headers)
         request = self.request_class(
             method,
             scheme,
@@ -1454,7 +1459,7 @@ class Quart(Scaffold):
         methods = _request_ctx_stack.top.url_adapter.allowed_methods()
         return self.response_class("", headers={"Allow": ", ".join(methods)})
 
-    async def make_response(self, result: ResponseReturnValue) -> Response:
+    async def make_response(self, result: ResponseReturnValue) -> Union[Response, WerkzeugResponse]:
         """Make a Response from the result of the route handler.
 
         The result itself can either be:
@@ -1481,7 +1486,8 @@ class Quart(Scaffold):
         elif status_or_headers is not None:
             status = status_or_headers
 
-        if not isinstance(value, Response):
+        response: Union[Response, WerkzeugResponse]
+        if not isinstance(value, (Response, WerkzeugResponse)):
             if isinstance(value, dict):
                 response = jsonify(value)
             else:
@@ -1497,7 +1503,7 @@ class Quart(Scaffold):
 
         return response
 
-    async def handle_request(self, request: Request) -> Response:
+    async def handle_request(self, request: Request) -> Union[Response, WerkzeugResponse]:
         async with self.request_context(request) as request_context:
             try:
                 return await self.full_dispatch_request(request_context)
@@ -1511,7 +1517,7 @@ class Quart(Scaffold):
 
     async def full_dispatch_request(
         self, request_context: Optional[RequestContext] = None
-    ) -> Response:
+    ) -> Union[Response, WerkzeugResponse]:
         """Adds pre and post processing to the request dispatching.
 
         Arguments:
@@ -1578,7 +1584,7 @@ class Quart(Scaffold):
         result: ResponseReturnValue,
         request_context: Optional[RequestContext] = None,
         from_error_handler: bool = False,
-    ) -> Response:
+    ) -> Union[Response, WerkzeugResponse]:
         """Turns the view response return value into a response.
 
         Arguments:
@@ -1597,8 +1603,10 @@ class Quart(Scaffold):
         return response
 
     async def process_response(
-        self, response: Response, request_context: Optional[RequestContext] = None
-    ) -> Response:
+        self,
+        response: Union[Response, WerkzeugResponse],
+        request_context: Optional[RequestContext] = None,
+    ) -> Union[Response, WerkzeugResponse]:
         """Postprocess the request acting on the response.
 
         Arguments:
@@ -1621,7 +1629,9 @@ class Quart(Scaffold):
             await self.save_session(session_, response)
         return response
 
-    async def handle_websocket(self, websocket: Websocket) -> Optional[Response]:
+    async def handle_websocket(
+        self, websocket: Websocket
+    ) -> Optional[Union[Response, WerkzeugResponse]]:
         async with self.websocket_context(websocket) as websocket_context:
             try:
                 return await self.full_dispatch_websocket(websocket_context)
@@ -1632,7 +1642,7 @@ class Quart(Scaffold):
 
     async def full_dispatch_websocket(
         self, websocket_context: Optional[WebsocketContext] = None
-    ) -> Optional[Response]:
+    ) -> Optional[Union[Response, WerkzeugResponse]]:
         """Adds pre and post processing to the websocket dispatching.
 
         Arguments:
@@ -1696,7 +1706,7 @@ class Quart(Scaffold):
         result: ResponseReturnValue,
         websocket_context: Optional[WebsocketContext] = None,
         from_error_handler: bool = False,
-    ) -> Optional[Response]:
+    ) -> Optional[Union[Response, WerkzeugResponse]]:
         """Turns the view response return value into a response.
 
         Arguments:
@@ -1718,8 +1728,10 @@ class Quart(Scaffold):
         return response
 
     async def postprocess_websocket(
-        self, response: Optional[Response], websocket_context: Optional[WebsocketContext] = None
-    ) -> Response:
+        self,
+        response: Optional[Union[Response, WerkzeugResponse]],
+        websocket_context: Optional[WebsocketContext] = None,
+    ) -> Union[Response, WerkzeugResponse]:
         """Postprocess the websocket acting on the response.
 
         Arguments:

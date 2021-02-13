@@ -35,6 +35,7 @@ except ImportError:
 
 if TYPE_CHECKING:
     from werkzeug.datastructures import Headers  # noqa: F401
+    from werkzeug.wrappers import Response as WerkzeugResponse
 
     from .app import Quart
     from .sessions import Session
@@ -45,6 +46,7 @@ FilePath = Union[bytes, str, os.PathLike]
 # The possible types that are directly convertible or are a Response object.
 ResponseValue = Union[
     "Response",
+    "WerkzeugResponse",
     AnyStr,
     Dict[str, Any],  # any jsonify-able dict
     AsyncGenerator[bytes, None],
