@@ -7,8 +7,8 @@ from urllib.parse import urlencode
 import pytest
 from hypercorn.typing import HTTPScope
 from werkzeug.datastructures import Headers
+from werkzeug.exceptions import RequestEntityTooLarge, RequestTimeout
 
-from quart.exceptions import RequestEntityTooLarge, RequestTimeout
 from quart.testing import no_op_push
 from quart.wrappers.request import Body, Request
 

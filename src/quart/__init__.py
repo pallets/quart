@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from jinja2 import escape, Markup
+from werkzeug.exceptions import abort
 
 from .__about__ import __version__
 from .app import Quart
@@ -15,7 +16,6 @@ from .ctx import (
     has_request_context,
     has_websocket_context,
 )
-from .exceptions import abort
 from .globals import (
     _app_ctx_stack,
     _request_ctx_stack,

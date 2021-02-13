@@ -32,6 +32,7 @@ from werkzeug.datastructures import (
     Range,
     ResponseCacheControl,
 )
+from werkzeug.exceptions import RequestedRangeNotSatisfiable
 from werkzeug.http import (
     dump_cookie,
     dump_csp_header,
@@ -80,9 +81,7 @@ class ResponseBody(ABC):
 
 def _raise_if_invalid_range(begin: int, end: int, size: int) -> None:
     if begin >= end or abs(begin) > size or end > size:
-        from ..exceptions import RequestRangeNotSatisfiable
-
-        raise RequestRangeNotSatisfiable()
+        raise RequestedRangeNotSatisfiable()
 
 
 class DataBody(ResponseBody):
@@ -413,9 +412,7 @@ class Response(_BaseRequestResponse, JSONMixin):
             return
 
         if request_range.units != "bytes" or len(request_range.ranges) > 1:
-            from ..exceptions import RequestRangeNotSatisfiable
-
-            raise RequestRangeNotSatisfiable()
+            raise RequestedRangeNotSatisfiable()
 
         begin, end = request_range.ranges[0]
         try:

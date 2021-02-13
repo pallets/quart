@@ -7,9 +7,9 @@ from typing import List
 
 import pytest
 from py._path.local import LocalPath
+from werkzeug.exceptions import NotFound
 
 from quart import Quart
-from quart.exceptions import NotFound
 from quart.static import safe_join, send_file, send_from_directory
 
 ROOT_PATH = Path(__file__).parents[0]

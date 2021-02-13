@@ -23,6 +23,7 @@ from werkzeug.datastructures import (
     Range,
     RequestCacheControl,
 )
+from werkzeug.exceptions import BadRequest
 from werkzeug.http import (
     dump_options_header,
     parse_accept_header,
@@ -114,8 +115,6 @@ class JSONMixin:
         Arguments:
             error: The exception raised during parsing.
         """
-        from ..exceptions import BadRequest  # noqa Avoiding circular import
-
         raise BadRequest()
 
 

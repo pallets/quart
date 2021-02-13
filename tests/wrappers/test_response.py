@@ -10,8 +10,8 @@ import pytest
 from hypothesis import given, strategies as strategies
 from py._path.local import LocalPath
 from werkzeug.datastructures import Range
+from werkzeug.exceptions import RequestedRangeNotSatisfiable
 
-from quart.exceptions import RequestRangeNotSatisfiable
 from quart.wrappers.response import DataBody, FileBody, IOBody, IterableBody, Response
 
 
@@ -146,7 +146,7 @@ async def test_response_make_conditional_no_condition(range_: Range) -> None:
 )
 async def test_response_make_conditional_not_satisfiable(range_: Range) -> None:
     response = Response(b"abcdef")
-    with pytest.raises(RequestRangeNotSatisfiable):
+    with pytest.raises(RequestedRangeNotSatisfiable):
         await response.make_conditional(range_)
 
 

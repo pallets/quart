@@ -7,12 +7,7 @@ from unittest.mock import Mock
 import pytest
 from hypercorn.typing import HTTPScope, WebsocketScope
 from werkzeug.datastructures import Headers
-from werkzeug.exceptions import (
-    BadRequest as WBadRequest,
-    MethodNotAllowed as WMethodNotAllowed,
-    NotFound as WNotFound,
-)
-from werkzeug.routing import RequestRedirect as WRequestRedirect
+from werkzeug.exceptions import BadRequest
 
 from quart.app import Quart
 from quart.ctx import (
@@ -26,7 +21,6 @@ from quart.ctx import (
     has_request_context,
     RequestContext,
 )
-from quart.exceptions import BadRequest, MethodNotAllowed, NotFound, RedirectRequired
 from quart.globals import g, request, websocket
 from quart.routing import QuartRule
 from quart.testing import make_test_headers_path_and_query_string, no_op_push
@@ -55,43 +49,10 @@ def test_request_context_match(http_scope: HTTPScope) -> None:
     assert request.view_args == {"arg": "value"}
 
 
-@pytest.mark.parametrize(
-    "exception_type, exception_instance",
-    [
-        (BadRequest, WBadRequest()),
-        (MethodNotAllowed, WMethodNotAllowed(["GET"])),
-        (NotFound, WNotFound()),
-        (RedirectRequired, WRequestRedirect("/")),
-    ],
-)
-def test_request_context_matching_error(
-    exception_type: Exception,
-    exception_instance: Exception,
-    http_scope: HTTPScope,
-) -> None:
-    app = Quart(__name__)
-    url_adapter = Mock()
-    url_adapter.match.side_effect = exception_instance
-    app.create_url_adapter = lambda *_: url_adapter  # type: ignore
-    request = Request(
-        "GET",
-        "http",
-        "/",
-        b"",
-        Headers([("host", "quart.com")]),
-        "",
-        "1.1",
-        http_scope,
-        send_push_promise=no_op_push,
-    )
-    RequestContext(app, request)
-    assert isinstance(request.routing_exception, exception_type)  # type: ignore
-
-
 def test_bad_request_if_websocket_route(http_scope: HTTPScope) -> None:
     app = Quart(__name__)
     url_adapter = Mock()
-    url_adapter.match.side_effect = WBadRequest()
+    url_adapter.match.side_effect = BadRequest()
     app.create_url_adapter = lambda *_: url_adapter  # type: ignore
     request = Request(
         "GET",

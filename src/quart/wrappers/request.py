@@ -8,6 +8,7 @@ from urllib.parse import parse_qs
 
 from hypercorn.typing import HTTPScope
 from werkzeug.datastructures import CombinedMultiDict, Headers, MultiDict
+from werkzeug.exceptions import BadRequest, RequestEntityTooLarge, RequestTimeout
 
 from .base import BaseRequestWebsocket, JSONMixin
 from ..datastructures import FileStorage
@@ -54,8 +55,6 @@ class Body:
             and max_content_length is not None
             and expected_content_length > max_content_length
         ):
-            from ..exceptions import RequestEntityTooLarge  # noqa Avoiding circular import
-
             self._must_raise = RequestEntityTooLarge()
 
     def __aiter__(self) -> "Body":
@@ -99,8 +98,6 @@ class Body:
         self._data.extend(data)
         self._has_data.set()
         if self._max_content_length is not None and len(self._data) > self._max_content_length:
-            from ..exceptions import RequestEntityTooLarge  # noqa Avoiding circular import
-
             self._must_raise = RequestEntityTooLarge()
             self.set_complete()
 
@@ -184,8 +181,6 @@ class Request(BaseRequestWebsocket, JSONMixin):
             except asyncio.CancelledError:
                 pass
 
-            from ..exceptions import RequestTimeout  # noqa Avoiding circular import
-
             raise RequestTimeout()
 
         if raw:
@@ -236,8 +231,6 @@ class Request(BaseRequestWebsocket, JSONMixin):
             try:
                 data = raw_data.decode(parameters.get("charset", "utf-8"))
             except UnicodeDecodeError:
-                from ..exceptions import BadRequest  # noqa Avoiding circular import
-
                 raise BadRequest()
             for key, values in parse_qs(data, keep_blank_values=True).items():
                 for value in values:

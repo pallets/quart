@@ -17,7 +17,8 @@ from typing import (
     Union,
 )
 
-from .exceptions import default_exceptions, HTTPException, HTTPStatusException
+from werkzeug.exceptions import default_exceptions, HTTPException
+
 from .static import PackageStatic
 from .templating import _default_template_context_processor
 from .typing import (
@@ -591,6 +592,7 @@ class Scaffold(PackageStatic):
     def _get_error_type_and_code(
         self, error: Union[Type[Exception], int]
     ) -> Tuple[Type[Exception], Optional[int]]:
+        error_type: Type[Exception]
         if isinstance(error, int):
             error_type = default_exceptions[error]
         else:
@@ -599,8 +601,8 @@ class Scaffold(PackageStatic):
         if not issubclass(error_type, Exception):
             raise KeyError("Custom exceptions must be subclasses of Exception.")
 
-        if issubclass(error_type, HTTPStatusException):
-            return error_type, error_type.status.value
+        if issubclass(error_type, HTTPException):
+            return error_type, error_type.code
         else:
             return error_type, None
 

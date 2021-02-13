@@ -11,8 +11,8 @@ from typing import AnyStr, IO, Optional, Union
 from zlib import adler32
 
 from jinja2 import FileSystemLoader
+from werkzeug.exceptions import NotFound
 
-from .exceptions import NotFound
 from .globals import current_app, request
 from .typing import FilePath
 from .utils import file_path_to_path

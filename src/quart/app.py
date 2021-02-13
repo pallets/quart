@@ -33,6 +33,7 @@ from hypercorn.asyncio import serve
 from hypercorn.config import Config as HyperConfig
 from hypercorn.typing import ASGIReceiveCallable, ASGISendCallable, Scope
 from werkzeug.datastructures import Headers
+from werkzeug.exceptions import default_exceptions, HTTPException
 from werkzeug.routing import MapAdapter
 from werkzeug.wrappers import Response as WerkzeugResponse
 
@@ -50,7 +51,6 @@ from .ctx import (
     RequestContext,
     WebsocketContext,
 )
-from .exceptions import all_http_exceptions, HTTPException
 from .globals import g, request, session
 from .helpers import find_package, get_debug_flag, get_env, get_flashed_messages, url_for
 from .json import JSONDecoder, JSONEncoder, jsonify, tojson_filter
@@ -873,7 +873,9 @@ class Quart(Scaffold):
                     return handler
         return None
 
-    async def handle_http_exception(self, error: HTTPException) -> Response:
+    async def handle_http_exception(
+        self, error: HTTPException
+    ) -> Union[Response, WerkzeugResponse]:
         """Handle a HTTPException subclass error.
 
         This will attempt to find a handler for the error and if fails
@@ -881,7 +883,7 @@ class Quart(Scaffold):
         """
         handler = self._find_error_handler(error)
         if handler is None:
-            return error.get_response()
+            return error.get_response()  # type: ignore
         else:
             return await handler(error)
 
@@ -895,7 +897,7 @@ class Quart(Scaffold):
         """
         return self.config["TRAP_HTTP_EXCEPTIONS"]
 
-    async def handle_user_exception(self, error: Exception) -> Response:
+    async def handle_user_exception(self, error: Exception) -> Union[Response, WerkzeugResponse]:
         """Handle an exception that has been raised.
 
         This should forward :class:`~quart.exception.HTTPException` to
@@ -923,11 +925,11 @@ class Quart(Scaffold):
         if self.propagate_exceptions:
             raise error
 
-        internal_server_error = all_http_exceptions[500]()
+        internal_server_error = default_exceptions[500]()
         handler = self._find_error_handler(internal_server_error)
 
         if handler is None:
-            return internal_server_error.get_response()
+            return internal_server_error.get_response()  # type: ignore
         else:
             return await self.finalize_request(await handler(error), from_error_handler=True)
 
@@ -942,11 +944,11 @@ class Quart(Scaffold):
 
         self.log_exception(sys.exc_info())
 
-        internal_server_error = all_http_exceptions[500]()
+        internal_server_error = default_exceptions[500]()
         handler = self._find_error_handler(internal_server_error)
 
         if handler is None:
-            return internal_server_error.get_response()
+            return internal_server_error.get_response()  # type: ignore
         else:
             return await self.finalize_websocket(await handler(error), from_error_handler=True)
 
