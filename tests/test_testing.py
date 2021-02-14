@@ -136,7 +136,7 @@ async def test_data() -> None:
     app = Quart(__name__)
 
     @app.route("/", methods=["POST"])
-    async def echo() -> Response:
+    async def echo() -> str:
         data = await request.get_data(True)
         return data
 

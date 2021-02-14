@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, AnyStr
 
 from werkzeug.datastructures import MultiDict
+from werkzeug.local import LocalProxy
 
 from quart.globals import (
     _app_ctx_stack,
@@ -13,7 +14,6 @@ from quart.globals import (
     request as quart_request,
     session,
 )
-from quart.local import LocalProxy
 from ._synchronise import sync_with_context
 
 

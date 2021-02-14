@@ -214,7 +214,7 @@ async def send_file(
         if last_modified is None:
             last_modified = datetime.fromtimestamp(file_path.stat().st_mtime)
         if cache_timeout is None:
-            cache_timeout = current_app.get_send_file_max_age(file_path)
+            cache_timeout = current_app.get_send_file_max_age(str(file_path))
         etag = "{}-{}-{}".format(
             file_path.stat().st_mtime, file_path.stat().st_size, adler32(bytes(file_path))
         )

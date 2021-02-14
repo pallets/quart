@@ -6,7 +6,6 @@ import sys
 import types
 from typing import Any, Callable
 
-from quart.local import LocalStack, TaskLocal
 from ._synchronise import sync_with_context
 
 
@@ -118,11 +117,6 @@ def _patch_modules() -> None:
     sys.modules.update(flask_modules)
 
 
-def _patch_quart_local() -> None:
-    LocalStack.__ident_func__ = lambda _: TaskLocal._task_identity()  # type: ignore
-
-
 def patch_all() -> None:
     _patch_asyncio()
     _patch_modules()
-    _patch_quart_local()

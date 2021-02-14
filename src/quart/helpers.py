@@ -9,6 +9,7 @@ from typing import Any, Callable, List, Optional, Tuple, Union
 from urllib.parse import quote
 
 from werkzeug.routing import BuildError
+from werkzeug.wrappers import Response as WerkzeugResponse
 
 from .ctx import _app_ctx_stack, _request_ctx_stack
 from .globals import current_app, request, session
@@ -38,7 +39,7 @@ def get_env(default: Optional[str] = "production") -> str:
     return os.getenv("QUART_ENV", default)
 
 
-async def make_response(*args: Any) -> Response:
+async def make_response(*args: Any) -> Union[Response, WerkzeugResponse]:
     """Create a response, a simple wrapper function.
 
     This is most useful when you want to alter a Response before
@@ -51,7 +52,7 @@ async def make_response(*args: Any) -> Response:
 
     """
     if not args:
-        return current_app.response_class()
+        return current_app.response_class("")
     if len(args) == 1:
         args = args[0]
 
@@ -91,7 +92,7 @@ async def flash(message: str, category: str = "message") -> None:
     flashes.append((category, message))
     session["_flashes"] = flashes
     await message_flashed.send(
-        current_app._get_current_object(), message=message, category=category
+        current_app._get_current_object(), message=message, category=category  # type: ignore
     )
 
 

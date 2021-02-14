@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 def _dump_arg_defaults(kwargs: Dict[str, Any], app: Optional["Quart"] = None) -> Dict[str, Any]:
     json_encoder: Type[json.JSONEncoder] = JSONEncoder
     if app is None and _app_ctx_stack.top is not None:  # has_app_context requires a circular import
-        app = current_app._get_current_object()
+        app = current_app._get_current_object()  # type: ignore
 
     if app is not None:
         json_encoder = app.json_encoder
@@ -47,7 +47,7 @@ def dump(object_: Any, fp: IO[str], app: Optional["Quart"] = None, **kwargs: Any
 def _load_arg_defaults(kwargs: Dict[str, Any], app: Optional["Quart"] = None) -> Dict[str, Any]:
     json_decoder: Type[json.JSONDecoder] = JSONDecoder
     if app is None and _app_ctx_stack.top is not None:  # has_app_context requires a circular import
-        app = current_app._get_current_object()
+        app = current_app._get_current_object()  # type: ignore
 
     if app is not None:
         json_decoder = app.json_decoder

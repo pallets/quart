@@ -166,7 +166,7 @@ async def test_copy_current_app_context() -> None:
 
         @copy_current_app_context
         async def within_context() -> None:
-            assert g.foo == "bar"
+            assert g.foo == "bar"  # type: ignore
 
         await asyncio.ensure_future(within_context())
         return ""
@@ -228,7 +228,7 @@ async def test_copy_current_websocket_context() -> None:
     @app.websocket("/")
     async def index() -> None:
         @copy_current_websocket_context
-        async def within_context() -> None:
+        async def within_context() -> str:
             return websocket.path
 
         data = await asyncio.ensure_future(within_context())
