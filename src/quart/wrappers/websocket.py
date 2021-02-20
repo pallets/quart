@@ -90,6 +90,3 @@ class Websocket(BaseRequestWebsocket):
 
     async def close(self, code: int) -> None:
         await self._close(code)
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.path})"

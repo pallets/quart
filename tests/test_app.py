@@ -151,7 +151,7 @@ async def test_subdomain() -> None:
 
     test_client = app.test_client()
     response = await test_client.get("/", headers={"host": "sub.quart.com"})
-    assert (await response.get_data(raw=False)) == "sub"
+    assert (await response.get_data(as_text=True)) == "sub"
 
 
 @pytest.mark.asyncio

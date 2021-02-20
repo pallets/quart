@@ -29,7 +29,7 @@ from werkzeug.wrappers import Response as WerkzeugResponse
 from .debug import traceback_response
 from .signals import websocket_received, websocket_sent
 from .utils import encode_headers
-from .wrappers import Request, Response, sentinel, Websocket  # noqa: F401
+from .wrappers import Request, Response, Websocket  # noqa: F401
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa: F401
@@ -94,7 +94,7 @@ class ASGIHTTPConnection:
             else:
                 response = await traceback_response()
 
-        if isinstance(response, Response) and response.timeout != sentinel:
+        if isinstance(response, Response) and response.timeout != Ellipsis:
             timeout = cast(Optional[float], response.timeout)
         else:
             timeout = self.app.config["RESPONSE_TIMEOUT"]

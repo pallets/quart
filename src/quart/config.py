@@ -21,6 +21,7 @@ DEFAULT_CONFIG = {
     "JSONIFY_MIMETYPE": "application/json",
     "JSONIFY_PRETTYPRINT_REGULAR": False,
     "MAX_CONTENT_LENGTH": 16 * 1024 * 1024,  # 16 MB Limit
+    "MAX_COOKIE_SIZE": 4093,
     "PERMANENT_SESSION_LIFETIME": timedelta(days=31),
     "PREFER_SECURE_URLS": False,  # Replaces PREFERRED_URL_SCHEME to allow for WebSocket scheme
     "PROPAGATE_EXCEPTIONS": None,

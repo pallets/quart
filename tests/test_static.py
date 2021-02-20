@@ -43,7 +43,7 @@ async def test_send_file_path(tmpdir: LocalPath) -> None:
     file_.write("something")
     async with app.app_context():
         response = await send_file(Path(file_.realpath()))
-    assert (await response.get_data(raw=True)) == file_.read_binary()
+    assert (await response.get_data(as_text=False)) == file_.read_binary()
 
 
 @pytest.mark.asyncio
@@ -52,7 +52,7 @@ async def test_send_file_bytes_io() -> None:
     io_stream = BytesIO(b"something")
     async with app.app_context():
         response = await send_file(io_stream, mimetype="text/plain")
-    assert (await response.get_data(raw=True)) == b"something"
+    assert (await response.get_data(as_text=False)) == b"something"
 
 
 @pytest.mark.asyncio
@@ -92,7 +92,7 @@ async def test_send_file_mimetype(tmpdir: LocalPath) -> None:
     file_.write("something")
     async with app.app_context():
         response = await send_file(Path(file_.realpath()), mimetype="application/bob")
-    assert (await response.get_data(raw=True)) == file_.read_binary()
+    assert (await response.get_data(as_text=False)) == file_.read_binary()
     assert response.headers["Content-Type"] == "application/bob"
 
 

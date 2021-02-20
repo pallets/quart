@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta
-from email.utils import parsedate_to_datetime
 from hashlib import md5
 from inspect import isasyncgen, isgenerator
 from io import BytesIO
 from os import PathLike
 from types import TracebackType
 from typing import (
+    Any,
     AnyStr,
     AsyncGenerator,
     AsyncIterable,
@@ -16,42 +15,24 @@ from typing import (
     Iterable,
     Optional,
     overload,
-    Tuple,
     Union,
 )
-from wsgiref.handlers import format_date_time
 
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
 from aiofiles.threadpool.binary import AsyncBufferedIOBase, AsyncBufferedReader
-from werkzeug.datastructures import (
-    ContentRange,
-    ContentSecurityPolicy,
-    Headers,
-    HeaderSet,
-    Range,
-    ResponseCacheControl,
-)
+from werkzeug.datastructures import ContentRange, Headers, Range
 from werkzeug.exceptions import RequestedRangeNotSatisfiable
-from werkzeug.http import (
-    dump_cookie,
-    dump_csp_header,
-    dump_header,
-    parse_cache_control_header,
-    parse_content_range_header,
-    parse_csp_header,
-    parse_set_header,
-)
+from werkzeug.sansio.response import Response as SansIOResponse
 
-from .base import _BaseRequestResponse, JSONMixin
+from .. import json
+from ..globals import current_app
 from ..utils import file_path_to_path, run_sync_iterable
 
 try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal  # type: ignore
-
-sentinel = object()
 
 
 class ResponseBody(ABC):
@@ -277,7 +258,7 @@ class IOBody(ResponseBody):
         return self.size
 
 
-class Response(_BaseRequestResponse, JSONMixin):
+class Response(SansIOResponse):
     """This class represents a response.
 
     It can be subclassed and the subclassed used in preference by
@@ -295,14 +276,13 @@ class Response(_BaseRequestResponse, JSONMixin):
     """
 
     automatically_set_content_length = True
-    default_status = 200
     default_mimetype = "text/html"
     data_body_class = DataBody
     file_body_class = FileBody
     implicit_sequence_conversion = True
     io_body_class = IOBody
     iterable_body_class = IterableBody
-    max_cookie_size = 4093
+    json_module = json
 
     def __init__(
         self,
@@ -331,24 +311,8 @@ class Response(_BaseRequestResponse, JSONMixin):
         Attributes:
             response: An iterable of the response bytes-data.
         """
-        super().__init__(headers)
-        self.timeout: Union[int, None, object] = sentinel
-
-        if status is None:
-            status = self.default_status
-        try:
-            self.status_code = int(status)
-        except ValueError as error:
-            raise ValueError("Quart  does not support non-integer status values") from error
-
-        if content_type is None:
-            if mimetype is None and "content-type" not in self.headers:
-                mimetype = self.default_mimetype
-            if mimetype is not None:
-                self.mimetype = mimetype
-
-        if content_type is not None:
-            self.headers["Content-Type"] = content_type
+        super().__init__(status, headers, mimetype, content_type)
+        self.timeout: Any = Ellipsis
 
         self.response: ResponseBody
         if isinstance(response, ResponseBody):
@@ -358,29 +322,36 @@ class Response(_BaseRequestResponse, JSONMixin):
         else:
             self.response = self.iterable_body_class(response)
 
+    @property
+    def max_cookie_size(self) -> int:  # type: ignore
+        if current_app:
+            return current_app.config["MAX_COOKIE_SIZE"]
+
+        return super().max_cookie_size
+
     @overload
-    async def get_data(self, raw: Literal[True]) -> bytes:
+    async def get_data(self, as_text: Literal[True]) -> str:
         ...
 
     @overload
-    async def get_data(self, raw: Literal[False]) -> str:
+    async def get_data(self, as_text: Literal[False]) -> bytes:
         ...
 
     @overload
-    async def get_data(self, raw: bool = True) -> AnyStr:
+    async def get_data(self, as_text: bool = True) -> AnyStr:
         ...
 
-    async def get_data(self, raw: bool = True) -> AnyStr:
+    async def get_data(self, as_text: bool = False) -> AnyStr:
         """Return the body data."""
         if self.implicit_sequence_conversion:
             self.response = self.data_body_class(await self.response.convert_to_sequence())
-        result = b"" if raw else ""
+        result = "" if as_text else b""
         async with self.response as body:
             async for data in body:
-                if raw:
-                    result += data
-                else:
+                if as_text:
                     result += data.decode(self.charset)
+                else:
+                    result += data
         return result  # type: ignore
 
     def set_data(self, data: AnyStr) -> None:
@@ -395,6 +366,38 @@ class Response(_BaseRequestResponse, JSONMixin):
         self.response = self.data_body_class(bytes_data)
         if self.automatically_set_content_length:
             self.content_length = len(bytes_data)
+
+    @property
+    async def data(self) -> bytes:
+        return await self.get_data()
+
+    @data.setter
+    def data(self, value: bytes) -> None:
+        self.set_data(value)
+
+    @property
+    async def json(self) -> Any:
+        return await self.get_json()
+
+    async def get_json(self, force: bool = False, silent: bool = False) -> Any:
+        """Parses the body data as JSON and returns it.
+
+        Arguments:
+            force: Force JSON parsing even if the mimetype is not JSON.
+            silent: Do not trigger error handling if parsing fails, without
+                this the :meth:`on_json_loading_failed` will be called on
+                error.
+        """
+        if not (force or self.is_json):
+            return None
+
+        data = await self.get_data(as_text=True)
+        try:
+            return self.json_module.loads(data)
+        except ValueError:
+            if silent:
+                raise
+            return None
 
     async def make_conditional(
         self, request_range: Optional[Range], max_partial_size: Optional[int] = None
@@ -437,320 +440,15 @@ class Response(_BaseRequestResponse, JSONMixin):
         """Freeze this object ready for pickling."""
         self.set_data((await self.get_data()))
 
-    def set_cookie(
-        self,
-        key: str,
-        value: AnyStr = "",  # type: ignore
-        max_age: Optional[Union[int, timedelta]] = None,
-        expires: Optional[Union[int, float, datetime]] = None,
-        path: str = "/",
-        domain: Optional[str] = None,
-        secure: bool = False,
-        httponly: bool = False,
-        samesite: str = None,
-    ) -> None:
-        """Set a cookie in the response headers.
-
-        The arguments are the standard cookie morsels and this is a
-        wrapper around the stdlib SimpleCookie code.
-        """
-        if isinstance(value, bytes):
-            value = value.decode()  # type: ignore
-        self.headers.add(
-            "Set-Cookie",
-            dump_cookie(
-                key,
-                value=value,
-                max_age=max_age,
-                expires=expires,
-                path=path,
-                domain=domain,
-                secure=secure,
-                httponly=httponly,
-                charset=self.charset,
-                max_size=self.max_cookie_size,
-                samesite=samesite,
-            ),
-        )
-
-    def delete_cookie(
-        self,
-        key: str,
-        path: str = "/",
-        domain: Optional[str] = None,
-        secure: bool = False,
-        httponly: bool = False,
-        samesite: str = None,
-    ) -> None:
-        """Delete a cookie (set to expire immediately)."""
-        self.set_cookie(
-            key,
-            expires=0,
-            max_age=0,
-            path=path,
-            domain=domain,
-            secure=secure,
-            httponly=httponly,
-            samesite=samesite,
-        )
-
     async def add_etag(self, overwrite: bool = False, weak: bool = False) -> None:
         if overwrite or "etag" not in self.headers:
-            self.set_etag(md5((await self.get_data(raw=True))).hexdigest(), weak)
+            self.set_etag(md5((await self.get_data(as_text=False))).hexdigest(), weak)
 
-    def get_etag(self) -> Tuple[Optional[str], Optional[bool]]:
-        etag = self.headers.get("ETag")
-        if etag is None:
-            return None, None
+    def _set_or_pop_header(self, key: str, value: str) -> None:
+        if value == "":
+            self.headers.pop(key, None)
         else:
-            weak = False
-            if etag.upper().startswith("W/"):
-                etag = etag[2:]
-            return etag.strip('"'), weak
-
-    def set_etag(self, etag: str, weak: bool = False) -> None:
-        if weak:
-            self.headers["ETag"] = f'W/"{etag}"'
-        else:
-            self.headers["ETag"] = f'"{etag}"'
-
-    @property
-    def access_control_allow_credentials(self) -> bool:
-        """Whether credentials can be shared by the browser to
-        JavaScript code. As part of the preflight request it indicates
-        whether credentials can be used on the cross origin request.
-        """
-        return "Access-Control-Allow-Credentials" in self.headers
-
-    @access_control_allow_credentials.setter
-    def access_control_allow_credentials(self, value: bool) -> None:
-        if value is True:
-            self.headers["Access-Control-Allow-Credentials"] = "true"
-        else:
-            self.headers.pop("Access-Control-Allow-Credentials", None)
-
-    @property
-    def access_control_allow_headers(self) -> Optional[HeaderSet]:
-        if "Access-Control-Allow-Headers" in self.headers:
-            return parse_set_header(self.headers["Access-Control-Allow-Headers"])
-        return None
-
-    @access_control_allow_headers.setter
-    def access_control_allow_headers(self, value: HeaderSet) -> None:
-        self.headers["Access-Control-Allow-Headers"] = dump_header(value)
-
-    @property
-    def access_control_allow_methods(self) -> Optional[HeaderSet]:
-        if "Access-Control-Allow-Methods" in self.headers:
-            return parse_set_header(self.headers["Access-Control-Allow-Methods"])
-        return None
-
-    @access_control_allow_methods.setter
-    def access_control_allow_methods(self, value: HeaderSet) -> None:
-        self.headers["Access-Control-Allow-Methods"] = dump_header(value)
-
-    @property
-    def access_control_allow_origin(self) -> Optional[str]:
-        return self.headers.get("Access-Control-Allow-Origin")
-
-    @access_control_allow_origin.setter
-    def access_control_allow_origin(self, value: str) -> None:
-        self.headers["Access-Control-Allow-Origin"] = value
-
-    @property
-    def access_control_expose_headers(self) -> Optional[HeaderSet]:
-        if "Access-Control-Expose-Headers" in self.headers:
-            return parse_set_header(self.headers["Access-Control-Expose-Headers"])
-        return None
-
-    @access_control_expose_headers.setter
-    def access_control_expose_headers(self, value: HeaderSet) -> None:
-        self.headers["Access-Control-Expose-Headers"] = dump_header(value)
-
-    @property
-    def access_control_max_age(self) -> Optional[int]:
-        if "Access-Control-Max-Age" in self.headers:
-            return int(self.headers["Access-Control-Max-Age"])
-        return None
-
-    @access_control_max_age.setter
-    def access_control_max_age(self, value: int) -> None:
-        self.headers["Access-Control-Max-Age"] = str(value)
-
-    @property
-    def accept_ranges(self) -> Optional[str]:
-        return self.headers.get("Accept-Ranges")
-
-    @accept_ranges.setter
-    def accept_ranges(self, value: str) -> None:
-        self.headers["Accept-Ranges"] = value
-
-    @property
-    def age(self) -> Optional[int]:
-        try:
-            value = int(self.headers.get("Age", ""))
-        except (TypeError, ValueError):
-            return None
-        return value if value > 0 else None
-
-    @age.setter
-    def age(self, value: Union[int, timedelta]) -> None:
-        if isinstance(value, timedelta):
-            self.headers["Age"] = str(value.total_seconds())
-        else:
-            self.headers["Age"] = str(value)
-
-    @property
-    def allow(self) -> HeaderSet:
-        def on_update(header_set: HeaderSet) -> None:
-            self.allow = header_set
-
-        return parse_set_header(self.headers.get("Allow"), on_update=on_update)
-
-    @allow.setter
-    def allow(self, value: HeaderSet) -> None:
-        self._set_or_pop_header("Allow", value.to_header())
-
-    @property
-    def cache_control(self) -> ResponseCacheControl:
-        def on_update(cache_control: ResponseCacheControl) -> None:
-            self.cache_control = cache_control
-
-        return parse_cache_control_header(
-            self.headers.get("Cache-Control"), on_update, ResponseCacheControl
-        )
-
-    @cache_control.setter
-    def cache_control(self, value: ResponseCacheControl) -> None:
-        self._set_or_pop_header("Cache-Control", value.to_header())
-
-    @property
-    def content_encoding(self) -> Optional[str]:
-        return self.headers.get("Content-Encoding")
-
-    @content_encoding.setter
-    def content_encoding(self, value: str) -> None:
-        self.headers["Content-Encoding"] = value
-
-    @property
-    def content_language(self) -> HeaderSet:
-        def on_update(header_set: HeaderSet) -> None:
-            self.content_language = header_set
-
-        return parse_set_header(self.headers.get("Content-Language"), on_update=on_update)
-
-    @content_language.setter
-    def content_language(self, value: HeaderSet) -> None:
-        self._set_or_pop_header("Content-Language", value.to_header())
-
-    @property
-    def content_length(self) -> Optional[int]:
-        try:
-            return int(self.headers.get("Content-Length"))
-        except (ValueError, TypeError):
-            return None
-
-    @content_length.setter
-    def content_length(self, value: int) -> None:
-        self.headers["Content-Length"] = str(value)
-
-    @property
-    def content_location(self) -> Optional[str]:
-        return self.headers.get("Content-Location")
-
-    @content_location.setter
-    def content_location(self, value: str) -> None:
-        self.headers["Content-Location"] = value
-
-    @property
-    def content_md5(self) -> Optional[str]:
-        return self.headers.get("Content-MD5")
-
-    @content_md5.setter
-    def content_md5(self, value: str) -> None:
-        self.headers["Content-MD5"] = value
-
-    @property
-    def content_range(self) -> ContentRange:
-        def on_update(cache_range: ContentRange) -> None:
-            self.content_range = cache_range
-
-        return parse_content_range_header(self.headers.get("Content-Range"), on_update)
-
-    @content_range.setter
-    def content_range(self, value: ContentRange) -> None:
-        self._set_or_pop_header("Content-Range", value.to_header())
-
-    @property
-    def content_security_policy(self) -> ContentSecurityPolicy:
-        def on_update(content_security_policy: ContentSecurityPolicy) -> None:
-            self.content_security_policy = content_security_policy
-
-        return parse_csp_header(self.headers.get("Content-Security-Policy"), on_update)
-
-    @content_security_policy.setter
-    def content_security_policy(self, value: ContentSecurityPolicy) -> None:
-        self._set_or_pop_header("Content-Security-Policy", dump_csp_header(value))
-
-    @property
-    def content_security_policy_report_only(self) -> ContentSecurityPolicy:
-        def on_update(content_security_policy: ContentSecurityPolicy) -> None:
-            self.content_security_policy_report_only = content_security_policy
-
-        return parse_csp_header(self.headers.get("Content-Security-Policy-Report-Only"), on_update)
-
-    @content_security_policy_report_only.setter
-    def content_security_policy_report_only(self, value: ContentSecurityPolicy) -> None:
-        self._set_or_pop_header("Content-Security-Policy-Report-Only", value.to_header())
-
-    @property
-    def content_type(self) -> Optional[str]:
-        return self.headers.get("Content-Type")
-
-    @content_type.setter
-    def content_type(self, value: str) -> None:
-        self.headers["Content-Type"] = value
-
-    @property
-    def date(self) -> Optional[datetime]:
-        try:
-            return parsedate_to_datetime(self.headers.get("Date", ""))
-        except TypeError:  # Not a date format
-            return None
-
-    @date.setter
-    def date(self, value: datetime) -> None:
-        self.headers["Date"] = format_date_time(value.timestamp())
-
-    @property
-    def expires(self) -> Optional[datetime]:
-        try:
-            return parsedate_to_datetime(self.headers.get("Expires", ""))
-        except TypeError:  # Not a date format
-            return None
-
-    @expires.setter
-    def expires(self, value: datetime) -> None:
-        self.headers["Expires"] = format_date_time(value.timestamp())
-
-    @property
-    def last_modified(self) -> Optional[datetime]:
-        try:
-            return parsedate_to_datetime(self.headers.get("Last-Modified", ""))
-        except TypeError:  # Not a date format
-            return None
-
-    @last_modified.setter
-    def last_modified(self, value: datetime) -> None:
-        self.headers["Last-Modified"] = format_date_time(value.timestamp())
-
-    @property
-    def location(self) -> Optional[str]:
-        return self.headers.get("Location")
-
-    @location.setter
-    def location(self, value: str) -> None:
-        self.headers["Location"] = value
+            self.headers[key] = value
 
     @property
     def referrer(self) -> Optional[str]:
@@ -759,45 +457,3 @@ class Response(_BaseRequestResponse, JSONMixin):
     @referrer.setter
     def referrer(self, value: str) -> None:
         self.headers["Referer"] = value
-
-    @property
-    def retry_after(self) -> Optional[datetime]:
-        value = self.headers.get("Retry-After", "")
-        if value.isdigit():
-            return datetime.utcnow() + timedelta(seconds=int(value))
-        else:
-            try:
-                return parsedate_to_datetime(value)
-            except TypeError:
-                return None
-
-    @retry_after.setter
-    def retry_after(self, value: Union[datetime, int]) -> None:
-        if isinstance(value, datetime):
-            self.headers["Retry-After"] = format_date_time(value.timestamp())
-        else:
-            self.headers["Retry-After"] = str(value)
-
-    @property
-    def vary(self) -> HeaderSet:
-        def on_update(header_set: HeaderSet) -> None:
-            self.vary = header_set
-
-        return parse_set_header(self.headers.get("Vary"), on_update=on_update)
-
-    @vary.setter
-    def vary(self, value: HeaderSet) -> None:
-        self._set_or_pop_header("Vary", value.to_header())
-
-    async def _load_json_data(self) -> str:
-        """Return the data after decoding."""
-        return await self.get_data(raw=False)
-
-    def _set_or_pop_header(self, key: str, value: str) -> None:
-        if value == "":
-            self.headers.pop(key, None)
-        else:
-            self.headers[key] = value
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.status_code})"

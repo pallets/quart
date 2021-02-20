@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Tuple
+from typing import List, Tuple
 from urllib.parse import urlencode
 
 import pytest
@@ -115,9 +115,13 @@ async def test_request_get_data_timeout(http_scope: HTTPScope) -> None:
 
 
 @pytest.mark.asyncio
-async def test_request_values(http_scope: HTTPScope) -> None:
+@pytest.mark.parametrize(
+    "method, expected",
+    [("GET", ["b", "c"]), ("POST", ["b", "c", "d"])],
+)
+async def test_request_values(method: str, expected: List[str], http_scope: HTTPScope) -> None:
     request = Request(
-        "GET",
+        method,
         "http",
         "/",
         b"a=b&a=c",
@@ -129,7 +133,7 @@ async def test_request_values(http_scope: HTTPScope) -> None:
     )
     request.body.append(urlencode({"a": "d"}).encode())
     request.body.set_complete()
-    assert (await request.values).getlist("a") == ["b", "c", "d"]
+    assert (await request.values).getlist("a") == expected
 
 
 @pytest.mark.asyncio

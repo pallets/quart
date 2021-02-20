@@ -6,7 +6,7 @@ import pytest
 from hypercorn.typing import HTTPScope
 from werkzeug.datastructures import Headers
 
-from quart.wrappers.base import _BaseRequestResponse, BaseRequestWebsocket
+from quart.wrappers.base import BaseRequestWebsocket
 
 
 def test_basic_authorization(http_scope: HTTPScope) -> None:
@@ -39,20 +39,6 @@ def test_digest_authorization(http_scope: HTTPScope) -> None:
     assert auth.opaque == "abcd1236"
 
 
-def test_mimetype_get_property() -> None:
-    base_request_response = _BaseRequestResponse({"Content-Type": "text/html; charset=utf-8"})
-    assert base_request_response.mimetype == "text/html"
-    assert base_request_response.mimetype_params == {"charset": "utf-8"}
-
-
-def test_mimetype_set_property() -> None:
-    base_request_response = _BaseRequestResponse(None)
-    base_request_response.mimetype = "text/html"
-    assert base_request_response.headers["Content-Type"] == "text/html; charset=utf-8"
-    base_request_response.mimetype = "application/json"
-    assert base_request_response.headers["Content-Type"] == "application/json"
-
-
 @pytest.mark.parametrize(
     "method, scheme, host, path, query_string,"
     "expected_path, expected_full_path, expected_url, expected_base_url,"
@@ -65,11 +51,11 @@ def test_mimetype_set_property() -> None:
             "/",
             b"",
             "/",
-            "/",
+            "/?",
             "http://quart.com/",
             "http://quart.com/",
             "http://quart.com/",
-            "http://quart.com",
+            "http://quart.com/",
         ),
         (
             "GET",
@@ -82,7 +68,7 @@ def test_mimetype_set_property() -> None:
             "http://quart.com/?a=b",
             "http://quart.com/",
             "http://quart.com/",
-            "http://quart.com",
+            "http://quart.com/",
         ),
         (
             "GET",
@@ -94,8 +80,8 @@ def test_mimetype_set_property() -> None:
             "/branch/leaf?a=b",
             "https://quart.com/branch/leaf?a=b",
             "https://quart.com/branch/leaf",
-            "https://quart.com/branch/",
-            "https://quart.com",
+            "https://quart.com/",
+            "https://quart.com/",
         ),
     ],
 )

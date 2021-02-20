@@ -132,6 +132,6 @@ async def test_blueprint_method_view() -> None:
 
     test_client = app.test_client()
     response = await test_client.get("/")
-    assert "GET" == (await response.get_data(raw=False))
+    assert "GET" == (await response.get_data(as_text=True))
     response = await test_client.post("/")
-    assert "POST" == (await response.get_data(raw=False))
+    assert "POST" == (await response.get_data(as_text=True))

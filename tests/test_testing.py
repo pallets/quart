@@ -29,7 +29,7 @@ async def test_methods() -> None:
     for method in methods:
         func = getattr(client, method.lower())
         response = await func("/")
-        assert method in (await response.get_data(raw=False))
+        assert method in (await response.get_data(as_text=True))
 
 
 @pytest.mark.parametrize(
@@ -143,7 +143,7 @@ async def test_data() -> None:
     client = Client(app)
     headers = {"Content-Type": "application/octet-stream"}
     response = await client.post("/", data=b"ABCDEFG", headers=headers)
-    assert (await response.get_data(True)) == b"ABCDEFG"
+    assert (await response.get_data(as_text=False)) == b"ABCDEFG"
 
 
 @pytest.mark.asyncio
