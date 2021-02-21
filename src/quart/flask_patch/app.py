@@ -53,7 +53,7 @@ async def new_handle_http_exception(
     self: Quart, error: Union[WerkzeugHTTPException, QuartHTTPException]
 ) -> Response:
     if isinstance(error, WerkzeugHTTPException):
-        handler = self._find_exception_handler(error)
+        handler = self._find_error_handler(error)
         if handler is None:
             werkzeug_response = error.get_response()
             return await self.make_response(

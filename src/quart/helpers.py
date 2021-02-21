@@ -241,10 +241,6 @@ def stream_with_context(func: Callable) -> Callable:
     return generator
 
 
-def _endpoint_from_view_func(view_func: Callable) -> str:
-    return view_func.__name__
-
-
 def find_package(name: str) -> Tuple[Optional[Path], Path]:
     """Finds packages install prefix (or None) and it's containing Folder"""
     module = name.split(".")[0]

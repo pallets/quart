@@ -8,6 +8,8 @@ from typing import (
     AnyStr,
     AsyncContextManager,
     AsyncGenerator,
+    Awaitable,
+    Callable,
     Dict,
     Generator,
     List,
@@ -64,6 +66,18 @@ ResponseReturnValue = Union[
     Tuple[ResponseValue, StatusCode],
     Tuple[ResponseValue, StatusCode, HeadersValue],
 ]
+
+
+AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
+AfterRequestCallable = Callable[["Response"], Awaitable["Response"]]
+AfterWebsocketCallable = Callable[["Response"], Awaitable[Optional["Response"]]]
+BeforeRequestCallable = Callable[[], Awaitable[None]]
+BeforeWebsocketCallable = Callable[[], Awaitable[None]]
+ErrorHandlerCallable = Callable[[Exception], Awaitable[None]]
+TeardownCallable = Callable[[Optional[BaseException]], Awaitable["Response"]]
+TemplateContextProcessorCallable = Callable[[], Awaitable[Dict[str, Any]]]
+URLDefaultCallable = Callable[[str, dict], None]
+URLValuePreprocessorCallable = Callable[[str, dict], None]
 
 
 class ASGIHTTPProtocol(Protocol):

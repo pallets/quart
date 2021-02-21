@@ -4,7 +4,7 @@ import asyncio
 import signal
 import sys
 import warnings
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict
 from datetime import timedelta
 from itertools import chain
 from logging import Logger
@@ -51,17 +51,11 @@ from .ctx import (
 )
 from .exceptions import all_http_exceptions, HTTPException
 from .globals import g, request, session
-from .helpers import (
-    _endpoint_from_view_func,
-    find_package,
-    get_debug_flag,
-    get_env,
-    get_flashed_messages,
-    url_for,
-)
+from .helpers import find_package, get_debug_flag, get_env, get_flashed_messages, url_for
 from .json import JSONDecoder, JSONEncoder, jsonify, tojson_filter
 from .logging import create_logger, create_serving_logger
 from .routing import QuartMap, QuartRule
+from .scaffold import _endpoint_from_view_func, Scaffold
 from .sessions import SecureCookieSession, SecureCookieSessionInterface, Session
 from .signals import (
     appcontext_tearing_down,
@@ -74,7 +68,6 @@ from .signals import (
     websocket_started,
     websocket_tearing_down,
 )
-from .static import PackageStatic
 from .templating import _default_template_context_processor, DispatchingJinjaLoader, Environment
 from .testing import (
     make_test_body_with_headers,
@@ -88,6 +81,7 @@ from .typing import (
     ASGIHTTPProtocol,
     ASGILifespanProtocol,
     ASGIWebsocketProtocol,
+    ErrorHandlerCallable,
     FilePath,
     HeadersValue,
     ResponseReturnValue,
@@ -107,7 +101,7 @@ def _convert_timedelta(value: Union[float, timedelta]) -> timedelta:
     return value
 
 
-class Quart(PackageStatic):
+class Quart(Scaffold):
     """The web framework class, handles requests and returns responses.
 
     The primary method from a serving viewpoint is
@@ -241,47 +235,18 @@ class Quart(PackageStatic):
 
         self.config = self.make_config(instance_relative_config)
 
-        self.after_request_funcs: Dict[
-            AppOrBlueprintKey, List[Callable[[Response], Awaitable[Response]]]
-        ] = defaultdict(list)
         self.after_serving_funcs: List[Callable[[], Awaitable[None]]] = []
-        self.after_websocket_funcs: Dict[
-            AppOrBlueprintKey, List[Callable[[Response], Awaitable[Optional[Response]]]]
-        ] = defaultdict(list)
         self.before_first_request_funcs: List[Callable[[], Awaitable[None]]] = []
-        self.before_request_funcs: Dict[
-            AppOrBlueprintKey, List[Callable[[], Awaitable[None]]]
-        ] = defaultdict(list)
         self.before_serving_funcs: List[Callable[[], Awaitable[None]]] = []
-        self.before_websocket_funcs: Dict[
-            AppOrBlueprintKey, List[Callable[[], Awaitable[None]]]
-        ] = defaultdict(list)
         self.blueprints: Dict[str, Blueprint] = OrderedDict()
-        self.error_handler_spec: Dict[
-            AppOrBlueprintKey, Dict[Type[Exception], Callable[[Exception], Awaitable[Response]]]
-        ] = defaultdict(dict)
         self.extensions: Dict[str, Any] = {}
         self.shell_context_processors: List[Callable[[], Dict[str, Any]]] = []
         self.teardown_appcontext_funcs: List[
             Callable[[Optional[BaseException]], Awaitable[None]]
         ] = []
-        self.teardown_request_funcs: Dict[
-            AppOrBlueprintKey, List[Callable[[Optional[BaseException]], Awaitable[None]]]
-        ] = defaultdict(list)
-        self.teardown_websocket_funcs: Dict[
-            AppOrBlueprintKey, List[Callable[[Optional[BaseException]], Awaitable[None]]]
-        ] = defaultdict(list)
-        self.template_context_processors: Dict[
-            AppOrBlueprintKey, List[Callable[[], Awaitable[Dict[str, Any]]]]
-        ] = defaultdict(list)
         self.url_build_error_handlers: List[Callable[[Exception, str, dict], str]] = []
-        self.url_default_functions: Dict[AppOrBlueprintKey, List[Callable]] = defaultdict(list)
         self.url_map = self.url_map_class(host_matching=host_matching)
         self.subdomain_matching = subdomain_matching
-        self.url_value_preprocessors: Dict[
-            AppOrBlueprintKey, List[Callable[[str, dict], None]]
-        ] = defaultdict(list)
-        self.view_functions: Dict[str, Callable] = {}
 
         self._got_first_request = False
         self._first_request_lock = self.lock_class()
@@ -383,6 +348,9 @@ class Quart(PackageStatic):
     @templates_auto_reload.setter
     def templates_auto_reload(self, value: Optional[bool]) -> None:
         self.config["TEMPLATES_AUTO_RELOAD"] = value
+
+    def _is_setup_finished(self) -> bool:
+        return self.debug and self._got_first_request
 
     def auto_find_instance_path(self) -> Path:
         """Locates the instance_path if it was not provided"""
@@ -499,72 +467,6 @@ class Quart(PackageStatic):
         for processor in self.shell_context_processors:
             context.update(processor())
         return context
-
-    def route(
-        self,
-        rule: str,
-        methods: Optional[List[str]] = None,
-        endpoint: Optional[str] = None,
-        defaults: Optional[dict] = None,
-        host: Optional[str] = None,
-        subdomain: Optional[str] = None,
-        *,
-        provide_automatic_options: Optional[bool] = None,
-        strict_slashes: Optional[bool] = None,
-    ) -> Callable:
-        """Add a route to the application.
-
-        This is designed to be used as a decorator, if used to
-        decorate a synchronous function, the function will be wrapped
-        in :func:`~quart.utils.run_sync` and run in a thread executor
-        (with the wrapped function returned). An example usage,
-
-        .. code-block:: python
-
-            @app.route('/')
-            async def route():
-                ...
-
-        Arguments:
-            rule: The path to route on, should start with a ``/``.
-            methods: List of HTTP verbs the function routes.
-            endpoint: Optional endpoint name, if not present the
-                function name is used.
-            defaults: A dictionary of variables to provide automatically, use
-                to provide a simpler default path for a route, e.g. to allow
-                for ``/book`` rather than ``/book/0``,
-
-                .. code-block:: python
-
-                    @app.route('/book', defaults={'page': 0})
-                    @app.route('/book/<int:page>')
-                    def book(page):
-                        ...
-
-            host: The full host name for this route (should include subdomain
-                if needed) - cannot be used with subdomain.
-            subdomain: A subdomain for this specific route.
-            provide_automatic_options: Optionally False to prevent
-                OPTION handling.
-            strict_slashes: Strictly match the trailing slash present in the
-                path. Will redirect a leaf (no slash) to a branch (with slash).
-        """
-
-        def decorator(func: Callable) -> Callable:
-            self.add_url_rule(
-                rule,
-                endpoint,
-                func,
-                provide_automatic_options=provide_automatic_options,
-                methods=methods,
-                defaults=defaults,
-                host=host,
-                subdomain=subdomain,
-                strict_slashes=strict_slashes,
-            )
-            return func
-
-        return decorator
 
     def add_url_rule(
         self,
@@ -781,80 +683,6 @@ class Quart(PackageStatic):
             strict_slashes=strict_slashes,
         )
 
-    def endpoint(self, endpoint: str) -> Callable:
-        """Register a function as an endpoint.
-
-        This is designed to be used as a decorator, if used to
-        decorate a synchronous function, the function will be wrapped
-        in :func:`~quart.utils.run_sync` and run in a thread executor
-        (with the wrapped function returned). An example usage,
-
-        .. code-block:: python
-
-            @app.endpoint('name')
-            async def endpoint():
-                ...
-
-        Arguments:
-            endpoint: The endpoint name to use.
-        """
-
-        def decorator(func: Callable) -> Callable:
-            handler = self.ensure_async(func)
-            self.view_functions[endpoint] = handler
-            return handler
-
-        return decorator
-
-    def errorhandler(self, error: Union[Type[Exception], int]) -> Callable:
-        """Register a function as an error handler.
-
-        This is designed to be used as a decorator. An example usage,
-
-        .. code-block:: python
-
-            @app.errorhandler(500)
-            def error_handler():
-                return "Error", 500
-
-        Arguments:
-            error: The error code or Exception to handle.
-        """
-
-        def decorator(func: Callable) -> Callable:
-            self.register_error_handler(error, func)
-            return func
-
-        return decorator
-
-    def register_error_handler(
-        self,
-        error: Union[Type[Exception], int],
-        func: Union[Callable[[Exception], None], Callable[[Exception], Awaitable[None]]],
-        name: AppOrBlueprintKey = None,
-    ) -> None:
-        """Register a function as an error handler.
-
-        This is designed to be used on the application directly. An
-        example usage,
-
-        .. code-block:: python
-
-            def error_handler():
-                return "Error", 500
-
-            app.register_error_handler(500, error_handler)
-
-        Arguments:
-            error: The error code or Exception to handle.
-            func: The function to handle the error.
-            name: Optional blueprint key name.
-        """
-        handler = self.ensure_async(func)
-        if isinstance(error, int):
-            error = all_http_exceptions[error]
-        self.error_handler_spec[name][error] = handler
-
     def template_filter(self, name: Optional[str] = None) -> Callable:
         """Add a template filter.
 
@@ -975,29 +803,6 @@ class Quart(PackageStatic):
         """
         self.jinja_env.globals[name or func.__name__] = func
 
-    def context_processor(
-        self,
-        func: Union[Callable[[], Dict[str, Any]], Callable[[], Awaitable[Dict[str, Any]]]],
-        name: AppOrBlueprintKey = None,
-    ) -> Callable[[], Awaitable[Dict[str, Any]]]:
-        """Add a template context processor.
-
-        This is designed to be used as a decorator, if used to
-        decorate a synchronous function, the function will be wrapped
-        in :func:`~quart.utils.run_sync` and run in a thread executor
-        (with the wrapped function returned). An example usage,
-
-        .. code-block:: python
-
-            @app.context_processor
-            async def update_context(context):
-                return context
-
-        """
-        handler = self.ensure_async(func)
-        self.template_context_processors[name].append(handler)
-        return handler
-
     def shell_context_processor(self, func: Callable[[], None]) -> Callable:
         """Add a shell context processor.
 
@@ -1011,36 +816,6 @@ class Quart(PackageStatic):
 
         """
         self.shell_context_processors.append(func)
-        return func
-
-    def url_defaults(self, func: Callable, name: AppOrBlueprintKey = None) -> Callable:
-        """Add a url default preprocessor.
-
-        This is designed to be used as a decorator. An example usage,
-
-        .. code-block:: python
-
-            @app.url_defaults
-            def default(endpoint, values):
-                ...
-        """
-        self.url_default_functions[name].append(func)
-        return func
-
-    def url_value_preprocessor(
-        self, func: Callable[[str, dict], None], name: AppOrBlueprintKey = None
-    ) -> Callable:
-        """Add a url value preprocessor.
-
-        This is designed to be used as a decorator. An example usage,
-
-        .. code-block:: python
-
-            @app.url_value_preprocessor
-            def value_preprocessor(endpoint, view_args):
-                ...
-        """
-        self.url_value_preprocessors[name].append(func)
         return func
 
     def inject_url_defaults(self, endpoint: str, values: dict) -> None:
@@ -1069,19 +844,33 @@ class Quart(PackageStatic):
                 return result
         raise error
 
-    def _find_exception_handler(
-        self, error: Exception
-    ) -> Optional[Callable[[Exception], Awaitable[Response]]]:
+    def _find_error_handler(self, error: Exception) -> Optional[ErrorHandlerCallable]:
+        error_type, code = self._get_error_type_and_code(type(error))
+
         if _request_ctx_stack.top is not None:
             blueprint = _request_ctx_stack.top.request.blueprint
         elif _websocket_ctx_stack.top is not None:
             blueprint = _websocket_ctx_stack.top.websocket.blueprint
         else:
             blueprint = None
-        handler = _find_exception_handler(error, self.error_handler_spec.get(blueprint, {}))
-        if handler is None:
-            handler = _find_exception_handler(error, self.error_handler_spec[None])
-        return handler
+
+        for name, code in (
+            (blueprint, code),
+            (None, code),
+            (blueprint, None),
+            (None, None),
+        ):
+            handlers = self.error_handler_spec[name].get(code)
+
+            if handlers is None:
+                continue
+
+            for cls in error_type.__mro__:
+                handler = handlers.get(cls)
+
+                if handler is not None:
+                    return handler
+        return None
 
     async def handle_http_exception(self, error: HTTPException) -> Response:
         """Handle a HTTPException subclass error.
@@ -1089,7 +878,7 @@ class Quart(PackageStatic):
         This will attempt to find a handler for the error and if fails
         will fall back to the error response.
         """
-        handler = self._find_exception_handler(error)
+        handler = self._find_error_handler(error)
         if handler is None:
             return error.get_response()
         else:
@@ -1115,7 +904,7 @@ class Quart(PackageStatic):
         if isinstance(error, HTTPException) and not self.trap_http_exception(error):
             return await self.handle_http_exception(error)
 
-        handler = self._find_exception_handler(error)
+        handler = self._find_error_handler(error)
         if handler is None:
             raise error
         return await handler(error)
@@ -1134,7 +923,7 @@ class Quart(PackageStatic):
             raise error
 
         internal_server_error = all_http_exceptions[500]()
-        handler = self._find_exception_handler(internal_server_error)
+        handler = self._find_error_handler(internal_server_error)
 
         if handler is None:
             return internal_server_error.get_response()
@@ -1151,7 +940,7 @@ class Quart(PackageStatic):
         self.log_exception(sys.exc_info())
 
         internal_server_error = all_http_exceptions[500]()
-        handler = self._find_exception_handler(internal_server_error)
+        handler = self._find_error_handler(internal_server_error)
 
         if handler is None:
             return internal_server_error.get_response()
@@ -1171,60 +960,6 @@ class Quart(PackageStatic):
         if has_websocket_context():
             websocket_ = _websocket_ctx_stack.top.websocket
             self.logger.error(f"Exception on websocket {websocket_.path}", exc_info=exception_info)
-
-    def before_request(
-        self,
-        func: Union[Callable[[], None], Callable[[], Awaitable[None]]],
-        name: AppOrBlueprintKey = None,
-    ) -> Callable[[], Awaitable[None]]:
-        """Add a before request function.
-
-        This is designed to be used as a decorator, if used to
-        decorate a synchronous function, the function will be wrapped
-        in :func:`~quart.utils.run_sync` and run in a thread executor
-        (with the wrapped function returned). An example usage,
-
-        .. code-block:: python
-
-            @app.before_request
-            async def func():
-                ...
-
-        Arguments:
-            func: The before request function itself.
-            name: Optional blueprint key name.
-
-        """
-        handler = self.ensure_async(func)
-        self.before_request_funcs[name].append(handler)
-        return handler
-
-    def before_websocket(
-        self,
-        func: Union[Callable[[], None], Callable[[], Awaitable[None]]],
-        name: AppOrBlueprintKey = None,
-    ) -> Callable[[], Awaitable[None]]:
-        """Add a before websocket function.
-
-        This is designed to be used as a decorator, if used to
-        decorate a synchronous function, the function will be wrapped
-        in :func:`~quart.utils.run_sync` and run in a thread executor
-        (with the wrapped function returned). An example usage,
-
-        .. code-block:: python
-
-            @app.before_websocket
-            async def func():
-                ...
-
-        Arguments:
-            func: The before websocket function itself.
-            name: Optional blueprint key name.
-
-        """
-        handler = self.ensure_async(func)
-        self.before_websocket_funcs[name].append(handler)
-        return handler
 
     def before_first_request(
         self, func: Union[Callable[[], None], Callable[[], Awaitable[None]]]
@@ -1275,61 +1010,6 @@ class Quart(PackageStatic):
         self.before_serving_funcs.append(handler)
         return handler
 
-    def after_request(
-        self,
-        func: Union[Callable[[Response], Response], Callable[[Response], Awaitable[Response]]],
-        name: AppOrBlueprintKey = None,
-    ) -> Callable[[Response], Awaitable[None]]:
-        """Add an after request function.
-
-        This is designed to be used as a decorator, if used to
-        decorate a synchronous function, the function will be wrapped
-        in :func:`~quart.utils.run_sync` and run in a thread executor
-        (with the wrapped function returned). An example usage,
-
-        .. code-block:: python
-
-            @app.after_request
-            async def func(response):
-                return response
-
-        Arguments:
-            func: The after request function itself.
-            name: Optional blueprint key name.
-        """
-        handler = self.ensure_async(func)
-        self.after_request_funcs[name].append(handler)
-        return handler
-
-    def after_websocket(
-        self,
-        func: Union[
-            Callable[[Response], Optional[Response]],
-            Callable[[Response], Awaitable[Optional[Response]]],
-        ],
-        name: AppOrBlueprintKey = None,
-    ) -> Callable[[Response], Awaitable[None]]:
-        """Add an after websocket function.
-
-        This is designed to be used as a decorator, if used to
-        decorate a synchronous function, the function will be wrapped
-        in :func:`~quart.utils.run_sync` and run in a thread executor
-        (with the wrapped function returned). An example usage,
-
-        .. code-block:: python
-
-            @app.after_websocket
-            async def func(response):
-                return response
-
-        Arguments:
-            func: The after websocket function itself.
-            name: Optional blueprint key name.
-        """
-        handler = self.ensure_async(func)
-        self.after_websocket_funcs[name].append(handler)
-        return handler
-
     def after_serving(
         self, func: Union[Callable[[], None], Callable[[], Awaitable[None]]]
     ) -> Callable[[], Awaitable[None]]:
@@ -1354,64 +1034,6 @@ class Quart(PackageStatic):
         """
         handler = self.ensure_async(func)
         self.after_serving_funcs.append(handler)
-        return handler
-
-    def teardown_request(
-        self,
-        func: Union[
-            Callable[[Optional[BaseException]], None],
-            Callable[[Optional[BaseException]], Awaitable[None]],
-        ],
-        name: AppOrBlueprintKey = None,
-    ) -> Callable[[Optional[BaseException]], Awaitable[None]]:
-        """Add a teardown request function.
-
-        This is designed to be used as a decorator, if used to
-        decorate a synchronous function, the function will be wrapped
-        in :func:`~quart.utils.run_sync` and run in a thread executor
-        (with the wrapped function returned). An example usage,
-
-        .. code-block:: python
-
-            @app.teardown_request
-            async def func():
-                ...
-
-        Arguments:
-            func: The teardown request function itself.
-            name: Optional blueprint key name.
-        """
-        handler = self.ensure_async(func)
-        self.teardown_request_funcs[name].append(handler)
-        return handler
-
-    def teardown_websocket(
-        self,
-        func: Union[
-            Callable[[Optional[BaseException]], None],
-            Callable[[Optional[BaseException]], Awaitable[None]],
-        ],
-        name: AppOrBlueprintKey = None,
-    ) -> Callable[[Optional[BaseException]], Awaitable[None]]:
-        """Add a teardown websocket function.
-
-        This is designed to be used as a decorator, if used to
-        decorate a synchronous function, the function will be wrapped
-        in :func:`~quart.utils.run_sync` and run in a thread executor
-        (with the wrapped function returned). An example usage,
-
-        .. code-block:: python
-
-            @app.teardown_websocket
-            async def func():
-                ...
-
-        Arguments:
-            func: The teardown websocket function itself.
-            name: Optional blueprint key name.
-        """
-        handler = self.ensure_async(func)
-        self.teardown_websocket_funcs[name].append(handler)
         return handler
 
     def teardown_appcontext(
@@ -2174,18 +1796,6 @@ class Quart(PackageStatic):
         async with self.app_context():
             for func in self.after_serving_funcs:
                 await func()
-
-
-def _find_exception_handler(
-    error: Exception,
-    exception_handlers: Dict[Type[Exception], Callable[[Exception], Awaitable[Response]]],
-) -> Optional[Callable[[Exception], Awaitable[Response]]]:
-    exc_class = type(error)
-    for cls in exc_class.__mro__:
-        handler = exception_handlers.get(cls)
-        if handler is not None:
-            return handler
-    return None
 
 
 def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
