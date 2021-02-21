@@ -51,7 +51,7 @@ using encoders and decoders as so,
         def __init__(self, *args, **kwargs):
             super().__init__(object_hook=self.dict_to_object, *args, **kwargs)
 
-        def dict_to_ibject(self, dict_):
+        def dict_to_object(self, dict_):
             if 'amount' in dict_ and 'currency' in dict_:
                 return Money(Decimal(dict_['amount']), dict_['currency'])
             else:
