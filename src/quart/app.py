@@ -226,7 +226,7 @@ class Quart(Scaffold):
             before_websocket_funcs: The functions to execute before handling
                 a websocket.
         """
-        super().__init__(import_name, template_folder, root_path, static_folder, static_url_path)
+        super().__init__(import_name, static_folder, static_url_path, template_folder, root_path)
 
         instance_path = Path(instance_path) if instance_path else self.auto_find_instance_path()
         if not instance_path.is_absolute():
