@@ -1,7 +1,7 @@
 import asyncio
 from typing import Optional
 
-from quart import jsonify, make_response, Quart, render_template, request
+from quart import abort, jsonify, make_response, Quart, render_template, request
 
 
 app = Quart(__name__)
@@ -51,6 +51,9 @@ async def broadcast():
 
 @app.route('/sse')
 async def sse():
+    if "text/event-stream" not in request.accept_mimetypes:
+        abort(400)
+
     queue = asyncio.Queue()
     app.clients.add(queue)
     async def send_events():
