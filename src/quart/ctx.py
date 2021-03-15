@@ -15,6 +15,7 @@ from .exceptions import BadRequest, MethodNotAllowed, NotFound, RedirectRequired
 from .globals import _app_ctx_stack, _request_ctx_stack, _websocket_ctx_stack
 from .sessions import Session  # noqa
 from .signals import appcontext_popped, appcontext_pushed
+from .typing import AfterRequestCallable, AfterWebsocketCallable
 from .wrappers import BaseRequestWebsocket, Request, Websocket
 
 if TYPE_CHECKING:
@@ -121,7 +122,7 @@ class RequestContext(_BaseRequestWebsocketContext):
     ) -> None:
         super().__init__(app, request, session)
         self.flashes = None
-        self._after_request_functions: List[Callable] = []
+        self._after_request_functions: List[AfterRequestCallable] = []
 
     @property
     def request(self) -> Request:
@@ -160,7 +161,7 @@ class WebsocketContext(_BaseRequestWebsocketContext):
         session: Optional[Session] = None,
     ) -> None:
         super().__init__(app, request, session)
-        self._after_websocket_functions: List[Callable] = []
+        self._after_websocket_functions: List[AfterWebsocketCallable] = []
 
     @property
     def websocket(self) -> Websocket:
@@ -227,7 +228,7 @@ class AppContext:
         await self.pop(exc_value)
 
 
-def after_this_request(func: Callable) -> Callable:
+def after_this_request(func: AfterRequestCallable) -> AfterRequestCallable:
     """Schedule the func to be called after the current request.
 
     This is useful in situations whereby you want an after request
@@ -247,7 +248,7 @@ def after_this_request(func: Callable) -> Callable:
     return func
 
 
-def after_this_websocket(func: Callable) -> Callable:
+def after_this_websocket(func: AfterWebsocketCallable) -> AfterWebsocketCallable:
     """Schedule the func to be called after the current websocket.
 
     This is useful in situations whereby you want an after websocket

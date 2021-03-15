@@ -126,8 +126,8 @@ async def test_after_this_request(http_scope: HTTPScope) -> None:
             send_push_promise=no_op_push,
         ),
     ) as context:
-        after_this_request(lambda: "hello")
-        assert context._after_request_functions[0]() == "hello"
+        after_this_request(lambda: "hello")  # type: ignore
+        assert context._after_request_functions[0]() == "hello"  # type: ignore
 
 
 @pytest.mark.asyncio
