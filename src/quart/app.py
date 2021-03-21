@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import signal
 import sys
 import warnings
@@ -1275,10 +1276,16 @@ class Quart(Scaffold):
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
 
-        if debug is None:
-            debug = get_debug_flag()
+        if "QUART_ENV" in os.environ:
+            self.env = get_env()
+            self.debug = get_debug_flag()
+        elif "QUART_DEBUG" in os.environ:
+            self.debug = get_debug_flag()
 
-        loop.set_debug(debug or False)
+        if debug is not None:
+            self.debug = debug
+
+        loop.set_debug(self.debug)
 
         shutdown_event = asyncio.Event()
 
@@ -1308,7 +1315,7 @@ class Quart(Scaffold):
             print(  # noqa: T001, T002
                 " * Please use an ASGI server (e.g. Hypercorn) directly in production"
             )
-        print(f" * Debug mode: {debug or False}")  # noqa: T001, T002
+        print(f" * Debug mode: {self.debug or False}")  # noqa: T001, T002
         scheme = "https" if certfile is not None and keyfile is not None else "http"
         print(f" * Running on {scheme}://{host}:{port} (CTRL + C to quit)")  # noqa: T001, T002
 
