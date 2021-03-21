@@ -1,13 +1,19 @@
 from __future__ import annotations
 
+import os
+import pkgutil
+import sys
 from collections import defaultdict
 from functools import wraps
 from json import JSONDecoder, JSONEncoder
+from pathlib import Path
 from typing import (
     Any,
+    AnyStr,
     Awaitable,
     Callable,
     Dict,
+    IO,
     Iterable,
     List,
     Optional,
@@ -17,9 +23,11 @@ from typing import (
     Union,
 )
 
+from jinja2 import FileSystemLoader
 from werkzeug.exceptions import default_exceptions, HTTPException
 
-from .static import PackageStatic
+from .globals import current_app
+from .helpers import send_from_directory
 from .templating import _default_template_context_processor
 from .typing import (
     AfterRequestCallable,
@@ -28,12 +36,13 @@ from .typing import (
     BeforeRequestCallable,
     BeforeWebsocketCallable,
     ErrorHandlerCallable,
+    FilePath,
     TeardownCallable,
     TemplateContextProcessorCallable,
     URLDefaultCallable,
     URLValuePreprocessorCallable,
 )
-from .utils import is_coroutine_function, run_sync
+from .utils import file_path_to_path, is_coroutine_function, run_sync
 
 if TYPE_CHECKING:
     from .wrappers import Response
@@ -52,7 +61,7 @@ def setupmethod(func: Callable) -> Callable:
     return wrapper
 
 
-class Scaffold(PackageStatic):
+class Scaffold:
     """Base class for Quart and Blueprint classes.
 
     Attributes:
@@ -64,6 +73,7 @@ class Scaffold(PackageStatic):
 
     json_decoder: Optional[Type[JSONDecoder]] = None
     json_encoder: Optional[Type[JSONEncoder]] = None
+    name: str
 
     def __init__(
         self,
@@ -73,7 +83,15 @@ class Scaffold(PackageStatic):
         template_folder: Optional[str] = None,
         root_path: Optional[str] = None,
     ) -> None:
-        super().__init__(import_name, template_folder, root_path, static_folder, static_url_path)
+        self.import_name = import_name
+        self.template_folder = Path(template_folder) if template_folder is not None else None
+
+        self.root_path = _find_root_path(import_name, root_path)
+
+        self._static_folder: Optional[Path] = None
+        self._static_url_path: Optional[str] = None
+        self.static_folder = static_folder  # type: ignore
+        self.static_url_path = static_url_path
 
         # Functions that are called after a HTTP view function has
         # handled a request and returned a response.
@@ -139,6 +157,69 @@ class Scaffold(PackageStatic):
         self.url_default_functions: Dict[AppOrBlueprintKey, List[URLDefaultCallable]] = defaultdict(
             list
         )
+
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} {self.name!r}>"
+
+    @property
+    def static_folder(self) -> Optional[Path]:
+        if self._static_folder is not None:
+            return self.root_path / self._static_folder
+        else:
+            return None
+
+    @static_folder.setter
+    def static_folder(self, static_folder: Optional[FilePath]) -> None:
+        if static_folder is not None:
+            self._static_folder = file_path_to_path(static_folder)
+        else:
+            self._static_folder = None
+
+    @property
+    def static_url_path(self) -> Optional[str]:
+        if self._static_url_path is not None:
+            return self._static_url_path
+        if self.static_folder is not None:
+            return "/" + self.static_folder.name
+        else:
+            return None
+
+    @static_url_path.setter
+    def static_url_path(self, static_url_path: str) -> None:
+        self._static_url_path = static_url_path
+
+    @property
+    def has_static_folder(self) -> bool:
+        return self.static_folder is not None
+
+    def get_send_file_max_age(self, filename: str) -> int:
+        return int(current_app.send_file_max_age_default.total_seconds())
+
+    async def send_static_file(self, filename: str) -> Response:
+        if not self.has_static_folder:
+            raise RuntimeError("No static folder for this object")
+        return await send_from_directory(self.static_folder, filename)
+
+    @property
+    def jinja_loader(self) -> Optional[FileSystemLoader]:
+        if self.template_folder is not None:
+            return FileSystemLoader(os.fspath(self.root_path / self.template_folder))
+        else:
+            return None
+
+    def open_resource(self, path: FilePath, mode: str = "rb") -> IO[AnyStr]:
+        """Open a file for reading.
+
+        Use as
+
+        .. code-block:: python
+
+            with app.open_resource(path) as file_:
+                file_.read()
+        """
+        if mode not in {"r", "rb"}:
+            raise ValueError("Files can only be opened for reading")
+        return open(self.root_path / file_path_to_path(path), mode)
 
     def _method_route(self, method: str, rule: str, options: dict) -> Callable:
         if "methods" in options:
@@ -627,3 +708,19 @@ class Scaffold(PackageStatic):
 def _endpoint_from_view_func(view_func: Callable) -> str:
     assert view_func is not None
     return view_func.__name__
+
+
+def _find_root_path(import_name: str, root_path: Optional[str] = None) -> Path:
+    if root_path is not None:
+        return Path(root_path)
+    else:
+        module = sys.modules.get(import_name)
+        if module is not None and hasattr(module, "__file__"):
+            file_path = module.__file__
+        else:
+            loader = pkgutil.get_loader(import_name)
+            if loader is None or import_name == "__main__":
+                return Path.cwd()
+            else:
+                file_path = loader.get_filename(import_name)  # type: ignore
+        return Path(file_path).resolve().parent

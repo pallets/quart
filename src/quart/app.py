@@ -272,7 +272,7 @@ class Quart(Scaffold):
         self.template_context_processors[None] = [_default_template_context_processor]
 
     @property
-    def name(self) -> str:
+    def name(self) -> str:  # type: ignore
         """The name of this application.
 
         This is taken from the :attr:`import_name` and is used for

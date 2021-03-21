@@ -1,20 +1,30 @@
 from __future__ import annotations
 
+import mimetypes
 import os
 import pkgutil
 import sys
+from datetime import datetime, timedelta
 from functools import wraps
+from io import BytesIO
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Tuple, Union
 from urllib.parse import quote
+from zlib import adler32
 
+from werkzeug.exceptions import NotFound
 from werkzeug.routing import BuildError
 from werkzeug.wrappers import Response as WerkzeugResponse
 
 from .ctx import _app_ctx_stack, _request_ctx_stack
 from .globals import current_app, request, session
 from .signals import message_flashed
+from .typing import FilePath
+from .utils import file_path_to_path
 from .wrappers import Response
+from .wrappers.response import ResponseBody
+
+DEFAULT_MIMETYPE = "application/octet-stream"
 
 locked_cached_property = property
 
@@ -266,3 +276,134 @@ def find_package(name: str) -> Tuple[Optional[Path], Path]:
         return None, package_path
     else:
         return sys_prefix, package_path
+
+
+def safe_join(directory: FilePath, *paths: FilePath) -> Path:
+    """Safely join the paths to the known directory to return a full path.
+
+    Raises:
+        NotFound: if the full path does not share a commonprefix with
+        the directory.
+    """
+    try:
+        safe_path = file_path_to_path(directory).resolve(strict=True)
+        full_path = file_path_to_path(directory, *paths).resolve(strict=True)
+    except FileNotFoundError:
+        raise NotFound()
+    try:
+        full_path.relative_to(safe_path)
+    except ValueError:
+        raise NotFound()
+    return full_path
+
+
+async def send_from_directory(
+    directory: FilePath,
+    file_name: str,
+    *,
+    mimetype: Optional[str] = None,
+    as_attachment: bool = False,
+    attachment_filename: Optional[str] = None,
+    add_etags: bool = True,
+    cache_timeout: Optional[int] = None,
+    conditional: bool = True,
+    last_modified: Optional[datetime] = None,
+) -> Response:
+    """Send a file from a given directory.
+
+    Arguments:
+       directory: Directory that when combined with file_name gives
+           the file path.
+       file_name: File name that when combined with directory gives
+           the file path.
+
+    See :func:`send_file` for the other arguments.
+    """
+    file_path = safe_join(directory, file_name)
+    if not file_path.is_file():
+        raise NotFound()
+    return await send_file(
+        file_path,
+        mimetype=mimetype,
+        as_attachment=as_attachment,
+        attachment_filename=attachment_filename,
+        add_etags=add_etags,
+        cache_timeout=cache_timeout,
+        conditional=conditional,
+        last_modified=last_modified,
+    )
+
+
+async def send_file(
+    filename_or_io: Union[FilePath, BytesIO],
+    mimetype: Optional[str] = None,
+    as_attachment: bool = False,
+    attachment_filename: Optional[str] = None,
+    add_etags: bool = True,
+    cache_timeout: Optional[int] = None,
+    conditional: bool = False,
+    last_modified: Optional[datetime] = None,
+) -> Response:
+    """Return a Response to send the filename given.
+
+    Arguments:
+        filename_or_io: The filename (path) to send, remember to use
+            :func:`safe_join`.
+        mimetype: Mimetype to use, by default it will be guessed or
+            revert to the DEFAULT_MIMETYPE.
+        as_attachment: If true use the attachment filename in a
+            Content-Disposition attachment header.
+        attachment_filename: Name for the filename, if it differs
+        add_etags: Set etags based on the filename, size and
+            modification time.
+        last_modified: Used to override the last modified value.
+        cache_timeout: Time in seconds for the response to be cached.
+
+    """
+    file_body: ResponseBody
+    file_size: int
+    etag: Optional[str] = None
+    if isinstance(filename_or_io, BytesIO):
+        file_body = current_app.response_class.io_body_class(filename_or_io)
+        file_size = filename_or_io.getbuffer().nbytes
+    else:
+        file_path = file_path_to_path(filename_or_io)
+        file_size = file_path.stat().st_size
+        if attachment_filename is None:
+            attachment_filename = file_path.name
+        file_body = current_app.response_class.file_body_class(file_path)
+        if last_modified is None:
+            last_modified = datetime.fromtimestamp(file_path.stat().st_mtime)
+        if cache_timeout is None:
+            cache_timeout = current_app.get_send_file_max_age(str(file_path))
+        etag = "{}-{}-{}".format(
+            file_path.stat().st_mtime, file_path.stat().st_size, adler32(bytes(file_path))
+        )
+
+    if mimetype is None and attachment_filename is not None:
+        mimetype = mimetypes.guess_type(attachment_filename)[0] or DEFAULT_MIMETYPE
+    if mimetype is None:
+        raise ValueError(
+            "The mime type cannot be infered, please set it manually via the mimetype argument."
+        )
+
+    response = current_app.response_class(file_body, mimetype=mimetype)
+    response.content_length = file_size
+
+    if as_attachment:
+        response.headers.add("Content-Disposition", "attachment", filename=attachment_filename)
+
+    if last_modified is not None:
+        response.last_modified = last_modified
+
+    response.cache_control.public = True
+    if cache_timeout is not None:
+        response.cache_control.max_age = cache_timeout
+        response.expires = datetime.utcnow() + timedelta(seconds=cache_timeout)
+
+    if add_etags and etag is not None:
+        response.set_etag(etag)
+
+    if conditional:
+        await response.make_conditional(request.range)
+    return response

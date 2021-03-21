@@ -32,6 +32,9 @@ from .helpers import (
     get_template_attribute,
     make_push_promise,
     make_response,
+    safe_join,
+    send_file,
+    send_from_directory,
     stream_with_context,
     url_for,
 )
@@ -53,7 +56,6 @@ from .signals import (
     websocket_started,
     websocket_tearing_down,
 )
-from .static import safe_join, send_file, send_from_directory
 from .templating import render_template, render_template_string
 from .typing import ResponseReturnValue
 from .utils import redirect
