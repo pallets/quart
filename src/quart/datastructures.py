@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from os import PathLike
+from pathlib import Path
 from typing import BinaryIO, Optional
 
 from aiofiles import open as async_open
@@ -33,3 +34,12 @@ class FileStorage(WerkzeugFileStorage):
             while data != b"":
                 file_.write(data)
                 data = self.stream.read(buffer_size)
+
+    async def load(self, source: PathLike, buffer_size: int = 16384) -> None:
+        path = Path(source)
+        self.filename = path.name
+        async with async_open(path, "rb") as file_:
+            data = await file_.read(buffer_size)
+            while data != b"":
+                self.stream.write(data)
+                data = await file_.read(buffer_size)

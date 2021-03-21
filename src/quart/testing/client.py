@@ -9,6 +9,7 @@ from typing import (
     AnyStr,
     AsyncGenerator,
     cast,
+    Dict,
     List,
     Optional,
     overload,
@@ -25,6 +26,7 @@ from werkzeug.http import dump_cookie
 
 from .connections import TestHTTPConnection, TestWebsocketConnection
 from .utils import make_test_body_with_headers, make_test_headers_path_and_query_string, sentinel
+from ..datastructures import FileStorage
 from ..globals import _request_ctx_stack
 from ..sessions import Session
 from ..typing import TestHTTPConnectionProtocol, TestWebsocketConnectionProtocol
@@ -86,6 +88,7 @@ class QuartClient:
         headers: Optional[Union[dict, Headers]] = None,
         data: Optional[AnyStr] = None,
         form: Optional[dict] = None,
+        files: Optional[Dict[str, FileStorage]] = None,
         query_string: Optional[dict] = None,
         json: Any = sentinel,
         scheme: str = "http",
@@ -95,7 +98,17 @@ class QuartClient:
     ) -> Response:
         self.push_promises = []
         response = await self._make_request(
-            path, method, headers, data, form, query_string, json, scheme, root_path, http_version
+            path,
+            method,
+            headers,
+            data,
+            form,
+            files,
+            query_string,
+            json,
+            scheme,
+            root_path,
+            http_version,
         )
         if follow_redirects:
             while response.status_code >= 300 and response.status_code <= 399:
@@ -110,6 +123,7 @@ class QuartClient:
                     headers,
                     data,
                     form,
+                    files,
                     query_string,
                     json,
                     scheme,
@@ -347,6 +361,7 @@ class QuartClient:
         headers: Optional[Union[dict, Headers]],
         data: Optional[AnyStr],
         form: Optional[dict],
+        files: Optional[Dict[str, FileStorage]],
         query_string: Optional[dict],
         json: Any,
         scheme: str,
@@ -356,7 +371,9 @@ class QuartClient:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self.app, path, headers, query_string
         )
-        request_data, body_headers = make_test_body_with_headers(data, form, json, self.app)
+        request_data, body_headers = make_test_body_with_headers(
+            data=data, form=form, files=files, json=json, app=self.app
+        )
         headers.update(**body_headers)
 
         if self.cookie_jar is not None:

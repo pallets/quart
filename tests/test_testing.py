@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from io import BytesIO
 from typing import Callable, Optional
 
 import pytest
 from werkzeug.datastructures import Headers
 
 from quart import jsonify, Quart, redirect, request, Response, session, websocket
+from quart.datastructures import FileStorage
 from quart.testing import (
     make_test_body_with_headers,
     make_test_headers_path_and_query_string,
@@ -71,6 +73,29 @@ def test_make_test_body_with_headers_form() -> None:
     assert headers == Headers({"Content-Type": "application/x-www-form-urlencoded"})
 
 
+def test_make_test_body_with_headers_files() -> None:
+    body, headers = make_test_body_with_headers(
+        files={"a": FileStorage(BytesIO(b"abc"), filename="Quart")}
+    )
+    assert body == (
+        b'\r\n------QuartBoundary\r\nContent-Disposition: form-data; name="a"; '
+        b'filename="Quart"\r\n\r\nabc\r\n------QuartBoundary--\r\n'
+    )
+    assert headers == Headers({"Content-Type": "multipart/form-data"})
+
+
+def test_make_test_body_with_headers_form_and_files() -> None:
+    body, headers = make_test_body_with_headers(
+        form={"b": "c"}, files={"a": FileStorage(BytesIO(b"abc"), filename="Quart")}
+    )
+    assert body == (
+        b'\r\n------QuartBoundary\r\nContent-Disposition: form-data; name="a"; '
+        b'filename="Quart"\r\n\r\nabc\r\n------QuartBoundary\r\n'
+        b'Content-Disposition: form-data; name="b"\r\n\r\nc\r\n------QuartBoundary--\r\n'
+    )
+    assert headers == Headers({"Content-Type": "multipart/form-data"})
+
+
 def test_make_test_body_with_headers_json() -> None:
     body, headers = make_test_body_with_headers(json={"a": "b"})
     assert body == b'{"a": "b"}'
@@ -79,7 +104,8 @@ def test_make_test_body_with_headers_json() -> None:
 
 def test_make_test_body_with_headers_argument_error() -> None:
     with pytest.raises(ValueError):
-        make_test_body_with_headers(json={}, data="", form={})
+        make_test_body_with_headers(json={}, data="", form={}, files={})
+    make_test_body_with_headers(form={}, files={})
 
 
 @pytest.mark.parametrize(

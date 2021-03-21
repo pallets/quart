@@ -1407,7 +1407,7 @@ class Quart(Scaffold):
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self, path, headers, query_string
         )
-        request_body, body_headers = make_test_body_with_headers(data, form, json)
+        request_body, body_headers = make_test_body_with_headers(data=data, form=form, json=json)
         headers.update(**body_headers)
         request = self.request_class(
             method,
