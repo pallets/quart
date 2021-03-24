@@ -81,7 +81,7 @@ def test_make_test_body_with_headers_files() -> None:
         b'\r\n------QuartBoundary\r\nContent-Disposition: form-data; name="a"; '
         b'filename="Quart"\r\n\r\nabc\r\n------QuartBoundary--\r\n'
     )
-    assert headers == Headers({"Content-Type": "multipart/form-data"})
+    assert headers == Headers({"Content-Type": "multipart/form-data; boundary=----QuartBoundary"})
 
 
 def test_make_test_body_with_headers_form_and_files() -> None:
@@ -93,7 +93,7 @@ def test_make_test_body_with_headers_form_and_files() -> None:
         b'filename="Quart"\r\n\r\nabc\r\n------QuartBoundary\r\n'
         b'Content-Disposition: form-data; name="b"\r\n\r\nc\r\n------QuartBoundary--\r\n'
     )
-    assert headers == Headers({"Content-Type": "multipart/form-data"})
+    assert headers == Headers({"Content-Type": "multipart/form-data; boundary=----QuartBoundary"})
 
 
 def test_make_test_body_with_headers_json() -> None:

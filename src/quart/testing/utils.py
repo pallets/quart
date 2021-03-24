@@ -88,7 +88,7 @@ def make_test_body_with_headers(
         request_data = dumps(json, app=app).encode("utf-8")
         headers["Content-Type"] = "application/json"
     elif files is not None:
-        headers["Content-Type"] = "multipart/form-data"
+        headers["Content-Type"] = "multipart/form-data; boundary=----QuartBoundary"
         encoder = MultipartEncoder(b"----QuartBoundary")
         request_data += encoder.send_event(Preamble(data=b""))
         for key, file_storage in files.items():
