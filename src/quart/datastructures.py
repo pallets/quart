@@ -32,7 +32,7 @@ class FileStorage(WerkzeugFileStorage):
         async with async_open(destination, "wb") as file_:
             data = self.stream.read(buffer_size)
             while data != b"":
-                file_.write(data)
+                await file_.write(data)
                 data = self.stream.read(buffer_size)
 
     async def load(self, source: PathLike, buffer_size: int = 16384) -> None:
