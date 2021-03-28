@@ -54,8 +54,8 @@ class ScriptInfo:
                     module_name, app_name = self.app_import_path.split(":", 1)
                 except ValueError:
                     module_name, app_name = self.app_import_path, "app"
-                except AttributeError:
-                    raise NoAppException()
+                except AttributeError as error:
+                    raise NoAppException() from error
 
                 module_path = Path(module_name).resolve()
                 sys.path.insert(0, str(module_path.parent))
@@ -67,14 +67,14 @@ class ScriptInfo:
                     module = import_module(import_name)
                 except ModuleNotFoundError as error:
                     if error.name == import_name:
-                        raise NoAppException()
+                        raise NoAppException() from error
                     else:
                         raise
 
                 try:
                     self._app = eval(app_name, vars(module))
-                except NameError:
-                    raise NoAppException()
+                except NameError as error:
+                    raise NoAppException() from error
 
                 from .app import Quart
 
