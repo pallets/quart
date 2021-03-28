@@ -34,7 +34,7 @@ from hypercorn.asyncio import serve
 from hypercorn.config import Config as HyperConfig
 from hypercorn.typing import ASGIReceiveCallable, ASGISendCallable, Scope
 from werkzeug.datastructures import Headers
-from werkzeug.exceptions import default_exceptions, HTTPException
+from werkzeug.exceptions import HTTPException, InternalServerError
 from werkzeug.routing import MapAdapter
 from werkzeug.wrappers import Response as WerkzeugResponse
 
@@ -926,13 +926,16 @@ class Quart(Scaffold):
         if self.propagate_exceptions:
             raise error
 
-        internal_server_error = default_exceptions[500]()
+        internal_server_error = InternalServerError(original_exception=error)
         handler = self._find_error_handler(internal_server_error)
 
-        if handler is None:
-            return internal_server_error.get_response()  # type: ignore
+        response: Union[Response, WerkzeugResponse, InternalServerError]
+        if handler is not None:
+            response = await handler(internal_server_error)
         else:
-            return await self.finalize_request(await handler(error), from_error_handler=True)
+            response = internal_server_error
+
+        return await self.finalize_request(response, from_error_handler=True)
 
     async def handle_websocket_exception(
         self, error: Exception
@@ -945,13 +948,19 @@ class Quart(Scaffold):
 
         self.log_exception(sys.exc_info())
 
-        internal_server_error = default_exceptions[500]()
+        if self.propagate_exceptions:
+            raise error
+
+        internal_server_error = InternalServerError(original_exception=error)
         handler = self._find_error_handler(internal_server_error)
 
-        if handler is None:
-            return internal_server_error.get_response()  # type: ignore
+        response: Union[Response, WerkzeugResponse, InternalServerError]
+        if handler is not None:
+            response = await handler(internal_server_error)
         else:
-            return await self.finalize_websocket(await handler(error), from_error_handler=True)
+            response = internal_server_error
+
+        return await self.finalize_websocket(response, from_error_handler=True)
 
     def log_exception(self, exception_info: Tuple[type, BaseException, TracebackType]) -> None:
         """Log a exception to the :attr:`logger`.
@@ -1468,7 +1477,9 @@ class Quart(Scaffold):
         methods = _request_ctx_stack.top.url_adapter.allowed_methods()
         return self.response_class("", headers={"Allow": ", ".join(methods)})
 
-    async def make_response(self, result: ResponseReturnValue) -> Union[Response, WerkzeugResponse]:
+    async def make_response(
+        self, result: Union[ResponseReturnValue, HTTPException]
+    ) -> Union[Response, WerkzeugResponse]:
         """Make a Response from the result of the route handler.
 
         The result itself can either be:
@@ -1496,7 +1507,9 @@ class Quart(Scaffold):
             status = status_or_headers
 
         response: Union[Response, WerkzeugResponse]
-        if not isinstance(value, (Response, WerkzeugResponse)):
+        if isinstance(value, HTTPException):
+            response = value.get_response()  # type: ignore
+        elif not isinstance(value, (Response, WerkzeugResponse)):
             if isinstance(value, dict):
                 response = jsonify(value)
             else:
@@ -1590,7 +1603,7 @@ class Quart(Scaffold):
 
     async def finalize_request(
         self,
-        result: ResponseReturnValue,
+        result: Union[ResponseReturnValue, HTTPException],
         request_context: Optional[RequestContext] = None,
         from_error_handler: bool = False,
     ) -> Union[Response, WerkzeugResponse]:

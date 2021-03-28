@@ -7,6 +7,7 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from hypercorn.typing import HTTPScope, WebsocketScope
 from werkzeug.datastructures import Headers
+from werkzeug.exceptions import InternalServerError
 from werkzeug.wrappers import Response as WerkzeugResponse
 
 from quart.app import Quart
@@ -173,6 +174,7 @@ async def test_subdomain() -> None:
             WerkzeugResponse("hello", 201, {"X-Header": "bob"}),
             False,
         ),
+        (InternalServerError(), InternalServerError().get_response(), False),
     ],
 )
 async def test_make_response(
