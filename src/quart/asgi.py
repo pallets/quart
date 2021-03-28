@@ -90,9 +90,9 @@ class ASGIHTTPConnection:
             response = await self.app.handle_request(request)
         except Exception:
             if self.app.propagate_exceptions:
-                raise
-            else:
                 response = await traceback_response()
+            else:
+                raise
 
         if isinstance(response, Response) and response.timeout != Ellipsis:
             timeout = cast(Optional[float], response.timeout)

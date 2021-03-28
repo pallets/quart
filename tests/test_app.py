@@ -14,7 +14,7 @@ from quart.globals import session, websocket
 from quart.sessions import SecureCookieSession, SessionInterface
 from quart.testing import no_op_push, WebsocketResponse
 from quart.typing import ResponseReturnValue
-from quart.wrappers import Response
+from quart.wrappers import Request, Response
 
 TEST_RESPONSE = Response("")
 
@@ -388,7 +388,7 @@ async def test_app_session_websocket_return(session_app: Quart) -> None:
     "debug, testing, raises",
     [(False, False, False), (True, False, True), (False, True, True), (True, True, True)],
 )
-async def test_propagation(debug: bool, testing: bool, raises: bool) -> None:
+async def test_propagation(debug: bool, testing: bool, raises: bool, http_scope: HTTPScope) -> None:
     app = Quart(__name__)
 
     @app.route("/")
@@ -401,7 +401,19 @@ async def test_propagation(debug: bool, testing: bool, raises: bool) -> None:
 
     if raises:
         with pytest.raises(SimpleException):
-            await test_client.get("/")
+            await app.handle_request(
+                Request(
+                    "GET",
+                    "http",
+                    "/",
+                    b"",
+                    Headers(),
+                    "",
+                    "1.1",
+                    http_scope,
+                    send_push_promise=no_op_push,
+                )
+            )
     else:
         response = await test_client.get("/")
         assert response.status_code == 500
