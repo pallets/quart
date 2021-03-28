@@ -373,7 +373,7 @@ async def send_file(
             attachment_filename = file_path.name
         file_body = current_app.response_class.file_body_class(file_path)
         if last_modified is None:
-            last_modified = datetime.fromtimestamp(file_path.stat().st_mtime)
+            last_modified = file_path.stat().st_mtime  # type: ignore
         if cache_timeout is None:
             cache_timeout = current_app.get_send_file_max_age(str(file_path))
         etag = "{}-{}-{}".format(
