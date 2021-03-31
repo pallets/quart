@@ -1,16 +1,23 @@
 from __future__ import annotations
 
-from typing import Any, AnyStr, Dict, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Any, AnyStr, cast, Dict, Optional, overload, Tuple, TYPE_CHECKING, Union
 from urllib.parse import unquote, urlencode
 
+from hypercorn.typing import HTTPScope, Scope, WebsocketScope
 from werkzeug.datastructures import Headers
 from werkzeug.sansio.multipart import Data, Epilogue, Field, File, MultipartEncoder, Preamble
 
 from ..datastructures import FileStorage
 from ..json import dumps
+from ..utils import encode_headers
 
 if TYPE_CHECKING:
     from ..app import Quart  # noqa
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal  # type: ignore
 
 sentinel = object()
 
@@ -38,7 +45,6 @@ def make_test_headers_path_and_query_string(
         headers = headers
     elif headers is not None:
         headers = Headers(headers)
-    headers.setdefault("Remote-Addr", "127.0.0.1")
     headers.setdefault("User-Agent", "Quart")
     headers.setdefault("host", app.config["SERVER_NAME"] or "localhost")
     if "?" in path and query_string is not None:
@@ -113,6 +119,76 @@ def make_test_body_with_headers(
         headers["Content-Type"] = "application/x-www-form-urlencoded"
 
     return request_data, headers
+
+
+@overload
+def make_test_scope(
+    type_: Literal["http"],
+    path: str,
+    method: str,
+    headers: Headers,
+    query_string: bytes,
+    scheme: str,
+    root_path: str,
+    http_version: str,
+    scope_base: Optional[dict],
+    *,
+    _preserve_context: bool = False,
+) -> HTTPScope:
+    ...
+
+
+@overload
+def make_test_scope(
+    type_: Literal["websocket"],
+    path: str,
+    method: str,
+    headers: Headers,
+    query_string: bytes,
+    scheme: str,
+    root_path: str,
+    http_version: str,
+    scope_base: Optional[dict],
+    *,
+    _preserve_context: bool = False,
+) -> WebsocketScope:
+    ...
+
+
+def make_test_scope(
+    type_: str,
+    path: str,
+    method: str,
+    headers: Headers,
+    query_string: bytes,
+    scheme: str,
+    root_path: str,
+    http_version: str,
+    scope_base: Optional[dict],
+    *,
+    _preserve_context: bool = False,
+) -> Scope:
+    scope = {
+        "type": type_,
+        "http_version": http_version,
+        "asgi": {"spec_version": "2.1"},
+        "method": method,
+        "scheme": scheme,
+        "path": path,
+        "raw_path": path.encode("ascii"),
+        "query_string": query_string,
+        "root_path": root_path,
+        "headers": encode_headers(headers),
+        "extensions": {},
+        "_quart._preserve_context": _preserve_context,
+    }
+    if scope_base is not None:
+        scope.update(scope_base)
+    if type_ == "http" and http_version in {"2", "3"}:
+        scope["extensions"] = {"http.response.push": {}}
+    elif type_ == "websocket":
+        scope["extensions"] = {"websocket.http.response": {}}
+    return cast(Scope, scope)
 
 
 async def no_op_push(path: str, headers: Headers) -> None:

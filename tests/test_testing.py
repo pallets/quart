@@ -11,6 +11,7 @@ from quart.datastructures import FileStorage
 from quart.testing import (
     make_test_body_with_headers,
     make_test_headers_path_and_query_string,
+    make_test_scope,
     QuartClient as Client,
     WebsocketResponse,
 )
@@ -50,7 +51,6 @@ def test_build_headers_path_and_query_string(
         Quart(__name__), path, None, query_string
     )
     assert result_path == expected_path
-    assert headers["Remote-Addr"] == "127.0.0.1"
     assert headers["User-Agent"] == "Quart"
     assert headers["host"] == "localhost"
     assert result_qs == expected_query_string
@@ -108,13 +108,34 @@ def test_make_test_body_with_headers_argument_error() -> None:
     make_test_body_with_headers(form={}, files={})
 
 
+def test_make_test_scope_with_scope_base() -> None:
+    scope = make_test_scope(
+        "http", "/", "GET", Headers(), b"", "http", "", "1.1", {"client": ("127.0.0.2", "1234")}
+    )
+    assert scope == {
+        "type": "http",
+        "http_version": "1.1",
+        "asgi": {"spec_version": "2.1"},
+        "method": "GET",
+        "scheme": "http",
+        "path": "/",
+        "raw_path": b"/",
+        "query_string": b"",
+        "root_path": "",
+        "headers": [],
+        "extensions": {},
+        "_quart._preserve_context": False,
+        "client": ("127.0.0.2", "1234"),
+    }
+
+
 @pytest.mark.parametrize(
     "headers, expected",
     [
-        (None, Headers({"Remote-Addr": "127.0.0.1", "User-Agent": "Quart", "host": "localhost"})),
+        (None, Headers({"User-Agent": "Quart", "host": "localhost"})),
         (
-            Headers({"Remote-Addr": "1.2.3.4", "User-Agent": "Quarty", "host": "quart.com"}),
-            Headers({"Remote-Addr": "1.2.3.4", "User-Agent": "Quarty", "host": "quart.com"}),
+            Headers({"User-Agent": "Quarty", "host": "quart.com"}),
+            Headers({"User-Agent": "Quarty", "host": "quart.com"}),
         ),
     ],
 )
@@ -127,6 +148,19 @@ def test_build_headers_path_and_query_string_headers_defaults(
     assert result == expected
     assert path == "/path"
     assert query_string == b""
+
+
+@pytest.mark.asyncio
+async def test_remote_addr() -> None:
+    app = Quart(__name__)
+
+    @app.route("/")
+    async def echo() -> str:
+        return request.remote_addr
+
+    client = Client(app)
+    response = await client.get("/", scope_base={"client": ("127.0.0.2", "1234")})
+    assert (await response.get_data(as_text=True)) == "127.0.0.2"
 
 
 @pytest.mark.asyncio

@@ -8,11 +8,9 @@ from typing import (
     Any,
     AnyStr,
     AsyncGenerator,
-    cast,
     Dict,
     List,
     Optional,
-    overload,
     Tuple,
     Type,
     TYPE_CHECKING,
@@ -20,23 +18,21 @@ from typing import (
 )
 from urllib.request import Request as U2Request
 
-from hypercorn.typing import HTTPScope, Scope, WebsocketScope
 from werkzeug.datastructures import Headers
 from werkzeug.http import dump_cookie
 
 from .connections import TestHTTPConnection, TestWebsocketConnection
-from .utils import make_test_body_with_headers, make_test_headers_path_and_query_string, sentinel
+from .utils import (
+    make_test_body_with_headers,
+    make_test_headers_path_and_query_string,
+    make_test_scope,
+    sentinel,
+)
 from ..datastructures import FileStorage
 from ..globals import _request_ctx_stack
 from ..sessions import Session
 from ..typing import TestHTTPConnectionProtocol, TestWebsocketConnectionProtocol
-from ..utils import encode_headers
 from ..wrappers import Response
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal  # type: ignore
 
 if TYPE_CHECKING:
     from ..app import Quart  # noqa
@@ -95,6 +91,7 @@ class QuartClient:
         follow_redirects: bool = False,
         root_path: str = "",
         http_version: str = "1.1",
+        scope_base: Optional[dict] = None,
     ) -> Response:
         self.push_promises = []
         response = await self._make_request(
@@ -109,6 +106,7 @@ class QuartClient:
             scheme,
             root_path,
             http_version,
+            scope_base,
         )
         if follow_redirects:
             while response.status_code >= 300 and response.status_code <= 399:
@@ -129,6 +127,7 @@ class QuartClient:
                     scheme,
                     root_path,
                     http_version,
+                    scope_base,
                 )
         if self.preserve_context:
             _request_ctx_stack.push(self.app._preserved_context)
@@ -144,12 +143,22 @@ class QuartClient:
         scheme: str = "http",
         root_path: str = "",
         http_version: str = "1.1",
+        scope_base: Optional[dict] = None,
     ) -> TestHTTPConnectionProtocol:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self.app, path, headers, query_string
         )
-        scope = self._build_scope(
-            "http", path, method, headers, query_string_bytes, scheme, root_path, http_version
+        scope = make_test_scope(
+            "http",
+            path,
+            method,
+            headers,
+            query_string_bytes,
+            scheme,
+            root_path,
+            http_version,
+            scope_base,
+            _preserve_context=self.preserve_context,
         )
         return self.http_connection_class(self.app, scope, _preserve_context=self.preserve_context)
 
@@ -163,12 +172,22 @@ class QuartClient:
         subprotocols: Optional[List[str]] = None,
         root_path: str = "",
         http_version: str = "1.1",
+        scope_base: Optional[dict] = None,
     ) -> TestWebsocketConnectionProtocol:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self.app, path, headers, query_string
         )
-        scope = self._build_scope(
-            "websocket", path, "GET", headers, query_string_bytes, scheme, root_path, http_version
+        scope = make_test_scope(
+            "websocket",
+            path,
+            "GET",
+            headers,
+            query_string_bytes,
+            scheme,
+            root_path,
+            http_version,
+            scope_base,
+            _preserve_context=self.preserve_context,
         )
         return self.websocket_connection_class(self.app, scope)
 
@@ -367,6 +386,7 @@ class QuartClient:
         scheme: str,
         root_path: str,
         http_version: str,
+        scope_base: Optional[dict],
     ) -> Response:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self.app, path, headers, query_string
@@ -380,8 +400,17 @@ class QuartClient:
             for cookie in self.cookie_jar:
                 headers.add("cookie", f"{cookie.name}={cookie.value}")
 
-        scope = self._build_scope(
-            "http", path, method, headers, query_string_bytes, scheme, root_path, http_version
+        scope = make_test_scope(
+            "http",
+            path,
+            method,
+            headers,
+            query_string_bytes,
+            scheme,
+            root_path,
+            http_version,
+            scope_base,
+            _preserve_context=self.preserve_context,
         )
         async with self.http_connection_class(
             self.app, scope, _preserve_context=self.preserve_context
@@ -396,62 +425,3 @@ class QuartClient:
             )
         self.push_promises.extend(connection.push_promises)
         return response
-
-    @overload
-    def _build_scope(
-        self,
-        type_: Literal["http"],
-        path: str,
-        method: str,
-        headers: Headers,
-        query_string: bytes,
-        scheme: str,
-        root_path: str,
-        http_version: str,
-    ) -> HTTPScope:
-        ...
-
-    @overload
-    def _build_scope(
-        self,
-        type_: Literal["websocket"],
-        path: str,
-        method: str,
-        headers: Headers,
-        query_string: bytes,
-        scheme: str,
-        root_path: str,
-        http_version: str,
-    ) -> WebsocketScope:
-        ...
-
-    def _build_scope(
-        self,
-        type_: str,
-        path: str,
-        method: str,
-        headers: Headers,
-        query_string: bytes,
-        scheme: str,
-        root_path: str,
-        http_version: str,
-    ) -> Scope:
-        scope = {
-            "type": type_,
-            "http_version": http_version,
-            "asgi": {"spec_version": "2.1"},
-            "method": method,
-            "scheme": scheme,
-            "path": path,
-            "raw_path": path.encode("ascii"),
-            "query_string": query_string,
-            "root_path": root_path,
-            "headers": encode_headers(headers),
-            "extensions": {},
-            "_quart._preserve_context": self.preserve_context,
-        }
-        if type_ == "http" and http_version in {"2", "3"}:
-            scope["extensions"] = {"http.response.push": {}}
-        elif type_ == "websocket":
-            scope["extensions"] = {"websocket.http.response": {}}
-        return cast(Scope, scope)

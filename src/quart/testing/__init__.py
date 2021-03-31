@@ -6,6 +6,7 @@ from .connections import WebsocketResponse
 from .utils import (
     make_test_body_with_headers,
     make_test_headers_path_and_query_string,
+    make_test_scope,
     no_op_push,
     sentinel,
 )
@@ -13,6 +14,7 @@ from .utils import (
 __all__ = (
     "make_test_body_with_headers",
     "make_test_headers_path_and_query_string",
+    "make_test_scope",
     "no_op_push",
     "QuartClient",
     "sentinel",

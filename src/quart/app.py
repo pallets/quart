@@ -74,6 +74,7 @@ from .templating import _default_template_context_processor, DispatchingJinjaLoa
 from .testing import (
     make_test_body_with_headers,
     make_test_headers_path_and_query_string,
+    make_test_scope,
     no_op_push,
     QuartClient,
     sentinel,
@@ -91,7 +92,7 @@ from .typing import (
     TestAppProtocol,
     TestClientProtocol,
 )
-from .utils import encode_headers, file_path_to_path, is_coroutine_function, run_sync
+from .utils import file_path_to_path, is_coroutine_function, run_sync
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
@@ -1400,6 +1401,7 @@ class Quart(Scaffold):
         json: Any = sentinel,
         root_path: str = "",
         http_version: str = "1.1",
+        scope_base: Optional[dict] = None,
     ) -> RequestContext:
         """Create a request context for testing purposes.
 
@@ -1425,6 +1427,17 @@ class Quart(Scaffold):
         )
         request_body, body_headers = make_test_body_with_headers(data=data, form=form, json=json)
         headers.update(**body_headers)
+        scope = make_test_scope(
+            "http",
+            path,
+            method,
+            headers,
+            query_string_bytes,
+            scheme,
+            root_path,
+            http_version,
+            scope_base,
+        )
         request = self.request_class(
             method,
             scheme,
@@ -1434,21 +1447,7 @@ class Quart(Scaffold):
             root_path,
             http_version,
             send_push_promise=send_push_promise,
-            scope={
-                "type": "http",
-                "http_version": http_version,
-                "asgi": {"spec_version": "2.1"},
-                "method": method,
-                "scheme": scheme,
-                "path": path,
-                "raw_path": path.encode("ascii"),
-                "query_string": query_string_bytes,
-                "root_path": root_path,
-                "headers": encode_headers(headers),
-                "extensions": {},
-                "client": None,
-                "server": None,
-            },
+            scope=scope,
         )
         request.body.set_result(request_body)
         return self.request_context(request)
