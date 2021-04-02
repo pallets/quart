@@ -16,8 +16,8 @@ from werkzeug.exceptions import NotFound
 from werkzeug.routing import BuildError
 from werkzeug.wrappers import Response as WerkzeugResponse
 
-from .ctx import _app_ctx_stack, _request_ctx_stack
-from .globals import current_app, request, session
+from .ctx import _app_ctx_stack, _request_ctx_stack, _websocket_ctx_stack
+from .globals import current_app, request, session, websocket
 from .signals import message_flashed
 from .typing import FilePath
 from .utils import file_path_to_path
@@ -177,12 +177,22 @@ def url_for(
     """
     app_context = _app_ctx_stack.top
     request_context = _request_ctx_stack.top
+    websocket_context = _websocket_ctx_stack.top
 
     if request_context is not None:
         url_adapter = request_context.url_adapter
         if endpoint.startswith("."):
             if request.blueprint is not None:
                 endpoint = request.blueprint + endpoint
+            else:
+                endpoint = endpoint[1:]
+        if _external is None:
+            _external = False
+    elif websocket_context is not None:
+        url_adapter = websocket_context.url_adapter
+        if endpoint.startswith("."):
+            if websocket.blueprint is not None:
+                endpoint = websocket.blueprint + endpoint
             else:
                 endpoint = endpoint[1:]
         if _external is None:
