@@ -1247,8 +1247,8 @@ class Quart(Scaffold):
 
     def run(
         self,
-        host: str = "127.0.0.1",
-        port: int = 5000,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
         debug: Optional[bool] = None,
         use_reloader: bool = True,
         loop: Optional[asyncio.AbstractEventLoop] = None,
@@ -1307,6 +1307,18 @@ class Quart(Scaffold):
             loop.add_signal_handler(signal.SIGINT, _signal_handler)
         except (AttributeError, NotImplementedError):
             pass
+
+        server_name = self.config.get("SERVER_NAME")
+        sn_host = None
+        sn_port = None
+        if server_name is not None:
+            sn_host, _, sn_port = server_name.partition(":")
+
+        if host is None:
+            host = sn_host or "127.0.0.1"
+
+        if port is None:
+            port = int(sn_port) or 5000
 
         task = self.run_task(
             host,
