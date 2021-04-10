@@ -284,8 +284,11 @@ class ASGIWebsocketConnection:
             await send(message)
             self._accepted = True
 
-    async def close_connection(self, send: ASGISendCallable, code: int) -> None:
-        await send({"type": "websocket.close", "code": code})
+    async def close_connection(self, send: ASGISendCallable, code: int, reason: str) -> None:
+        if self.scope["asgi"]["spec_version"] >= "2.3":
+            await send({"type": "websocket.close", "code": code, "reason": reason})  # type: ignore
+        else:
+            await send({"type": "websocket.close", "code": code})
 
 
 class ASGILifespan:

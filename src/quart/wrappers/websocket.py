@@ -88,5 +88,5 @@ class Websocket(BaseRequestWebsocket):
             headers_ = Headers(headers)
         await self._accept(headers_, subprotocol)
 
-    async def close(self, code: int) -> None:
-        await self._close(code)
+    async def close(self, code: int, reason: str = "") -> None:
+        await self._close(code, reason)
