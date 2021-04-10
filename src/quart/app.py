@@ -1331,9 +1331,8 @@ class Quart(Scaffold):
             shutdown_trigger=shutdown_event.wait,  # type: ignore
         )
         print(f" * Serving Quart app '{self.name}'")  # noqa: T001, T002
-        environment = get_env()
-        print(f" * Environment: {environment}")  # noqa: T001, T002
-        if environment == "production":
+        print(f" * Environment: {self.env}")  # noqa: T001, T002
+        if self.env == "production":
             print(  # noqa: T001, T002
                 " * Please use an ASGI server (e.g. Hypercorn) directly in production"
             )
