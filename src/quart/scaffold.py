@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import (
     Any,
     AnyStr,
-    Awaitable,
     Callable,
     Dict,
     IO,
@@ -43,7 +42,7 @@ from .typing import (
     URLDefaultCallable,
     URLValuePreprocessorCallable,
 )
-from .utils import file_path_to_path, is_coroutine_function, run_sync
+from .utils import file_path_to_path
 
 if TYPE_CHECKING:
     from .wrappers import Response
@@ -690,19 +689,8 @@ class Scaffold:
         else:
             return error_type, None
 
-    def ensure_async(self, func: Callable[..., Any]) -> Callable[..., Awaitable[Any]]:
-        """Ensure that the returned func is async and calls the func.
-
-        .. versionadded:: 0.11
-
-        Override if you wish to change how synchronous functions are
-        run. Before Quart 0.11 this did not run the synchronous code
-        in an executor.
-        """
-        if is_coroutine_function(func):
-            return func
-        else:
-            return run_sync(func)
+    def ensure_async(self, func: Callable[..., Any]) -> Callable[..., Any]:
+        raise NotImplementedError()
 
     def _is_setup_finished(self) -> bool:
         raise NotImplementedError()

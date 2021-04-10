@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from functools import update_wrapper
-from typing import Callable, Iterable, List, Optional, Type, TYPE_CHECKING, Union
+from typing import Any, Callable, Iterable, List, Optional, Type, TYPE_CHECKING, Union
 
 from .scaffold import Scaffold
 
@@ -551,18 +552,51 @@ class Blueprint(Scaffold):
                 endpoint="static",
             )
 
-        app.view_functions.update(self.view_functions)
+        if first_registration:
 
-        _merge_dict_of_lists(self.name, self.before_request_funcs, app.before_request_funcs)
-        _merge_dict_of_lists(self.name, self.after_request_funcs, app.after_request_funcs)
-        _merge_dict_of_lists(self.name, self.teardown_request_funcs, app.teardown_request_funcs)
-        _merge_dict_of_lists(self.name, self.url_default_functions, app.url_default_functions)
-        _merge_dict_of_lists(self.name, self.url_value_preprocessors, app.url_value_preprocessors)
-        _merge_dict_of_lists(
-            self.name, self.template_context_processors, app.template_context_processors
-        )
+            def extend(bp_dict: dict, parent_dict: dict, ensure_async: bool = False) -> None:
+                for key, values in bp_dict.items():
+                    key = self.name if key is None else f"{self.name}.{key}"
 
-        _merge_dict_of_dicts(self.name, self.error_handler_spec, app.error_handler_spec)
+                    if ensure_async:
+                        values = [app.ensure_async(func) for func in values]
+
+                    parent_dict[key].extend(values)
+
+            for key, value in self.error_handler_spec.items():
+                key = self.name if key is None else f"{self.name}.{key}"
+                value = defaultdict(
+                    dict,
+                    {
+                        code: {
+                            exc_class: app.ensure_async(func)
+                            for exc_class, func in code_values.items()
+                        }
+                        for code, code_values in value.items()
+                    },
+                )
+                app.error_handler_spec[key] = value
+
+            for endpoint, func in self.view_functions.items():
+                app.view_functions[endpoint] = app.ensure_async(func)
+
+            extend(self.before_request_funcs, app.before_request_funcs, ensure_async=True)
+            extend(self.before_websocket_funcs, app.before_websocket_funcs, ensure_async=True)
+            extend(self.after_request_funcs, app.after_request_funcs, ensure_async=True)
+            extend(self.after_websocket_funcs, app.after_websocket_funcs, ensure_async=True)
+            extend(
+                self.teardown_request_funcs,
+                app.teardown_request_funcs,
+                ensure_async=True,
+            )
+            extend(
+                self.teardown_websocket_funcs,
+                app.teardown_websocket_funcs,
+                ensure_async=True,
+            )
+            extend(self.url_default_functions, app.url_default_functions)
+            extend(self.url_value_preprocessors, app.url_value_preprocessors)
+            extend(self.template_context_processors, app.template_context_processors)
 
         for func in self.deferred_functions:
             func(state)
@@ -595,6 +629,15 @@ class Blueprint(Scaffold):
                 blueprint has been registered on the application.
         """
         return BlueprintSetupState(self, app, options, first_registration)
+
+    def ensure_async(self, func: Callable[..., Any]) -> Callable[..., Any]:
+        """Ensure the function is asynchronous.
+
+        Override if you would like custom sync to async behaviour in
+        this blueprint. Otherwise the app's
+        :meth:`~quart.Quart.ensure_async` is used.
+        """
+        return func
 
 
 class BlueprintSetupState:
