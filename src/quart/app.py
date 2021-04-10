@@ -40,7 +40,6 @@ from werkzeug.wrappers import Response as WerkzeugResponse
 
 from .asgi import ASGIHTTPConnection, ASGILifespan, ASGIWebsocketConnection
 from .blueprints import Blueprint
-from .cli import AppGroup
 from .config import Config, ConfigAttribute, DEFAULT_CONFIG
 from .ctx import (
     _AppCtxGlobals,
@@ -77,6 +76,7 @@ from .testing import (
     make_test_scope,
     no_op_push,
     QuartClient,
+    QuartCliRunner,
     sentinel,
     TestApp,
 )
@@ -183,6 +183,7 @@ class Quart(Scaffold):
     session_interface = SecureCookieSessionInterface()
     test_app_class = TestApp
     test_client_class = QuartClient
+    test_cli_runner_class = QuartCliRunner
     testing = ConfigAttribute("TESTING")
     url_map_class = QuartMap
     url_rule_class = QuartRule
@@ -256,7 +257,6 @@ class Quart(Scaffold):
         self._jinja_env: Optional[Environment] = None
         self._logger: Optional[Logger] = None
 
-        self.cli = AppGroup(self.name)
         if self.has_static_folder:
             if bool(static_host) != host_matching:
                 raise ValueError(
@@ -1379,6 +1379,10 @@ class Quart(Scaffold):
         config.use_reloader = use_reloader
 
         return serve(self, config, shutdown_trigger=shutdown_trigger)
+
+    def test_cli_runner(self, **kwargs: Any) -> QuartCliRunner:
+        """Creates and returns a CLI test runner."""
+        return self.test_cli_runner_class(self, **kwargs)
 
     def test_client(self) -> TestClientProtocol:
         """Creates and returns a test client."""

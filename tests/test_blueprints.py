@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import cast
+from typing import cast, List, Optional
 
+import click
 import pytest
 
 from quart import (
@@ -135,3 +136,28 @@ async def test_blueprint_method_view() -> None:
     assert "GET" == (await response.get_data(as_text=True))
     response = await test_client.post("/")
     assert "POST" == (await response.get_data(as_text=True))
+
+
+@pytest.mark.parametrize(
+    "cli_group, args",
+    [
+        ("named", ["named", "cmd"]),
+        (None, ["cmd"]),
+        (Ellipsis, ["blueprint", "cmd"]),
+    ],
+)
+def test_cli_blueprints(cli_group: Optional[str], args: List[str]) -> None:
+    app = Quart(__name__)
+
+    blueprint = Blueprint("blueprint", __name__, cli_group=cli_group)
+
+    @blueprint.cli.command("cmd")
+    def command() -> None:
+        click.echo("command")
+
+    app.register_blueprint(blueprint)
+
+    app_runner = app.test_cli_runner()
+    result = app_runner.invoke(args=args)
+
+    assert "command" in result.output

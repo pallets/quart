@@ -26,6 +26,7 @@ from typing import (
 from jinja2 import FileSystemLoader
 from werkzeug.exceptions import default_exceptions, HTTPException
 
+from .cli import AppGroup
 from .globals import current_app
 from .helpers import send_from_directory
 from .templating import _default_template_context_processor
@@ -92,6 +93,8 @@ class Scaffold:
         self._static_url_path: Optional[str] = None
         self.static_folder = static_folder  # type: ignore
         self.static_url_path = static_url_path
+
+        self.cli = AppGroup()
 
         # Functions that are called after a HTTP view function has
         # handled a request and returned a response.

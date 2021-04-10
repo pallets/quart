@@ -39,6 +39,7 @@ class Blueprint(Scaffold):
         subdomain: Optional[str] = None,
         url_defaults: Optional[dict] = None,
         root_path: Optional[str] = None,
+        cli_group: Optional[str] = Ellipsis,  # type: ignore
     ) -> None:
         super().__init__(import_name, static_folder, static_url_path, template_folder, root_path)
         self.name = name
@@ -48,6 +49,7 @@ class Blueprint(Scaffold):
         if url_defaults is None:
             url_defaults = {}
         self.url_values_defaults = url_defaults
+        self.cli_group = cli_group
 
     def _is_setup_finished(self) -> bool:
         return self.warn_on_modifications and self._got_registered_once
@@ -564,6 +566,20 @@ class Blueprint(Scaffold):
 
         for func in self.deferred_functions:
             func(state)
+
+        if not self.cli.commands:
+            return
+
+        cli_resolved_group = options.get("cli_group", self.cli_group)
+
+        if cli_resolved_group is None:
+            app.cli.commands.update(self.cli.commands)
+        elif cli_resolved_group is Ellipsis:
+            self.cli.name = self.name
+            app.cli.add_command(self.cli)
+        else:
+            self.cli.name = cli_resolved_group
+            app.cli.add_command(self.cli)
 
     def make_setup_state(
         self, app: "Quart", options: dict, first_registration: bool = False
