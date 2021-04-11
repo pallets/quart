@@ -40,6 +40,20 @@ An example usage to store a users colour preference would be,
         session['colour'] = colour
         return redirect(url_for('index'))
 
+Permanent Sessions
+------------------
+
+The cookies used by default are not set to be permanent (deleted when
+the browser's session ends) to have permanent cookies
+``session.permanent`` must be ``True`` when the session is
+modified. To set this as the default use this snippet,
+
+.. code-block:: python
+
+    @app.before_request
+    def make_session_permanent():
+        session.permanent = True
+
 WebSockets
 ----------
 
