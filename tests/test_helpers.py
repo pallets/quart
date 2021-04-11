@@ -161,6 +161,14 @@ async def test_url_for_blueprint_relative(app: Quart) -> None:
 
 
 @pytest.mark.asyncio
+async def test_url_for_root_path(app: Quart) -> None:
+    async with app.test_request_context("/", root_path="/bob"):
+        assert url_for("index") == "/bob/"
+        assert url_for("index_post", _method="POST") == "/bob/post"
+        assert url_for("resource", id=5) == "/bob/resource/5"
+
+
+@pytest.mark.asyncio
 async def test_stream_with_context() -> None:
     app = Quart(__name__)
 

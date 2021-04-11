@@ -189,3 +189,12 @@ async def test_websocket_abort(app: Quart) -> None:
             await test_websocket.receive()
     except WebsocketResponse as error:
         assert error.response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_root_path(app: Quart) -> None:
+    test_client = app.test_client()
+    response = await test_client.get("/", root_path="/bob")
+    assert response.status_code == 404
+    response = await test_client.get("/bob/", root_path="/bob")
+    assert response.status_code == 200
