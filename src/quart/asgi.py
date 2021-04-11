@@ -119,19 +119,21 @@ class ASGIHTTPConnection:
 
         if isinstance(response, WerkzeugResponse):
             for data in response.response:
+                body = data.encode(response.charset) if isinstance(data, str) else data
                 await send(
                     cast(
                         HTTPResponseBodyEvent,
-                        {"type": "http.response.body", "body": data, "more_body": True},
+                        {"type": "http.response.body", "body": body, "more_body": True},
                     )
                 )
         else:
-            async with response.response as body:
-                async for data in body:
+            async with response.response as response_body:
+                async for data in response_body:
+                    body = data.encode(response.charset) if isinstance(data, str) else data
                     await send(
                         cast(
                             HTTPResponseBodyEvent,
-                            {"type": "http.response.body", "body": data, "more_body": True},
+                            {"type": "http.response.body", "body": body, "more_body": True},
                         )
                     )
         await send(
