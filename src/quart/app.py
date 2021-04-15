@@ -1318,7 +1318,7 @@ class Quart(Scaffold):
             host = sn_host or "127.0.0.1"
 
         if port is None:
-            port = int(sn_port) or 5000
+            port = int(sn_port or "5000")
 
         task = self.run_task(
             host,
