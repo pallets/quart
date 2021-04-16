@@ -567,7 +567,7 @@ class Quart(Scaffold):
             if old_handler is not None and old_handler != view_func:
                 raise AssertionError(f"Handler is overwriting existing for endpoint {endpoint}")
 
-        self.view_functions[endpoint] = handler
+            self.view_functions[endpoint] = handler
 
     def websocket(
         self,
