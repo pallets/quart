@@ -4,7 +4,7 @@
 # created.
 from __future__ import annotations
 
-import asyncio
+from functools import wraps
 from typing import Any, Awaitable, Callable, Optional, Union
 
 from werkzeug.wrappers import Response as WerkzeugResponse
@@ -34,7 +34,13 @@ def new_ensure_async(  # type: ignore
     if is_coroutine_function(func):
         return func
     else:
-        return asyncio.coroutine(func)
+
+        @wraps(func)
+        async def _wrapper(*args: Any, **kwargs: Any) -> Any:
+            return func(*args, **kwargs)
+
+        _wrapper._quart_async_wrapper = True  # type: ignore
+        return _wrapper
 
 
 Quart.ensure_async = new_ensure_async  # type: ignore

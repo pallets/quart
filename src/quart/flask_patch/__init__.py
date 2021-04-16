@@ -18,7 +18,6 @@ from flask.ctx import (  # noqa: E402
     has_app_context,
     has_request_context,
 )
-from flask.exceptions import abort  # noqa: E402
 from flask.globals import (  # noqa: E402
     _app_ctx_stack,
     _request_ctx_stack,
@@ -32,6 +31,9 @@ from flask.helpers import (  # noqa: E402
     get_flashed_messages,
     get_template_attribute,
     make_response,
+    safe_join,
+    send_file,
+    send_from_directory,
     stream_with_context,
     url_for,
 )
@@ -49,12 +51,12 @@ from flask.signals import (  # noqa: E402
     signals_available,
     template_rendered,
 )
-from flask.static import safe_join, send_file, send_from_directory  # noqa: E402
 from flask.templating import render_template, render_template_string  # noqa: E402
 from flask.typing import ResponseReturnValue  # noqa: E402
 from flask.utils import redirect  # noqa: E402
 from flask.wrappers import Request, Response  # noqa: E402
 from jinja2 import escape, Markup  # noqa: E402
+from werkzeug.exceptions import abort  # noqa: E402
 
 __all__ = (
     "_app_ctx_stack",
