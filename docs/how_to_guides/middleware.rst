@@ -36,10 +36,23 @@ the presence of a header,
                 'more_body': False,
             })
 
-    quart_app.asgi_app = RejectMiddleware(quart_app.asgi_app)
+Whilst middlware can always be used as a wrapper around the app
+instance, it is best to assign to and wrap the ``asgi_app`` attribute,
 
-This can then be extended and used with any ASGI Middleware and served
-with any ASGI server.
+.. code-block:: python
+
+    quart_app.asgi_app = RejectMiddleware(quart_app.asgi_ap)
+
+as this ensures that the middleware is applied in any test code.
+
+You can combine multiple middlware warppers,
+
+.. code-block:: python
+
+    quart_app.asgi_app = RejectMiddleware(quart_app.asgi_app)
+    quart_app.asgi_app = AdditionalMiddleware(quart_app.asgi_app)
+
+and use any ASGI middleware.
 
 .. warning::
 
