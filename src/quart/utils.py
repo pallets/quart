@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import asyncio
-import functools
 import inspect
 import sys
 from contextvars import copy_context
 from functools import partial, wraps
-from inspect import isgenerator
 from os import PathLike
 from pathlib import Path
 from typing import (
@@ -68,7 +66,7 @@ def run_sync(func: Callable[..., Any]) -> Callable[..., Coroutine[Any, None, Non
         result = await loop.run_in_executor(
             None, copy_context().run, partial(func, *args, **kwargs)
         )
-        if isgenerator(result):
+        if inspect.isgenerator(result):
             return run_sync_iterable(result)  # type: ignore
         else:
             return result
@@ -122,7 +120,7 @@ def is_coroutine_function(func: Any) -> bool:
 
         while inspect.ismethod(func):
             func = func.__func__
-        while isinstance(func, functools.partial):
+        while isinstance(func, partial):
             func = func.func
         if not inspect.isfunction(func):
             return False
