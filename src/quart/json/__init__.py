@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import asdict, is_dataclass
 from datetime import date
 from email.utils import formatdate
 from time import mktime
@@ -107,6 +108,8 @@ class JSONEncoder(json.JSONEncoder):
             return formatdate(timeval=mktime((object_.timetuple())), localtime=False, usegmt=True)
         if isinstance(object_, UUID):
             return str(object_)
+        if is_dataclass(object_):
+            return asdict(object_)
         if hasattr(object_, "__html__"):
             return str(object_.__html__())
         return super().default(object_)

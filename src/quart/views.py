@@ -52,7 +52,7 @@ class View:
 
     @classmethod
     def as_view(cls, name: str, *class_args: Any, **class_kwargs: Any) -> Callable:
-        async def view(*args: Any, **kwargs: Any) -> Callable:
+        async def view(*args: Any, **kwargs: Any) -> ResponseReturnValue:
             self = view.view_class(*class_args, **class_kwargs)  # type: ignore
             return await self.dispatch_request(*args, **kwargs)
 

@@ -4,9 +4,10 @@ import hashlib
 from collections.abc import MutableMapping
 from datetime import datetime
 from functools import wraps
-from typing import Any, Callable, Optional, TYPE_CHECKING
+from typing import Any, Callable, Optional, TYPE_CHECKING, Union
 
 from itsdangerous import BadSignature, URLSafeTimedSerializer
+from werkzeug.wrappers import Response as WerkzeugResponse
 
 from .json.tag import TaggedJSONSerializer
 from .wrappers import BaseRequestWebsocket, Response
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
     from .app import Quart  # noqa
 
 
-class SessionMixin:
+class SessionMixin(MutableMapping):
     """Use to extend a dict with Session attributes.
 
     The attributes add standard and expected Session modification flags.
@@ -34,11 +35,11 @@ class SessionMixin:
 
     @property
     def permanent(self) -> bool:
-        return self.get("_permanent", False)  # type: ignore
+        return self.get("_permanent", False)
 
     @permanent.setter
     def permanent(self, value: bool) -> None:
-        self["_permanent"] = value  # type: ignore
+        self["_permanent"] = value
 
 
 def _wrap_modified(method: Callable) -> Callable:
@@ -60,13 +61,7 @@ def _wrap_accessed(method: Callable) -> Callable:
     return wrapper
 
 
-class Session(MutableMapping):
-    """An abstract base class for Sessions."""
-
-    pass
-
-
-class SecureCookieSession(SessionMixin, dict, Session):
+class SecureCookieSession(dict, SessionMixin):
     """A session implementation using cookies.
 
     Note that the intention is for this session to use cookies, this
@@ -98,7 +93,7 @@ def _wrap_no_modification(method: Callable) -> Callable:
     return wrapper
 
 
-class NullSession(Session, dict):
+class NullSession(SecureCookieSession):
     """A session implementation for sessions without storage."""
 
     __delitem__ = _wrap_no_modification(dict.__delitem__)
@@ -181,7 +176,9 @@ class SessionInterface:
         save_each = app.config["SESSION_REFRESH_EACH_REQUEST"]
         return save_each and session.permanent
 
-    async def open_session(self, app: "Quart", request: BaseRequestWebsocket) -> Optional[Session]:
+    async def open_session(
+        self, app: "Quart", request: BaseRequestWebsocket
+    ) -> Optional[SessionMixin]:
         """Open an existing session from the request or create one.
 
         Returns:
@@ -191,7 +188,9 @@ class SessionInterface:
         """
         raise NotImplementedError()
 
-    async def save_session(self, app: "Quart", session: Session, response: Response) -> Response:
+    async def save_session(
+        self, app: "Quart", session: SessionMixin, response: Union[Response, WerkzeugResponse]
+    ) -> None:
         """Save the session argument to the response.
 
         Returns:
@@ -247,8 +246,11 @@ class SecureCookieSessionInterface(SessionInterface):
         except BadSignature:
             return self.session_class()
 
-    async def save_session(  # type: ignore
-        self, app: "Quart", session: SecureCookieSession, response: Response
+    async def save_session(
+        self,
+        app: "Quart",
+        session: SessionMixin,
+        response: Union[Response, WerkzeugResponse],
     ) -> None:
         """Saves the session to the response in a secure cookie."""
         domain = self.get_cookie_domain(app)

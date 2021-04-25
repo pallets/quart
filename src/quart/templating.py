@@ -88,7 +88,7 @@ async def render_template(template_name_or_list: Union[str, List[str]], **contex
     """
     await current_app.update_template_context(context)
     template = current_app.jinja_env.get_or_select_template(template_name_or_list)
-    return await _render(template, context)
+    return await _render(template, context, current_app._get_current_object())  # type: ignore
 
 
 async def render_template_string(source: str, **context: Any) -> str:
@@ -100,11 +100,10 @@ async def render_template_string(source: str, **context: Any) -> str:
     """
     await current_app.update_template_context(context)
     template = current_app.jinja_env.from_string(source)
-    return await _render(template, context)
+    return await _render(template, context, current_app._get_current_object())  # type: ignore
 
 
-async def _render(template: Template, context: dict) -> str:
-    app = current_app._get_current_object()  # type: ignore
+async def _render(template: Template, context: dict, app: "Quart") -> str:
     await before_render_template.send(app, template=template, context=context)
     rendered_template = await template.render_async(context)
     await template_rendered.send(app, template=template, context=context)

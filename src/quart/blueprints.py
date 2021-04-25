@@ -4,7 +4,23 @@ from collections import defaultdict
 from functools import update_wrapper
 from typing import Any, Callable, Iterable, List, Optional, Type, TYPE_CHECKING, Union
 
-from .scaffold import Scaffold
+from .scaffold import _endpoint_from_view_func, Scaffold
+from .typing import (
+    AfterRequestCallable,
+    AfterServingCallable,
+    AfterWebsocketCallable,
+    BeforeRequestCallable,
+    BeforeServingCallable,
+    BeforeWebsocketCallable,
+    ErrorHandlerCallable,
+    TeardownCallable,
+    TemplateContextProcessorCallable,
+    TemplateFilterCallable,
+    TemplateGlobalCallable,
+    TemplateTestCallable,
+    URLDefaultCallable,
+    URLValuePreprocessorCallable,
+)
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa
@@ -83,7 +99,7 @@ class Blueprint(Scaffold):
             blueprint = Blueprint(__name__)
             blueprint.add_url_rule('/', route)
         """
-        endpoint = endpoint or view_func.__name__
+        endpoint = endpoint or _endpoint_from_view_func(view_func)
         if "." in endpoint:
             raise ValueError("Blueprint endpoints should not contain periods")
         self.record(
@@ -101,81 +117,6 @@ class Blueprint(Scaffold):
             )
         )
 
-    def websocket(
-        self,
-        rule: str,
-        endpoint: Optional[str] = None,
-        defaults: Optional[dict] = None,
-        host: Optional[str] = None,
-        subdomain: Optional[str] = None,
-        *,
-        strict_slashes: Optional[bool] = None,
-    ) -> Callable:
-        """Add a websocket to the blueprint.
-
-        This is designed to be used as a decorator, and has the same arguments
-        as :meth:`~quart.Quart.websocket`. An example usage,
-
-        .. code-block:: python
-
-            blueprint = Blueprint(__name__)
-            @blueprint.websocket('/')
-            async def route():
-                ...
-        """
-
-        def decorator(func: Callable) -> Callable:
-            self.add_websocket(
-                rule,
-                endpoint,
-                func,
-                defaults=defaults,
-                host=host,
-                subdomain=subdomain,
-                strict_slashes=strict_slashes,
-            )
-            return func
-
-        return decorator
-
-    def add_websocket(
-        self,
-        rule: str,
-        endpoint: Optional[str] = None,
-        view_func: Optional[Callable] = None,
-        defaults: Optional[dict] = None,
-        host: Optional[str] = None,
-        subdomain: Optional[str] = None,
-        *,
-        strict_slashes: Optional[bool] = None,
-    ) -> None:
-        """Add a websocket rule to the blueprint.
-
-        This is designed to be used on the blueprint directly, and
-        has the same arguments as
-        :meth:`~quart.Quart.add_websocket`. An example usage,
-
-        .. code-block:: python
-
-            def route():
-                ...
-
-            blueprint = Blueprint(__name__)
-            blueprint.add_websocket('/', route)
-        """
-        return self.add_url_rule(
-            rule,
-            endpoint,
-            view_func,
-            methods={"GET"},
-            defaults=defaults,
-            host=host,
-            subdomain=subdomain,
-            provide_automatic_options=False,
-            is_websocket=True,
-            strict_slashes=strict_slashes,
-        )
-
     def app_template_filter(self, name: Optional[str] = None) -> Callable:
         """Add an application wide template filter.
 
@@ -190,13 +131,15 @@ class Blueprint(Scaffold):
                 ...
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: TemplateFilterCallable) -> TemplateFilterCallable:
             self.add_app_template_filter(func, name=name)
             return func
 
         return decorator
 
-    def add_app_template_filter(self, func: Callable, name: Optional[str] = None) -> None:
+    def add_app_template_filter(
+        self, func: TemplateFilterCallable, name: Optional[str] = None
+    ) -> None:
         """Add an application wide template filter.
 
         This is designed to be used on the blueprint directly, and
@@ -227,13 +170,13 @@ class Blueprint(Scaffold):
                 ...
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: TemplateTestCallable) -> TemplateTestCallable:
             self.add_app_template_test(func, name=name)
             return func
 
         return decorator
 
-    def add_app_template_test(self, func: Callable, name: Optional[str] = None) -> None:
+    def add_app_template_test(self, func: TemplateTestCallable, name: Optional[str] = None) -> None:
         """Add an application wide template test.
 
         This is designed to be used on the blueprint directly, and
@@ -264,13 +207,15 @@ class Blueprint(Scaffold):
                 ...
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: TemplateGlobalCallable) -> TemplateGlobalCallable:
             self.add_app_template_global(func, name=name)
             return func
 
         return decorator
 
-    def add_app_template_global(self, func: Callable, name: Optional[str] = None) -> None:
+    def add_app_template_global(
+        self, func: TemplateGlobalCallable, name: Optional[str] = None
+    ) -> None:
         """Add an application wide template global.
 
         This is designed to be used on the blueprint directly, and
@@ -287,7 +232,7 @@ class Blueprint(Scaffold):
         """
         self.record_once(lambda state: state.register_template_global(func, name))
 
-    def before_app_request(self, func: Callable) -> Callable:
+    def before_app_request(self, func: BeforeRequestCallable) -> BeforeRequestCallable:
         """Add a before request function to the app.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -304,7 +249,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.before_request(func))
         return func
 
-    def before_app_websocket(self, func: Callable) -> Callable:
+    def before_app_websocket(self, func: BeforeWebsocketCallable) -> BeforeWebsocketCallable:
         """Add a before websocket to the App.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -322,7 +267,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.before_websocket(func))
         return func
 
-    def before_app_serving(self, func: Callable) -> Callable:
+    def before_app_serving(self, func: BeforeServingCallable) -> BeforeServingCallable:
         """Add a before serving to the App.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -339,7 +284,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.before_serving(func))
         return func
 
-    def before_app_first_request(self, func: Callable) -> Callable:
+    def before_app_first_request(self, func: BeforeRequestCallable) -> BeforeRequestCallable:
         """Add a before request first function to the app.
 
         This is designed to be used as a decorator, and has the same
@@ -358,7 +303,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.before_first_request(func))
         return func
 
-    def after_app_request(self, func: Callable) -> Callable:
+    def after_app_request(self, func: AfterRequestCallable) -> AfterRequestCallable:
         """Add a after request function to the app.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -375,7 +320,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.after_request(func))
         return func
 
-    def after_app_websocket(self, func: Callable) -> Callable:
+    def after_app_websocket(self, func: AfterWebsocketCallable) -> AfterWebsocketCallable:
         """Add an after websocket function to the App.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -392,7 +337,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.after_websocket(func))
         return func
 
-    def after_app_serving(self, func: Callable) -> Callable:
+    def after_app_serving(self, func: AfterServingCallable) -> AfterServingCallable:
         """Add an after serving function to the App.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -408,7 +353,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.after_websocket(func))
         return func
 
-    def teardown_app_request(self, func: Callable) -> Callable:
+    def teardown_app_request(self, func: TeardownCallable) -> TeardownCallable:
         """Add a teardown request function to the app.
 
         This is designed to be used as a decorator, and has the same
@@ -426,7 +371,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.teardown_request(func))
         return func
 
-    def teardown_app_websocket(self, func: Callable) -> Callable:
+    def teardown_app_websocket(self, func: TeardownCallable) -> TeardownCallable:
         """Add a teardown websocket function to the app.
 
         This is designed to be used as a decorator, and has the same
@@ -459,13 +404,15 @@ class Blueprint(Scaffold):
                 ...
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: ErrorHandlerCallable) -> ErrorHandlerCallable:
             self.record_once(lambda state: state.app.register_error_handler(error, func))
             return func
 
         return decorator
 
-    def app_context_processor(self, func: Callable) -> Callable:
+    def app_context_processor(
+        self, func: TemplateContextProcessorCallable
+    ) -> TemplateContextProcessorCallable:
         """Add a context processor function to the app.
 
         This is designed to be used as a decorator, and has the same
@@ -482,7 +429,9 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.context_processor(func))
         return func
 
-    def app_url_value_preprocessor(self, func: Callable) -> Callable:
+    def app_url_value_preprocessor(
+        self, func: URLValuePreprocessorCallable
+    ) -> URLValuePreprocessorCallable:
         """Add a url value preprocessor.
 
         This is designed to be used as a decorator, and has the same
@@ -501,7 +450,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.url_value_preprocessor(func))
         return func
 
-    def app_url_defaults(self, func: Callable) -> Callable:
+    def app_url_defaults(self, func: URLDefaultCallable) -> URLDefaultCallable:
         """Add a url default preprocessor.
 
         This is designed to be used as a decorator, and has the same
@@ -530,7 +479,7 @@ class Blueprint(Scaffold):
             if state.first_registration:
                 func(state)
 
-        self.record(update_wrapper(wrapper, func))
+        return self.record(update_wrapper(wrapper, func))
 
     def register(self, app: "Quart", options: dict, first_registration: bool = False) -> None:
         """Register this blueprint on the app given.
@@ -699,7 +648,7 @@ class BlueprintSetupState:
             strict_slashes=strict_slashes,
         )
 
-    def register_template_filter(self, func: Callable, name: Optional[str]) -> None:
+    def register_template_filter(self, func: TemplateFilterCallable, name: Optional[str]) -> None:
         self.app.add_template_filter(func, name)
 
     def register_template_test(self, func: Callable, name: Optional[str]) -> None:

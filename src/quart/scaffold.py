@@ -124,7 +124,7 @@ class Scaffold:
         self.error_handler_spec: Dict[
             AppOrBlueprintKey,
             Dict[Optional[int], Dict[Type[Exception], ErrorHandlerCallable]],
-        ] = defaultdict(dict)
+        ] = defaultdict(lambda: defaultdict(dict))
 
         # Called after a HTTP request has been handled, even if the
         # handling results in an exception.
@@ -194,8 +194,10 @@ class Scaffold:
     def has_static_folder(self) -> bool:
         return self.static_folder is not None
 
-    def get_send_file_max_age(self, filename: str) -> int:
-        return int(current_app.send_file_max_age_default.total_seconds())
+    def get_send_file_max_age(self, filename: str) -> Optional[int]:
+        if current_app.send_file_max_age_default is not None:
+            return int(current_app.send_file_max_age_default.total_seconds())
+        return None
 
     async def send_static_file(self, filename: str) -> Response:
         if not self.has_static_folder:
@@ -373,6 +375,123 @@ class Scaffold:
                 as part of the path variable).
         """
         raise NotImplementedError()
+
+    def websocket(
+        self,
+        rule: str,
+        endpoint: Optional[str] = None,
+        defaults: Optional[dict] = None,
+        host: Optional[str] = None,
+        subdomain: Optional[str] = None,
+        *,
+        strict_slashes: Optional[bool] = None,
+    ) -> Callable:
+        """Add a websocket to the application.
+
+        This is designed to be used as a decorator, if used to
+        decorate a synchronous function, the function will be wrapped
+        in :func:`~quart.utils.run_sync` and run in a thread executor
+        (with the wrapped function returned). An example usage,
+
+        .. code-block:: python
+
+            @app.websocket('/')
+            async def websocket_route():
+                ...
+
+        Arguments:
+            rule: The path to route on, should start with a ``/``.
+            endpoint: Optional endpoint name, if not present the
+                function name is used.
+            defaults: A dictionary of variables to provide automatically, use
+                to provide a simpler default path for a route, e.g. to allow
+                for ``/book`` rather than ``/book/0``,
+
+                .. code-block:: python
+
+                    @app.websocket('/book', defaults={'page': 0})
+                    @app.websocket('/book/<int:page>')
+                    def book(page):
+                        ...
+
+            host: The full host name for this route (should include subdomain
+                if needed) - cannot be used with subdomain.
+            subdomain: A subdomain for this specific route.
+            strict_slashes: Strictly match the trailing slash present in the
+                path. Will redirect a leaf (no slash) to a branch (with slash).
+        """
+
+        def decorator(func: Callable) -> Callable:
+            self.add_websocket(
+                rule,
+                endpoint,
+                func,
+                defaults=defaults,
+                host=host,
+                subdomain=subdomain,
+                strict_slashes=strict_slashes,
+            )
+            return func
+
+        return decorator
+
+    def add_websocket(
+        self,
+        rule: str,
+        endpoint: Optional[str] = None,
+        view_func: Optional[Callable] = None,
+        defaults: Optional[dict] = None,
+        host: Optional[str] = None,
+        subdomain: Optional[str] = None,
+        *,
+        strict_slashes: Optional[bool] = None,
+    ) -> None:
+        """Add a websocket url rule to the application.
+
+        This is designed to be used on the application directly. An
+        example usage,
+
+        .. code-block:: python
+
+            def websocket_route():
+                ...
+
+            app.add_websocket('/', websocket_route)
+
+        Arguments:
+            rule: The path to route on, should start with a ``/``.
+            endpoint: Optional endpoint name, if not present the
+                function name is used.
+            view_func: Callable that returns a response.
+            defaults: A dictionary of variables to provide automatically, use
+                to provide a simpler default path for a route, e.g. to allow
+                for ``/book`` rather than ``/book/0``,
+
+                .. code-block:: python
+
+                    @app.websocket('/book', defaults={'page': 0})
+                    @app.websocket('/book/<int:page>')
+                    def book(page):
+                        ...
+
+            host: The full host name for this route (should include subdomain
+                if needed) - cannot be used with subdomain.
+            subdomain: A subdomain for this specific route.
+            strict_slashes: Strictly match the trailing slash present in the
+                path. Will redirect a leaf (no slash) to a branch (with slash).
+        """
+        return self.add_url_rule(
+            rule,
+            endpoint,
+            view_func,
+            methods={"GET"},
+            defaults=defaults,
+            host=host,
+            subdomain=subdomain,
+            provide_automatic_options=False,
+            is_websocket=True,
+            strict_slashes=strict_slashes,
+        )
 
     @setupmethod
     def endpoint(self, endpoint: str) -> Callable:

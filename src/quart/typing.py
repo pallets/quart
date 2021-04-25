@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     from werkzeug.wrappers import Response as WerkzeugResponse
 
     from .app import Quart
-    from .sessions import Session
+    from .sessions import SessionMixin
     from .wrappers.response import Response  # noqa: F401
 
 FilePath = Union[bytes, str, os.PathLike]
@@ -49,8 +49,8 @@ ResponseValue = Union[
     "WerkzeugResponse",
     AnyStr,
     Dict[str, Any],  # any jsonify-able dict
-    AsyncGenerator[bytes, None],
-    Generator[bytes, None, None],
+    AsyncGenerator[AnyStr, None],
+    Generator[AnyStr, None, None],
 ]
 StatusCode = int
 
@@ -69,17 +69,21 @@ ResponseReturnValue = Union[
     Tuple[ResponseValue, StatusCode, HeadersValue],
 ]
 
-
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
 AfterRequestCallable = Callable[["Response"], Awaitable["Response"]]
+AfterServingCallable = Callable[[], Awaitable[None]]
 AfterWebsocketCallable = Callable[["Response"], Awaitable[Optional["Response"]]]
 BeforeRequestCallable = Callable[[], Awaitable[None]]
+BeforeServingCallable = Callable[[], Awaitable[None]]
 BeforeWebsocketCallable = Callable[[], Awaitable[None]]
-ErrorHandlerCallable = Callable[[Exception], Awaitable[None]]
+ErrorHandlerCallable = Callable[[Exception], Awaitable[ResponseReturnValue]]
 TeardownCallable = Callable[[Optional[BaseException]], Awaitable["Response"]]
 TemplateContextProcessorCallable = Callable[[], Awaitable[Dict[str, Any]]]
+TemplateFilterCallable = Callable[[Any], str]
+TemplateGlobalCallable = Callable[[], Any]
+TemplateTestCallable = Callable[[Any], bool]
 URLDefaultCallable = Callable[[str, dict], None]
-URLValuePreprocessorCallable = Callable[[str, dict], None]
+URLValuePreprocessorCallable = Callable[[Optional[str], Optional[dict]], None]
 
 
 class ASGIHTTPProtocol(Protocol):
@@ -272,7 +276,7 @@ class TestClientProtocol(Protocol):
         json: Any = None,
         root_path: str = "",
         http_version: str = "1.1",
-    ) -> AsyncContextManager[Session]:
+    ) -> AsyncContextManager[SessionMixin]:
         ...
 
     async def __aenter__(self) -> TestClientProtocol:

@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Tuple, Union
+from typing import Any, Callable, Iterable, List, Optional, Tuple, Union
 from urllib.parse import quote
 from zlib import adler32
 
@@ -107,7 +107,7 @@ async def flash(message: str, category: str = "message") -> None:
 
 
 def get_flashed_messages(
-    with_categories: bool = False, category_filter: List[str] = []
+    with_categories: bool = False, category_filter: Iterable[str] = ()
 ) -> Union[List[str], List[Tuple[str, str]]]:
     """Retrieve the flashed messages stored in the session.
 

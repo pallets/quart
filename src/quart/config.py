@@ -24,6 +24,7 @@ DEFAULT_CONFIG = {
     "MAX_COOKIE_SIZE": 4093,
     "PERMANENT_SESSION_LIFETIME": timedelta(days=31),
     "PREFER_SECURE_URLS": False,  # Replaces PREFERRED_URL_SCHEME to allow for WebSocket scheme
+    "PRESERVE_CONTEXT_ON_EXCEPTION": None,
     "PROPAGATE_EXCEPTIONS": None,
     "RESPONSE_TIMEOUT": 60,  # Second
     "SECRET_KEY": None,
@@ -63,17 +64,17 @@ class ConfigAttribute:
         self.key = key
         self.converter = converter
 
-    def __get__(self, instance: object, owner: type = None) -> Any:
+    def __get__(self, instance: Any, owner: Any = None) -> Any:
         if instance is None:
             return self
-        result = instance.config[self.key]  # type: ignore
+        result = instance.config[self.key]
         if self.converter is not None:
             return self.converter(result)
         else:
             return result
 
-    def __set__(self, instance: object, value: Any) -> None:
-        instance.config[self.key] = value  # type: ignore
+    def __set__(self, instance: Any, value: Any) -> None:
+        instance.config[self.key] = value
 
 
 class Config(dict):
@@ -88,7 +89,7 @@ class Config(dict):
         super().__init__(defaults or {})
         self.root_path = file_path_to_path(root_path)
 
-    def from_envvar(self, variable_name: str, silent: bool = False) -> None:
+    def from_envvar(self, variable_name: str, silent: bool = False) -> bool:
         """Load the configuration from a location specified in the environment.
 
         This will load a cfg file using :meth:`from_pyfile` from the
@@ -111,7 +112,7 @@ class Config(dict):
             )
         return self.from_pyfile(value)
 
-    def from_pyfile(self, filename: str, silent: bool = False) -> None:
+    def from_pyfile(self, filename: str, silent: bool = False) -> bool:
         """Load the configuration from a Python cfg or py file.
 
         See Python's ConfigParser docs for details on the cfg format.
@@ -146,6 +147,7 @@ class Config(dict):
         except (FileNotFoundError, IsADirectoryError):
             if not silent:
                 raise
+        return True
 
     def from_object(self, instance: Union[object, str]) -> None:
         """Load the configuration from a Python object.
@@ -199,7 +201,7 @@ class Config(dict):
 
     def from_file(
         self, filename: str, load: Callable[[IO[Any]], Mapping], silent: bool = False
-    ) -> None:
+    ) -> bool:
         """Load the configuration from a data file.
 
         This allows configuration to be loaded as so
@@ -223,10 +225,12 @@ class Config(dict):
         except (FileNotFoundError, IsADirectoryError):
             if not silent:
                 raise
+            else:
+                return False
         else:
-            self.from_mapping(data)
+            return self.from_mapping(data)
 
-    def from_mapping(self, mapping: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> None:
+    def from_mapping(self, mapping: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> bool:
         """Load the configuration values from a mapping.
 
         This allows either a mapping to be directly passed or as
@@ -250,6 +254,7 @@ class Config(dict):
         for key, value in mappings.items():
             if key.isupper():
                 self[key] = value
+        return True
 
     def get_namespace(
         self, namespace: str, lowercase: bool = True, trim_namespace: bool = True
@@ -284,3 +289,6 @@ class Config(dict):
                     new_key = new_key.lower()
                 config[new_key] = value
         return config
+
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} {dict.__repr__(self)}>"

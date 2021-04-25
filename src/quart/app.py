@@ -22,6 +22,7 @@ from typing import (
     IO,
     Iterable,
     List,
+    NoReturn,
     Optional,
     Set,
     Tuple,
@@ -35,7 +36,7 @@ from hypercorn.config import Config as HyperConfig
 from hypercorn.typing import ASGIReceiveCallable, ASGISendCallable, Scope
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import HTTPException, InternalServerError
-from werkzeug.routing import MapAdapter
+from werkzeug.routing import MapAdapter, RoutingException
 from werkzeug.wrappers import Response as WerkzeugResponse
 
 from .asgi import ASGIHTTPConnection, ASGILifespan, ASGIWebsocketConnection
@@ -57,7 +58,7 @@ from .json import JSONDecoder, JSONEncoder, jsonify, tojson_filter
 from .logging import create_logger, create_serving_logger
 from .routing import QuartMap, QuartRule
 from .scaffold import _endpoint_from_view_func, Scaffold
-from .sessions import SecureCookieSession, SecureCookieSessionInterface, Session
+from .sessions import SecureCookieSession, SecureCookieSessionInterface
 from .signals import (
     appcontext_tearing_down,
     got_request_exception,
@@ -84,11 +85,13 @@ from .typing import (
     ASGIHTTPProtocol,
     ASGILifespanProtocol,
     ASGIWebsocketProtocol,
+    BeforeRequestCallable,
     ErrorHandlerCallable,
     FilePath,
     HeadersValue,
     ResponseReturnValue,
     StatusCode,
+    TeardownCallable,
     TestAppProtocol,
     TestClientProtocol,
 )
@@ -198,9 +201,9 @@ class Quart(Scaffold):
         host_matching: bool = False,
         subdomain_matching: bool = False,
         template_folder: Optional[str] = "templates",
-        root_path: Optional[str] = None,
         instance_path: Optional[str] = None,
         instance_relative_config: bool = False,
+        root_path: Optional[str] = None,
     ) -> None:
         """Construct a Quart web application.
 
@@ -240,14 +243,12 @@ class Quart(Scaffold):
         self.config = self.make_config(instance_relative_config)
 
         self.after_serving_funcs: List[Callable[[], Awaitable[None]]] = []
-        self.before_first_request_funcs: List[Callable[[], Awaitable[None]]] = []
+        self.before_first_request_funcs: List[BeforeRequestCallable] = []
         self.before_serving_funcs: List[Callable[[], Awaitable[None]]] = []
         self.blueprints: Dict[str, Blueprint] = OrderedDict()
         self.extensions: Dict[str, Any] = {}
         self.shell_context_processors: List[Callable[[], Dict[str, Any]]] = []
-        self.teardown_appcontext_funcs: List[
-            Callable[[Optional[BaseException]], Awaitable[None]]
-        ] = []
+        self.teardown_appcontext_funcs: List[TeardownCallable] = []
         self.url_build_error_handlers: List[Callable[[Exception, str, dict], str]] = []
         self.url_map = self.url_map_class(host_matching=host_matching)
         self.subdomain_matching = subdomain_matching
@@ -271,6 +272,9 @@ class Quart(Scaffold):
             )
 
         self.template_context_processors[None] = [_default_template_context_processor]
+
+    def _is_setup_finished(self) -> bool:
+        return self.debug and self._got_first_request
 
     @property
     def name(self) -> str:  # type: ignore
@@ -296,6 +300,14 @@ class Quart(Scaffold):
             return propagate
         else:
             return self.debug or self.testing
+
+    @property
+    def preserve_context_on_exception(self) -> bool:
+        preserve = self.config["PRESERVE_CONTEXT_ON_EXCEPTION"]
+        if preserve is not None:
+            return preserve
+        else:
+            return self.debug
 
     @property
     def logger(self) -> Logger:
@@ -326,42 +338,6 @@ class Quart(Scaffold):
         """Return if the app has received a request."""
         return self._got_first_request
 
-    @property
-    def debug(self) -> bool:
-        """Activate debug mode (extra checks, logging and reloading).
-
-        Should/must be False in production.
-        """
-        return self.config["DEBUG"]
-
-    @debug.setter
-    def debug(self, value: bool) -> None:
-        self.config["DEBUG"] = value
-        self.jinja_env.auto_reload = self.templates_auto_reload
-
-    @property
-    def templates_auto_reload(self) -> bool:
-        """Returns True if templates should auto reload."""
-        result = self.config["TEMPLATES_AUTO_RELOAD"]
-        if result is None:
-            return self.debug
-        else:
-            return result
-
-    @templates_auto_reload.setter
-    def templates_auto_reload(self, value: Optional[bool]) -> None:
-        self.config["TEMPLATES_AUTO_RELOAD"] = value
-
-    def _is_setup_finished(self) -> bool:
-        return self.debug and self._got_first_request
-
-    def auto_find_instance_path(self) -> Path:
-        """Locates the instance_path if it was not provided"""
-        prefix, package_path = find_package(self.import_name)
-        if prefix is None:
-            return package_path / "instance"
-        return prefix / "var" / f"{self.name}-instance"
-
     def make_config(self, instance_relative: bool = False) -> Config:
         """Create and return the configuration with appropriate defaults."""
         config = self.config_class(
@@ -370,6 +346,13 @@ class Quart(Scaffold):
         config["ENV"] = get_env()
         config["DEBUG"] = get_debug_flag()
         return config
+
+    def auto_find_instance_path(self) -> Path:
+        """Locates the instance_path if it was not provided"""
+        prefix, package_path = find_package(self.import_name)
+        if prefix is None:
+            return package_path / "instance"
+        return prefix / "var" / f"{self.name}-instance"
 
     def open_instance_resource(self, path: FilePath, mode: str = "rb") -> IO[AnyStr]:
         """Open a file for reading.
@@ -383,23 +366,18 @@ class Quart(Scaffold):
         """
         return open(self.instance_path / file_path_to_path(path), mode)
 
-    def create_url_adapter(self, request: Optional[BaseRequestWebsocket]) -> Optional[MapAdapter]:
-        """Create and return a URL adapter.
+    @property
+    def templates_auto_reload(self) -> bool:
+        """Returns True if templates should auto reload."""
+        result = self.config["TEMPLATES_AUTO_RELOAD"]
+        if result is None:
+            return self.debug
+        else:
+            return result
 
-        This will create the adapter based on the request if present
-        otherwise the app configuration.
-        """
-        if request is not None:
-            subdomain = (
-                (self.url_map.default_subdomain or None) if not self.subdomain_matching else None
-            )
-
-            return self.url_map.bind_to_request(request, subdomain, self.config["SERVER_NAME"])
-
-        if self.config["SERVER_NAME"] is not None:
-            scheme = "https" if self.config["PREFER_SECURE_URLS"] else "http"
-            return self.url_map.bind(self.config["SERVER_NAME"], url_scheme=scheme)
-        return None
+    @templates_auto_reload.setter
+    def templates_auto_reload(self, value: Optional[bool]) -> None:
+        self.config["TEMPLATES_AUTO_RELOAD"] = value
 
     def create_jinja_environment(self) -> Environment:
         """Create and return the jinja environment.
@@ -470,6 +448,72 @@ class Quart(Scaffold):
         for processor in self.shell_context_processors:
             context.update(processor())
         return context
+
+    @property
+    def debug(self) -> bool:
+        """Activate debug mode (extra checks, logging and reloading).
+
+        Should/must be False in production.
+        """
+        return self.config["DEBUG"]
+
+    @debug.setter
+    def debug(self, value: bool) -> None:
+        self.config["DEBUG"] = value
+        self.jinja_env.auto_reload = self.templates_auto_reload
+
+    def test_client(self, use_cookies: bool = True) -> TestClientProtocol:
+        """Creates and returns a test client."""
+        return self.test_client_class(self, use_cookies=use_cookies)
+
+    def test_cli_runner(self, **kwargs: Any) -> QuartCliRunner:
+        """Creates and returns a CLI test runner."""
+        return self.test_cli_runner_class(self, **kwargs)
+
+    def register_blueprint(
+        self,
+        blueprint: Blueprint,
+        *,
+        url_prefix: Optional[str] = None,
+        url_defaults: Dict[str, Any] = None,
+        subdomain: Optional[str] = None,
+        **options: Any,
+    ) -> None:
+        """Register a blueprint on the app.
+
+        This results in the blueprint's routes, error handlers
+        etc... being added to the app.
+
+        Arguments:
+            blueprint: The blueprint to register.
+            url_prefix: Optional prefix to apply to all paths.
+            url_defaults: Blueprint routes will use these default values for view arguments.
+            subdomain: Blueprint routes will match on this subdomain.
+        """
+        first_registration = False
+        if blueprint.name in self.blueprints:
+            if self.blueprints[blueprint.name] is not blueprint:
+                raise RuntimeError(
+                    f"Blueprint name '{blueprint.name}' "
+                    f"is already registered by {self.blueprints[blueprint.name]}. "
+                    "Blueprints must have unique names"
+                )
+        else:
+            self.blueprints[blueprint.name] = blueprint
+            first_registration = True
+
+        blueprint.register(
+            app=self,
+            options={
+                **dict(url_prefix=url_prefix, url_defaults=url_defaults, subdomain=subdomain),
+                **options,
+            },
+            first_registration=first_registration,
+        )
+
+    def iter_blueprints(self) -> ValuesView[Blueprint]:
+        """Return a iterator over the blueprints."""
+        return self.blueprints.values()
 
     def add_url_rule(
         self,
@@ -568,123 +612,6 @@ class Quart(Scaffold):
                 raise AssertionError(f"Handler is overwriting existing for endpoint {endpoint}")
 
             self.view_functions[endpoint] = handler
-
-    def websocket(
-        self,
-        rule: str,
-        endpoint: Optional[str] = None,
-        defaults: Optional[dict] = None,
-        host: Optional[str] = None,
-        subdomain: Optional[str] = None,
-        *,
-        strict_slashes: Optional[bool] = None,
-    ) -> Callable:
-        """Add a websocket to the application.
-
-        This is designed to be used as a decorator, if used to
-        decorate a synchronous function, the function will be wrapped
-        in :func:`~quart.utils.run_sync` and run in a thread executor
-        (with the wrapped function returned). An example usage,
-
-        .. code-block:: python
-
-            @app.websocket('/')
-            async def websocket_route():
-                ...
-
-        Arguments:
-            rule: The path to route on, should start with a ``/``.
-            endpoint: Optional endpoint name, if not present the
-                function name is used.
-            defaults: A dictionary of variables to provide automatically, use
-                to provide a simpler default path for a route, e.g. to allow
-                for ``/book`` rather than ``/book/0``,
-
-                .. code-block:: python
-
-                    @app.websocket('/book', defaults={'page': 0})
-                    @app.websocket('/book/<int:page>')
-                    def book(page):
-                        ...
-
-            host: The full host name for this route (should include subdomain
-                if needed) - cannot be used with subdomain.
-            subdomain: A subdomain for this specific route.
-            strict_slashes: Strictly match the trailing slash present in the
-                path. Will redirect a leaf (no slash) to a branch (with slash).
-        """
-
-        def decorator(func: Callable) -> Callable:
-            self.add_websocket(
-                rule,
-                endpoint,
-                func,
-                defaults=defaults,
-                host=host,
-                subdomain=subdomain,
-                strict_slashes=strict_slashes,
-            )
-            return func
-
-        return decorator
-
-    def add_websocket(
-        self,
-        rule: str,
-        endpoint: Optional[str] = None,
-        view_func: Optional[Callable] = None,
-        defaults: Optional[dict] = None,
-        host: Optional[str] = None,
-        subdomain: Optional[str] = None,
-        *,
-        strict_slashes: Optional[bool] = None,
-    ) -> None:
-        """Add a websocket url rule to the application.
-
-        This is designed to be used on the application directly. An
-        example usage,
-
-        .. code-block:: python
-
-            def websocket_route():
-                ...
-
-            app.add_websocket('/', websocket_route)
-
-        Arguments:
-            rule: The path to route on, should start with a ``/``.
-            endpoint: Optional endpoint name, if not present the
-                function name is used.
-            view_func: Callable that returns a response.
-            defaults: A dictionary of variables to provide automatically, use
-                to provide a simpler default path for a route, e.g. to allow
-                for ``/book`` rather than ``/book/0``,
-
-                .. code-block:: python
-
-                    @app.websocket('/book', defaults={'page': 0})
-                    @app.websocket('/book/<int:page>')
-                    def book(page):
-                        ...
-
-            host: The full host name for this route (should include subdomain
-                if needed) - cannot be used with subdomain.
-            subdomain: A subdomain for this specific route.
-            strict_slashes: Strictly match the trailing slash present in the
-                path. Will redirect a leaf (no slash) to a branch (with slash).
-        """
-        return self.add_url_rule(
-            rule,
-            endpoint,
-            view_func,
-            methods={"GET"},
-            defaults=defaults,
-            host=host,
-            subdomain=subdomain,
-            provide_automatic_options=False,
-            is_websocket=True,
-            strict_slashes=strict_slashes,
-        )
 
     def template_filter(self, name: Optional[str] = None) -> Callable:
         """Add a template filter.
@@ -806,177 +733,6 @@ class Quart(Scaffold):
         """
         self.jinja_env.globals[name or func.__name__] = func
 
-    def shell_context_processor(self, func: Callable[[], None]) -> Callable:
-        """Add a shell context processor.
-
-        This is designed to be used as a decorator. An example usage,
-
-        .. code-block:: python
-
-            @app.shell_context_processor
-            def additional_context():
-                return context
-
-        """
-        self.shell_context_processors.append(func)
-        return func
-
-    def inject_url_defaults(self, endpoint: str, values: dict) -> None:
-        """Injects default URL values into the passed values dict.
-
-        This is used to assist when building urls, see
-        :func:`~quart.helpers.url_for`.
-        """
-        functions = self.url_default_functions[None]
-        if "." in endpoint:
-            blueprint = endpoint.rsplit(".", 1)[0]
-            functions = chain(functions, self.url_default_functions[blueprint])  # type: ignore
-
-        for function in functions:
-            function(endpoint, values)
-
-    def handle_url_build_error(self, error: Exception, endpoint: str, values: dict) -> str:
-        """Handle a build error.
-
-        Ideally this will return a valid url given the error endpoint
-        and values.
-        """
-        for handler in self.url_build_error_handlers:
-            result = handler(error, endpoint, values)
-            if result is not None:
-                return result
-        raise error
-
-    def _find_error_handler(self, error: Exception) -> Optional[ErrorHandlerCallable]:
-        error_type, code = self._get_error_type_and_code(type(error))
-
-        if _request_ctx_stack.top is not None:
-            blueprint = _request_ctx_stack.top.request.blueprint
-        elif _websocket_ctx_stack.top is not None:
-            blueprint = _websocket_ctx_stack.top.websocket.blueprint
-        else:
-            blueprint = None
-
-        for name, code in (
-            (blueprint, code),
-            (None, code),
-            (blueprint, None),
-            (None, None),
-        ):
-            handlers = self.error_handler_spec[name].get(code)
-
-            if handlers is None:
-                continue
-
-            for cls in error_type.__mro__:
-                handler = handlers.get(cls)
-
-                if handler is not None:
-                    return handler
-        return None
-
-    async def handle_http_exception(
-        self, error: HTTPException
-    ) -> Union[Response, WerkzeugResponse]:
-        """Handle a HTTPException subclass error.
-
-        This will attempt to find a handler for the error and if fails
-        will fall back to the error response.
-        """
-        handler = self._find_error_handler(error)
-        if handler is None:
-            return error.get_response()  # type: ignore
-        else:
-            return await handler(error)
-
-    def trap_http_exception(self, error: Exception) -> bool:
-        """Check it error is http and should be trapped.
-
-        Trapped errors are not handled by the
-        :meth:`handle_http_exception`, but instead trapped by the
-        outer most (or user handlers). This can be useful when
-        debugging to allow tracebacks to be viewed by the debug page.
-        """
-        return self.config["TRAP_HTTP_EXCEPTIONS"]
-
-    async def handle_user_exception(self, error: Exception) -> Union[Response, WerkzeugResponse]:
-        """Handle an exception that has been raised.
-
-        This should forward :class:`~quart.exception.HTTPException` to
-        :meth:`handle_http_exception`, then attempt to handle the
-        error. If it cannot it should reraise the error.
-        """
-        if isinstance(error, HTTPException) and not self.trap_http_exception(error):
-            return await self.handle_http_exception(error)
-
-        handler = self._find_error_handler(error)
-        if handler is None:
-            raise error
-        return await handler(error)
-
-    async def handle_exception(self, error: Exception) -> Union[Response, WerkzeugResponse]:
-        """Handle an uncaught exception.
-
-        By default this switches the error response to a 500 internal
-        server error.
-        """
-        await got_request_exception.send(self, exception=error)
-
-        self.log_exception(sys.exc_info())
-
-        if self.propagate_exceptions:
-            raise error
-
-        internal_server_error = InternalServerError(original_exception=error)
-        handler = self._find_error_handler(internal_server_error)
-
-        response: Union[Response, WerkzeugResponse, InternalServerError]
-        if handler is not None:
-            response = await handler(internal_server_error)
-        else:
-            response = internal_server_error
-
-        return await self.finalize_request(response, from_error_handler=True)
-
-    async def handle_websocket_exception(
-        self, error: Exception
-    ) -> Optional[Union[Response, WerkzeugResponse]]:
-        """Handle an uncaught exception.
-
-        By default this logs the exception and then re-raises it.
-        """
-        await got_websocket_exception.send(self, exception=error)
-
-        self.log_exception(sys.exc_info())
-
-        if self.propagate_exceptions:
-            raise error
-
-        internal_server_error = InternalServerError(original_exception=error)
-        handler = self._find_error_handler(internal_server_error)
-
-        response: Union[Response, WerkzeugResponse, InternalServerError]
-        if handler is not None:
-            response = await handler(internal_server_error)
-        else:
-            response = internal_server_error
-
-        return await self.finalize_websocket(response, from_error_handler=True)
-
-    def log_exception(self, exception_info: Tuple[type, BaseException, TracebackType]) -> None:
-        """Log a exception to the :attr:`logger`.
-
-        By default this is only invoked for unhandled exceptions.
-        """
-        if has_request_context():
-            request_ = _request_ctx_stack.top.request
-            self.logger.error(
-                f"Exception on request {request_.method} {request_.path}", exc_info=exception_info
-            )
-        if has_websocket_context():
-            websocket_ = _websocket_ctx_stack.top.websocket
-            self.logger.error(f"Exception on websocket {websocket_.path}", exc_info=exception_info)
-
     def before_first_request(
         self, func: Union[Callable[[], None], Callable[[], Awaitable[None]]]
     ) -> Callable[[], Awaitable[None]]:
@@ -1052,6 +808,209 @@ class Quart(Scaffold):
         self.after_serving_funcs.append(handler)
         return handler
 
+    def create_url_adapter(self, request: Optional[BaseRequestWebsocket]) -> Optional[MapAdapter]:
+        """Create and return a URL adapter.
+
+        This will create the adapter based on the request if present
+        otherwise the app configuration.
+        """
+        if request is not None:
+            subdomain = (
+                (self.url_map.default_subdomain or None) if not self.subdomain_matching else None
+            )
+
+            return self.url_map.bind_to_request(request, subdomain, self.config["SERVER_NAME"])
+
+        if self.config["SERVER_NAME"] is not None:
+            scheme = "https" if self.config["PREFER_SECURE_URLS"] else "http"
+            return self.url_map.bind(self.config["SERVER_NAME"], url_scheme=scheme)
+        return None
+
+    def shell_context_processor(self, func: Callable[[], None]) -> Callable:
+        """Add a shell context processor.
+
+        This is designed to be used as a decorator. An example usage,
+
+        .. code-block:: python
+
+            @app.shell_context_processor
+            def additional_context():
+                return context
+
+        """
+        self.shell_context_processors.append(func)
+        return func
+
+    def inject_url_defaults(self, endpoint: str, values: dict) -> None:
+        """Injects default URL values into the passed values dict.
+
+        This is used to assist when building urls, see
+        :func:`~quart.helpers.url_for`.
+        """
+        functions = self.url_default_functions[None]
+        if "." in endpoint:
+            blueprint = endpoint.rsplit(".", 1)[0]
+            functions = chain(functions, self.url_default_functions[blueprint])  # type: ignore
+
+        for function in functions:
+            function(endpoint, values)
+
+    def handle_url_build_error(self, error: Exception, endpoint: str, values: dict) -> str:
+        """Handle a build error.
+
+        Ideally this will return a valid url given the error endpoint
+        and values.
+        """
+        for handler in self.url_build_error_handlers:
+            result = handler(error, endpoint, values)
+            if result is not None:
+                return result
+        raise error
+
+    def _find_error_handler(self, error: Exception) -> Optional[ErrorHandlerCallable]:
+        error_type, code = self._get_error_type_and_code(type(error))
+
+        if _request_ctx_stack.top is not None:
+            blueprint = _request_ctx_stack.top.request.blueprint
+        elif _websocket_ctx_stack.top is not None:
+            blueprint = _websocket_ctx_stack.top.websocket.blueprint
+        else:
+            blueprint = None
+
+        for name, code in (
+            (blueprint, code),
+            (None, code),
+            (blueprint, None),
+            (None, None),
+        ):
+            handlers = self.error_handler_spec[name].get(code)
+
+            if handlers is None:
+                continue
+
+            for cls in error_type.__mro__:
+                handler = handlers.get(cls)
+
+                if handler is not None:
+                    return handler
+        return None
+
+    async def handle_http_exception(
+        self, error: HTTPException
+    ) -> Union[HTTPException, ResponseReturnValue]:
+        """Handle a HTTPException subclass error.
+
+        This will attempt to find a handler for the error and if fails
+        will fall back to the error response.
+        """
+        if error.code is None:
+            return error
+
+        if isinstance(error, RoutingException):
+            return error
+
+        handler = self._find_error_handler(error)
+        if handler is None:
+            return error.get_response()
+        else:
+            return await handler(error)
+
+    def trap_http_exception(self, error: Exception) -> bool:
+        """Check it error is http and should be trapped.
+
+        Trapped errors are not handled by the
+        :meth:`handle_http_exception`, but instead trapped by the
+        outer most (or user handlers). This can be useful when
+        debugging to allow tracebacks to be viewed by the debug page.
+        """
+        return self.config["TRAP_HTTP_EXCEPTIONS"]
+
+    async def handle_user_exception(
+        self, error: Exception
+    ) -> Union[HTTPException, ResponseReturnValue]:
+        """Handle an exception that has been raised.
+
+        This should forward :class:`~quart.exception.HTTPException` to
+        :meth:`handle_http_exception`, then attempt to handle the
+        error. If it cannot it should reraise the error.
+        """
+        if isinstance(error, HTTPException) and not self.trap_http_exception(error):
+            return await self.handle_http_exception(error)
+
+        handler = self._find_error_handler(error)
+        if handler is None:
+            raise error
+        return await handler(error)
+
+    async def handle_exception(self, error: Exception) -> Union[Response, WerkzeugResponse]:
+        """Handle an uncaught exception.
+
+        By default this switches the error response to a 500 internal
+        server error.
+        """
+        await got_request_exception.send(self, exception=error)
+
+        self.log_exception(sys.exc_info())
+
+        if self.propagate_exceptions:
+            raise error
+
+        internal_server_error = InternalServerError(original_exception=error)
+        handler = self._find_error_handler(internal_server_error)
+
+        response: Union[Response, WerkzeugResponse, InternalServerError]
+        if handler is not None:
+            response = await handler(internal_server_error)  # type: ignore
+        else:
+            response = internal_server_error
+
+        return await self.finalize_request(response, from_error_handler=True)
+
+    async def handle_websocket_exception(
+        self, error: Exception
+    ) -> Optional[Union[Response, WerkzeugResponse]]:
+        """Handle an uncaught exception.
+
+        By default this logs the exception and then re-raises it.
+        """
+        await got_websocket_exception.send(self, exception=error)
+
+        self.log_exception(sys.exc_info())
+
+        if self.propagate_exceptions:
+            raise error
+
+        internal_server_error = InternalServerError(original_exception=error)
+        handler = self._find_error_handler(internal_server_error)
+
+        response: Union[Response, WerkzeugResponse, InternalServerError]
+        if handler is not None:
+            response = await handler(internal_server_error)  # type: ignore
+        else:
+            response = internal_server_error
+
+        return await self.finalize_websocket(response, from_error_handler=True)
+
+    def log_exception(
+        self,
+        exception_info: Union[Tuple[type, BaseException, TracebackType], Tuple[None, None, None]],
+    ) -> None:
+        """Log a exception to the :attr:`logger`.
+
+        By default this is only invoked for unhandled exceptions.
+        """
+        if has_request_context():
+            request_ = _request_ctx_stack.top.request
+            self.logger.error(
+                f"Exception on request {request_.method} {request_.path}", exc_info=exception_info
+            )
+        if has_websocket_context():
+            websocket_ = _websocket_ctx_stack.top.websocket
+            self.logger.error(f"Exception on websocket {websocket_.path}", exc_info=exception_info)
+
+    def raise_routing_exception(self, request: BaseRequestWebsocket) -> NoReturn:
+        raise request.routing_exception
+
     def teardown_appcontext(
         self,
         func: Union[
@@ -1080,51 +1039,6 @@ class Quart(Scaffold):
         self.teardown_appcontext_funcs.append(handler)
         return handler
 
-    def register_blueprint(
-        self,
-        blueprint: Blueprint,
-        *,
-        url_prefix: Optional[str] = None,
-        url_defaults: Dict[str, Any] = None,
-        subdomain: Optional[str] = None,
-        **options: Any,
-    ) -> None:
-        """Register a blueprint on the app.
-
-        This results in the blueprint's routes, error handlers
-        etc... being added to the app.
-
-        Arguments:
-            blueprint: The blueprint to register.
-            url_prefix: Optional prefix to apply to all paths.
-            url_defaults: Blueprint routes will use these default values for view arguments.
-            subdomain: Blueprint routes will match on this subdomain.
-        """
-        first_registration = False
-        if blueprint.name in self.blueprints:
-            if self.blueprints[blueprint.name] is not blueprint:
-                raise RuntimeError(
-                    f"Blueprint name '{blueprint.name}' "
-                    f"is already registered by {self.blueprints[blueprint.name]}. "
-                    "Blueprints must have unique names"
-                )
-        else:
-            self.blueprints[blueprint.name] = blueprint
-            first_registration = True
-
-        blueprint.register(
-            app=self,
-            options={
-                **dict(url_prefix=url_prefix, url_defaults=url_defaults, subdomain=subdomain),
-                **options,
-            },
-            first_registration=first_registration,
-        )
-
-    def iter_blueprints(self) -> ValuesView[Blueprint]:
-        """Return a iterator over the blueprints."""
-        return self.blueprints.values()
-
     def ensure_async(self, func: Callable[..., Any]) -> Callable[..., Awaitable[Any]]:
         """Ensure that the returned func is async and calls the func.
 
@@ -1138,20 +1052,6 @@ class Quart(Scaffold):
             return func
         else:
             return run_sync(func)
-
-    async def open_session(self, request: BaseRequestWebsocket) -> Session:
-        """Open and return a Session using the request."""
-        return await self.ensure_async(self.session_interface.open_session)(self, request)
-
-    async def make_null_session(self) -> Session:
-        """Create and return a null session."""
-        return await self.ensure_async(self.session_interface.make_null_session)(self)
-
-    async def save_session(
-        self, session: Session, response: Union[Response, WerkzeugResponse]
-    ) -> None:
-        """Saves the session to the response."""
-        await self.ensure_async(self.session_interface.save_session)(self, session, response)
 
     async def do_teardown_request(
         self, exc: Optional[BaseException], request_context: Optional[RequestContext] = None
@@ -1391,14 +1291,6 @@ class Quart(Scaffold):
 
         return serve(self, config, shutdown_trigger=shutdown_trigger)
 
-    def test_cli_runner(self, **kwargs: Any) -> QuartCliRunner:
-        """Creates and returns a CLI test runner."""
-        return self.test_cli_runner_class(self, **kwargs)
-
-    def test_client(self) -> TestClientProtocol:
-        """Creates and returns a test client."""
-        return self.test_client_class(self)
-
     def test_app(self) -> TestAppProtocol:
         return self.test_app_class(self)
 
@@ -1607,7 +1499,7 @@ class Quart(Scaffold):
         """
         request_ = (request_context or _request_ctx_stack.top).request
         if request_.routing_exception is not None:
-            raise request_.routing_exception
+            self.raise_routing_exception(request_)
 
         if request_.method == "OPTIONS" and request_.url_rule.provide_automatic_options:
             return await self.make_default_options_response()
@@ -1662,7 +1554,7 @@ class Quart(Scaffold):
 
         session_ = (request_context or _request_ctx_stack.top).session
         if not self.session_interface.is_null_session(session_):
-            await self.save_session(session_, response)
+            await self.session_interface.save_session(self, session_, response)
         return response
 
     async def handle_websocket(
@@ -1732,7 +1624,7 @@ class Quart(Scaffold):
         """
         websocket_ = (websocket_context or _websocket_ctx_stack.top).websocket
         if websocket_.routing_exception is not None:
-            raise websocket_.routing_exception
+            self.raise_routing_exception(websocket_)
 
         handler = self.view_functions[websocket_.url_rule.endpoint]
         return await handler(**websocket_.view_args)
@@ -1793,7 +1685,7 @@ class Quart(Scaffold):
                     "These modifications will be lost as a cookie cannot be set."
                 )
             else:
-                await self.save_session(session_, response)
+                await self.session_interface.save_session(self, session_, response)
         return response
 
     async def __call__(

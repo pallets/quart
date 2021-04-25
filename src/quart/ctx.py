@@ -7,7 +7,7 @@ from typing import Any, Callable, cast, Iterator, List, Optional, TYPE_CHECKING 
 from werkzeug.exceptions import HTTPException
 
 from .globals import _app_ctx_stack, _request_ctx_stack, _websocket_ctx_stack
-from .sessions import Session  # noqa
+from .sessions import SessionMixin  # noqa
 from .signals import appcontext_popped, appcontext_pushed
 from .typing import AfterRequestCallable, AfterWebsocketCallable
 from .wrappers import BaseRequestWebsocket, Request, Websocket
@@ -30,7 +30,7 @@ class _BaseRequestWebsocketContext:
         self,
         app: "Quart",
         request_websocket: BaseRequestWebsocket,
-        session: Optional[Session] = None,
+        session: Optional[SessionMixin] = None,
     ) -> None:
         self.app = app
         self.request_websocket = request_websocket
@@ -40,6 +40,14 @@ class _BaseRequestWebsocketContext:
         self.preserved = False
 
         self.match_request()
+
+    @property
+    def g(self) -> AppContext:
+        return _app_ctx_stack.top.g
+
+    @g.setter
+    def g(self, value: AppContext) -> None:
+        _app_ctx_stack.top.g = value
 
     def copy(self) -> "_BaseRequestWebsocketContext":
         return self.__class__(self.app, self.request_websocket, self.session)
@@ -67,15 +75,20 @@ class _BaseRequestWebsocketContext:
             app_ctx = self.app.app_context()
         await app_ctx.push()
 
-        self.session = await self.app.open_session(self.request_websocket)
         if self.session is None:
-            self.session = await self.app.make_null_session()
+            session_interface = self.app.session_interface
+            self.session = await session_interface.open_session(self.app, self.request_websocket)
+
+            if self.session is None:
+                self.session = await session_interface.make_null_session(self.app)
 
     async def pop(self, exc: BaseException) -> None:
         await _app_ctx_stack.top.pop(exc)
 
-    async def auto_pop(self, exc: BaseException) -> None:
-        if self.request_websocket.scope.get("_quart._preserve_context", False):  # type: ignore
+    async def auto_pop(self, exc: Optional[BaseException]) -> None:
+        if self.request_websocket.scope.get("_quart._preserve_context", False) or (  # type: ignore
+            exc is not None and self.app.preserve_context_on_exception
+        ):
             self.preserved = True
         else:
             await self.pop(exc)
@@ -104,7 +117,7 @@ class RequestContext(_BaseRequestWebsocketContext):
         self,
         app: "Quart",
         request: Request,
-        session: Optional[Session] = None,
+        session: Optional[SessionMixin] = None,
     ) -> None:
         super().__init__(app, request, session)
         self.flashes = None
@@ -144,7 +157,7 @@ class WebsocketContext(_BaseRequestWebsocketContext):
         self,
         app: "Quart",
         request: Websocket,
-        session: Optional[Session] = None,
+        session: Optional[SessionMixin] = None,
     ) -> None:
         super().__init__(app, request, session)
         self._after_websocket_functions: List[AfterWebsocketCallable] = []

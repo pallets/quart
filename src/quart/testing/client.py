@@ -30,7 +30,7 @@ from .utils import (
 )
 from ..datastructures import FileStorage
 from ..globals import _request_ctx_stack
-from ..sessions import Session
+from ..sessions import SessionMixin
 from ..typing import TestHTTPConnectionProtocol, TestWebsocketConnectionProtocol
 from ..wrappers import Response
 
@@ -317,7 +317,7 @@ class QuartClient:
         json: Any = sentinel,
         root_path: str = "",
         http_version: str = "1.1",
-    ) -> AsyncGenerator[Session, None]:
+    ) -> AsyncGenerator[SessionMixin, None]:
         if self.cookie_jar is None:
             raise RuntimeError("Session transactions only make sense with cookies enabled.")
 

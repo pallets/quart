@@ -51,7 +51,7 @@ def file_path_to_path(*paths: FilePath) -> Path:
     return Path(*safe_paths)
 
 
-def run_sync(func: Callable[..., Any]) -> Callable[..., Coroutine[Any, None, None]]:
+def run_sync(func: Callable[..., Any]) -> Callable[..., Coroutine[None, None, Any]]:
     """Ensure that the sync function is run within the event loop.
 
     If the *func* is not a coroutine it will be wrapped such that
