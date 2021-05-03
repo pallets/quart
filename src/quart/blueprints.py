@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from functools import update_wrapper
-from typing import Any, Callable, Iterable, List, Optional, Type, TYPE_CHECKING, Union
+from typing import Any, Callable, Iterable, List, Optional, Tuple, Type, TYPE_CHECKING, Union
 
 from .scaffold import _endpoint_from_view_func, Scaffold
 from .typing import (
@@ -67,6 +67,7 @@ class Blueprint(Scaffold):
             url_defaults = {}
         self.url_values_defaults = url_defaults
         self.cli_group = cli_group
+        self._blueprints: List[Tuple["Blueprint", dict]] = []
 
     def _is_setup_finished(self) -> bool:
         return self.warn_on_modifications and self._got_registered_once
@@ -481,7 +482,15 @@ class Blueprint(Scaffold):
 
         return self.record(update_wrapper(wrapper, func))
 
-    def register(self, app: "Quart", options: dict, first_registration: bool = False) -> None:
+    def register_blueprint(self, blueprint: "Blueprint", **options: Any) -> None:
+        """Register a :class:`~quart.Blueprint` on this blueprint.
+
+        Keyword arguments passed to this method will override the
+        defaults set on the blueprint.
+        """
+        self._blueprints.append((blueprint, options))
+
+    def register(self, app: "Quart", options: dict) -> None:
         """Register this blueprint on the app given.
 
         Arguments:
@@ -491,6 +500,18 @@ class Blueprint(Scaffold):
             first_registration: Whether this is the first time this
                 blueprint has been registered on the application.
         """
+        first_registration = False
+
+        if self.name in app.blueprints and app.blueprints[self.name] is not self:
+            raise RuntimeError(
+                f"Blueprint name '{self.name}' "
+                f"is already registered by {app.blueprints[self.name]}. "
+                "Blueprints must have unique names"
+            )
+        else:
+            app.blueprints[self.name] = self
+            first_registration = True
+
         self._got_registered_once = True
         state = self.make_setup_state(app, options, first_registration)
 
@@ -550,19 +571,26 @@ class Blueprint(Scaffold):
         for func in self.deferred_functions:
             func(state)
 
-        if not self.cli.commands:
-            return
-
         cli_resolved_group = options.get("cli_group", self.cli_group)
 
-        if cli_resolved_group is None:
-            app.cli.commands.update(self.cli.commands)
-        elif cli_resolved_group is Ellipsis:
-            self.cli.name = self.name
-            app.cli.add_command(self.cli)
-        else:
-            self.cli.name = cli_resolved_group
-            app.cli.add_command(self.cli)
+        if self.cli.commands:
+            if cli_resolved_group is None:
+                app.cli.commands.update(self.cli.commands)
+            elif cli_resolved_group is Ellipsis:
+                self.cli.name = self.name
+                app.cli.add_command(self.cli)
+            else:
+                self.cli.name = cli_resolved_group
+                app.cli.add_command(self.cli)
+
+        for blueprint, bp_options in self._blueprints:
+            url_prefix = options.get("url_prefix", "")
+            if "url_prefix" in bp_options:
+                url_prefix = url_prefix.rstrip("/") + "/" + bp_options["url_prefix"].lstrip("/")
+
+            bp_options["url_prefix"] = url_prefix
+            bp_options["name_prefix"] = options.get("name_prefix", "") + self.name + "."
+            blueprint.register(app, bp_options)
 
     def make_setup_state(
         self, app: "Quart", options: dict, first_registration: bool = False
@@ -612,6 +640,7 @@ class BlueprintSetupState:
         self.subdomain = options.get("subdomain") or blueprint.subdomain
         self.url_defaults = dict(self.blueprint.url_values_defaults)
         self.url_defaults.update(options.get("url_defaults", {}) or {})
+        self.name_prefix = self.options.get("name_prefix", "")
 
     def add_url_rule(
         self,
@@ -631,7 +660,7 @@ class BlueprintSetupState:
             path = f"{self.url_prefix.rstrip('/')}/{path.lstrip('/')}"
         if subdomain is None:
             subdomain = self.subdomain
-        endpoint = f"{self.blueprint.name}.{endpoint}"
+        endpoint = f"{self.name_prefix}{self.blueprint.name}.{endpoint}"
         url_defaults = self.url_defaults
         if defaults is not None:
             url_defaults = {**url_defaults, **defaults}

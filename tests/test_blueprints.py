@@ -161,3 +161,57 @@ def test_cli_blueprints(cli_group: Optional[str], args: List[str]) -> None:
     result = app_runner.invoke(args=args)
 
     assert "command" in result.output
+
+
+@pytest.mark.asyncio
+async def test_nested_blueprint() -> None:
+    app = Quart(__name__)
+
+    parent = Blueprint("parent", __name__)
+    child = Blueprint("child", __name__)
+    grandchild = Blueprint("grandchild", __name__)
+
+    @parent.errorhandler(403)
+    async def forbidden(_: Exception) -> ResponseReturnValue:
+        return "Parent no", 403
+
+    @parent.route("/")
+    async def parent_index() -> ResponseReturnValue:
+        return "Parent yes"
+
+    @parent.route("/no")
+    async def parent_no() -> ResponseReturnValue:
+        abort(403)
+
+    @child.route("/")
+    async def child_index() -> ResponseReturnValue:
+        return "Child yes"
+
+    @child.route("/no")
+    async def child_no() -> ResponseReturnValue:
+        abort(403)
+
+    @grandchild.errorhandler(403)
+    async def grandchild_forbidden(_: Exception) -> ResponseReturnValue:
+        return "Grandchild no", 403
+
+    @grandchild.route("/")
+    async def grandchild_index() -> ResponseReturnValue:
+        return "Grandchild yes"
+
+    @grandchild.route("/no")
+    async def grandchild_no() -> ResponseReturnValue:
+        abort(403)
+
+    child.register_blueprint(grandchild, url_prefix="/grandchild")
+    parent.register_blueprint(child, url_prefix="/child")
+    app.register_blueprint(parent, url_prefix="/parent")
+
+    client = app.test_client()
+
+    assert (await (await client.get("/parent/")).get_data()) == b"Parent yes"  # type: ignore
+    assert (await (await client.get("/parent/child/")).get_data()) == b"Child yes"  # type: ignore
+    assert (await (await client.get("/parent/child/grandchild/")).get_data()) == b"Grandchild yes"  # type: ignore  # noqa: E501
+    assert (await (await client.get("/parent/no")).get_data()) == b"Parent no"  # type: ignore
+    assert (await (await client.get("/parent/child/no")).get_data()) == b"Parent no"  # type: ignore
+    assert (await (await client.get("/parent/child/grandchild/no")).get_data()) == b"Grandchild no"  # type: ignore  # noqa: E501
