@@ -524,13 +524,9 @@ class Blueprint(Scaffold):
 
         if first_registration:
 
-            def extend(bp_dict: dict, parent_dict: dict, ensure_async: bool = False) -> None:
+            def extend(bp_dict: dict, parent_dict: dict) -> None:
                 for key, values in bp_dict.items():
                     key = self.name if key is None else f"{self.name}.{key}"
-
-                    if ensure_async:
-                        values = [app.ensure_async(func) for func in values]
-
                     parent_dict[key].extend(values)
 
             for key, value in self.error_handler_spec.items():
@@ -538,31 +534,26 @@ class Blueprint(Scaffold):
                 value = defaultdict(
                     dict,
                     {
-                        code: {
-                            exc_class: app.ensure_async(func)
-                            for exc_class, func in code_values.items()
-                        }
+                        code: {exc_class: func for exc_class, func in code_values.items()}
                         for code, code_values in value.items()
                     },
                 )
                 app.error_handler_spec[key] = value
 
             for endpoint, func in self.view_functions.items():
-                app.view_functions[endpoint] = app.ensure_async(func)
+                app.view_functions[endpoint] = func
 
-            extend(self.before_request_funcs, app.before_request_funcs, ensure_async=True)
-            extend(self.before_websocket_funcs, app.before_websocket_funcs, ensure_async=True)
-            extend(self.after_request_funcs, app.after_request_funcs, ensure_async=True)
-            extend(self.after_websocket_funcs, app.after_websocket_funcs, ensure_async=True)
+            extend(self.before_request_funcs, app.before_request_funcs)
+            extend(self.before_websocket_funcs, app.before_websocket_funcs)
+            extend(self.after_request_funcs, app.after_request_funcs)
+            extend(self.after_websocket_funcs, app.after_websocket_funcs)
             extend(
                 self.teardown_request_funcs,
                 app.teardown_request_funcs,
-                ensure_async=True,
             )
             extend(
                 self.teardown_websocket_funcs,
                 app.teardown_websocket_funcs,
-                ensure_async=True,
             )
             extend(self.url_default_functions, app.url_default_functions)
             extend(self.url_value_preprocessors, app.url_value_preprocessors)
@@ -606,15 +597,6 @@ class Blueprint(Scaffold):
                 blueprint has been registered on the application.
         """
         return BlueprintSetupState(self, app, options, first_registration)
-
-    def ensure_async(self, func: Callable[..., Any]) -> Callable[..., Any]:
-        """Ensure the function is asynchronous.
-
-        Override if you would like custom sync to async behaviour in
-        this blueprint. Otherwise the app's
-        :meth:`~quart.Quart.ensure_async` is used.
-        """
-        return func
 
 
 class BlueprintSetupState:

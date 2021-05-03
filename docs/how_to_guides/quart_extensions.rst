@@ -34,3 +34,20 @@ here,
   validation and auto-generated API documentation.
 - `Quart-session <https://github.com/xmrdsc/quart-session>`_ server
   side session support.
+
+
+Supporting sync code in a Quart Extension
+-----------------------------------------
+
+Extension authors can support sync functions by utilising the
+:meth:`quart.Quart.ensure_async` method. For example, if the extension
+provides a view function decorator add ``ensure_async`` before calling
+the decorated function,
+
+.. code-block:: python
+    def extension(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            ...  # Extension logic
+            return await current_app.ensure_sync(func)(*args, **kwargs)
+        return wrapper

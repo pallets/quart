@@ -82,10 +82,12 @@ from .testing import (
     TestApp,
 )
 from .typing import (
+    AfterServingCallable,
     ASGIHTTPProtocol,
     ASGILifespanProtocol,
     ASGIWebsocketProtocol,
     BeforeRequestCallable,
+    BeforeServingCallable,
     ErrorHandlerCallable,
     FilePath,
     HeadersValue,
@@ -433,7 +435,7 @@ class Quart(Scaffold):
                     )
         extra_context: dict = {}
         for processor in processors:
-            extra_context.update(await processor())
+            extra_context.update(await self.ensure_async(processor)())
         original = context.copy()
         context.update(extra_context)
         context.update(original)
@@ -558,7 +560,6 @@ class Quart(Scaffold):
                 as part of the path variable).
         """
         endpoint = endpoint or _endpoint_from_view_func(view_func)
-        handler = self.ensure_async(view_func)
         if methods is None:
             methods = getattr(view_func, "methods", ["GET"])
 
@@ -591,14 +592,12 @@ class Quart(Scaffold):
         )
         self.url_map.add(rule)
 
-        if handler is not None:
-            old_handler = self.view_functions.get(endpoint)
-            if getattr(old_handler, "_quart_async_wrapper", False):
-                old_handler = old_handler.__wrapped__  # type: ignore
-            if old_handler is not None and old_handler != view_func:
+        if view_func is not None:
+            old_view_func = self.view_functions.get(endpoint)
+            if old_view_func is not None and old_view_func != view_func:
                 raise AssertionError(f"Handler is overwriting existing for endpoint {endpoint}")
 
-            self.view_functions[endpoint] = handler
+            self.view_functions[endpoint] = view_func
 
     def template_filter(self, name: Optional[str] = None) -> Callable:
         """Add a template filter.
@@ -721,7 +720,8 @@ class Quart(Scaffold):
         self.jinja_env.globals[name or func.__name__] = func
 
     def before_first_request(
-        self, func: Union[Callable[[], None], Callable[[], Awaitable[None]]]
+        self,
+        func: BeforeRequestCallable,
     ) -> Callable[[], Awaitable[None]]:
         """Add a before **first** request function.
 
@@ -739,12 +739,12 @@ class Quart(Scaffold):
         Arguments:
             func: The before first request function itself.
         """
-        handler = self.ensure_async(func)
-        self.before_first_request_funcs.append(handler)
-        return handler
+        self.before_first_request_funcs.append(func)
+        return func
 
     def before_serving(
-        self, func: Union[Callable[[], None], Callable[[], Awaitable[None]]]
+        self,
+        func: BeforeServingCallable,
     ) -> Callable[[], Awaitable[None]]:
         """Add a before serving function.
 
@@ -765,12 +765,12 @@ class Quart(Scaffold):
         Arguments:
             func: The function itself.
         """
-        handler = self.ensure_async(func)
-        self.before_serving_funcs.append(handler)
-        return handler
+        self.before_serving_funcs.append(func)
+        return func
 
     def after_serving(
-        self, func: Union[Callable[[], None], Callable[[], Awaitable[None]]]
+        self,
+        func: AfterServingCallable,
     ) -> Callable[[], Awaitable[None]]:
         """Add a after serving function.
 
@@ -791,9 +791,8 @@ class Quart(Scaffold):
         Arguments:
             func: The function itself.
         """
-        handler = self.ensure_async(func)
-        self.after_serving_funcs.append(handler)
-        return handler
+        self.after_serving_funcs.append(func)
+        return func
 
     def create_url_adapter(self, request: Optional[BaseRequestWebsocket]) -> Optional[MapAdapter]:
         """Create and return a URL adapter.
@@ -888,7 +887,7 @@ class Quart(Scaffold):
         if handler is None:
             return error.get_response()
         else:
-            return await handler(error)
+            return await self.ensure_async(handler)(error)
 
     def trap_http_exception(self, error: Exception) -> bool:
         """Check it error is http and should be trapped.
@@ -915,7 +914,7 @@ class Quart(Scaffold):
         handler = self._find_error_handler(error)
         if handler is None:
             raise error
-        return await handler(error)
+        return await self.ensure_async(handler)(error)
 
     async def handle_exception(self, error: Exception) -> Union[Response, WerkzeugResponse]:
         """Handle an uncaught exception.
@@ -935,7 +934,7 @@ class Quart(Scaffold):
 
         response: Union[Response, WerkzeugResponse, InternalServerError]
         if handler is not None:
-            response = await handler(internal_server_error)  # type: ignore
+            response = await self.ensure_async(handler)(internal_server_error)
         else:
             response = internal_server_error
 
@@ -960,7 +959,7 @@ class Quart(Scaffold):
 
         response: Union[Response, WerkzeugResponse, InternalServerError]
         if handler is not None:
-            response = await handler(internal_server_error)  # type: ignore
+            response = await self.ensure_async(handler)(internal_server_error)
         else:
             response = internal_server_error
 
@@ -988,11 +987,8 @@ class Quart(Scaffold):
 
     def teardown_appcontext(
         self,
-        func: Union[
-            Callable[[Optional[BaseException]], None],
-            Callable[[Optional[BaseException]], Awaitable[None]],
-        ],
-    ) -> Callable[[Optional[BaseException]], Awaitable[None]]:
+        func: TeardownCallable,
+    ) -> TeardownCallable:
         """Add a teardown app (context) function.
 
         This is designed to be used as a decorator, if used to
@@ -1010,9 +1006,8 @@ class Quart(Scaffold):
             func: The teardown function itself.
             name: Optional blueprint key name.
         """
-        handler = self.ensure_async(func)
-        self.teardown_appcontext_funcs.append(handler)
-        return handler
+        self.teardown_appcontext_funcs.append(func)
+        return func
 
     def ensure_async(self, func: Callable[..., Any]) -> Callable[..., Awaitable[Any]]:
         """Ensure that the returned func is async and calls the func.
@@ -1026,7 +1021,19 @@ class Quart(Scaffold):
         if is_coroutine_function(func):
             return func
         else:
-            return run_sync(func)
+            return self.sync_to_async(func)
+
+    def sync_to_async(self, func: Callable[..., Any]) -> Callable[..., Awaitable[Any]]:
+        """Return a async function that will run the synchronous function *func*.
+
+        This can be used as so,::
+
+            result = await app.sync_to_async(func)(*args, **kwargs)
+
+        Override this method to change how the app converts sync code
+        to be asynchronously callable.
+        """
+        return run_sync(func)
 
     async def do_teardown_request(
         self, exc: Optional[BaseException], request_context: Optional[RequestContext] = None
@@ -1044,7 +1051,7 @@ class Quart(Scaffold):
             functions = chain(functions, self.teardown_request_funcs[blueprint])  # type: ignore
 
         for function in functions:
-            await function(exc)
+            await self.ensure_async(function)(exc)
         await request_tearing_down.send(self, exc=exc)
 
     async def do_teardown_websocket(
@@ -1063,13 +1070,13 @@ class Quart(Scaffold):
             functions = chain(functions, self.teardown_websocket_funcs[blueprint])  # type: ignore
 
         for function in functions:
-            await function(exc)
+            await self.ensure_async(function)(exc)
         await websocket_tearing_down.send(self, exc=exc)
 
     async def do_teardown_appcontext(self, exc: Optional[BaseException]) -> None:
         """Teardown the app (context), calling the teardown functions."""
         for function in self.teardown_appcontext_funcs:
-            await function(exc)
+            await self.ensure_async(function)(exc)
         await appcontext_tearing_down.send(self, exc=exc)
 
     def app_context(self) -> AppContext:
@@ -1346,7 +1353,7 @@ class Quart(Scaffold):
             if self._got_first_request:
                 return
             for function in self.before_first_request_funcs:
-                await function()
+                await self.ensure_async(function)()
             self._got_first_request = True
 
     async def make_default_options_response(self) -> Response:
@@ -1452,7 +1459,7 @@ class Quart(Scaffold):
         for blueprint in self._request_blueprints():
             functions = chain(functions, self.before_request_funcs[blueprint])  # type: ignore
         for function in functions:
-            result = await function()
+            result = await self.ensure_async(function)()
             if result is not None:
                 return result
         return None
@@ -1474,7 +1481,7 @@ class Quart(Scaffold):
             return await self.make_default_options_response()
 
         handler = self.view_functions[request_.url_rule.endpoint]
-        return await handler(**request_.view_args)
+        return await self.ensure_async(handler)(**request_.view_args)
 
     async def finalize_request(
         self,
@@ -1517,7 +1524,7 @@ class Quart(Scaffold):
         functions = chain(functions, self.after_request_funcs[None])
 
         for function in functions:
-            response = await function(response)
+            response = await self.ensure_async(function)(response)
 
         session_ = (request_context or _request_ctx_stack.top).session
         if not self.session_interface.is_null_session(session_):
@@ -1573,7 +1580,7 @@ class Quart(Scaffold):
         for blueprint in self._request_blueprints():
             functions = chain(functions, self.before_websocket_funcs[blueprint])  # type: ignore
         for function in functions:
-            result = await function()
+            result = await self.ensure_async(function)()
             if result is not None:
                 return result
         return None
@@ -1592,7 +1599,7 @@ class Quart(Scaffold):
             self.raise_routing_exception(websocket_)
 
         handler = self.view_functions[websocket_.url_rule.endpoint]
-        return await handler(**websocket_.view_args)
+        return await self.ensure_async(handler)(**websocket_.view_args)
 
     async def finalize_websocket(
         self,
@@ -1638,7 +1645,7 @@ class Quart(Scaffold):
         functions = chain(functions, self.after_websocket_funcs[None])
 
         for function in functions:
-            response = await function(response)
+            response = await self.ensure_async(function)(response)
 
         session_ = (websocket_context or _request_ctx_stack.top).session
         if not self.session_interface.is_null_session(session_):
@@ -1693,12 +1700,12 @@ class Quart(Scaffold):
 
         async with self.app_context():
             for func in self.before_serving_funcs:
-                await func()
+                await self.ensure_async(func)()
 
     async def shutdown(self) -> None:
         async with self.app_context():
             for func in self.after_serving_funcs:
-                await func()
+                await self.ensure_async(func)()
 
     def _request_blueprints(self) -> Iterable[str]:
         if _request_ctx_stack.top is not None:

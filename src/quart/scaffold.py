@@ -513,16 +513,15 @@ class Scaffold:
         """
 
         def decorator(func: Callable) -> Callable:
-            handler = self.ensure_async(func)
-            self.view_functions[endpoint] = handler
-            return handler
+            self.view_functions[endpoint] = func
+            return func
 
         return decorator
 
     @setupmethod
     def before_request(
         self,
-        func: Union[Callable[[], None], BeforeRequestCallable],
+        func: BeforeRequestCallable,
     ) -> BeforeRequestCallable:
         """Add a before request function.
 
@@ -540,14 +539,13 @@ class Scaffold:
         Arguments:
             func: The before request function itself.
         """
-        handler = self.ensure_async(func)
-        self.before_request_funcs[None].append(handler)
-        return handler
+        self.before_request_funcs[None].append(func)
+        return func
 
     @setupmethod
     def after_request(
         self,
-        func: Union[Callable[[Response], Response], AfterRequestCallable],
+        func: AfterRequestCallable,
     ) -> AfterRequestCallable:
         """Add an after request function.
 
@@ -565,14 +563,13 @@ class Scaffold:
         Arguments:
             func: The after request function itself.
         """
-        handler = self.ensure_async(func)
-        self.after_request_funcs[None].append(handler)
-        return handler
+        self.after_request_funcs[None].append(func)
+        return func
 
     @setupmethod
     def before_websocket(
         self,
-        func: Union[Callable[[], None], BeforeWebsocketCallable],
+        func: BeforeWebsocketCallable,
     ) -> BeforeWebsocketCallable:
         """Add a before websocket function.
 
@@ -590,17 +587,13 @@ class Scaffold:
         Arguments:
             func: The before websocket function itself.
         """
-        handler = self.ensure_async(func)
-        self.before_websocket_funcs[None].append(handler)
-        return handler
+        self.before_websocket_funcs[None].append(func)
+        return func
 
     @setupmethod
     def after_websocket(
         self,
-        func: Union[
-            Callable[[Response], Optional[Response]],
-            AfterWebsocketCallable,
-        ],
+        func: AfterWebsocketCallable,
     ) -> AfterWebsocketCallable:
         """Add an after websocket function.
 
@@ -618,17 +611,13 @@ class Scaffold:
         Arguments:
             func: The after websocket function itself.
         """
-        handler = self.ensure_async(func)
-        self.after_websocket_funcs[None].append(handler)
-        return handler
+        self.after_websocket_funcs[None].append(func)
+        return func
 
     @setupmethod
     def teardown_request(
         self,
-        func: Union[
-            Callable[[Optional[BaseException]], None],
-            TeardownCallable,
-        ],
+        func: TeardownCallable,
     ) -> TeardownCallable:
         """Add a teardown request function.
 
@@ -646,17 +635,13 @@ class Scaffold:
         Arguments:
             func: The teardown request function itself.
         """
-        handler = self.ensure_async(func)
-        self.teardown_request_funcs[None].append(handler)
-        return handler
+        self.teardown_request_funcs[None].append(func)
+        return func
 
     @setupmethod
     def teardown_websocket(
         self,
-        func: Union[
-            Callable[[Optional[BaseException]], None],
-            TeardownCallable,
-        ],
+        func: TeardownCallable,
     ) -> TeardownCallable:
         """Add a teardown websocket function.
 
@@ -675,14 +660,13 @@ class Scaffold:
             func: The teardown websocket function itself.
             name: Optional blueprint key name.
         """
-        handler = self.ensure_async(func)
-        self.teardown_websocket_funcs[None].append(handler)
-        return handler
+        self.teardown_websocket_funcs[None].append(func)
+        return func
 
     @setupmethod
     def context_processor(
         self,
-        func: Union[Callable[[], Dict[str, Any]], TemplateContextProcessorCallable],
+        func: TemplateContextProcessorCallable,
     ) -> TemplateContextProcessorCallable:
         """Add a template context processor.
 
@@ -698,9 +682,8 @@ class Scaffold:
                 return context
 
         """
-        handler = self.ensure_async(func)
-        self.template_context_processors[None].append(handler)
-        return handler
+        self.template_context_processors[None].append(func)
+        return func
 
     @setupmethod
     def url_value_preprocessor(
@@ -760,7 +743,7 @@ class Scaffold:
     def register_error_handler(
         self,
         error: Union[Type[Exception], int],
-        func: Union[Callable[[Exception], None], ErrorHandlerCallable],
+        func: ErrorHandlerCallable,
     ) -> None:
         """Register a function as an error handler.
 
@@ -789,7 +772,7 @@ class Scaffold:
             raise KeyError(f"{error} is not a recognised HTTP error code or HTTPException subclass")
 
         handlers = self.error_handler_spec[None].setdefault(code, {})
-        handlers[error_type] = self.ensure_async(func)
+        handlers[error_type] = func
 
     def _get_error_type_and_code(
         self, error: Union[Type[Exception], int]
@@ -807,9 +790,6 @@ class Scaffold:
             return error_type, error_type.code
         else:
             return error_type, None
-
-    def ensure_async(self, func: Callable[..., Any]) -> Callable[..., Any]:
-        raise NotImplementedError()
 
     def _is_setup_finished(self) -> bool:
         raise NotImplementedError()

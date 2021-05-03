@@ -70,15 +70,28 @@ ResponseReturnValue = Union[
 ]
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
-AfterRequestCallable = Callable[["Response"], Awaitable["Response"]]
-AfterServingCallable = Callable[[], Awaitable[None]]
-AfterWebsocketCallable = Callable[["Response"], Awaitable[Optional["Response"]]]
-BeforeRequestCallable = Callable[[], Awaitable[None]]
-BeforeServingCallable = Callable[[], Awaitable[None]]
-BeforeWebsocketCallable = Callable[[], Awaitable[None]]
-ErrorHandlerCallable = Callable[[Exception], Awaitable[ResponseReturnValue]]
-TeardownCallable = Callable[[Optional[BaseException]], Awaitable["Response"]]
-TemplateContextProcessorCallable = Callable[[], Awaitable[Dict[str, Any]]]
+AfterRequestCallable = Union[
+    Callable[["Response"], "Response"], Callable[["Response"], Awaitable["Response"]]
+]
+AfterServingCallable = Union[Callable[[], None], Callable[[], Awaitable[None]]]
+AfterWebsocketCallable = Union[
+    Callable[["Response"], Optional["Response"]],
+    Callable[["Response"], Awaitable[Optional["Response"]]],
+]
+BeforeRequestCallable = Union[Callable[[], None], Callable[[], Awaitable[None]]]
+BeforeServingCallable = Union[Callable[[], None], Callable[[], Awaitable[None]]]
+BeforeWebsocketCallable = Union[Callable[[], None], Callable[[], Awaitable[None]]]
+ErrorHandlerCallable = Union[
+    Callable[[Exception], ResponseReturnValue],
+    Callable[[Exception], Awaitable[ResponseReturnValue]],
+]
+TeardownCallable = Union[
+    Callable[[Optional[BaseException]], "Response"],
+    Callable[[Optional[BaseException]], Awaitable["Response"]],
+]
+TemplateContextProcessorCallable = Union[
+    Callable[[], Dict[str, Any]], Callable[[], Awaitable[Dict[str, Any]]]
+]
 TemplateFilterCallable = Callable[[Any], str]
 TemplateGlobalCallable = Callable[[], Any]
 TemplateTestCallable = Callable[[Any], bool]
