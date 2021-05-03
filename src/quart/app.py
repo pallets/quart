@@ -1554,7 +1554,7 @@ class Quart(Scaffold):
 
         session_ = (request_context or _request_ctx_stack.top).session
         if not self.session_interface.is_null_session(session_):
-            await self.session_interface.save_session(self, session_, response)
+            await self.ensure_async(self.session_interface.save_session)(self, session_, response)
         return response
 
     async def handle_websocket(

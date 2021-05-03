@@ -77,7 +77,9 @@ class _BaseRequestWebsocketContext:
 
         if self.session is None:
             session_interface = self.app.session_interface
-            self.session = await session_interface.open_session(self.app, self.request_websocket)
+            self.session = await self.app.ensure_async(session_interface.open_session)(
+                self.app, self.request_websocket
+            )
 
             if self.session is None:
                 self.session = await session_interface.make_null_session(self.app)
