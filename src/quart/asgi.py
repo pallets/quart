@@ -156,6 +156,7 @@ class ASGIWebsocketConnection:
         self.scope = scope
         self.queue: asyncio.Queue = asyncio.Queue()
         self._accepted = False
+        self._closed = False
 
     async def __call__(self, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None:
         websocket = self._create_websocket_from_scope(send)
@@ -257,9 +258,9 @@ class ASGIWebsocketConnection:
                         {"type": "websocket.http.response.body", "body": b"", "more_body": False},
                     )
                 )
-            else:
+            elif not self._closed:
                 await send(cast(WebsocketCloseEvent, {"type": "websocket.close", "code": 1000}))
-        elif self._accepted:
+        elif self._accepted and not self._closed:
             await send(cast(WebsocketCloseEvent, {"type": "websocket.close", "code": 1000}))
 
     async def send_data(self, send: ASGISendCallable, data: AnyStr) -> None:
@@ -287,10 +288,15 @@ class ASGIWebsocketConnection:
             self._accepted = True
 
     async def close_connection(self, send: ASGISendCallable, code: int, reason: str) -> None:
-        if self.scope["asgi"]["spec_version"] >= "2.3":
+        if self._closed:
+            raise RuntimeError("Cannot close websocket multiple times")
+
+        spec_version = _convert_version(self.scope.get("asgi", {}).get("spec_version", "2.0"))
+        if spec_version >= [2, 3]:
             await send({"type": "websocket.close", "code": code, "reason": reason})  # type: ignore
         else:
             await send({"type": "websocket.close", "code": code})
+        self._closed = True
 
 
 class ASGILifespan:
