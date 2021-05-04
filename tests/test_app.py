@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import NoReturn, Optional, Set, Union
+from typing import AsyncGenerator, NoReturn, Optional, Set, Union
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -425,6 +425,7 @@ async def test_propagation(debug: bool, testing: bool, raises: bool, http_scope:
 async def test_test_app() -> None:
     startup = False
     shutdown = False
+    serving = []
 
     app = Quart(__name__)
 
@@ -438,6 +439,13 @@ async def test_test_app() -> None:
         nonlocal shutdown
         shutdown = True
 
+    @app.while_serving
+    async def lifespan() -> AsyncGenerator[None, None]:
+        nonlocal serving
+        serving.append(1)
+        yield
+        serving.append(2)
+
     @app.route("/")
     async def index() -> str:
         return ""
@@ -447,4 +455,6 @@ async def test_test_app() -> None:
         test_client = test_app.test_client()
         await test_client.get("/")
         assert not shutdown
+        assert serving == [1]
     assert shutdown
+    assert serving == [1, 2]

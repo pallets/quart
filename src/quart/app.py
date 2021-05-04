@@ -14,6 +14,7 @@ from types import TracebackType
 from typing import (
     Any,
     AnyStr,
+    AsyncGenerator,
     Awaitable,
     Callable,
     cast,
@@ -254,6 +255,7 @@ class Quart(Scaffold):
         self.url_build_error_handlers: List[Callable[[Exception, str, dict], str]] = []
         self.url_map = self.url_map_class(host_matching=host_matching)
         self.subdomain_matching = subdomain_matching
+        self.while_serving_gens: List[AsyncGenerator[None, None]] = []
 
         self._got_first_request = False
         self._first_request_lock = self.lock_class()
@@ -766,6 +768,31 @@ class Quart(Scaffold):
             func: The function itself.
         """
         self.before_serving_funcs.append(func)
+        return func
+
+    def while_serving(
+        self, func: Callable[[], AsyncGenerator[None, None]]
+    ) -> Callable[[], AsyncGenerator[None, None]]:
+        """Add a while serving generator function.
+
+        This will allow the generator provided to be invoked at
+        startup and then again at shutdown.
+
+        This is designed to be used as a decorator. An example usage,
+
+        .. code-block:: python
+
+            @app.while_serving
+            async def func():
+                ...  # Startup
+                yield
+                ...  # Shutdown
+
+        Arguments:
+            func: The function itself.
+
+        """
+        self.while_serving_gens.append(func())
         return func
 
     def after_serving(
@@ -1701,11 +1728,20 @@ class Quart(Scaffold):
         async with self.app_context():
             for func in self.before_serving_funcs:
                 await self.ensure_async(func)()
+            for gen in self.while_serving_gens:
+                await gen.__anext__()
 
     async def shutdown(self) -> None:
         async with self.app_context():
             for func in self.after_serving_funcs:
                 await self.ensure_async(func)()
+            for gen in self.while_serving_gens:
+                try:
+                    await gen.__anext__()
+                except StopAsyncIteration:
+                    pass
+                else:
+                    raise RuntimeError("While serving generator didn't terminate")
 
     def _request_blueprints(self) -> Iterable[str]:
         if _request_ctx_stack.top is not None:
