@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timedelta
+from http.cookiejar import CookieJar
 from types import TracebackType
 from typing import (
     Any,
@@ -181,6 +182,8 @@ class TestWebsocketConnectionProtocol(Protocol):
 
 
 class TestClientProtocol(Protocol):
+    app: Quart
+    cookie_jar: Optional[CookieJar]
     http_connection_class: Type[TestHTTPConnectionProtocol]
     push_promises: List[Tuple[str, Headers]]
     websocket_connection_class: Type[TestWebsocketConnectionProtocol]
