@@ -1,3 +1,36 @@
+0.15.0 2021-05-11
+-----------------
+
+* Add the routes command, ``quart routes`` to output the routes in the
+  app.
+* Add the ability to close websocket connections with a reason if
+  supported by the server.
+* Revert AppContext lifespan interaction change in 0.14.0. It is not
+  possible to introduce this and match Flask's ``g`` usage.
+* Add syntatic sugar for route registration allowing ``app.get``,
+  ``app.post``, etc... for app and blueprint instances.
+* Support handlers returning a Werkzeug Response.
+* Remove Quart's exceptions and use Werkzeug's. This may cause
+  incompatibility to fix import from ``werkzeug.exceptions`` instead
+  of ``quart.exceptions``.
+* Switch to Werkzeug's locals and Sans-IO wrappers.
+* Allow for files to be sent via test client, via a ``files``
+  argument.
+* Make the NoAppException clearer.
+* Support nested blueprints.
+* Support while_serving functionality.
+* Bugfix Correct routing host case matching.
+* Bugfix cache flashed msg on request.flashes.
+* Bugfix debug defaults and overrides using run.
+* Bugfix adopt Werkzeug's timestamp parsing.
+* Bugfix only show the traceback response if propagating exceptions.
+* Bugfix unhandled exception handling.
+* Bugfix support url_for in websocket contexts.
+* Bugfix cookie jar handling in test client.
+* Bugfix support SERVER_NAME configuration for the run method.
+* Bugfix correctly support root_paths.
+* Bugfix support str and byte streamed responses.
+
 0.14.1 2020-12-13
 -----------------
 
