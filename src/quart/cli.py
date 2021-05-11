@@ -7,7 +7,7 @@ import os
 import sys
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Optional, TYPE_CHECKING
+from typing import Any, Callable, List, Optional, TYPE_CHECKING
 
 import click
 
@@ -212,18 +212,18 @@ class QuartGroup(AppGroup):
         info = ctx.ensure_object(ScriptInfo)
         command = None
         try:
-            command = info.load_app().cli.get_command(ctx, name)
+            command = info.load_app().cli.get_command(ctx, name)  # type: ignore
         except NoAppException:
             pass
         if command is None:
             command = super().get_command(ctx, name)
         return command
 
-    def list_commands(self, ctx: click.Context) -> Iterable[str]:
+    def list_commands(self, ctx: click.Context) -> List[str]:
         commands = set(click.Group.list_commands(self, ctx))
         info = ctx.ensure_object(ScriptInfo)
-        commands.update(info.load_app().cli.list_commands(ctx))
-        return commands
+        commands.update(info.load_app().cli.list_commands(ctx))  # type: ignore
+        return list(commands)
 
     def main(self, *args: Any, **kwargs: Any) -> Any:
         kwargs.setdefault("obj", ScriptInfo(create_app=self.create_app))
@@ -269,7 +269,7 @@ def shell_command(info: ScriptInfo) -> None:
 @click.option(
     "--sort",
     "-s",
-    type=click.Choice({"endpoint", "methods", "rule", "match"}),
+    type=click.Choice({"endpoint", "methods", "rule", "match"}),  # type: ignore
     default="endpoint",
     help="Order the routes by type, 'match' is the matching order when dispatching a request.",
 )
