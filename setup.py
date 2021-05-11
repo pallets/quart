@@ -24,7 +24,7 @@ INSTALL_REQUIRES = [
     "jinja2",
     "toml",
     "typing_extensions; python_version < '3.8'",
-    "werkzeug == 2.0.0rc3",
+    "werkzeug >= 2.0.0",
 ]
 
 setup(
