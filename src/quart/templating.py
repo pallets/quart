@@ -43,8 +43,8 @@ class DispatchingJinjaLoader(BaseLoader):
         self.app = app
 
     def get_source(
-        self, environment: Environment, template: str
-    ) -> Tuple[str, Optional[str], Callable]:
+        self, environment: BaseEnvironment, template: str
+    ) -> Tuple[str, Optional[str], Optional[Callable[[], bool]]]:
         """Returns the template source from the environment.
 
         This considers the loaders on the :attr:`app` and blueprints.
@@ -87,7 +87,7 @@ async def render_template(template_name_or_list: Union[str, List[str]], **contex
         context: The variables to pass to the template.
     """
     await current_app.update_template_context(context)
-    template = current_app.jinja_env.get_or_select_template(template_name_or_list)
+    template = current_app.jinja_env.get_or_select_template(template_name_or_list)  # type: ignore
     return await _render(template, context, current_app._get_current_object())  # type: ignore
 
 
