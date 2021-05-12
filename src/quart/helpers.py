@@ -206,7 +206,7 @@ def url_for(
 
     if url_adapter is None:
         raise RuntimeError(
-            "Unable to create a url adapter, try setting the the SERVER_NAME config variable."
+            "Unable to create a url adapter, try setting the SERVER_NAME config variable."
         )
     if _scheme is not None and not _external:
         raise ValueError("External must be True for scheme usage")
