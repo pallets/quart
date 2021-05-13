@@ -441,10 +441,16 @@ class _AppCtxGlobals:
         return object.__repr__(self)
 
     def __getattr__(self, name: str) -> Any:
-        return self.__dict__[name]
+        try:
+            return self.__dict__[name]
+        except KeyError:
+            raise AttributeError(name) from None
 
     def __setattr__(self, name: str, value: Any) -> None:
         self.__dict__[name] = value
 
     def __delattr__(self, name: str) -> None:
-        del self.__dict__[name]
+        try:
+            del self.__dict__[name]
+        except KeyError:
+            raise AttributeError(name) from None
