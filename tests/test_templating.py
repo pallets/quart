@@ -36,7 +36,7 @@ async def test_template_render(app: Quart) -> None:
 @pytest.mark.asyncio
 async def test_default_template_context(app: Quart) -> None:
     async with app.app_context():
-        g.foo = "bar"  # type: ignore
+        g.foo = "bar"
         rendered = await render_template_string("{{ g.foo }}")
     assert rendered == "bar"
     async with app.test_request_context("/"):

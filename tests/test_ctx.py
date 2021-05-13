@@ -122,14 +122,14 @@ async def test_has_app_context() -> None:
 
 def test_app_ctx_globals_get() -> None:
     g = _AppCtxGlobals()
-    g.foo = "bar"  # type: ignore
+    g.foo = "bar"
     assert g.get("foo") == "bar"
     assert g.get("bar", "something") == "something"
 
 
 def test_app_ctx_globals_pop() -> None:
     g = _AppCtxGlobals()
-    g.foo = "bar"  # type: ignore
+    g.foo = "bar"
     assert g.pop("foo") == "bar"
     assert g.pop("foo", None) is None
     with pytest.raises(KeyError):
@@ -139,20 +139,20 @@ def test_app_ctx_globals_pop() -> None:
 def test_app_ctx_globals_setdefault() -> None:
     g = _AppCtxGlobals()
     g.setdefault("foo", []).append("bar")
-    assert g.foo == ["bar"]  # type: ignore
+    assert g.foo == ["bar"]
 
 
 def test_app_ctx_globals_contains() -> None:
     g = _AppCtxGlobals()
-    g.foo = "bar"  # type: ignore
+    g.foo = "bar"
     assert "foo" in g
     assert "bar" not in g
 
 
 def test_app_ctx_globals_iter() -> None:
     g = _AppCtxGlobals()
-    g.foo = "bar"  # type: ignore
-    g.bar = "foo"  # type: ignore
+    g.foo = "bar"
+    g.bar = "foo"
     assert sorted(iter(g)) == ["bar", "foo"]
 
 
@@ -162,11 +162,11 @@ async def test_copy_current_app_context() -> None:
 
     @app.route("/")
     async def index() -> str:
-        g.foo = "bar"  # type: ignore
+        g.foo = "bar"
 
         @copy_current_app_context
         async def within_context() -> None:
-            assert g.foo == "bar"  # type: ignore
+            assert g.foo == "bar"
 
         await asyncio.ensure_future(within_context())
         return ""

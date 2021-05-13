@@ -439,3 +439,12 @@ class _AppCtxGlobals:
         if top is not None:
             return f"<quart.g of {top.app.name}>"
         return object.__repr__(self)
+
+    def __getattr__(self, name: str) -> Any:
+        return self.__dict__[name]
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        self.__dict__[name] = value
+
+    def __delattr__(self, name: str) -> None:
+        del self.__dict__[name]
