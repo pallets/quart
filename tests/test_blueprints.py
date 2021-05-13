@@ -167,9 +167,10 @@ def test_cli_blueprints(cli_group: Optional[str], args: List[str]) -> None:
 async def test_nested_blueprint() -> None:
     app = Quart(__name__)
 
-    parent = Blueprint("parent", __name__)
+    parent = Blueprint("parent", __name__, url_prefix="/parent")
     child = Blueprint("child", __name__)
     grandchild = Blueprint("grandchild", __name__)
+    sibling = Blueprint("sibling", __name__)
 
     @parent.errorhandler(403)
     async def forbidden(_: Exception) -> ResponseReturnValue:
@@ -203,14 +204,20 @@ async def test_nested_blueprint() -> None:
     async def grandchild_no() -> ResponseReturnValue:
         abort(403)
 
+    @sibling.route("/sibling")
+    async def sibling_index() -> ResponseReturnValue:
+        return "Sibling yes"
+
     child.register_blueprint(grandchild, url_prefix="/grandchild")
     parent.register_blueprint(child, url_prefix="/child")
-    app.register_blueprint(parent, url_prefix="/parent")
+    parent.register_blueprint(sibling)
+    app.register_blueprint(parent)
 
     client = app.test_client()
 
     assert (await (await client.get("/parent/")).get_data()) == b"Parent yes"  # type: ignore
     assert (await (await client.get("/parent/child/")).get_data()) == b"Child yes"  # type: ignore
+    assert (await (await client.get("/parent/sibling")).get_data()) == b"Sibling yes"  # type: ignore  # noqa: E501
     assert (await (await client.get("/parent/child/grandchild/")).get_data()) == b"Grandchild yes"  # type: ignore  # noqa: E501
     assert (await (await client.get("/parent/no")).get_data()) == b"Parent no"  # type: ignore
     assert (await (await client.get("/parent/child/no")).get_data()) == b"Parent no"  # type: ignore

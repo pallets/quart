@@ -575,9 +575,10 @@ class Blueprint(Scaffold):
                 app.cli.add_command(self.cli)
 
         for blueprint, bp_options in self._blueprints:
-            url_prefix = options.get("url_prefix", "")
-            if "url_prefix" in bp_options:
-                url_prefix = url_prefix.rstrip("/") + "/" + bp_options["url_prefix"].lstrip("/")
+            url_prefix = options.get("url_prefix") or self.url_prefix
+            bp_url_prefix = bp_options.get("url_prefix") or blueprint.url_prefix
+            if bp_url_prefix and url_prefix:
+                url_prefix = url_prefix.rstrip("/") + "/" + bp_url_prefix.lstrip("/")
 
             bp_options["url_prefix"] = url_prefix
             bp_options["name_prefix"] = options.get("name_prefix", "") + self.name + "."
