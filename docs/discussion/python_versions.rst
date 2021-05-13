@@ -3,7 +3,7 @@
 Python version support
 ======================
 
-The master branch and releases >= 0.7.0 onwards only support Python
+The main branch and releases >= 0.7.0 onwards only support Python
 3.7.0 or greater.
 
 Python 3.7.0 is required to utilise ContextVars and doing so

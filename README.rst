@@ -1,7 +1,7 @@
 Quart
 =====
 
-.. image:: https://assets.gitlab-static.net/pgjones/quart/raw/master/artwork/logo.png
+.. image:: https://assets.gitlab-static.net/pgjones/quart/raw/main/artwork/logo.png
    :alt: Quart logo
 
 |Build Status| |docs| |pypi| |python| |license| |chat|
@@ -118,8 +118,8 @@ replace of ``flask`` to ``quart`` and then adding ``async`` and
 for more help.
 
 
-.. |Build Status| image:: https://gitlab.com/pgjones/quart/badges/master/pipeline.svg
-   :target: https://gitlab.com/pgjones/quart/commits/master
+.. |Build Status| image:: https://gitlab.com/pgjones/quart/badges/main/pipeline.svg
+   :target: https://gitlab.com/pgjones/quart/commits/main
 
 .. |docs| image:: https://img.shields.io/badge/docs-passing-brightgreen.svg
    :target: https://pgjones.gitlab.io/quart/
@@ -131,7 +131,7 @@ for more help.
    :target: https://pypi.python.org/pypi/Quart/
 
 .. |license| image:: https://img.shields.io/badge/license-MIT-blue.svg
-   :target: https://gitlab.com/pgjones/quart/blob/master/LICENSE
+   :target: https://gitlab.com/pgjones/quart/blob/main/LICENSE
 
 .. |chat| image:: https://img.shields.io/badge/chat-join_now-brightgreen.svg
    :target: https://gitter.im/python-quart/lobby
