@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from functools import wraps
+from inspect import iscoroutine
 from typing import Any, Awaitable, Callable, Optional, Union
 
 from werkzeug.wrappers import Response as WerkzeugResponse
@@ -31,15 +32,19 @@ Quart.full_dispatch_request = new_full_dispatch_request  # type: ignore
 def new_ensure_async(  # type: ignore
     self, func: Callable[..., Any]
 ) -> Callable[..., Awaitable[Any]]:
+
     if is_coroutine_function(func):
         return func
     else:
 
         @wraps(func)
         async def _wrapper(*args: Any, **kwargs: Any) -> Any:
-            return func(*args, **kwargs)
+            result = func(*args, **kwargs)
+            if iscoroutine(result):
+                return await result
+            else:
+                return result
 
-        _wrapper._quart_async_wrapper = True  # type: ignore
         return _wrapper
 
 
