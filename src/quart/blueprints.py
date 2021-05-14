@@ -59,6 +59,10 @@ class Blueprint(Scaffold):
         cli_group: Optional[str] = Ellipsis,  # type: ignore
     ) -> None:
         super().__init__(import_name, static_folder, static_url_path, template_folder, root_path)
+
+        if "." in name:
+            raise ValueError("Blueprint names may not contain dot '.' characters.")
+
         self.name = name
         self.url_prefix = url_prefix
         self.deferred_functions: List[DeferredSetupFunction] = []
