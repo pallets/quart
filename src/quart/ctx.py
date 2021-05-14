@@ -39,8 +39,6 @@ class _BaseRequestWebsocketContext:
         self.session = session
         self.preserved = False
 
-        self.match_request()
-
     @property
     def g(self) -> AppContext:
         return _app_ctx_stack.top.g
@@ -83,6 +81,9 @@ class _BaseRequestWebsocketContext:
 
             if self.session is None:
                 self.session = await session_interface.make_null_session(self.app)
+
+        if self.url_adapter is not None:
+            self.match_request()
 
     async def pop(self, exc: BaseException) -> None:
         await _app_ctx_stack.top.pop(exc)

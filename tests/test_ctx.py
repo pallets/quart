@@ -27,7 +27,8 @@ from quart.testing import make_test_headers_path_and_query_string, no_op_push
 from quart.wrappers import Request, Websocket
 
 
-def test_request_context_match(http_scope: HTTPScope) -> None:
+@pytest.mark.asyncio
+async def test_request_context_match(http_scope: HTTPScope) -> None:
     app = Quart(__name__)
     url_adapter = Mock()
     rule = QuartRule("/", methods={"GET"}, endpoint="index")
@@ -44,12 +45,13 @@ def test_request_context_match(http_scope: HTTPScope) -> None:
         http_scope,
         send_push_promise=no_op_push,
     )
-    RequestContext(app, request)
-    assert request.url_rule == rule
-    assert request.view_args == {"arg": "value"}
+    async with RequestContext(app, request):
+        assert request.url_rule == rule
+        assert request.view_args == {"arg": "value"}
 
 
-def test_bad_request_if_websocket_route(http_scope: HTTPScope) -> None:
+@pytest.mark.asyncio
+async def test_bad_request_if_websocket_route(http_scope: HTTPScope) -> None:
     app = Quart(__name__)
     url_adapter = Mock()
     url_adapter.match.side_effect = BadRequest()
@@ -65,8 +67,8 @@ def test_bad_request_if_websocket_route(http_scope: HTTPScope) -> None:
         http_scope,
         send_push_promise=no_op_push,
     )
-    RequestContext(app, request)
-    assert isinstance(request.routing_exception, BadRequest)
+    async with RequestContext(app, request):
+        assert isinstance(request.routing_exception, BadRequest)
 
 
 @pytest.mark.asyncio
