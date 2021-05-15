@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from hypercorn.typing import WWWScope
 from werkzeug.datastructures import Headers
 from werkzeug.sansio.request import Request as SansIORequest
+from werkzeug.utils import cached_property
 
 from ..globals import current_app
 
@@ -96,9 +97,22 @@ class BaseRequestWebsocket(SansIORequest):
         endpoint is not in a blueprint.
         """
         if self.endpoint is not None and "." in self.endpoint:
-            return self.endpoint.rsplit(".", 1)[0]
+            return self.endpoint.split(".")[-2]
         else:
             return None
+
+    @cached_property
+    def blueprints(self) -> List[str]:
+        """Return the names of the current blueprints.
+        The returned list is ordered from the current blueprint,
+        upwards through parent blueprints.
+        """
+        if self.url_rule and "." in self.url_rule.endpoint:
+            bps = self.url_rule.endpoint.split(".")[:-1]
+            bps.reverse()
+            return bps
+        else:
+            return []
 
     @property
     def script_root(self) -> str:

@@ -430,7 +430,7 @@ class Quart(Scaffold):
         """
         processors = self.template_context_processors[None]
         if has_request_context():
-            for blueprint in self._request_blueprints():
+            for blueprint in _request_ctx_stack.top.request.blueprints:
                 if blueprint in self.template_context_processors:
                     processors = chain(  # type: ignore
                         processors, self.template_context_processors[blueprint]
@@ -861,8 +861,10 @@ class Quart(Scaffold):
         :func:`~quart.helpers.url_for`.
         """
         functions = self.url_default_functions[None]
-        for blueprint in self._request_blueprints():
-            functions = chain(functions, self.url_default_functions[blueprint])  # type: ignore
+        if "." in endpoint:
+            blueprints = reversed(endpoint.split(".")[:-1])
+            for blueprint in blueprints:
+                functions = chain(functions, self.url_default_functions[blueprint])  # type: ignore
 
         for function in functions:
             function(endpoint, values)
@@ -882,8 +884,14 @@ class Quart(Scaffold):
     def _find_error_handler(self, error: Exception) -> Optional[ErrorHandlerCallable]:
         error_type, error_code = self._get_error_type_and_code(type(error))
 
+        blueprints = []
+        if _request_ctx_stack.top is not None:
+            blueprints = _request_ctx_stack.top.request.blueprints
+        elif _websocket_ctx_stack.top is not None:
+            blueprints = _websocket_ctx_stack.top.websocket.blueprints
+
         for code in [error_code, None]:
-            for name in chain(self._request_blueprints(), [None]):
+            for name in chain(blueprints, [None]):
                 handlers = self.error_handler_spec[name].get(code)
 
                 if handlers is None:
@@ -1074,7 +1082,7 @@ class Quart(Scaffold):
                 omits this argument.
         """
         functions = self.teardown_request_funcs[None]
-        for blueprint in self._request_blueprints():
+        for blueprint in _request_ctx_stack.top.request.blueprints:
             functions = chain(functions, self.teardown_request_funcs[blueprint])  # type: ignore
 
         for function in functions:
@@ -1093,7 +1101,7 @@ class Quart(Scaffold):
                 omits this argument.
         """
         functions = self.teardown_websocket_funcs[None]
-        for blueprint in self._request_blueprints():
+        for blueprint in _websocket_ctx_stack.top.websocket.blueprints:
             functions = chain(functions, self.teardown_websocket_funcs[blueprint])  # type: ignore
 
         for function in functions:
@@ -1477,13 +1485,13 @@ class Quart(Scaffold):
                 omits this argument.
         """
         processors = self.url_value_preprocessors[None]
-        for blueprint in self._request_blueprints():
+        for blueprint in (request_context or _request_ctx_stack.top).request.blueprints:
             processors = chain(processors, self.url_value_preprocessors[blueprint])  # type: ignore
         for processor in processors:
             processor(request.endpoint, request.view_args)
 
         functions = self.before_request_funcs[None]
-        for blueprint in self._request_blueprints():
+        for blueprint in _request_ctx_stack.top.request.blueprints:
             functions = chain(functions, self.before_request_funcs[blueprint])  # type: ignore
         for function in functions:
             result = await self.ensure_async(function)()
@@ -1546,7 +1554,7 @@ class Quart(Scaffold):
                 omits this argument.
         """
         functions = (request_context or _request_ctx_stack.top)._after_request_functions
-        for blueprint in self._request_blueprints():
+        for blueprint in (request_context or _request_ctx_stack.top).request.blueprints:
             functions = chain(functions, self.after_request_funcs[blueprint])
         functions = chain(functions, self.after_request_funcs[None])
 
@@ -1598,13 +1606,13 @@ class Quart(Scaffold):
                 omits this argument.
         """
         processors = self.url_value_preprocessors[None]
-        for blueprint in self._request_blueprints():
+        for blueprint in _websocket_ctx_stack.top.websocket.blueprints:
             processors = chain(processors, self.url_value_preprocessors[blueprint])  # type: ignore
         for processor in processors:
             processor(websocket.endpoint, websocket.view_args)
 
         functions = self.before_websocket_funcs[None]
-        for blueprint in self._request_blueprints():
+        for blueprint in _websocket_ctx_stack.top.websocket.blueprints:
             functions = chain(functions, self.before_websocket_funcs[blueprint])  # type: ignore
         for function in functions:
             result = await self.ensure_async(function)()
@@ -1667,7 +1675,7 @@ class Quart(Scaffold):
                 omits this argument.
         """
         functions = (websocket_context or _websocket_ctx_stack.top)._after_websocket_functions
-        for blueprint in self._request_blueprints():
+        for blueprint in _websocket_ctx_stack.top.websocket.blueprints:
             functions = chain(functions, self.after_websocket_funcs[blueprint])
         functions = chain(functions, self.after_websocket_funcs[None])
 
@@ -1742,19 +1750,6 @@ class Quart(Scaffold):
                     pass
                 else:
                     raise RuntimeError("While serving generator didn't terminate")
-
-    def _request_blueprints(self) -> Iterable[str]:
-        if _request_ctx_stack.top is not None:
-            blueprint = _request_ctx_stack.top.request.blueprint
-        elif _websocket_ctx_stack.top is not None:
-            blueprint = _websocket_ctx_stack.top.websocket.blueprint
-        else:
-            blueprint = None
-
-        if blueprint is None:
-            return []
-        else:
-            return reversed(blueprint.split("."))
 
 
 def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
