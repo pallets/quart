@@ -289,16 +289,17 @@ class Request(BaseRequestWebsocket):
         )
 
     async def _load_form_data(self) -> None:
-        parser = self.make_form_data_parser()
-        self._form, self._files = await asyncio.wait_for(
-            parser.parse(
-                self.body,
-                self.mimetype,
-                self.content_length,
-                self.mimetype_params,
-            ),
-            timeout=self.body_timeout,
-        )
+        if self._form is None:
+            parser = self.make_form_data_parser()
+            self._form, self._files = await asyncio.wait_for(
+                parser.parse(
+                    self.body,
+                    self.mimetype,
+                    self.content_length,
+                    self.mimetype_params,
+                ),
+                timeout=self.body_timeout,
+            )
 
     @property
     async def json(self) -> Any:
