@@ -30,6 +30,7 @@
 * Bugfix support SERVER_NAME configuration for the run method.
 * Bugfix correctly support root_paths.
 * Bugfix support str and byte streamed responses.
+* Bugfix match Flask and consume the raw data when form parsing.
 
 0.14.1 2020-12-13
 -----------------
