@@ -212,12 +212,14 @@ async def test_nested_blueprint() -> None:
     parent.register_blueprint(child, url_prefix="/child")
     parent.register_blueprint(sibling)
     app.register_blueprint(parent)
+    app.register_blueprint(parent, url_prefix="/alt")
 
     client = app.test_client()
 
     assert (await (await client.get("/parent/")).get_data()) == b"Parent yes"  # type: ignore
     assert (await (await client.get("/parent/child/")).get_data()) == b"Child yes"  # type: ignore
     assert (await (await client.get("/parent/sibling")).get_data()) == b"Sibling yes"  # type: ignore  # noqa: E501
+    assert (await (await client.get("/alt/sibling")).get_data()) == b"Sibling yes"  # type: ignore
     assert (await (await client.get("/parent/child/grandchild/")).get_data()) == b"Grandchild yes"  # type: ignore  # noqa: E501
     assert (await (await client.get("/parent/no")).get_data()) == b"Parent no"  # type: ignore
     assert (await (await client.get("/parent/child/no")).get_data()) == b"Parent no"  # type: ignore
