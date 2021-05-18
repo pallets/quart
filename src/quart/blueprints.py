@@ -512,17 +512,22 @@ class Blueprint(Scaffold):
             first_registration: Whether this is the first time this
                 blueprint has been registered on the application.
         """
-        first_registration = False
 
-        if self.name in app.blueprints and app.blueprints[self.name] is not self:
-            raise RuntimeError(
+        first_registration = True
+
+        for blueprint in app.blueprints.values():
+            if blueprint is self:
+                first_registration = False
+
+        name = f"{options.get('name_prefix', '')}.{self.name}".lstrip(".")
+        if name in app.blueprints and app.blueprints[name] is not self:
+            raise ValueError(
                 f"Blueprint name '{self.name}' "
                 f"is already registered by {app.blueprints[self.name]}. "
                 "Blueprints must have unique names"
             )
-        else:
-            app.blueprints[self.name] = self
-            first_registration = True
+
+        app.blueprints[name] = self
 
         self._got_registered_once = True
         state = self.make_setup_state(app, options, first_registration)
@@ -538,11 +543,11 @@ class Blueprint(Scaffold):
 
             def extend(bp_dict: dict, parent_dict: dict) -> None:
                 for key, values in bp_dict.items():
-                    key = self.name if key is None else f"{self.name}.{key}"
+                    key = name if key is None else f"{name}.{key}"
                     parent_dict[key].extend(values)
 
             for key, value in self.error_handler_spec.items():
-                key = self.name if key is None else f"{self.name}.{key}"
+                key = name if key is None else f"{name}.{key}"
                 value = defaultdict(
                     dict,
                     {
@@ -580,7 +585,7 @@ class Blueprint(Scaffold):
             if cli_resolved_group is None:
                 app.cli.commands.update(self.cli.commands)
             elif cli_resolved_group is Ellipsis:
-                self.cli.name = self.name
+                self.cli.name = name
                 app.cli.add_command(self.cli)
             else:
                 self.cli.name = cli_resolved_group
@@ -601,7 +606,7 @@ class Blueprint(Scaffold):
             elif state.url_prefix is not None:
                 bp_options["url_prefix"] = state.url_prefix
 
-            bp_options["name_prefix"] = options.get("name_prefix", "") + self.name + "."
+            bp_options["name_prefix"] = name
             blueprint.register(app, bp_options)
 
     def make_setup_state(
@@ -664,7 +669,7 @@ class BlueprintSetupState:
             path = f"{self.url_prefix.rstrip('/')}/{path.lstrip('/')}"
         if subdomain is None:
             subdomain = self.subdomain
-        endpoint = f"{self.name_prefix}{self.blueprint.name}.{endpoint}"
+        endpoint = f"{self.name_prefix}.{self.blueprint.name}.{endpoint}".lstrip(".")
         url_defaults = self.url_defaults
         if defaults is not None:
             url_defaults = {**url_defaults, **defaults}

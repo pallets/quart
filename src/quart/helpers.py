@@ -5,7 +5,7 @@ import os
 import pkgutil
 import sys
 from datetime import datetime, timedelta
-from functools import wraps
+from functools import lru_cache, wraps
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Callable, Iterable, List, Optional, Tuple, Union
@@ -417,3 +417,11 @@ async def send_file(
     if conditional:
         await response.make_conditional(request.range)
     return response
+
+
+@lru_cache(maxsize=None)
+def _split_blueprint_path(name: str) -> List[str]:
+    bps = [name]
+    while "." in bps[-1]:
+        bps.append(bps[-1].rpartition(".")[0])
+    return bps

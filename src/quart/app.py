@@ -54,7 +54,14 @@ from .ctx import (
     WebsocketContext,
 )
 from .globals import g, request, session, websocket
-from .helpers import find_package, get_debug_flag, get_env, get_flashed_messages, url_for
+from .helpers import (
+    _split_blueprint_path,
+    find_package,
+    get_debug_flag,
+    get_env,
+    get_flashed_messages,
+    url_for,
+)
 from .json import JSONDecoder, JSONEncoder, jsonify, tojson_filter
 from .logging import create_logger, create_serving_logger
 from .routing import QuartMap, QuartRule
@@ -871,7 +878,8 @@ class Quart(Scaffold):
         """
         functions = self.url_default_functions[None]
         if "." in endpoint:
-            blueprints = reversed(endpoint.split(".")[:-1])
+            blueprints = _split_blueprint_path(endpoint.rsplit(".", 1)[0])
+
             for blueprint in blueprints:
                 functions = chain(functions, self.url_default_functions[blueprint])  # type: ignore
 
