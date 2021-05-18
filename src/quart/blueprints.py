@@ -519,7 +519,7 @@ class Blueprint(Scaffold):
             if blueprint is self:
                 first_registration = False
 
-        name = f"{options.get('name_prefix', '')}.{self.name}".lstrip(".")
+        name = f"{options.get('name_prefix', '')}.{options.get('name', self.name)}".lstrip(".")
         if name in app.blueprints and app.blueprints[name] is not self:
             raise ValueError(
                 f"Blueprint name '{self.name}' "
