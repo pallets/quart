@@ -95,6 +95,9 @@ from .typing import (
     ResponseReturnValue,
     StatusCode,
     TeardownCallable,
+    TemplateFilterCallable,
+    TemplateGlobalCallable,
+    TemplateTestCallable,
     TestAppProtocol,
     TestClientProtocol,
 )
@@ -601,7 +604,9 @@ class Quart(Scaffold):
 
             self.view_functions[endpoint] = view_func
 
-    def template_filter(self, name: Optional[str] = None) -> Callable:
+    def template_filter(
+        self, name: Optional[str] = None
+    ) -> Callable[[TemplateFilterCallable], TemplateFilterCallable]:
         """Add a template filter.
 
         This is designed to be used as a decorator. An example usage,
@@ -616,13 +621,13 @@ class Quart(Scaffold):
             name: The filter name (defaults to function name).
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: TemplateFilterCallable) -> TemplateFilterCallable:
             self.add_template_filter(func, name=name)
             return func
 
         return decorator
 
-    def add_template_filter(self, func: Callable, name: Optional[str] = None) -> None:
+    def add_template_filter(self, func: TemplateFilterCallable, name: Optional[str] = None) -> None:
         """Add a template filter.
 
         This is designed to be used on the application directly. An
@@ -641,7 +646,9 @@ class Quart(Scaffold):
         """
         self.jinja_env.filters[name or func.__name__] = func
 
-    def template_test(self, name: Optional[str] = None) -> Callable:
+    def template_test(
+        self, name: Optional[str] = None
+    ) -> Callable[[TemplateTestCallable], TemplateTestCallable]:
         """Add a template test.
 
         This is designed to be used as a decorator. An example usage,
@@ -656,13 +663,13 @@ class Quart(Scaffold):
             name: The test name (defaults to function name).
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: TemplateTestCallable) -> TemplateTestCallable:
             self.add_template_test(func, name=name)
             return func
 
         return decorator
 
-    def add_template_test(self, func: Callable, name: Optional[str] = None) -> None:
+    def add_template_test(self, func: TemplateTestCallable, name: Optional[str] = None) -> None:
         """Add a template test.
 
         This is designed to be used on the application directly. An
@@ -681,7 +688,9 @@ class Quart(Scaffold):
         """
         self.jinja_env.tests[name or func.__name__] = func
 
-    def template_global(self, name: Optional[str] = None) -> Callable:
+    def template_global(
+        self, name: Optional[str] = None
+    ) -> Callable[[TemplateGlobalCallable], TemplateGlobalCallable]:
         """Add a template global.
 
         This is designed to be used as a decorator. An example usage,
@@ -696,13 +705,13 @@ class Quart(Scaffold):
             name: The global name (defaults to function name).
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: TemplateGlobalCallable) -> TemplateGlobalCallable:
             self.add_template_global(func, name=name)
             return func
 
         return decorator
 
-    def add_template_global(self, func: Callable, name: Optional[str] = None) -> None:
+    def add_template_global(self, func: TemplateGlobalCallable, name: Optional[str] = None) -> None:
         """Add a template global.
 
         This is designed to be used on the application directly. An

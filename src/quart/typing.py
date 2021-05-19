@@ -94,7 +94,7 @@ TemplateContextProcessorCallable = Union[
     Callable[[], Dict[str, Any]], Callable[[], Awaitable[Dict[str, Any]]]
 ]
 TemplateFilterCallable = Callable[[Any], str]
-TemplateGlobalCallable = Callable[[], Any]
+TemplateGlobalCallable = Callable[[Any], Any]
 TemplateTestCallable = Callable[[Any], bool]
 URLDefaultCallable = Callable[[str, dict], None]
 URLValuePreprocessorCallable = Callable[[Optional[str], Optional[dict]], None]

@@ -81,14 +81,15 @@ class Blueprint(Scaffold):
         rule: str,
         endpoint: Optional[str] = None,
         view_func: Optional[Callable] = None,
+        provide_automatic_options: Optional[bool] = None,
         *,
         methods: Optional[Iterable[str]] = None,
         defaults: Optional[dict] = None,
         host: Optional[str] = None,
         subdomain: Optional[str] = None,
-        provide_automatic_options: Optional[bool] = None,
         is_websocket: bool = False,
         strict_slashes: Optional[bool] = None,
+        merge_slashes: Optional[bool] = None,
     ) -> None:
         """Add a route/url rule to the blueprint.
 
@@ -112,17 +113,20 @@ class Blueprint(Scaffold):
                 rule,
                 endpoint,
                 view_func,
+                provide_automatic_options=provide_automatic_options,
                 methods=methods,
                 defaults=defaults,
                 host=host,
                 subdomain=subdomain or self.subdomain,
-                provide_automatic_options=provide_automatic_options,
                 is_websocket=is_websocket,
                 strict_slashes=strict_slashes,
+                merge_slashes=merge_slashes,
             )
         )
 
-    def app_template_filter(self, name: Optional[str] = None) -> Callable:
+    def app_template_filter(
+        self, name: Optional[str] = None
+    ) -> Callable[[TemplateFilterCallable], TemplateFilterCallable]:
         """Add an application wide template filter.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -161,7 +165,9 @@ class Blueprint(Scaffold):
         """
         self.record_once(lambda state: state.register_template_filter(func, name))
 
-    def app_template_test(self, name: Optional[str] = None) -> Callable:
+    def app_template_test(
+        self, name: Optional[str] = None
+    ) -> Callable[[TemplateTestCallable], TemplateTestCallable]:
         """Add an application wide template test.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -198,7 +204,9 @@ class Blueprint(Scaffold):
         """
         self.record_once(lambda state: state.register_template_test(func, name))
 
-    def app_template_global(self, name: Optional[str] = None) -> Callable:
+    def app_template_global(
+        self, name: Optional[str] = None
+    ) -> Callable[[TemplateGlobalCallable], TemplateGlobalCallable]:
         """Add an application wide template global.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -355,7 +363,7 @@ class Blueprint(Scaffold):
             def after():
                 ...
         """
-        self.record_once(lambda state: state.app.after_websocket(func))
+        self.record_once(lambda state: state.app.after_serving(func))
         return func
 
     def teardown_app_request(self, func: TeardownCallable) -> TeardownCallable:
@@ -650,6 +658,7 @@ class BlueprintSetupState:
         provide_automatic_options: Optional[bool] = None,
         is_websocket: bool = False,
         strict_slashes: Optional[bool] = None,
+        merge_slashes: Optional[bool] = None,
     ) -> None:
         if self.url_prefix is not None:
             path = f"{self.url_prefix.rstrip('/')}/{path.lstrip('/')}"
@@ -670,6 +679,7 @@ class BlueprintSetupState:
             subdomain=subdomain,
             is_websocket=is_websocket,
             strict_slashes=strict_slashes,
+            merge_slashes=merge_slashes,
         )
 
     def register_template_filter(self, func: TemplateFilterCallable, name: Optional[str]) -> None:

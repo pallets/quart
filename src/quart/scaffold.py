@@ -11,6 +11,7 @@ from typing import (
     Any,
     AnyStr,
     Callable,
+    cast,
     Dict,
     IO,
     Iterable,
@@ -19,6 +20,7 @@ from typing import (
     Tuple,
     Type,
     TYPE_CHECKING,
+    TypeVar,
     Union,
 )
 
@@ -48,7 +50,10 @@ if TYPE_CHECKING:
     from .wrappers import Response
 
 
-def setupmethod(func: Callable) -> Callable:
+F = TypeVar("F", bound=Callable)
+
+
+def setupmethod(func: F) -> F:
     @wraps(func)
     def wrapper(self: "Scaffold", *args: Any, **kwargs: Any) -> Any:
         if self._is_setup_finished():
@@ -58,7 +63,7 @@ def setupmethod(func: Callable) -> Callable:
             )
         return func(self, *args, **kwargs)
 
-    return wrapper
+    return cast(F, wrapper)
 
 
 class Scaffold:
@@ -718,7 +723,9 @@ class Scaffold:
         return func
 
     @setupmethod
-    def errorhandler(self, error: Union[Type[Exception], int]) -> Callable:
+    def errorhandler(
+        self, error: Union[Type[Exception], int]
+    ) -> Callable[[ErrorHandlerCallable], ErrorHandlerCallable]:
         """Register a function as an error handler.
 
         This is designed to be used as a decorator. An example usage,
