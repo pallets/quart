@@ -650,6 +650,7 @@ class BlueprintSetupState:
         self.subdomain = options.get("subdomain") or blueprint.subdomain
         self.url_defaults = dict(self.blueprint.url_values_defaults)
         self.url_defaults.update(options.get("url_defaults", {}) or {})
+        self.name = self.options.get("name", blueprint.name)
         self.name_prefix = self.options.get("name_prefix", "")
 
     def add_url_rule(
@@ -671,7 +672,7 @@ class BlueprintSetupState:
             path = f"{self.url_prefix.rstrip('/')}/{path.lstrip('/')}"
         if subdomain is None:
             subdomain = self.subdomain
-        endpoint = f"{self.name_prefix}.{self.blueprint.name}.{endpoint}".lstrip(".")
+        endpoint = f"{self.name_prefix}.{self.name}.{endpoint}".lstrip(".")
         url_defaults = self.url_defaults
         if defaults is not None:
             url_defaults = {**url_defaults, **defaults}

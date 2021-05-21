@@ -293,6 +293,33 @@ async def test_nested_blueprint() -> None:
     assert (await (await client.get("/parent/child/grandchild/no")).get_data()) == b"Grandchild no"  # type: ignore  # noqa: E501
 
 
+@pytest.mark.asyncio
+async def test_blueprint_renaming() -> None:
+    app = Quart(__name__)
+
+    bp = Blueprint("bp", __name__)
+    bp2 = Blueprint("bp2", __name__)
+
+    @bp.get("/")
+    async def index() -> str:
+        return request.endpoint
+
+    @bp2.get("/")
+    async def index2() -> str:
+        return request.endpoint
+
+    bp.register_blueprint(bp2, url_prefix="/a", name="sub")
+    app.register_blueprint(bp, url_prefix="/a")
+    app.register_blueprint(bp, url_prefix="/b", name="alt")
+
+    client = app.test_client()
+
+    assert (await (await client.get("/a/")).get_data()) == b"bp.index"  # type: ignore
+    assert (await (await client.get("/b/")).get_data()) == b"alt.index"  # type: ignore
+    assert (await (await client.get("/a/a/")).get_data()) == b"bp.sub.index2"  # type: ignore
+    assert (await (await client.get("/b/a/")).get_data()) == b"alt.sub.index2"  # type: ignore
+
+
 def test_self_registration() -> None:
     bp = Blueprint("bp", __name__)
 
