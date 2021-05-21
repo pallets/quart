@@ -500,6 +500,8 @@ class Blueprint(Scaffold):
         Keyword arguments passed to this method will override the
         defaults set on the blueprint.
         """
+        if blueprint is self:
+            raise ValueError("Cannot register a blueprint on itself")
         self._blueprints.append((blueprint, options))
 
     def register(self, app: "Quart", options: dict) -> None:

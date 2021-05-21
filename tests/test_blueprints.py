@@ -291,3 +291,10 @@ async def test_nested_blueprint() -> None:
     assert (await (await client.get("/parent/no")).get_data()) == b"Parent no"  # type: ignore
     assert (await (await client.get("/parent/child/no")).get_data()) == b"Parent no"  # type: ignore
     assert (await (await client.get("/parent/child/grandchild/no")).get_data()) == b"Grandchild no"  # type: ignore  # noqa: E501
+
+
+def test_self_registration() -> None:
+    bp = Blueprint("bp", __name__)
+
+    with pytest.raises(ValueError):
+        bp.register_blueprint(bp)
