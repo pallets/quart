@@ -87,8 +87,8 @@ ErrorHandlerCallable = Union[
     Callable[[Exception], Awaitable[ResponseReturnValue]],
 ]
 TeardownCallable = Union[
-    Callable[[Optional[BaseException]], "Response"],
-    Callable[[Optional[BaseException]], Awaitable["Response"]],
+    Callable[[Optional[BaseException]], None],
+    Callable[[Optional[BaseException]], Awaitable[None]],
 ]
 TemplateContextProcessorCallable = Union[
     Callable[[], Dict[str, Any]], Callable[[], Awaitable[Dict[str, Any]]]
