@@ -1,3 +1,15 @@
+0.15.1 2021-05-24
+-----------------
+
+* Improve the ``g`` AppGlobals typing.
+* Bugfix nested blueprint url_prefixes.
+* Bugfix ensure the session is created before url matching.
+* Bugfix Flask Patch sync wrapping async.
+* Bugfix don't try an parse the form data multiple times.
+* Bugfix blueprint naming allowing blueprints to be registered with a
+  different name.
+* Bugfix teardown callable typing.
+
 0.15.0 2021-05-11
 -----------------
 
