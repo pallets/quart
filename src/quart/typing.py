@@ -79,9 +79,16 @@ AfterWebsocketCallable = Union[
     Callable[["Response"], Optional["Response"]],
     Callable[["Response"], Awaitable[Optional["Response"]]],
 ]
-BeforeRequestCallable = Union[Callable[[], None], Callable[[], Awaitable[None]]]
+BeforeFirstRequestCallable = Union[Callable[[], None], Callable[[], Awaitable[None]]]
+BeforeRequestCallable = Union[
+    Callable[[], Optional[ResponseReturnValue]],
+    Callable[[], Awaitable[Optional[ResponseReturnValue]]],
+]
 BeforeServingCallable = Union[Callable[[], None], Callable[[], Awaitable[None]]]
-BeforeWebsocketCallable = Union[Callable[[], None], Callable[[], Awaitable[None]]]
+BeforeWebsocketCallable = Union[
+    Callable[[], Optional[ResponseReturnValue]],
+    Callable[[], Awaitable[Optional[ResponseReturnValue]]],
+]
 ErrorHandlerCallable = Union[
     Callable[[Exception], ResponseReturnValue],
     Callable[[Exception], Awaitable[ResponseReturnValue]],

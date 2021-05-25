@@ -9,6 +9,7 @@ from .typing import (
     AfterRequestCallable,
     AfterServingCallable,
     AfterWebsocketCallable,
+    BeforeFirstRequestCallable,
     BeforeRequestCallable,
     BeforeServingCallable,
     BeforeWebsocketCallable,
@@ -297,7 +298,9 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.before_serving(func))
         return func
 
-    def before_app_first_request(self, func: BeforeRequestCallable) -> BeforeRequestCallable:
+    def before_app_first_request(
+        self, func: BeforeFirstRequestCallable
+    ) -> BeforeFirstRequestCallable:
         """Add a before request first function to the app.
 
         This is designed to be used as a decorator, and has the same

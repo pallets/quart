@@ -94,7 +94,7 @@ from .typing import (
     ASGIHTTPProtocol,
     ASGILifespanProtocol,
     ASGIWebsocketProtocol,
-    BeforeRequestCallable,
+    BeforeFirstRequestCallable,
     BeforeServingCallable,
     ErrorHandlerCallable,
     FilePath,
@@ -256,7 +256,7 @@ class Quart(Scaffold):
         self.config = self.make_config(instance_relative_config)
 
         self.after_serving_funcs: List[Callable[[], Awaitable[None]]] = []
-        self.before_first_request_funcs: List[BeforeRequestCallable] = []
+        self.before_first_request_funcs: List[BeforeFirstRequestCallable] = []
         self.before_serving_funcs: List[Callable[[], Awaitable[None]]] = []
         self.blueprints: Dict[str, Blueprint] = OrderedDict()
         self.extensions: Dict[str, Any] = {}
@@ -739,8 +739,8 @@ class Quart(Scaffold):
 
     def before_first_request(
         self,
-        func: BeforeRequestCallable,
-    ) -> Callable[[], Awaitable[None]]:
+        func: BeforeFirstRequestCallable,
+    ) -> BeforeFirstRequestCallable:
         """Add a before **first** request function.
 
         This is designed to be used as a decorator, if used to
