@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, List, Optional
 
-from .globals import request
+from .globals import current_app, request
 from .typing import ResponseReturnValue
 
 http_method_funcs = frozenset(["get", "post", "head", "options", "delete", "put", "trace", "patch"])
@@ -54,7 +54,7 @@ class View:
     def as_view(cls, name: str, *class_args: Any, **class_kwargs: Any) -> Callable:
         async def view(*args: Any, **kwargs: Any) -> ResponseReturnValue:
             self = view.view_class(*class_args, **class_kwargs)  # type: ignore
-            return await self.dispatch_request(*args, **kwargs)
+            return await current_app.ensure_async(self.dispatch_request)(*args, **kwargs)
 
         if cls.decorators:
             view.__name__ = name
@@ -111,4 +111,4 @@ class MethodView(View, metaclass=MethodViewType):
         if handler is None and request.method == "HEAD":
             handler = getattr(self, "get", None)
 
-        return await handler(*args, **kwargs)
+        return await current_app.ensure_async(handler)(*args, **kwargs)
