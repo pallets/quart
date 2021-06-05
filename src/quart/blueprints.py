@@ -518,12 +518,6 @@ class Blueprint(Scaffold):
                 blueprint has been registered on the application.
         """
 
-        first_registration = True
-
-        for blueprint in app.blueprints.values():
-            if blueprint is self:
-                first_registration = False
-
         name = f"{options.get('name_prefix', '')}.{options.get('name', self.name)}".lstrip(".")
         if name in app.blueprints and app.blueprints[name] is not self:
             raise ValueError(
@@ -532,10 +526,15 @@ class Blueprint(Scaffold):
                 "Blueprints must have unique names"
             )
 
-        app.blueprints[name] = self
+        first_blueprint_registration = not any(
+            blueprint is self for blueprint in app.blueprints.values()
+        )
+        first_name_registration = name not in app.blueprints
 
+        app.blueprints[name] = self
         self._got_registered_once = True
-        state = self.make_setup_state(app, options, first_registration)
+
+        state = self.make_setup_state(app, options, first_blueprint_registration)
 
         if self.has_static_folder:
             state.add_url_rule(
@@ -544,7 +543,7 @@ class Blueprint(Scaffold):
                 endpoint="static",
             )
 
-        if first_registration:
+        if first_blueprint_registration or first_name_registration:
 
             def extend(bp_dict: dict, parent_dict: dict) -> None:
                 for key, values in bp_dict.items():

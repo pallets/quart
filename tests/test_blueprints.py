@@ -304,6 +304,14 @@ async def test_blueprint_renaming() -> None:
     async def index() -> str:
         return request.endpoint
 
+    @bp.get("/error")
+    async def error() -> str:
+        abort(403)
+
+    @bp.errorhandler(403)
+    async def forbidden(_: Exception) -> ResponseReturnValue:
+        return "Error", 403
+
     @bp2.get("/")
     async def index2() -> str:
         return request.endpoint
@@ -318,6 +326,8 @@ async def test_blueprint_renaming() -> None:
     assert (await (await client.get("/b/")).get_data()) == b"alt.index"  # type: ignore
     assert (await (await client.get("/a/a/")).get_data()) == b"bp.sub.index2"  # type: ignore
     assert (await (await client.get("/b/a/")).get_data()) == b"alt.sub.index2"  # type: ignore
+    assert (await (await client.get("/a/error")).get_data()) == b"Error"  # type: ignore
+    assert (await (await client.get("/b/error")).get_data()) == b"Error"  # type: ignore
 
 
 def test_self_registration() -> None:
