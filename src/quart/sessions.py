@@ -129,6 +129,10 @@ class SessionInterface:
         """Returns True is the instance is a null session."""
         return isinstance(instance, self.null_session_class)
 
+    def get_cookie_name(self, app: "Quart") -> str:
+        """Helper method to return the Cookie Name for the App."""
+        return app.session_cookie_name
+
     def get_cookie_domain(self, app: "Quart") -> Optional[str]:
         """Helper method to return the Cookie Domain for the App."""
         if app.config["SESSION_COOKIE_DOMAIN"] is not None:
@@ -237,7 +241,7 @@ class SecureCookieSessionInterface(SessionInterface):
         if signer is None:
             return None
 
-        cookie = request.cookies.get(app.session_cookie_name)
+        cookie = request.cookies.get(self.get_cookie_name(app))
         if cookie is None:
             return self.session_class()
         try:
@@ -253,11 +257,12 @@ class SecureCookieSessionInterface(SessionInterface):
         response: Union[Response, WerkzeugResponse],
     ) -> None:
         """Saves the session to the response in a secure cookie."""
+        name = self.get_cookie_name(app)
         domain = self.get_cookie_domain(app)
         path = self.get_cookie_path(app)
         if not session:
             if session.modified:
-                response.delete_cookie(app.session_cookie_name, domain=domain, path=path)
+                response.delete_cookie(name, domain=domain, path=path)
             return
 
         if session.accessed:
@@ -268,7 +273,7 @@ class SecureCookieSessionInterface(SessionInterface):
 
         data = self.get_signing_serializer(app).dumps(dict(session))
         response.set_cookie(
-            app.session_cookie_name,
+            name,
             data,  # type: ignore
             expires=self.get_expiration_time(app, session),
             httponly=self.get_cookie_httponly(app),
