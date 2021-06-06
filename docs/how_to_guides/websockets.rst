@@ -15,7 +15,7 @@ function, like so,
             await websocket.send(data)
 
 ``websocket`` is a global like ``request`` and shares many of the same
-attribtues such as ``headers``.
+attributes such as ``headers``.
 
 Manually rejecting or accepting websockets
 ------------------------------------------
@@ -131,7 +131,7 @@ example,
 Sending and receiving Bytes or String
 -------------------------------------
 
-The WebSocket protocol llows for either bytes or trings to be sent
+The WebSocket protocol allows for either bytes or strings to be sent
 with a frame marker indicating which. The
 :meth:`~quart.wrappers.request.Websocket.receive` method will return
 either ``bytes`` or ``str`` depending on what the client sent i.e. if

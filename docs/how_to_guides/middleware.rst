@@ -36,7 +36,7 @@ the presence of a header,
                 'more_body': False,
             })
 
-Whilst middlware can always be used as a wrapper around the app
+Whilst middleware can always be used as a wrapper around the app
 instance, it is best to assign to and wrap the ``asgi_app`` attribute,
 
 .. code-block:: python
@@ -45,7 +45,7 @@ instance, it is best to assign to and wrap the ``asgi_app`` attribute,
 
 as this ensures that the middleware is applied in any test code.
 
-You can combine multiple middlware warppers,
+You can combine multiple middleware wrappers,
 
 .. code-block:: python
 

@@ -50,7 +50,7 @@ The standard global functions are :func:`~quart.helpers.url_for` and
 Adding filters, tests, globals and context
 ------------------------------------------
 
-To add a filter for usage in tempates, make use of
+To add a filter for usage in templates, make use of
 :meth:`~quart.app.Quart.template_filter` or
 :meth:`~quart.blueprints.Blueprint.app_template_filter` as decorators,
 or :meth:`~quart.app.Quart.add_template_filter` or

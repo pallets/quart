@@ -13,7 +13,7 @@ It is likely though that you will need to use a third party library
 that is synchronous as there is no asynchronous version to use in its
 place. In this situation it is common to run the synchronous code in a
 thread pool executor so that it doesn't block the event loop and hence
-degrade the performace of the Quart application. This can be a bit
+degrade the performance of the Quart application. This can be a bit
 tricky to do, so Quart provides some helpers to do so. Firstly any
 synchronous route will be run in an executor, i.e.
 
@@ -28,7 +28,7 @@ will result in the sync function being run in a thread. Note that you
 are still within the :ref:`contexts`, and hence you can still access
 the ``request``, ``current_app`` and other globals.
 
-The following functionality accepts syncronous functions and will run
+The following functionality accepts synchronous functions and will run
 them in a thread,
 
 - Route handlers
@@ -82,7 +82,7 @@ this is similar to utilising the asyncio run_in_executor function,
              # does something with data
              ...
 
-        result = await asyncio.get_running_loop().run_in_exector(
+        result = await asyncio.get_running_loop().run_in_executor(
             None, sync_processor
         )
         return result

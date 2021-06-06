@@ -61,7 +61,7 @@ for this video we will only need Quart. Now pipenv can be activated,
 
 Conditional responses allow the server to send only the data that the
 client has requested. The client indicates this by attaching a
-``Range`` header to the request, which can be retreived manually via,
+``Range`` header to the request, which can be retrieved manually via,
 
 .. code-block:: python
 

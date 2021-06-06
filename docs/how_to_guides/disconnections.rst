@@ -8,7 +8,7 @@ you are awaiting and the client disconnects the await will raise a
 ``CancelledError``. This can be used to detect when a client
 disconnects, to allow for cleanup, for example the sse handler from
 the :ref:`broadcast_tutorial` uses this to remove clients on
-disconenct,
+disconnect,
 
 .. code-block:: python
 
