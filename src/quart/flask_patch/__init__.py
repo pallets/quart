@@ -53,10 +53,10 @@ from flask.signals import (  # noqa: E402
 )
 from flask.templating import render_template, render_template_string  # noqa: E402
 from flask.typing import ResponseReturnValue  # noqa: E402
-from flask.utils import redirect  # noqa: E402
 from flask.wrappers import Request, Response  # noqa: E402
 from jinja2 import escape, Markup  # noqa: E402
 from werkzeug.exceptions import abort  # noqa: E402
+from werkzeug.utils import redirect  # noqa: E402
 
 __all__ = (
     "_app_ctx_stack",
