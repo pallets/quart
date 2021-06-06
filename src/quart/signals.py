@@ -106,7 +106,7 @@ appcontext_tearing_down = _signals.signal("appcontext-tearing-down")
 # have a signature of Callable[[Quart], None]
 appcontext_pushed = _signals.signal("appcontext-pushed")
 
-#: Called when the app context is poped, connected functions should
+#: Called when the app context is popped, connected functions should
 # have a signature of Callable[[Quart], None]
 appcontext_popped = _signals.signal("appcontext-popped")
 

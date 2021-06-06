@@ -346,7 +346,7 @@ class QuartClient:
             session_interface = self.app.session_interface
             session = await session_interface.open_session(self.app, ctx.request)
             if session is None:
-                raise RuntimeError("Error opening the sesion. Check the secret_key?")
+                raise RuntimeError("Error opening the session. Check the secret_key?")
 
             _request_ctx_stack.push(original_request_ctx)
             try:

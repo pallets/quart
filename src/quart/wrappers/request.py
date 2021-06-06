@@ -109,7 +109,7 @@ class Body:
         self._has_data.set()
 
     def set_result(self, data: bytes) -> None:
-        """Convienience method, mainly for testing."""
+        """Convenience method, mainly for testing."""
         self.append(data)
         self.set_complete()
 
@@ -342,7 +342,7 @@ class Request(BaseRequestWebsocket):
         Arguments:
             error: The exception raised during parsing.
         Returns:
-            Any value returned (if overidden) will be used as the
+            Any value returned (if overridden) will be used as the
             default for any get_json calls.
         """
         if current_app and current_app.debug:

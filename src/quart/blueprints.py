@@ -341,7 +341,7 @@ class Blueprint(Scaffold):
 
         This is designed to be used as a decorator, and has the same arguments
         as :meth:`~quart.Quart.after_websocket`. It applies to all requests to the
-        ppe this blueprint is registerd on. An example usage,
+        ppe this blueprint is registered on. An example usage,
 
         .. code-block:: python
 

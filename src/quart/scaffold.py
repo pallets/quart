@@ -237,23 +237,23 @@ class Scaffold:
         return self.route(rule, methods=[method], **options)
 
     def get(self, rule: str, **options: Any) -> Callable:
-        """Syntatic sugar for :meth:`route` with ``methods=["GET"]``."""
+        """Syntactic sugar for :meth:`route` with ``methods=["GET"]``."""
         return self._method_route("GET", rule, options)
 
     def post(self, rule: str, **options: Any) -> Callable:
-        """Syntatic sugar for :meth:`route` with ``methods=["POST"]``."""
+        """Syntactic sugar for :meth:`route` with ``methods=["POST"]``."""
         return self._method_route("POST", rule, options)
 
     def put(self, rule: str, **options: Any) -> Callable:
-        """Syntatic sugar for :meth:`route` with ``methods=["PUT"]``."""
+        """Syntactic sugar for :meth:`route` with ``methods=["PUT"]``."""
         return self._method_route("PUT", rule, options)
 
     def delete(self, rule: str, **options: Any) -> Callable:
-        """Syntatic sugar for :meth:`route` with ``methods=["DELETE"]``."""
+        """Syntactic sugar for :meth:`route` with ``methods=["DELETE"]``."""
         return self._method_route("DELETE", rule, options)
 
     def patch(self, rule: str, **options: Any) -> Callable:
-        """Syntatic sugar for :meth:`route` with ``methods=["PATCH"]``."""
+        """Syntactic sugar for :meth:`route` with ``methods=["PATCH"]``."""
         return self._method_route("PATCH", rule, options)
 
     @setupmethod

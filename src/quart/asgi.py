@@ -347,7 +347,7 @@ async def _cancel_tasks(tasks: Set[asyncio.Future]) -> None:
 
 
 def _raise_exceptions(tasks: Set[asyncio.Future]) -> None:
-    # Raise any unexcepted exceptions
+    # Raise any unexpected exceptions
     for task in tasks:
         if not task.cancelled() and task.exception() is not None:
             raise task.exception()

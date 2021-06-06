@@ -394,7 +394,7 @@ async def send_file(
         mimetype = mimetypes.guess_type(attachment_filename)[0] or DEFAULT_MIMETYPE
     if mimetype is None:
         raise ValueError(
-            "The mime type cannot be infered, please set it manually via the mimetype argument."
+            "The mime type cannot be inferred, please set it manually via the mimetype argument."
         )
 
     response = current_app.response_class(file_body, mimetype=mimetype)
