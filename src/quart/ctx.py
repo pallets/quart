@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from functools import wraps
 from types import TracebackType
 from typing import Any, Callable, cast, Iterator, List, Optional, TYPE_CHECKING  # noqa: F401
@@ -14,6 +15,8 @@ from .wrappers import BaseRequestWebsocket, Request, Websocket
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa
+
+_sentinel = object()
 
 
 class _BaseRequestWebsocketContext:
@@ -85,7 +88,9 @@ class _BaseRequestWebsocketContext:
         if self.url_adapter is not None:
             self.match_request()
 
-    async def pop(self, exc: BaseException) -> None:
+    async def pop(self, exc: Optional[BaseException] = _sentinel) -> None:  # type: ignore
+        if exc is _sentinel:
+            exc = sys.exc_info()[1]
         await _app_ctx_stack.top.pop(exc)
 
     async def auto_pop(self, exc: Optional[BaseException]) -> None:
@@ -134,7 +139,9 @@ class RequestContext(_BaseRequestWebsocketContext):
         await super().push()
         _request_ctx_stack.push(self)
 
-    async def pop(self, exc: BaseException) -> None:
+    async def pop(self, exc: Optional[BaseException] = _sentinel) -> None:  # type: ignore
+        if exc is _sentinel:
+            exc = sys.exc_info()[1]
         await self.app.do_teardown_request(exc, self)
         _request_ctx_stack.pop()
         await super().pop(exc)
@@ -173,7 +180,9 @@ class WebsocketContext(_BaseRequestWebsocketContext):
         await super().push()
         _websocket_ctx_stack.push(self)
 
-    async def pop(self, exc: BaseException) -> None:
+    async def pop(self, exc: Optional[BaseException] = _sentinel) -> None:  # type: ignore
+        if exc is _sentinel:
+            exc = sys.exc_info()[1]
         await self.app.do_teardown_websocket(exc, self)
         _websocket_ctx_stack.pop()
         await super().pop(exc)
@@ -213,10 +222,12 @@ class AppContext:
         _app_ctx_stack.push(self)
         await appcontext_pushed.send(self.app)
 
-    async def pop(self, exc: Optional[BaseException]) -> None:
+    async def pop(self, exc: Optional[BaseException] = _sentinel) -> None:  # type: ignore
         self._app_reference_count -= 1
         try:
             if self._app_reference_count <= 0:
+                if exc is _sentinel:
+                    exc = sys.exc_info()[1]
                 await self.app.do_teardown_appcontext(exc)
         finally:
             _app_ctx_stack.pop()
@@ -406,9 +417,6 @@ def has_websocket_context() -> bool:
     See also :func:`has_app_context`.
     """
     return _websocket_ctx_stack.top is not None
-
-
-_sentinel = object()
 
 
 class _AppCtxGlobals:
