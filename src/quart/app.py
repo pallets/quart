@@ -1470,7 +1470,7 @@ class Quart(Scaffold):
             except Exception as error:
                 return await self.handle_exception(error)
             finally:
-                if request.scope.get("_quart._preserve_context", False):  # type: ignore
+                if request.scope.get("_quart._preserve_context", False):
                     self._preserved_context = request_context.copy()
 
     async def full_dispatch_request(

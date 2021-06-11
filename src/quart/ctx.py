@@ -89,7 +89,7 @@ class _BaseRequestWebsocketContext:
         await _app_ctx_stack.top.pop(exc)
 
     async def auto_pop(self, exc: Optional[BaseException]) -> None:
-        if self.request_websocket.scope.get("_quart._preserve_context", False) or (  # type: ignore
+        if self.request_websocket.scope.get("_quart._preserve_context", False) or (
             exc is not None and self.app.preserve_context_on_exception
         ):
             self.preserved = True

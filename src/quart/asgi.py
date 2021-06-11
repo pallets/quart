@@ -337,7 +337,7 @@ class ASGILifespan:
                 break
 
 
-async def _cancel_tasks(tasks: Set[asyncio.Future]) -> None:
+async def _cancel_tasks(tasks: Set[asyncio.Task]) -> None:
     # Cancel any pending, and wait for the cancellation to
     # complete i.e. finish any remaining work.
     for task in tasks:
@@ -346,7 +346,7 @@ async def _cancel_tasks(tasks: Set[asyncio.Future]) -> None:
     _raise_exceptions(tasks)
 
 
-def _raise_exceptions(tasks: Set[asyncio.Future]) -> None:
+def _raise_exceptions(tasks: Set[asyncio.Task]) -> None:
     # Raise any unexpected exceptions
     for task in tasks:
         if not task.cancelled() and task.exception() is not None:

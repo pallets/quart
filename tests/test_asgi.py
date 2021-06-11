@@ -15,7 +15,7 @@ try:
     from unittest.mock import AsyncMock
 except ImportError:
     # Python < 3.8
-    from mock import AsyncMock
+    from mock import AsyncMock  # type: ignore
 
 
 @pytest.mark.asyncio
