@@ -172,6 +172,4 @@ class TestWebsocketConnection:
                     )
                 )
         elif message["type"] == "websocket.close":
-            await self._receive_queue.put(
-                WebsocketDisconnect(message.get("code", 1000))
-            )
+            await self._receive_queue.put(WebsocketDisconnect(message.get("code", 1000)))
