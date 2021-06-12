@@ -31,3 +31,7 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module =["aiofiles.*", "blinker.*", "dotenv.*", "hypothesis.*", "py.*", "_pytest.*", "pytest.*"]
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = "--no-cov-on-fail --showlocals --strict"
+testpaths = ["tests"]
