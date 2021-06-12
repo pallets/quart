@@ -41,7 +41,7 @@ instance, it is best to assign to and wrap the ``asgi_app`` attribute,
 
 .. code-block:: python
 
-    quart_app.asgi_app = RejectMiddleware(quart_app.asgi_ap)
+    quart_app.asgi_app = RejectMiddleware(quart_app.asgi_app)
 
 as this ensures that the middleware is applied in any test code.
 
