@@ -17,3 +17,17 @@ multi_line_output = 3
 no_lines_before = "LOCALFOLDER"
 order_by_type = false
 reverse_relative = true
+
+[tool.mypy]
+allow_redefinition = true
+disallow_subclassing_any = true
+disallow_untyped_defs = true
+strict_equality = true
+strict_optional = false
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module =["aiofiles.*", "blinker.*", "dotenv.*", "hypothesis.*", "py.*", "_pytest.*", "pytest.*"]
+ignore_missing_imports = true
