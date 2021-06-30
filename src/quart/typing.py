@@ -100,7 +100,7 @@ TeardownCallable = Union[
 TemplateContextProcessorCallable = Union[
     Callable[[], Dict[str, Any]], Callable[[], Awaitable[Dict[str, Any]]]
 ]
-TemplateFilterCallable = Callable[[Any], str]
+TemplateFilterCallable = Callable[[Any], Any]
 TemplateGlobalCallable = Callable[[Any], Any]
 TemplateTestCallable = Callable[[Any], bool]
 URLDefaultCallable = Callable[[str, dict], None]
