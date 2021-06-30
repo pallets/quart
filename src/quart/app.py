@@ -179,10 +179,7 @@ class Quart(Scaffold):
     config_class = Config
     env = ConfigAttribute("ENV")
     jinja_environment = Environment
-    jinja_options = {
-        "autoescape": True,
-        "extensions": ["jinja2.ext.autoescape", "jinja2.ext.with_"],
-    }
+    jinja_options: dict = {}
     json_decoder = JSONDecoder
     json_encoder = JSONEncoder
     lock_class = asyncio.Lock
