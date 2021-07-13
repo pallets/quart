@@ -6,6 +6,7 @@ from urllib.parse import unquote, urlencode
 from hypercorn.typing import HTTPScope, Scope, WebsocketScope
 from werkzeug.datastructures import Authorization, Headers
 from werkzeug.sansio.multipart import Data, Epilogue, Field, File, MultipartEncoder, Preamble
+from werkzeug.urls import iri_to_uri
 
 from ..datastructures import FileStorage
 from ..json import dumps
@@ -182,7 +183,7 @@ def make_test_scope(
         "method": method,
         "scheme": scheme,
         "path": path,
-        "raw_path": path.encode("ascii"),
+        "raw_path": iri_to_uri(path).encode("ascii"),
         "query_string": query_string,
         "root_path": root_path,
         "headers": encode_headers(headers),
