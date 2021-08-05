@@ -38,8 +38,9 @@ app.run()
 ---------
 
 The Quart class, instances typically named ``app``, has a
-:meth:`~quart.Quart.run` method. This can be used to run the app via
-this snippet,
+:meth:`~quart.Quart.run` method. This method runs a development server,
+automatically turning on debug mode and code reloading. This can be
+used to run the app via this snippet,
 
 .. code-block:: python
     :caption: run.py
