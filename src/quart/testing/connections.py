@@ -19,7 +19,7 @@ class HTTPDisconnectError(Exception):
     pass
 
 
-class WebsocketDisconnect(Exception):
+class WebsocketDisconnectError(Exception):
     pass
 
 
@@ -120,7 +120,7 @@ class TestWebsocketConnection:
         await self._task
         while not self._receive_queue.empty():
             data = await self._receive_queue.get()
-            if isinstance(data, Exception) and not isinstance(data, WebsocketDisconnect):
+            if isinstance(data, Exception) and not isinstance(data, WebsocketDisconnectError):
                 raise data
 
     async def receive(self) -> AnyStr:
@@ -172,4 +172,4 @@ class TestWebsocketConnection:
                     )
                 )
         elif message["type"] == "websocket.close":
-            await self._receive_queue.put(WebsocketDisconnect(message.get("code", 1000)))
+            await self._receive_queue.put(WebsocketDisconnectError(message.get("code", 1000)))
