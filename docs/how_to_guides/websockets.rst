@@ -115,8 +115,8 @@ To test a websocket route use the test_client like so,
         result = await test_websocket.receive()
 
 If the websocket route returns a response the test_client will raise a
-:class:`~quart.testing.WebsocketResponse` exception with a
-:attr:`~quart.testing.WebsocketResponse.response` attribute. For
+:class:`~quart.testing.WebsocketResponseError` exception with a
+:attr:`~quart.testing.WebsocketResponseError.response` attribute. For
 example,
 
 .. code-block:: python
@@ -125,7 +125,7 @@ example,
     try:
         async with test_client.websocket('/ws/') as test_websocket:
             await test_websocket.send(data)
-    except WebsocketResponse as error:
+    except WebsocketResponseError as error:
         assert error.response.status_code == 401
 
 Sending and receiving Bytes or String

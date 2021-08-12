@@ -23,7 +23,7 @@ class WebsocketDisconnectError(Exception):
     pass
 
 
-class WebsocketResponse(Exception):
+class WebsocketResponseError(Exception):
     def __init__(self, response: Response) -> None:
         super().__init__()
         self.response = response
@@ -165,7 +165,7 @@ class TestWebsocketConnection:
             self.response_data.extend(message["body"])
             if not message.get("more_body", False):
                 await self._receive_queue.put(
-                    WebsocketResponse(
+                    WebsocketResponseError(
                         self.app.response_class(
                             bytes(self.response_data), self.status_code, self.headers
                         )

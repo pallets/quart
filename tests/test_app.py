@@ -13,7 +13,7 @@ from werkzeug.wrappers import Response as WerkzeugResponse
 from quart.app import Quart
 from quart.globals import session, websocket
 from quart.sessions import SecureCookieSession, SessionInterface
-from quart.testing import no_op_push, WebsocketResponse
+from quart.testing import no_op_push, WebsocketResponseError
 from quart.typing import ResponseReturnValue
 from quart.wrappers import Request, Response
 
@@ -379,7 +379,7 @@ async def test_app_session_websocket(session_app: Quart) -> None:
 async def test_app_session_websocket_return(session_app: Quart) -> None:
     test_client = session_app.test_client()
     async with test_client.websocket("/ws_return/") as test_websocket:
-        with pytest.raises(WebsocketResponse):
+        with pytest.raises(WebsocketResponseError):
             await test_websocket.receive()
     session_app.session_interface.open_session.assert_called()  # type: ignore
     session_app.session_interface.save_session.assert_called()  # type: ignore

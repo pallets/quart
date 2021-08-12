@@ -6,7 +6,7 @@ import pytest
 from werkzeug.wrappers import Response as WerkzeugResponse
 
 from quart import abort, jsonify, Quart, request, Response, ResponseReturnValue, url_for, websocket
-from quart.testing import WebsocketResponse
+from quart.testing import WebsocketResponseError
 
 
 @pytest.fixture
@@ -187,7 +187,7 @@ async def test_websocket_abort(app: Quart) -> None:
     try:
         async with test_client.websocket("/ws/abort/") as test_websocket:
             await test_websocket.receive()
-    except WebsocketResponse as error:
+    except WebsocketResponseError as error:
         assert error.response.status_code == 401
 
 

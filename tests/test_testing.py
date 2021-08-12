@@ -13,7 +13,7 @@ from quart.testing import (
     make_test_headers_path_and_query_string,
     make_test_scope,
     QuartClient as Client,
-    WebsocketResponse,
+    WebsocketResponseError,
 )
 
 
@@ -302,7 +302,7 @@ async def test_websocket_bad_request() -> None:
         return ""
 
     test_client = app.test_client()
-    with pytest.raises(WebsocketResponse):
+    with pytest.raises(WebsocketResponseError):
         async with test_client.websocket("/"):
             pass
 

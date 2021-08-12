@@ -6,7 +6,7 @@ from click.testing import CliRunner
 
 from .app import TestApp
 from .client import QuartClient
-from .connections import WebsocketResponse
+from .connections import WebsocketResponseError
 from .utils import (
     make_test_body_with_headers,
     make_test_headers_path_and_query_string,
@@ -44,5 +44,5 @@ __all__ = (
     "QuartCliRunner",
     "sentinel",
     "TestApp",
-    "WebsocketResponse",
+    "WebsocketResponseError",
 )
