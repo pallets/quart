@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from ..app import Quart  # noqa
 
 
-class HTTPDisconnect(Exception):
+class HTTPDisconnectError(Exception):
     pass
 
 
@@ -72,7 +72,7 @@ class TestHTTPConnection:
             data = await self._receive_queue.get()
             if isinstance(data, bytes):
                 self.response_data.extend(data)
-            elif not isinstance(data, HTTPDisconnect):
+            elif not isinstance(data, HTTPDisconnectError):
                 raise data
 
     async def as_response(self) -> Response:
@@ -94,7 +94,7 @@ class TestHTTPConnection:
         elif message["type"] == "http.response.push":
             self.push_promises.append((message["path"], decode_headers(message["headers"])))
         elif message["type"] == "http.disconnect":
-            await self._receive_queue.put(HTTPDisconnect())
+            await self._receive_queue.put(HTTPDisconnectError())
 
 
 class TestWebsocketConnection:
