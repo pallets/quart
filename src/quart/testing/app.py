@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 DEFAULT_TIMEOUT = 6
 
 
-class LifespanFailure(Exception):
+class LifespanError(Exception):
     pass
 
 
@@ -64,7 +64,7 @@ class TestApp:
             self._shutdown.set()
         elif message["type"] == "lifespan.startup.failed":
             self._startup.set()
-            raise LifespanFailure(f"Error during startup {message['message']}")
+            raise LifespanError(f"Error during startup {message['message']}")
         elif message["type"] == "lifespan.shutdown.failed":
             self._shutdown.set()
-            raise LifespanFailure(f"Error during shutdown {message['message']}")
+            raise LifespanError(f"Error during shutdown {message['message']}")
