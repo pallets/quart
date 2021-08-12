@@ -26,7 +26,7 @@ except ImportError:
     from mock import AsyncMock  # type: ignore
 
 
-class SimpleException(Exception):
+class SimpleError(Exception):
     pass
 
 
@@ -395,14 +395,14 @@ async def test_propagation(debug: bool, testing: bool, raises: bool, http_scope:
 
     @app.route("/")
     async def exception() -> ResponseReturnValue:
-        raise SimpleException()
+        raise SimpleError()
 
     app.debug = debug
     app.testing = testing
     test_client = app.test_client()
 
     if raises:
-        with pytest.raises(SimpleException):
+        with pytest.raises(SimpleError):
             await app.handle_request(
                 Request(
                     "GET",
