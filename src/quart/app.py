@@ -1696,7 +1696,7 @@ class Quart(Scaffold):
         for function in functions:
             response = await self.ensure_async(function)(response)
 
-        session_ = (websocket_context or _request_ctx_stack.top).session
+        session_ = (websocket_context or _websocket_ctx_stack.top).session
         if not self.session_interface.is_null_session(session_):
             if response is None and isinstance(session_, SecureCookieSession) and session_.modified:
                 self.logger.exception(
