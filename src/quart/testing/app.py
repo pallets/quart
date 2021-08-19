@@ -41,6 +41,9 @@ class TestApp:
         self._task = asyncio.ensure_future(self.app(scope, self._asgi_receive, self._asgi_send))
         await self._app_queue.put({"type": "lifespan.startup"})
         await asyncio.wait_for(self._startup.wait(), timeout=self.startup_timeout)
+        if self._task.done():
+            # This will re-raise any exceptions in the task
+            await self._task
 
     async def shutdown(self) -> None:
         await self._app_queue.put({"type": "lifespan.shutdown"})
