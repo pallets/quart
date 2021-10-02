@@ -60,7 +60,7 @@ Testing
 
 Quart's test client works on a request lifespan and hence does not
 call ``before_serving``, or ``after_serving`` functions, nor advance
-the ``while_sering`` generator. Instead Quart's test app can be used,
+the ``while_serving`` generator. Instead Quart's test app can be used,
 for example
 
 .. code-block:: python
