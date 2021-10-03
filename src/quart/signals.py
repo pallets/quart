@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import wraps
 from typing import Any, Callable, List, Optional, Tuple
 
-from blinker import NamedSignal, Namespace
+from blinker import NamedSignal, Namespace  # type: ignore[import]
 
 from .utils import is_coroutine_function
 

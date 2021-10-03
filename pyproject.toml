@@ -19,6 +19,13 @@ order_by_type = false
 reverse_relative = true
 
 [tool.mypy]
+strict = true
+disallow_any_generics = false
+warn_return_any = false
+no_implicit_optional = true
+disallow_untyped_calls = false
+implicit_reexport = true
+show_error_codes = true
 allow_redefinition = true
 disallow_subclassing_any = true
 disallow_untyped_defs = true
@@ -27,10 +34,6 @@ strict_optional = false
 warn_redundant_casts = true
 warn_unused_configs = true
 warn_unused_ignores = true
-
-[[tool.mypy.overrides]]
-module =["aiofiles.*", "blinker.*", "dotenv.*", "hypothesis.*", "py.*", "_pytest.*", "pytest.*"]
-ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 addopts = "--no-cov-on-fail --showlocals --strict"

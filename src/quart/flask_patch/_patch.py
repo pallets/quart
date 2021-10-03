@@ -37,7 +37,7 @@ def _patch_loop() -> None:
     def _sync_wait(self, future):  # type: ignore
         preserved_ready = list(self._ready)
         self._ready.clear()
-        current_task = asyncio.tasks._current_tasks.get(self)
+        current_task = asyncio.tasks._current_tasks.get(self)  # type: ignore[attr-defined]
         future = asyncio.tasks.ensure_future(future, loop=self)
         while not future.done() and not future.cancelled():
             self._run_once()
@@ -54,24 +54,26 @@ def _patch_loop() -> None:
 def _patch_task() -> None:
     # Patch the asyncio task to allow it to be re-entered.
     def enter_task(loop, task):  # type: ignore
-        asyncio.tasks._current_tasks[loop] = task
+        asyncio.tasks._current_tasks[loop] = task  # type: ignore[attr-defined]
 
     asyncio.tasks._enter_task = enter_task  # type: ignore
 
     def leave_task(loop, task):  # type: ignore
-        del asyncio.tasks._current_tasks[loop]
+        del asyncio.tasks._current_tasks[loop]  # type: ignore[attr-defined]
 
     asyncio.tasks._leave_task = leave_task  # type: ignore
 
     def step(self, exception=None):  # type: ignore
-        current_task = asyncio.tasks._current_tasks.get(self._loop)
+        current_task = asyncio.tasks._current_tasks.get(self._loop)  # type: ignore[attr-defined]
         try:
             self._Task__step_orig(exception)
         finally:
             if current_task is None:
-                asyncio.tasks._current_tasks.pop(self._loop, None)
+                asyncio.tasks._current_tasks.pop(self._loop, None)  # type: ignore[attr-defined]
             else:
-                asyncio.tasks._current_tasks[self._loop] = current_task
+                asyncio.tasks._current_tasks[  # type: ignore[attr-defined]
+                    self._loop
+                ] = current_task
 
     asyncio.Task._Task__step_orig = asyncio.Task._Task__step  # type: ignore
     asyncio.Task._Task__step = step  # type: ignore
