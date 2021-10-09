@@ -35,7 +35,7 @@ from typing import (
 from hypercorn.asyncio import serve
 from hypercorn.config import Config as HyperConfig
 from hypercorn.typing import ASGIReceiveCallable, ASGISendCallable, Scope
-from werkzeug.datastructures import Headers
+from werkzeug.datastructures import Authorization, Headers
 from werkzeug.exceptions import HTTPException, InternalServerError
 from werkzeug.routing import MapAdapter, RoutingException
 from werkzeug.wrappers import Response as WerkzeugResponse
@@ -1336,6 +1336,7 @@ class Quart(Scaffold):
         root_path: str = "",
         http_version: str = "1.1",
         scope_base: Optional[dict] = None,
+        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
     ) -> RequestContext:
         """Create a request context for testing purposes.
 
@@ -1357,7 +1358,11 @@ class Quart(Scaffold):
             scheme: Scheme for the request, default http.
         """
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
-            self, path, headers, query_string
+            self,
+            path,
+            headers,
+            query_string,
+            auth,
         )
         request_body, body_headers = make_test_body_with_headers(data=data, form=form, json=json)
         headers.update(**body_headers)

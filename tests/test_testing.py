@@ -61,6 +61,17 @@ def test_build_headers_path_and_query_string_with_query_string_error() -> None:
         make_test_headers_path_and_query_string(Quart(__name__), "/?a=b", None, {"c": "d"})
 
 
+def test_build_headers_path_and_query_string_with_auth() -> None:
+    headers, *_ = make_test_headers_path_and_query_string(
+        Quart(__name__),
+        "/",
+        None,
+        None,
+        ("user", "pass"),
+    )
+    assert headers["Authorization"] == "Basic dXNlcjpwYXNz"
+
+
 def test_make_test_body_with_headers_data() -> None:
     body, headers = make_test_body_with_headers(data="data")
     assert body == b"data"

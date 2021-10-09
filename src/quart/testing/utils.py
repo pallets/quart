@@ -4,7 +4,7 @@ from typing import Any, AnyStr, cast, Dict, Optional, overload, Tuple, TYPE_CHEC
 from urllib.parse import unquote, urlencode
 
 from hypercorn.typing import HTTPScope, Scope, WebsocketScope
-from werkzeug.datastructures import Headers
+from werkzeug.datastructures import Authorization, Headers
 from werkzeug.sansio.multipart import Data, Epilogue, Field, File, MultipartEncoder, Preamble
 
 from ..datastructures import FileStorage
@@ -27,6 +27,7 @@ def make_test_headers_path_and_query_string(
     path: str,
     headers: Optional[Union[dict, Headers]] = None,
     query_string: Optional[dict] = None,
+    auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
 ) -> Tuple[Headers, str, bytes]:
     """Make the headers and path with defaults for testing.
 
@@ -45,6 +46,12 @@ def make_test_headers_path_and_query_string(
         headers = headers
     elif headers is not None:
         headers = Headers(headers)
+
+    if auth is not None:
+        if isinstance(auth, tuple):
+            auth = Authorization("basic", {"username": auth[0], "password": auth[1]})
+        headers.setdefault("Authorization", auth.to_header())
+
     headers.setdefault("User-Agent", "Quart")
     headers.setdefault("host", app.config["SERVER_NAME"] or "localhost")
     if "?" in path and query_string is not None:

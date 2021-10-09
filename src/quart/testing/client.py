@@ -18,7 +18,7 @@ from typing import (
 )
 from urllib.request import Request as U2Request
 
-from werkzeug.datastructures import Headers
+from werkzeug.datastructures import Authorization, Headers
 from werkzeug.http import dump_cookie
 
 from .connections import TestHTTPConnection, TestWebsocketConnection
@@ -92,6 +92,7 @@ class QuartClient:
         root_path: str = "",
         http_version: str = "1.1",
         scope_base: Optional[dict] = None,
+        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
     ) -> Response:
         self.push_promises = []
         response = await self._make_request(
@@ -128,6 +129,7 @@ class QuartClient:
                     root_path,
                     http_version,
                     scope_base,
+                    auth,
                 )
         if self.preserve_context:
             _request_ctx_stack.push(self.app._preserved_context)
@@ -144,9 +146,14 @@ class QuartClient:
         root_path: str = "",
         http_version: str = "1.1",
         scope_base: Optional[dict] = None,
+        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
     ) -> TestHTTPConnectionProtocol:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
-            self.app, path, headers, query_string
+            self.app,
+            path,
+            headers,
+            query_string,
+            auth,
         )
         if self.cookie_jar is not None:
             for cookie in self.cookie_jar:
@@ -176,9 +183,14 @@ class QuartClient:
         root_path: str = "",
         http_version: str = "1.1",
         scope_base: Optional[dict] = None,
+        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
     ) -> TestWebsocketConnectionProtocol:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
-            self.app, path, headers, query_string
+            self.app,
+            path,
+            headers,
+            query_string,
+            auth,
         )
         if self.cookie_jar is not None:
             for cookie in self.cookie_jar:
@@ -317,6 +329,7 @@ class QuartClient:
         json: Any = sentinel,
         root_path: str = "",
         http_version: str = "1.1",
+        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
     ) -> AsyncGenerator[SessionMixin, None]:
         if self.cookie_jar is None:
             raise RuntimeError("Session transactions only make sense with cookies enabled.")
@@ -342,6 +355,7 @@ class QuartClient:
             json=json,
             root_path=root_path,
             http_version=http_version,
+            auth=auth,
         ) as ctx:
             session_interface = self.app.session_interface
             session = await session_interface.open_session(self.app, ctx.request)
@@ -393,9 +407,10 @@ class QuartClient:
         root_path: str,
         http_version: str,
         scope_base: Optional[dict],
+        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
     ) -> Response:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
-            self.app, path, headers, query_string
+            self.app, path, headers, query_string, auth
         )
         request_data, body_headers = make_test_body_with_headers(
             data=data, form=form, files=files, json=json, app=self.app
