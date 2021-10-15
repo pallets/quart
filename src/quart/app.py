@@ -1778,7 +1778,7 @@ def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
 
     for task in tasks:
         task.cancel()
-    loop.run_until_complete(asyncio.gather(*tasks, loop=loop, return_exceptions=True))
+    loop.run_until_complete(asyncio.gather(*tasks, return_exceptions=True))
 
     for task in tasks:
         if not task.cancelled() and task.exception() is not None:
