@@ -45,6 +45,7 @@ provides a view function decorator add ``ensure_async`` before calling
 the decorated function,
 
 .. code-block:: python
+
     def extension(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
