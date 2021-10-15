@@ -82,7 +82,7 @@ warn_unused_configs = true
 warn_unused_ignores = true
 
 [tool.pytest.ini_options]
-addopts = "--no-cov-on-fail --showlocals --strict"
+addopts = "--no-cov-on-fail --showlocals --strict-markers"
 testpaths = ["tests"]
 
 [build-system]
