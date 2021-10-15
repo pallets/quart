@@ -310,7 +310,7 @@ def copy_current_app_context(func: Callable) -> Callable:
     @wraps(func)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
         async with app_context:
-            return await func(*args, **kwargs)
+            return await app_context.app.ensure_async(func)(*args, **kwargs)
 
     return wrapper
 
@@ -338,7 +338,7 @@ def copy_current_request_context(func: Callable) -> Callable:
     @wraps(func)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
         async with request_context:
-            return await func(*args, **kwargs)
+            return await request_context.app.ensure_async(func)(*args, **kwargs)
 
     return wrapper
 
@@ -366,7 +366,7 @@ def copy_current_websocket_context(func: Callable) -> Callable:
     @wraps(func)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
         async with websocket_context:
-            return await func(*args, **kwargs)
+            return await websocket_context.app.ensure_async(func)(*args, **kwargs)
 
     return wrapper
 
