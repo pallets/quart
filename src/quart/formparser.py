@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import (
     Any,
     Awaitable,
-    BinaryIO,
     Callable,
     cast,
     Dict,
+    IO,
     List,
     NoReturn,
     Optional,
@@ -28,8 +28,8 @@ if TYPE_CHECKING:
     from .wrappers.request import Body
 
 StreamFactory = Callable[
-    [int, Optional[str], Optional[str], Optional[int]],
-    BinaryIO,
+    [Optional[int], Optional[str], Optional[str], Optional[int]],
+    IO[bytes],
 ]
 
 ParserFunc = Callable[
@@ -150,7 +150,7 @@ class MultiPartParser:
 
         return self.charset
 
-    def start_file_streaming(self, event: File, total_content_length: int) -> BinaryIO:
+    def start_file_streaming(self, event: File, total_content_length: int) -> IO[bytes]:
         content_type = event.headers.get("content-type")
 
         try:
@@ -169,7 +169,7 @@ class MultiPartParser:
     async def parse(
         self, body: "Body", boundary: bytes, content_length: int
     ) -> Tuple[MultiDict, MultiDict]:
-        container: Union[BinaryIO, List[bytes]]
+        container: Union[IO[bytes], List[bytes]]
         _write: Callable[[bytes], Any]
 
         parser = MultipartDecoder(boundary, self.max_form_memory_size)
@@ -199,7 +199,7 @@ class MultiPartParser:
                             )
                             fields.append((current_part.name, value))
                         else:
-                            container = cast(BinaryIO, container)
+                            container = cast(IO[bytes], container)
                             container.seek(0)
                             files.append(
                                 (

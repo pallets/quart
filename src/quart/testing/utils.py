@@ -109,10 +109,10 @@ def make_test_body_with_headers(
             request_data += encoder.send_event(
                 File(name=key, filename=file_storage.filename, headers=file_storage.headers)
             )
-            chunk = file_storage.read(16384)  # type: ignore
+            chunk = file_storage.read(16384)
             while chunk != b"":
                 request_data += encoder.send_event(Data(data=chunk, more_data=True))
-                chunk = file_storage.read(16384)  # type: ignore
+                chunk = file_storage.read(16384)
             request_data += encoder.send_event(Data(data=b"", more_data=False))
         if form is not None:
             for key, value in form.items():
