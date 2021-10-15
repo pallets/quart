@@ -1096,7 +1096,7 @@ class Quart(Scaffold):
                 omits this argument.
         """
         functions = self.teardown_request_funcs[None]
-        for blueprint in _request_ctx_stack.top.request.blueprints:
+        for blueprint in (request_context or _request_ctx_stack.top).request.blueprints:
             functions = chain(functions, self.teardown_request_funcs[blueprint])  # type: ignore
 
         for function in functions:
@@ -1115,7 +1115,7 @@ class Quart(Scaffold):
                 omits this argument.
         """
         functions = self.teardown_websocket_funcs[None]
-        for blueprint in _websocket_ctx_stack.top.websocket.blueprints:
+        for blueprint in (websocket_context or _websocket_ctx_stack.top).websocket.blueprints:
             functions = chain(functions, self.teardown_websocket_funcs[blueprint])  # type: ignore
 
         for function in functions:
@@ -1510,7 +1510,7 @@ class Quart(Scaffold):
             processor(request.endpoint, request.view_args)
 
         functions = self.before_request_funcs[None]
-        for blueprint in _request_ctx_stack.top.request.blueprints:
+        for blueprint in (request_context or _request_ctx_stack.top).request.blueprints:
             functions = chain(functions, self.before_request_funcs[blueprint])  # type: ignore
         for function in functions:
             result = await self.ensure_async(function)()
@@ -1625,13 +1625,13 @@ class Quart(Scaffold):
                 omits this argument.
         """
         processors = self.url_value_preprocessors[None]
-        for blueprint in _websocket_ctx_stack.top.websocket.blueprints:
+        for blueprint in (websocket_context or _websocket_ctx_stack.top).websocket.blueprints:
             processors = chain(processors, self.url_value_preprocessors[blueprint])  # type: ignore
         for processor in processors:
             processor(websocket.endpoint, websocket.view_args)
 
         functions = self.before_websocket_funcs[None]
-        for blueprint in _websocket_ctx_stack.top.websocket.blueprints:
+        for blueprint in (websocket_context or _websocket_ctx_stack.top).websocket.blueprints:
             functions = chain(functions, self.before_websocket_funcs[blueprint])  # type: ignore
         for function in functions:
             result = await self.ensure_async(function)()
@@ -1694,7 +1694,7 @@ class Quart(Scaffold):
                 omits this argument.
         """
         functions = (websocket_context or _websocket_ctx_stack.top)._after_websocket_functions
-        for blueprint in _websocket_ctx_stack.top.websocket.blueprints:
+        for blueprint in (websocket_context or _websocket_ctx_stack.top).websocket.blueprints:
             functions = chain(functions, self.after_websocket_funcs[blueprint])
         functions = chain(functions, self.after_websocket_funcs[None])
 
