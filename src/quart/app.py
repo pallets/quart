@@ -48,6 +48,7 @@ from .ctx import (
     _request_ctx_stack,
     _websocket_ctx_stack,
     AppContext,
+    copy_current_app_context,
     has_request_context,
     has_websocket_context,
     RequestContext,
@@ -69,6 +70,7 @@ from .scaffold import _endpoint_from_view_func, Scaffold
 from .sessions import SecureCookieSession, SecureCookieSessionInterface
 from .signals import (
     appcontext_tearing_down,
+    got_background_exception,
     got_request_exception,
     got_websocket_exception,
     request_finished,
@@ -253,6 +255,7 @@ class Quart(Scaffold):
         self.config = self.make_config(instance_relative_config)
 
         self.after_serving_funcs: List[Callable[[], Awaitable[None]]] = []
+        self.background_tasks: Set[asyncio.Task] = set()
         self.before_first_request_funcs: List[BeforeFirstRequestCallable] = []
         self.before_serving_funcs: List[Callable[[], Awaitable[None]]] = []
         self.blueprints: Dict[str, Blueprint] = OrderedDict()
@@ -1027,9 +1030,11 @@ class Quart(Scaffold):
             self.logger.error(
                 f"Exception on request {request_.method} {request_.path}", exc_info=exception_info
             )
-        if has_websocket_context():
+        elif has_websocket_context():
             websocket_ = _websocket_ctx_stack.top.websocket
             self.logger.error(f"Exception on websocket {websocket_.path}", exc_info=exception_info)
+        else:
+            self.logger.error("Exception", exc_info=exception_info)
 
     def raise_routing_exception(self, request: BaseRequestWebsocket) -> NoReturn:
         raise request.routing_exception
@@ -1390,6 +1395,26 @@ class Quart(Scaffold):
         )
         request.body.set_result(request_body)
         return self.request_context(request)
+
+    def add_background_task(self, func: Callable, *args: Any, **kwargs: Any) -> None:
+        async def _wrapper() -> None:
+            try:
+                await copy_current_app_context(func)(*args, **kwargs)
+            except Exception as error:
+                await self.handle_background_exception(error)
+
+        task = asyncio.get_event_loop().create_task(_wrapper())
+        self.background_tasks.add(task)
+
+        def _cleanup(_: Any) -> None:
+            self.background_tasks.remove(task)
+
+        task.add_done_callback(_cleanup)
+
+    async def handle_background_exception(self, error: Exception) -> None:
+        await got_background_exception.send(self, exception=error)
+
+        self.log_exception(sys.exc_info())
 
     async def try_trigger_before_first_request_functions(self) -> None:
         """Trigger the before first request methods."""
@@ -1759,6 +1784,8 @@ class Quart(Scaffold):
                 await gen.__anext__()
 
     async def shutdown(self) -> None:
+        await asyncio.gather(*self.background_tasks)
+
         async with self.app_context():
             for func in self.after_serving_funcs:
                 await self.ensure_async(func)()

@@ -6,6 +6,7 @@ Discussions
    :maxdepth: 1
 
    async_compatibility.rst
+   background_tasks.rst
    contexts.rst
    design_choices.rst
    dos_mitigations.rst

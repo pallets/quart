@@ -11,7 +11,7 @@ from werkzeug.exceptions import InternalServerError
 from werkzeug.wrappers import Response as WerkzeugResponse
 
 from quart.app import Quart
-from quart.globals import session, websocket
+from quart.globals import current_app, session, websocket
 from quart.sessions import SecureCookieSession, SessionInterface
 from quart.testing import no_op_push, WebsocketResponseError
 from quart.typing import ResponseReturnValue
@@ -458,3 +458,28 @@ async def test_test_app() -> None:
         assert serving == [1]
     assert shutdown
     assert serving == [1, 2]
+
+
+@pytest.mark.asyncio
+async def test_background_task() -> None:
+    app = Quart(__name__)
+    app.config["DATA"] = "data"
+
+    complete = asyncio.Event()
+    data = None
+
+    async def background() -> None:
+        nonlocal complete, data
+        data = current_app.config["DATA"]
+        complete.set()
+
+    @app.route("/")
+    async def index() -> str:
+        app.add_background_task(background)
+        return ""
+
+    test_client = app.test_client()
+    await test_client.get("/")
+
+    await complete.wait()
+    assert data == "data"
