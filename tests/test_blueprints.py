@@ -8,6 +8,7 @@ import pytest
 from quart import (
     abort,
     Blueprint,
+    g,
     Quart,
     render_template_string,
     request,
@@ -335,3 +336,88 @@ def test_self_registration() -> None:
 
     with pytest.raises(ValueError):
         bp.register_blueprint(bp)
+
+
+@pytest.mark.asyncio
+async def test_nested_callback_order() -> None:
+    app = Quart(__name__)
+
+    parent = Blueprint("parent", __name__)
+    child = Blueprint("child", __name__)
+
+    @app.before_request
+    async def app_before1() -> None:
+        g.setdefault("seen", []).append("app_1")
+
+    @app.teardown_request
+    async def app_teardown1(exc: Optional[BaseException] = None) -> None:
+        assert g.seen.pop() == "app_1"
+
+    @app.before_request
+    async def app_before2() -> None:
+        g.setdefault("seen", []).append("app_2")
+
+    @app.teardown_request
+    async def app_teardown2(exc: Optional[BaseException] = None) -> None:
+        assert g.seen.pop() == "app_2"
+
+    @app.context_processor
+    async def app_ctx() -> dict:
+        return dict(key="app")
+
+    @parent.before_request
+    async def parent_before1() -> None:
+        g.setdefault("seen", []).append("parent_1")
+
+    @parent.teardown_request
+    async def parent_teardown1(exc: Optional[BaseException] = None) -> None:
+        assert g.seen.pop() == "parent_1"
+
+    @parent.before_request
+    async def parent_before2() -> None:
+        g.setdefault("seen", []).append("parent_2")
+
+    @parent.teardown_request
+    async def parent_teardown2(exc: Optional[BaseException] = None) -> None:
+        assert g.seen.pop() == "parent_2"
+
+    @parent.context_processor
+    async def parent_ctx() -> dict:
+        return dict(key="parent")
+
+    @child.before_request
+    async def child_before1() -> None:
+        g.setdefault("seen", []).append("child_1")
+
+    @child.teardown_request
+    async def child_teardown1(exc: Optional[BaseException] = None) -> None:
+        assert g.seen.pop() == "child_1"
+
+    @child.before_request
+    async def child_before2() -> None:
+        g.setdefault("seen", []).append("child_2")
+
+    @child.teardown_request
+    async def child_teardown2(exc: Optional[BaseException] = None) -> None:
+        assert g.seen.pop() == "child_2"
+
+    @child.context_processor
+    async def child_ctx() -> dict:
+        return dict(key="child")
+
+    @child.route("/a")
+    async def a() -> str:
+        return ", ".join(g.seen)
+
+    @child.route("/b")
+    async def b() -> str:
+        return await render_template_string("{{ key }}")
+
+    parent.register_blueprint(child)
+    app.register_blueprint(parent)
+
+    client = app.test_client()
+    assert (
+        await (await client.get("/a")).get_data()
+    ) == b"app_1, app_2, parent_1, parent_2, child_1, child_2"  # type: ignore
+    assert (await (await client.get("/b")).get_data()) == b"child"  # type: ignore

@@ -7,7 +7,6 @@ import sys
 import warnings
 from collections import OrderedDict
 from datetime import timedelta
-from itertools import chain
 from logging import Logger
 from pathlib import Path
 from types import TracebackType
@@ -54,7 +53,7 @@ from .ctx import (
     RequestContext,
     WebsocketContext,
 )
-from .globals import g, request, session, websocket
+from .globals import g, request, session
 from .helpers import (
     _split_blueprint_path,
     find_package,
@@ -438,16 +437,17 @@ class Quart(Scaffold):
         Arguments:
             context: The context to update (mutate).
         """
-        processors = self.template_context_processors[None]
+        names = [None]
         if has_request_context():
-            for blueprint in _request_ctx_stack.top.request.blueprints:
-                if blueprint in self.template_context_processors:
-                    processors = chain(  # type: ignore
-                        processors, self.template_context_processors[blueprint]
-                    )
+            names.extend(reversed(_request_ctx_stack.top.request.blueprints))
+        elif has_websocket_context():
+            names.extend(reversed(_websocket_ctx_stack.top.websocket.blueprints))
+
         extra_context: dict = {}
-        for processor in processors:
-            extra_context.update(await self.ensure_async(processor)())
+        for name in names:
+            for processor in self.template_context_processors[name]:
+                extra_context.update(await self.ensure_async(processor)())
+
         original = context.copy()
         context.update(extra_context)
         context.update(original)
@@ -876,15 +876,13 @@ class Quart(Scaffold):
         This is used to assist when building urls, see
         :func:`~quart.helpers.url_for`.
         """
-        functions = self.url_default_functions[None]
+        names: List[Optional[str]] = [None]
         if "." in endpoint:
-            blueprints = _split_blueprint_path(endpoint.rsplit(".", 1)[0])
+            names.extend(reversed(_split_blueprint_path(endpoint.rsplit(".", 1)[0])))
 
-            for blueprint in blueprints:
-                functions = chain(functions, self.url_default_functions[blueprint])  # type: ignore
-
-        for function in functions:
-            function(endpoint, values)
+        for name in names:
+            for function in self.url_default_functions[name]:
+                function(endpoint, values)
 
     def handle_url_build_error(self, error: Exception, endpoint: str, values: dict) -> str:
         """Handle a build error.
@@ -901,14 +899,15 @@ class Quart(Scaffold):
     def _find_error_handler(self, error: Exception) -> Optional[ErrorHandlerCallable]:
         error_type, error_code = self._get_error_type_and_code(type(error))
 
-        blueprints = []
-        if _request_ctx_stack.top is not None:
-            blueprints = _request_ctx_stack.top.request.blueprints
-        elif _websocket_ctx_stack.top is not None:
-            blueprints = _websocket_ctx_stack.top.websocket.blueprints
+        names = []
+        if has_request_context():
+            names.extend(_request_ctx_stack.top.request.blueprints)
+        elif has_websocket_context():
+            names.extend(_websocket_ctx_stack.top.websocket.blueprints)
+        names.append(None)
 
         for code in [error_code, None]:
-            for name in chain(blueprints, [None]):
+            for name in names:
                 handlers = self.error_handler_spec[name].get(code)
 
                 if handlers is None:
@@ -1100,12 +1099,11 @@ class Quart(Scaffold):
             request_context: The request context, optional as Flask
                 omits this argument.
         """
-        functions = self.teardown_request_funcs[None]
-        for blueprint in (request_context or _request_ctx_stack.top).request.blueprints:
-            functions = chain(functions, self.teardown_request_funcs[blueprint])  # type: ignore
+        names = [*(request_context or _request_ctx_stack.top).request.blueprints, None]
+        for name in names:
+            for function in self.teardown_request_funcs[name]:
+                await self.ensure_async(function)(exc)
 
-        for function in functions:
-            await self.ensure_async(function)(exc)
         await request_tearing_down.send(self, exc=exc)
 
     async def do_teardown_websocket(
@@ -1119,12 +1117,11 @@ class Quart(Scaffold):
             websocket_context: The websocket context, optional as Flask
                 omits this argument.
         """
-        functions = self.teardown_websocket_funcs[None]
-        for blueprint in (websocket_context or _websocket_ctx_stack.top).websocket.blueprints:
-            functions = chain(functions, self.teardown_websocket_funcs[blueprint])  # type: ignore
+        names = [*(websocket_context or _websocket_ctx_stack.top).websocket.blueprints, None]
+        for name in names:
+            for function in self.teardown_websocket_funcs[name]:
+                await self.ensure_async(function)(exc)
 
-        for function in functions:
-            await self.ensure_async(function)(exc)
         await websocket_tearing_down.send(self, exc=exc)
 
     async def do_teardown_appcontext(self, exc: Optional[BaseException]) -> None:
@@ -1528,19 +1525,18 @@ class Quart(Scaffold):
             request_context: The request context, optional as Flask
                 omits this argument.
         """
-        processors = self.url_value_preprocessors[None]
-        for blueprint in (request_context or _request_ctx_stack.top).request.blueprints:
-            processors = chain(processors, self.url_value_preprocessors[blueprint])  # type: ignore
-        for processor in processors:
-            processor(request.endpoint, request.view_args)
+        names = [None, *reversed((request_context or _request_ctx_stack.top).request.blueprints)]
 
-        functions = self.before_request_funcs[None]
-        for blueprint in (request_context or _request_ctx_stack.top).request.blueprints:
-            functions = chain(functions, self.before_request_funcs[blueprint])  # type: ignore
-        for function in functions:
-            result = await self.ensure_async(function)()
-            if result is not None:
-                return result
+        for name in names:
+            for processor in self.url_value_preprocessors[name]:
+                processor(request.endpoint, request.view_args)
+
+        for name in names:
+            for function in self.before_request_funcs[name]:
+                result = await self.ensure_async(function)()
+                if result is not None:
+                    return result
+
         return None
 
     async def dispatch_request(
@@ -1597,13 +1593,14 @@ class Quart(Scaffold):
             request_context: The request context, optional as Flask
                 omits this argument.
         """
-        functions = (request_context or _request_ctx_stack.top)._after_request_functions
-        for blueprint in (request_context or _request_ctx_stack.top).request.blueprints:
-            functions = chain(functions, self.after_request_funcs[blueprint])
-        functions = chain(functions, self.after_request_funcs[None])
+        names = [*(request_context or _request_ctx_stack.top).request.blueprints, None]
 
-        for function in functions:
+        for function in (request_context or _request_ctx_stack.top)._after_request_functions:
             response = await self.ensure_async(function)(response)
+
+        for name in names:
+            for function in reversed(self.after_request_funcs[name]):
+                response = await self.ensure_async(function)(response)
 
         session_ = (request_context or _request_ctx_stack.top).session
         if not self.session_interface.is_null_session(session_):
@@ -1649,19 +1646,21 @@ class Quart(Scaffold):
             websocket_context: The websocket context, optional as Flask
                 omits this argument.
         """
-        processors = self.url_value_preprocessors[None]
-        for blueprint in (websocket_context or _websocket_ctx_stack.top).websocket.blueprints:
-            processors = chain(processors, self.url_value_preprocessors[blueprint])  # type: ignore
-        for processor in processors:
-            processor(websocket.endpoint, websocket.view_args)
+        names = [
+            None,
+            *reversed((websocket_context or _websocket_ctx_stack.top).websocket.blueprints),
+        ]
 
-        functions = self.before_websocket_funcs[None]
-        for blueprint in (websocket_context or _websocket_ctx_stack.top).websocket.blueprints:
-            functions = chain(functions, self.before_websocket_funcs[blueprint])  # type: ignore
-        for function in functions:
-            result = await self.ensure_async(function)()
-            if result is not None:
-                return result
+        for name in names:
+            for processor in self.url_value_preprocessors[name]:
+                processor(request.endpoint, request.view_args)
+
+        for name in names:
+            for function in self.before_request_funcs[name]:
+                result = await self.ensure_async(function)()
+                if result is not None:
+                    return result
+
         return None
 
     async def dispatch_websocket(
@@ -1718,13 +1717,14 @@ class Quart(Scaffold):
             websocket_context: The websocket context, optional as Flask
                 omits this argument.
         """
-        functions = (websocket_context or _websocket_ctx_stack.top)._after_websocket_functions
-        for blueprint in (websocket_context or _websocket_ctx_stack.top).websocket.blueprints:
-            functions = chain(functions, self.after_websocket_funcs[blueprint])
-        functions = chain(functions, self.after_websocket_funcs[None])
+        names = [*(websocket_context or _websocket_ctx_stack.top).websocket.blueprints, None]
 
-        for function in functions:
+        for function in (websocket_context or _websocket_ctx_stack.top)._after_websocket_functions:
             response = await self.ensure_async(function)(response)
+
+        for name in names:
+            for function in reversed(self.after_websocket_funcs[name]):
+                response = await self.ensure_async(function)(response)
 
         session_ = (websocket_context or _websocket_ctx_stack.top).session
         if not self.session_interface.is_null_session(session_):
