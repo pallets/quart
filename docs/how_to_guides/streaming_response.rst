@@ -22,6 +22,23 @@ every second,
             yield time.encode()
         return async_generator(), 200, {'X-Something': 'value'}
 
+With context
+''''''''''''
+
+If you want to make use of the ``request`` context whilst streaming
+you will need to use the :func:`quart.helpers.stream_with_context`
+decorator,
+
+.. code-block:: python
+
+    @app.route('/')
+    async def stream_time():
+        @stream_with_context
+        async def async_generator():
+            time = datetime.isoformat()
+            yield time.encode()
+        return async_generator(), 200, {'X-Something': 'value'}
+
 Timeout
 '''''''
 
