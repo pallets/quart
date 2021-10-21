@@ -17,6 +17,10 @@ def app() -> Quart:
     async def index() -> ResponseReturnValue:
         return "index"
 
+    @app.route("/❤️")
+    async def iri() -> ResponseReturnValue:
+        return "💔"
+
     @app.route("/sync/")
     def sync() -> ResponseReturnValue:
         return "index"
@@ -81,6 +85,13 @@ async def test_index(path: str, app: Quart) -> None:
     response = await test_client.get(path)
     assert response.status_code == 200
     assert b"index" in (await response.get_data())  # type: ignore
+
+
+@pytest.mark.asyncio
+async def test_iri(app: Quart) -> None:
+    test_client = app.test_client()
+    response = await test_client.get("/❤️")
+    assert "💔".encode() in (await response.get_data())  # type: ignore
 
 
 @pytest.mark.asyncio

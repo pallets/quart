@@ -119,9 +119,16 @@ def test_make_test_body_with_headers_argument_error() -> None:
     make_test_body_with_headers(form={}, files={})
 
 
-def test_make_test_scope_with_scope_base() -> None:
+@pytest.mark.parametrize(
+    "path, expected_raw_path",
+    [
+        ("/", b"/"),
+        ("/❤️", b"/%E2%9D%A4%EF%B8%8F"),
+    ],
+)
+def test_make_test_scope_with_scope_base(path: str, expected_raw_path: bytes) -> None:
     scope = make_test_scope(
-        "http", "/", "GET", Headers(), b"", "http", "", "1.1", {"client": ("127.0.0.2", "1234")}
+        "http", path, "GET", Headers(), b"", "http", "", "1.1", {"client": ("127.0.0.2", "1234")}
     )
     assert scope == {
         "type": "http",
@@ -129,8 +136,8 @@ def test_make_test_scope_with_scope_base() -> None:
         "asgi": {"spec_version": "2.1"},
         "method": "GET",
         "scheme": "http",
-        "path": "/",
-        "raw_path": b"/",
+        "path": path,
+        "raw_path": expected_raw_path,
         "query_string": b"",
         "root_path": "",
         "headers": [],
