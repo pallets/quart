@@ -284,8 +284,8 @@ class ASGIWebsocketConnection:
                 message["headers"] = encode_headers(headers)
             elif headers:
                 warnings.warn("The ASGI Server does not support accept headers, headers not sent")
-            await send(message)
             self._accepted = True
+            await send(message)
 
     async def close_connection(self, send: ASGISendCallable, code: int, reason: str) -> None:
         if self._closed:
