@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import cast
+from typing import AsyncGenerator, cast
 
 import pytest
 from werkzeug.wrappers import Response as WerkzeugResponse
@@ -43,6 +43,14 @@ def app() -> Quart:
     @app.route("/param/<param>")
     async def param() -> ResponseReturnValue:
         return param
+
+    @app.route("/stream")
+    async def stream() -> ResponseReturnValue:
+        async def _gen() -> AsyncGenerator[str, None]:
+            yield "Hello "
+            yield "World"
+
+        return _gen()
 
     @app.errorhandler(409)
     async def generic_http_handler(_: Exception) -> ResponseReturnValue:
@@ -198,3 +206,10 @@ async def test_root_path(app: Quart) -> None:
     assert response.status_code == 404
     response = await test_client.get("/bob/", root_path="/bob")
     assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_stream(app: Quart) -> None:
+    test_client = app.test_client()
+    response = await test_client.get("/stream")
+    assert (await response.get_data()) == b"Hello World"  # type: ignore

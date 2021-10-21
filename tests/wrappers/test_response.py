@@ -25,12 +25,6 @@ async def test_data_wrapper() -> None:
     assert results == [b"abcdef"]
 
 
-@pytest.mark.asyncio
-async def test_data_wrapper_sequence_conversion() -> None:
-    wrapper = DataBody(b"abcdef")
-    assert (await wrapper.convert_to_sequence()) == b"abcdef"
-
-
 async def _simple_async_generator() -> AsyncGenerator[bytes, None]:
     yield b"abc"
     yield b"def"
@@ -50,15 +44,6 @@ async def test_iterable_wrapper(iterable: Any) -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "iterable", [[b"abc", b"def"], (data for data in [b"abc", b"def"]), _simple_async_generator()]
-)
-async def test_iterable_wrapper_sequence_conversion(iterable: Any) -> None:
-    wrapper = IterableBody(iterable)
-    assert (await wrapper.convert_to_sequence()) == b"abcdef"
-
-
-@pytest.mark.asyncio
 async def test_file_wrapper(tmpdir: LocalPath) -> None:
     file_ = tmpdir.join("file_wrapper")
     file_.write("abcdef")
@@ -71,14 +56,6 @@ async def test_file_wrapper(tmpdir: LocalPath) -> None:
 
 
 @pytest.mark.asyncio
-async def test_file_wrapper_sequence_conversion(tmpdir: LocalPath) -> None:
-    file_ = tmpdir.join("file_wrapper")
-    file_.write("abcdef")
-    wrapper = FileBody(Path(file_.realpath()), buffer_size=3)
-    assert (await wrapper.convert_to_sequence()) == b"abcdef"
-
-
-@pytest.mark.asyncio
 async def test_io_wrapper() -> None:
     wrapper = IOBody(BytesIO(b"abcdef"), buffer_size=3)
     results = []
@@ -86,12 +63,6 @@ async def test_io_wrapper() -> None:
         async for data in response:
             results.append(data)
     assert results == [b"abc", b"def"]
-
-
-@pytest.mark.asyncio
-async def test_io_wrapper_sequence_conversion() -> None:
-    wrapper = IOBody(BytesIO(b"abcdef"), buffer_size=3)
-    assert (await wrapper.convert_to_sequence()) == b"abcdef"
 
 
 @pytest.mark.parametrize(

@@ -55,10 +55,6 @@ class ResponseBody(ABC):
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
         pass
 
-    @abstractmethod
-    async def convert_to_sequence(self) -> bytes:
-        pass
-
 
 def _raise_if_invalid_range(begin: int, end: int, size: int) -> None:
     if begin >= end or abs(begin) > size or end > size:
@@ -82,9 +78,6 @@ class DataBody(ResponseBody):
             yield self.data[self.begin : self.end]
 
         return _aiter()
-
-    async def convert_to_sequence(self) -> bytes:
-        return self.data[self.begin : self.end]
 
     async def make_conditional(
         self, begin: int, end: Optional[int], max_partial_size: Optional[int] = None
@@ -120,12 +113,6 @@ class IterableBody(ResponseBody):
 
     def __aiter__(self) -> AsyncIterator:
         return self.iter
-
-    async def convert_to_sequence(self) -> bytes:
-        result = bytearray()
-        async for data in self.iter:
-            result.extend(data)
-        return bytes(result)
 
 
 class FileBody(ResponseBody):
@@ -177,13 +164,6 @@ class FileBody(ResponseBody):
             return chunk
         else:
             raise StopAsyncIteration()
-
-    async def convert_to_sequence(self) -> bytes:
-        result = bytearray()
-        async with self as response:
-            async for data in response:
-                result.extend(data)
-        return bytes(result)
 
     async def make_conditional(
         self, begin: int, end: Optional[int], max_partial_size: Optional[int] = None
@@ -239,13 +219,6 @@ class IOBody(ResponseBody):
             return chunk
         else:
             raise StopAsyncIteration()
-
-    async def convert_to_sequence(self) -> bytes:
-        result = bytearray()
-        async with self as response:
-            async for data in response:
-                result.extend(data)
-        return bytes(result)
 
     async def make_conditional(
         self, begin: int, end: Optional[int], max_partial_size: Optional[int] = None
@@ -344,7 +317,7 @@ class Response(SansIOResponse):
     async def get_data(self, as_text: bool = False) -> AnyStr:
         """Return the body data."""
         if self.implicit_sequence_conversion:
-            self.response = self.data_body_class(await self.response.convert_to_sequence())
+            await self.make_sequence()
         result = "" if as_text else b""
         async with self.response as body:
             async for data in body:
@@ -423,7 +396,7 @@ class Response(SansIOResponse):
                 begin, end, max_partial_size
             )
         except AttributeError:
-            self.response = self.data_body_class(await self.response.convert_to_sequence())
+            await self.make_sequence()
             return await self.make_conditional(request_range, max_partial_size)
         else:
             self.content_length = self.response.end - self.response.begin  # type: ignore
@@ -435,6 +408,18 @@ class Response(SansIOResponse):
                     complete_length,
                 )
                 self.status_code = 206
+
+    async def make_sequence(self) -> None:
+        data = b"".join([value async for value in self.iter_encode()])
+        self.response = self.data_body_class(data)
+
+    async def iter_encode(self) -> AsyncGenerator[bytes, None]:
+        async with self.response as response_body:
+            async for item in response_body:
+                if isinstance(item, str):
+                    yield item.encode(self.charset)
+                else:
+                    yield item
 
     async def freeze(self) -> None:
         """Freeze this object ready for pickling."""
