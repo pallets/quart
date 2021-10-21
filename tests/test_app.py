@@ -175,6 +175,8 @@ async def test_subdomain() -> None:
             False,
         ),
         (InternalServerError(), InternalServerError().get_response(), False),
+        ((val for val in "abcd"), Response((val for val in "abcd")), False),
+        (int, None, True),
     ],
 )
 async def test_make_response(

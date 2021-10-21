@@ -7,6 +7,7 @@ import sys
 import warnings
 from collections import OrderedDict
 from datetime import timedelta
+from inspect import isasyncgen, isgenerator
 from logging import Logger
 from pathlib import Path
 from types import TracebackType
@@ -1470,10 +1471,16 @@ class Quart(Scaffold):
         if isinstance(value, HTTPException):
             response = value.get_response()  # type: ignore
         elif not isinstance(value, (Response, WerkzeugResponse)):
-            if isinstance(value, dict):
+            if (
+                isinstance(value, (str, bytes, bytearray))
+                or isgenerator(value)
+                or isasyncgen(value)
+            ):
+                response = self.response_class(value)
+            elif isinstance(value, dict):
                 response = jsonify(value)
             else:
-                response = self.response_class(value)
+                raise TypeError(f"The response value type ({type(value).__name__}) is not valid")
         else:
             response = value
 
