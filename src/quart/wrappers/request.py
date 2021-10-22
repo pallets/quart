@@ -135,6 +135,7 @@ class Request(BaseRequestWebsocket):
     body_class = Body
     form_data_parser_class = FormDataParser
     json_module = json
+    lock_class = asyncio.Lock
 
     def __init__(
         self,
@@ -180,6 +181,7 @@ class Request(BaseRequestWebsocket):
         self._cached_json: Dict[bool, Any] = {False: Ellipsis, True: Ellipsis}
         self._form: Optional[MultiDict] = None
         self._files: Optional[MultiDict] = None
+        self._parsing_lock = self.lock_class()
         self._send_push_promise = send_push_promise
 
     @property
@@ -290,19 +292,20 @@ class Request(BaseRequestWebsocket):
 
     async def _load_form_data(self) -> None:
         if self._form is None:
-            parser = self.make_form_data_parser()
-            try:
-                self._form, self._files = await asyncio.wait_for(
-                    parser.parse(
-                        self.body,
-                        self.mimetype,
-                        self.content_length,
-                        self.mimetype_params,
-                    ),
-                    timeout=self.body_timeout,
-                )
-            except asyncio.TimeoutError:
-                raise RequestTimeout()
+            async with self._parsing_lock:
+                parser = self.make_form_data_parser()
+                try:
+                    self._form, self._files = await asyncio.wait_for(
+                        parser.parse(
+                            self.body,
+                            self.mimetype,
+                            self.content_length,
+                            self.mimetype_params,
+                        ),
+                        timeout=self.body_timeout,
+                    )
+                except asyncio.TimeoutError:
+                    raise RequestTimeout()
 
     @property
     async def json(self) -> Any:
