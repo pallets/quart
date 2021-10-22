@@ -488,10 +488,6 @@ class Quart(Scaffold):
     def register_blueprint(
         self,
         blueprint: Blueprint,
-        *,
-        url_prefix: Optional[str] = None,
-        url_defaults: Dict[str, Any] = None,
-        subdomain: Optional[str] = None,
         **options: Any,
     ) -> None:
         """Register a blueprint on the app.
@@ -505,13 +501,7 @@ class Quart(Scaffold):
             url_defaults: Blueprint routes will use these default values for view arguments.
             subdomain: Blueprint routes will match on this subdomain.
         """
-        blueprint.register(
-            app=self,
-            options={
-                **dict(url_prefix=url_prefix, url_defaults=url_defaults, subdomain=subdomain),
-                **options,
-            },
-        )
+        blueprint.register(self, options)
 
     def iter_blueprints(self) -> ValuesView[Blueprint]:
         """Return a iterator over the blueprints."""
