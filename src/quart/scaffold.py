@@ -9,11 +9,9 @@ from json import JSONDecoder, JSONEncoder
 from pathlib import Path
 from typing import (
     Any,
-    AnyStr,
     Callable,
     cast,
     Dict,
-    IO,
     Iterable,
     List,
     Optional,
@@ -24,6 +22,9 @@ from typing import (
     Union,
 )
 
+from aiofiles import open as async_open
+from aiofiles.base import AiofilesContextManager
+from aiofiles.threadpool.binary import AsyncBufferedReader
 from jinja2 import FileSystemLoader
 from werkzeug.exceptions import default_exceptions, HTTPException
 
@@ -216,19 +217,23 @@ class Scaffold:
         else:
             return None
 
-    def open_resource(self, path: FilePath, mode: str = "rb") -> IO[AnyStr]:
+    async def open_resource(
+        self,
+        path: FilePath,
+        mode: str = "rb",
+    ) -> AiofilesContextManager[None, None, AsyncBufferedReader]:
         """Open a file for reading.
 
         Use as
 
         .. code-block:: python
 
-            with app.open_resource(path) as file_:
-                file_.read()
+            async with app.open_resource(path) as file_:
+                await file_.read()
         """
         if mode not in {"r", "rb"}:
             raise ValueError("Files can only be opened for reading")
-        return open(self.root_path / file_path_to_path(path), mode)
+        return async_open(self.root_path / file_path_to_path(path), mode)  # type: ignore
 
     def _method_route(self, method: str, rule: str, options: dict) -> Callable:
         if "methods" in options:

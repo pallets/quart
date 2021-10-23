@@ -20,7 +20,6 @@ from typing import (
     cast,
     Coroutine,
     Dict,
-    IO,
     Iterable,
     List,
     NoReturn,
@@ -33,6 +32,9 @@ from typing import (
 )
 from weakref import WeakSet
 
+from aiofiles import open as async_open
+from aiofiles.base import AiofilesContextManager
+from aiofiles.threadpool.binary import AsyncBufferedReader
 from hypercorn.asyncio import serve
 from hypercorn.config import Config as HyperConfig
 from hypercorn.typing import ASGIReceiveCallable, ASGISendCallable, Scope
@@ -369,17 +371,19 @@ class Quart(Scaffold):
             return package_path / "instance"
         return prefix / "var" / f"{self.name}-instance"
 
-    def open_instance_resource(self, path: FilePath, mode: str = "rb") -> IO[AnyStr]:
+    async def open_instance_resource(
+        self, path: FilePath, mode: str = "rb"
+    ) -> AiofilesContextManager[None, None, AsyncBufferedReader]:
         """Open a file for reading.
 
         Use as
 
         .. code-block:: python
 
-            with app.open_instance_resource(path) as file_:
-                file_.read()
+            async with app.open_instance_resource(path) as file_:
+                await file_.read()
         """
-        return open(self.instance_path / file_path_to_path(path), mode)
+        return async_open(self.instance_path / file_path_to_path(path), mode)  # type: ignore
 
     @property
     def templates_auto_reload(self) -> bool:
