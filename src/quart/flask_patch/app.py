@@ -14,6 +14,7 @@ from quart import Response
 from quart.app import Quart
 from quart.ctx import _request_ctx_stack, RequestContext
 from quart.utils import is_coroutine_function
+from ._synchronise import sync_with_context
 
 old_full_dispatch_request = Quart.full_dispatch_request
 
@@ -49,6 +50,21 @@ def new_ensure_async(  # type: ignore
 
 
 Quart.ensure_async = new_ensure_async  # type: ignore
+
+
+def ensure_sync(self, func: Callable) -> Callable:  # type: ignore
+    if is_coroutine_function(func):
+
+        @wraps(func)
+        def _wrapper(*args: Any, **kwargs: Any) -> Any:
+            return sync_with_context(func(*args, **kwargs))
+
+        return _wrapper
+    else:
+        return func
+
+
+Quart.ensure_sync = ensure_sync  # type: ignore
 
 Flask = Quart
 
