@@ -31,6 +31,7 @@ from typing import (
     Union,
     ValuesView,
 )
+from weakref import WeakSet
 
 from hypercorn.asyncio import serve
 from hypercorn.config import Config as HyperConfig
@@ -255,7 +256,7 @@ class Quart(Scaffold):
         self.config = self.make_config(instance_relative_config)
 
         self.after_serving_funcs: List[Callable[[], Awaitable[None]]] = []
-        self.background_tasks: Set[asyncio.Task] = set()
+        self.background_tasks: WeakSet[asyncio.Task] = WeakSet()
         self.before_first_request_funcs: List[BeforeFirstRequestCallable] = []
         self.before_serving_funcs: List[Callable[[], Awaitable[None]]] = []
         self.blueprints: Dict[str, Blueprint] = OrderedDict()
@@ -1393,11 +1394,6 @@ class Quart(Scaffold):
 
         task = asyncio.get_event_loop().create_task(_wrapper())
         self.background_tasks.add(task)
-
-        def _cleanup(_: Any) -> None:
-            self.background_tasks.remove(task)
-
-        task.add_done_callback(_cleanup)
 
     async def handle_background_exception(self, error: Exception) -> None:
         await got_background_exception.send(self, exception=error)
