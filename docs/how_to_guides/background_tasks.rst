@@ -32,3 +32,18 @@ shutdowns.
     loop and Quart could become unresponsive. Additionally the task
     will consume the same CPU resources as the server and hence could
     slow the server.
+
+
+Testing background tasks
+------------------------
+
+The background task coroutine function can be tested by creating an
+app context and await the function,
+
+.. code-block:: python
+
+    @pytest.mark.asyncio
+    async def test_background_task():
+        async with app.app_context():
+            await background_task()
+        assert something_to_test
