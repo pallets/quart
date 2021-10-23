@@ -224,15 +224,8 @@ class Request(BaseRequestWebsocket):
             await self._load_form_data()
 
         try:
-            body_future = asyncio.ensure_future(self.body)
-            raw_data = await asyncio.wait_for(body_future, timeout=self.body_timeout)
+            raw_data = await asyncio.wait_for(self.body, timeout=self.body_timeout)
         except asyncio.TimeoutError:
-            body_future.cancel()
-            try:
-                await body_future
-            except asyncio.CancelledError:
-                pass
-
             raise RequestTimeout()
         else:
             if not cache:
