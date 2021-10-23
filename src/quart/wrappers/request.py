@@ -291,8 +291,8 @@ class Request(BaseRequestWebsocket):
         )
 
     async def _load_form_data(self) -> None:
-        if self._form is None:
-            async with self._parsing_lock:
+        async with self._parsing_lock:
+            if self._form is None:
                 parser = self.make_form_data_parser()
                 try:
                     self._form, self._files = await asyncio.wait_for(
