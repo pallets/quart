@@ -5,7 +5,7 @@ from typing import cast
 from unittest.mock import Mock
 
 import pytest
-from hypercorn.typing import HTTPScope, WebsocketScope
+from hypercorn.typing import HTTPScope
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import BadRequest
 
@@ -24,7 +24,7 @@ from quart.ctx import (
 from quart.globals import g, request, websocket
 from quart.routing import QuartRule
 from quart.testing import make_test_headers_path_and_query_string, no_op_push
-from quart.wrappers import Request, Websocket
+from quart.wrappers import Request
 
 
 @pytest.mark.asyncio
@@ -245,54 +245,3 @@ async def test_copy_current_websocket_context() -> None:
 def test_copy_current_websocket_context_error() -> None:
     with pytest.raises(RuntimeError):
         copy_current_websocket_context(lambda: None)()
-
-
-@pytest.mark.asyncio
-async def test_overlapping_request_ctx(http_scope: HTTPScope) -> None:
-    app = Quart(__name__)
-
-    request = Request(
-        "GET",
-        "http",
-        "/",
-        b"",
-        Headers([("host", "quart.com")]),
-        "",
-        "1.1",
-        http_scope,
-        send_push_promise=no_op_push,
-    )
-    ctx1 = app.request_context(request)
-    await ctx1.__aenter__()
-    ctx2 = app.request_context(request)
-    await ctx2.__aenter__()
-    await ctx1.__aexit__(None, None, None)
-    assert has_app_context()  # Ensure the app context still exists for ctx2
-    await ctx2.__aexit__(None, None, None)
-
-
-@pytest.mark.asyncio
-async def test_overlapping_websocket_ctx(websocket_scope: WebsocketScope) -> None:
-    app = Quart(__name__)
-
-    websocket = Websocket(
-        "/",
-        b"",
-        "ws",
-        Headers([("host", "quart.com")]),
-        "",
-        "1.1",
-        [],
-        None,
-        None,
-        None,
-        None,
-        websocket_scope,
-    )
-    ctx1 = app.websocket_context(websocket)
-    await ctx1.__aenter__()
-    ctx2 = app.websocket_context(websocket)
-    await ctx2.__aenter__()
-    await ctx1.__aexit__(None, None, None)
-    assert has_app_context()  # Ensure the app context still exists for ctx2
-    await ctx2.__aexit__(None, None, None)

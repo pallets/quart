@@ -41,6 +41,7 @@ class _BaseRequestWebsocketContext:
         self.request_websocket.routing_exception = None
         self.session = session
         self.preserved = False
+        self._implicit_app_ctx_stack: List[Optional[AppContext]] = []
 
     @property
     def g(self) -> AppContext:
@@ -71,27 +72,10 @@ class _BaseRequestWebsocketContext:
             self.request_websocket.routing_exception = exception
 
     async def push(self) -> None:
-        app_ctx = _app_ctx_stack.top
-        if app_ctx is None:
-            app_ctx = self.app.app_context()
-        await app_ctx.push()
+        raise NotImplementedError()
 
-        if self.session is None:
-            session_interface = self.app.session_interface
-            self.session = await self.app.ensure_async(session_interface.open_session)(
-                self.app, self.request_websocket
-            )
-
-            if self.session is None:
-                self.session = await session_interface.make_null_session(self.app)
-
-        if self.url_adapter is not None:
-            self.match_request()
-
-    async def pop(self, exc: Optional[BaseException] = _sentinel) -> None:  # type: ignore
-        if exc is _sentinel:
-            exc = sys.exc_info()[1]
-        await _app_ctx_stack.top.pop(exc)
+    async def pop(self, exc: Optional[BaseException]) -> None:
+        raise NotImplementedError()
 
     async def auto_pop(self, exc: Optional[BaseException]) -> None:
         if self.request_websocket.scope.get("_quart._preserve_context", False) or (
@@ -107,6 +91,28 @@ class _BaseRequestWebsocketContext:
 
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
         await self.auto_pop(exc_value)
+
+    async def _push_appctx(self) -> None:
+        app_ctx = _app_ctx_stack.top
+        if app_ctx is None or app_ctx.app != self.app:
+            app_ctx = self.app.app_context()
+            await app_ctx.push()
+            self._implicit_app_ctx_stack.append(app_ctx)
+        else:
+            self._implicit_app_ctx_stack.append(None)
+
+    async def _push(self) -> None:
+        if self.session is None:
+            session_interface = self.app.session_interface
+            self.session = await self.app.ensure_async(session_interface.open_session)(
+                self.app, self.request_websocket
+            )
+
+            if self.session is None:
+                self.session = await session_interface.make_null_session(self.app)
+
+        if self.url_adapter is not None:
+            self.match_request()
 
 
 class RequestContext(_BaseRequestWebsocketContext):
@@ -136,15 +142,22 @@ class RequestContext(_BaseRequestWebsocketContext):
         return cast(Request, self.request_websocket)
 
     async def push(self) -> None:
-        await super().push()
+        await super()._push_appctx()
         _request_ctx_stack.push(self)
+        await super()._push()
 
     async def pop(self, exc: Optional[BaseException] = _sentinel) -> None:  # type: ignore
-        if exc is _sentinel:
-            exc = sys.exc_info()[1]
-        await self.app.do_teardown_request(exc, self)
-        _request_ctx_stack.pop()
-        await super().pop(exc)
+        app_ctx = self._implicit_app_ctx_stack.pop()
+        try:
+            if not self._implicit_app_ctx_stack:
+                self.preserved = False
+                if exc is _sentinel:
+                    exc = sys.exc_info()[1]
+                await self.app.do_teardown_request(exc, self)
+        finally:
+            _request_ctx_stack.pop()
+            if app_ctx is not None:
+                await app_ctx.pop(exc)
 
     async def __aenter__(self) -> "RequestContext":
         await self.push()
@@ -177,15 +190,22 @@ class WebsocketContext(_BaseRequestWebsocketContext):
         return cast(Websocket, self.request_websocket)
 
     async def push(self) -> None:
-        await super().push()
+        await super()._push_appctx()
         _websocket_ctx_stack.push(self)
+        await super()._push()
 
     async def pop(self, exc: Optional[BaseException] = _sentinel) -> None:  # type: ignore
-        if exc is _sentinel:
-            exc = sys.exc_info()[1]
-        await self.app.do_teardown_websocket(exc, self)
-        _websocket_ctx_stack.pop()
-        await super().pop(exc)
+        app_ctx = self._implicit_app_ctx_stack.pop()
+        try:
+            if not self._implicit_app_ctx_stack:
+                self.preserved = False
+                if exc is _sentinel:
+                    exc = sys.exc_info()[1]
+                await self.app.do_teardown_websocket(exc, self)
+        finally:
+            _websocket_ctx_stack.pop()
+            if app_ctx is not None:
+                await app_ctx.pop(exc)
 
     async def __aenter__(self) -> "WebsocketContext":
         await self.push()
