@@ -193,12 +193,17 @@ class SessionInterface:
         raise NotImplementedError()
 
     async def save_session(
-        self, app: "Quart", session: SessionMixin, response: Union[Response, WerkzeugResponse]
+        self, app: "Quart", session: SessionMixin, response: Union[Response, WerkzeugResponse, None]
     ) -> None:
         """Save the session argument to the response.
 
+        Arguments:
+            response: Can be None if the session is being saved after
+                a websocket connection closes.
+
         Returns:
             The modified response, with the session stored.
+
         """
         raise NotImplementedError()
 
@@ -254,9 +259,17 @@ class SecureCookieSessionInterface(SessionInterface):
         self,
         app: "Quart",
         session: SessionMixin,
-        response: Union[Response, WerkzeugResponse],
+        response: Union[Response, WerkzeugResponse, None],
     ) -> None:
         """Saves the session to the response in a secure cookie."""
+        if response is None:
+            if session.modified:
+                app.logger.exception(
+                    "Secure Cookie Session modified during websocket handling. "
+                    "These modifications will be lost as a cookie cannot be set."
+                )
+            return
+
         name = self.get_cookie_name(app)
         domain = self.get_cookie_domain(app)
         path = self.get_cookie_path(app)

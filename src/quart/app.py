@@ -70,7 +70,7 @@ from .json import JSONDecoder, JSONEncoder, jsonify, tojson_filter
 from .logging import create_logger, create_serving_logger
 from .routing import QuartMap, QuartRule
 from .scaffold import _endpoint_from_view_func, Scaffold
-from .sessions import SecureCookieSession, SecureCookieSessionInterface
+from .sessions import SecureCookieSessionInterface
 from .signals import (
     appcontext_tearing_down,
     got_background_exception,
@@ -1725,13 +1725,7 @@ class Quart(Scaffold):
 
         session_ = (websocket_context or _websocket_ctx_stack.top).session
         if not self.session_interface.is_null_session(session_):
-            if response is None and isinstance(session_, SecureCookieSession) and session_.modified:
-                self.logger.exception(
-                    "Secure Cookie Session modified during websocket handling. "
-                    "These modifications will be lost as a cookie cannot be set."
-                )
-            else:
-                await self.session_interface.save_session(self, session_, response)
+            await self.session_interface.save_session(self, session_, response)
         return response
 
     async def __call__(

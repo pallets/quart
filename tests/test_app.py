@@ -374,7 +374,7 @@ async def test_app_session_websocket(session_app: Quart) -> None:
     async with test_client.websocket("/ws/") as test_websocket:
         await test_websocket.receive()
     session_app.session_interface.open_session.assert_called()  # type: ignore
-    session_app.session_interface.save_session.assert_not_called()  # type: ignore
+    session_app.session_interface.save_session.assert_called()  # type: ignore
 
 
 @pytest.mark.asyncio
