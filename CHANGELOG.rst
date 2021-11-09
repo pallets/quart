@@ -1,3 +1,28 @@
+0.16.0 2021-11-09
+-----------------
+
+* Support an auth argument in the test client.
+* Support Python 3.10.
+* Utilise ensure_async in the copy context functions.
+* Add support for background tasks via ``app.add_background_task``.
+* Give a clearer error for invalid response types.
+* Make open_resource and open_instance_resource async.
+* Allow save_session to accept None as a response value.
+* Rename errors to have an ``Error`` suffix.
+* Bugfix typing of before (first) request callables.
+* Bugfix support view sync handlers.
+* Bugfix import of method "redirect" from flask.
+* Bugfix registering a blueprint twice with differing names.
+* Bugfix support ctx.pop() without passing exc explicitly.
+* Bugfix a request timeout error should be raised on timeout.
+* Bugfix remove jinja warnings.
+* Bugfix use the websocket context in the websocket method.
+* Bugfix raise any lifespan startup failures when testing.
+* Bugfix handler call order based on blueprint nesting.
+* Bugfix allow for generators that yield strings to be used.
+* Bugfix reorder acceptance to prevent race conditions.
+* Bugfix prevent multiple task form body parsing via a lock.
+
 0.15.1 2021-05-24
 -----------------
 
