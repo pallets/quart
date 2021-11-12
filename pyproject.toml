@@ -36,7 +36,7 @@ jinja2 = "*"
 python-dotenv = { version = "*", optional = true }
 toml = "*"
 typing_extensions = { version = "*", python = "<3.8" }
-werkzeug = ">=1.0.0"
+werkzeug = ">=2.0.0"
 
 [tool.poetry.dev-dependencies]
 hypothesis = "*"
