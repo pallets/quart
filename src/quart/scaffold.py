@@ -217,7 +217,7 @@ class Scaffold:
         else:
             return None
 
-    async def open_resource(
+    def open_resource(
         self,
         path: FilePath,
         mode: str = "rb",

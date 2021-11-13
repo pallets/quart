@@ -371,7 +371,7 @@ class Quart(Scaffold):
             return package_path / "instance"
         return prefix / "var" / f"{self.name}-instance"
 
-    async def open_instance_resource(
+    def open_instance_resource(
         self, path: FilePath, mode: str = "rb"
     ) -> AiofilesContextManager[None, None, AsyncBufferedReader]:
         """Open a file for reading.
