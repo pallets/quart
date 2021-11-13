@@ -217,7 +217,7 @@ class Scaffold:
         else:
             return None
 
-    def open_resource(
+    async def open_resource(
         self,
         path: FilePath,
         mode: str = "rb",
@@ -228,7 +228,7 @@ class Scaffold:
 
         .. code-block:: python
 
-            async with app.open_resource(path) as file_:
+            async with await app.open_resource(path) as file_:
                 await file_.read()
         """
         if mode not in {"r", "rb"}:
