@@ -74,6 +74,11 @@ request_tearing_down = _signals.signal("request-tearing-down")
 # functions should have a signature of Callable[[Quart, Exception], None]
 got_background_exception = _signals.signal("got-background-exception")
 
+#: Called if there is an exception in a before or after serving
+# function, connected functions should have a signature of
+# Callable[[Quart, Exception], None]
+got_serving_exception = _signals.signal("got-serving-exception")
+
 #: Called if there is an exception handling the request, connected
 # functions should have a signature of Callable[[Quart, Exception], None]
 got_request_exception = _signals.signal("got-request-exception")
