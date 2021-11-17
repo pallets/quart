@@ -75,6 +75,7 @@ from .signals import (
     appcontext_tearing_down,
     got_background_exception,
     got_request_exception,
+    got_serving_exception,
     got_websocket_exception,
     request_finished,
     request_started,
@@ -1768,25 +1769,33 @@ class Quart(Scaffold):
     async def startup(self) -> None:
         self._got_first_request = False
 
-        async with self.app_context():
-            for func in self.before_serving_funcs:
-                await self.ensure_async(func)()
-            for gen in self.while_serving_gens:
-                await gen.__anext__()
+        try:
+            async with self.app_context():
+                for func in self.before_serving_funcs:
+                    await self.ensure_async(func)()
+                for gen in self.while_serving_gens:
+                    await gen.__anext__()
+        except Exception as error:
+            await got_serving_exception.send(self, exception=error)
+            self.log_exception(sys.exc_info())
 
     async def shutdown(self) -> None:
         await asyncio.gather(*self.background_tasks)
 
-        async with self.app_context():
-            for func in self.after_serving_funcs:
-                await self.ensure_async(func)()
-            for gen in self.while_serving_gens:
-                try:
-                    await gen.__anext__()
-                except StopAsyncIteration:
-                    pass
-                else:
-                    raise RuntimeError("While serving generator didn't terminate")
+        try:
+            async with self.app_context():
+                for func in self.after_serving_funcs:
+                    await self.ensure_async(func)()
+                for gen in self.while_serving_gens:
+                    try:
+                        await gen.__anext__()
+                    except StopAsyncIteration:
+                        pass
+                    else:
+                        raise RuntimeError("While serving generator didn't terminate")
+        except Exception as error:
+            await got_serving_exception.send(self, exception=error)
+            self.log_exception(sys.exc_info())
 
 
 def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
