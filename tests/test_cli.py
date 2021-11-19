@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import code
 import os
-import sys
 from unittest.mock import Mock
 
 import pytest
