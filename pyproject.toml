@@ -49,6 +49,7 @@ quart = "quart.cli:main"
 
 [tool.poetry.extras]
 dotenv = ["python-dotenv"]
+ipython = ["ipython"]
 
 [tool.black]
 line-length = 100

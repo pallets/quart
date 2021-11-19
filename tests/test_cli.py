@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import code
 import os
+import sys
 from unittest.mock import Mock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from click.testing import CliRunner
-
 import quart.cli
 from quart.app import Quart
-from quart.cli import __version__, AppGroup, cli, NoAppException, ScriptInfo
+from quart.cli import AppGroup, NoAppException, ScriptInfo, __version__, cli
 
 
 @pytest.fixture(scope="module")
@@ -81,12 +81,29 @@ def test_shell_command(app: Mock, monkeypatch: MonkeyPatch) -> None:
     interact.assert_called_once()
 
 
+def test_shell_ipython_command(app: Mock, monkeypatch: MonkeyPatch) -> None:
+    import IPython
+
+    runner = CliRunner()
+    start = Mock()
+    monkeypatch.setattr(IPython, "start_ipython", start)
+
+    app.make_shell_context.return_value = {}
+    app.import_name = "test"
+    os.environ["QUART_APP"] = "module:app"
+    runner.invoke(cli, ["shell", "--ipython"])
+
+    app.make_shell_context.assert_called_once()
+    start.assert_called_once()
+
+
 def test_run_command(app: Mock) -> None:
     runner = CliRunner()
     os.environ["QUART_APP"] = "module:app"
     runner.invoke(cli, ["run"])
     app.run.assert_called_once_with(
-        debug=False, host="127.0.0.1", port=5000, certfile=None, keyfile=None, use_reloader=True
+        debug=False, host="127.0.0.1", port=5000, certfile=None, keyfile=None,
+        use_reloader=True
     )
 
 
@@ -95,7 +112,8 @@ def test_run_command_development(dev_app: Mock, dev_env: None) -> None:
     os.environ["QUART_APP"] = "module:app"
     runner.invoke(cli, ["run"])
     dev_app.run.assert_called_once_with(
-        debug=True, host="127.0.0.1", port=5000, certfile=None, keyfile=None, use_reloader=True
+        debug=True, host="127.0.0.1", port=5000, certfile=None, keyfile=None,
+        use_reloader=True
     )
 
 
@@ -106,5 +124,6 @@ def test_run_command_development_debug_disabled(
     os.environ["QUART_APP"] = "module:app"
     runner.invoke(cli, ["run"])
     dev_app.run.assert_called_once_with(
-        debug=False, host="127.0.0.1", port=5000, certfile=None, keyfile=None, use_reloader=True
+        debug=False, host="127.0.0.1", port=5000, certfile=None, keyfile=None,
+        use_reloader=True
     )

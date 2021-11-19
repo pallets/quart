@@ -260,14 +260,37 @@ def run_command(info: ScriptInfo, host: str, port: int, certfile: str, keyfile: 
 
 
 @click.command("shell", short_help="Open a shell within the app context.")
+@click.option("--ipython", is_flag=True, default=False, help="Use the ipython")
 @pass_script_info
-def shell_command(info: ScriptInfo) -> None:
-    app = info.load_app()
-    context = {}
-    context.update(app.make_shell_context())
+def shell_command(info: ScriptInfo, ipython: bool = False) -> None:
+    if ipython is True:
+        try:
+            import IPython
+            from IPython.terminal.ipapp import load_default_config
+            from traitlets.config.loader import Config
+            import_ipython = True
+        except ImportError:
+            click.echo("ipython not install, use the default shell")
+            import_ipython = False
+    else:
+        import_ipython = False
 
+    app = info.load_app()
+    # need init server something
+    asyncio.run(app.startup())
+
+    context = app.make_shell_context()
     banner = f"Python {sys.version} on {sys.platform} running {app.import_name}"
-    code.interact(banner=banner, local=context)
+    if not import_ipython:
+        return code.interact(banner=banner, local=context)
+
+    config = load_default_config()
+    config.TerminalInteractiveShell.banner1 = banner
+    IPython.start_ipython(
+        argv=(),
+        user_ns=context,
+        config=config,
+    )
 
 
 @click.command("routes", short_help="Show this app's routes.")

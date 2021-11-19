@@ -13,3 +13,4 @@ docs/reference/source/
 dist/
 .coverage
 poetry.lock
+.idea
