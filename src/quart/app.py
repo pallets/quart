@@ -1780,8 +1780,6 @@ class Quart(Scaffold):
             self.log_exception(sys.exc_info())
 
     async def shutdown(self) -> None:
-        await asyncio.gather(*self.background_tasks)
-
         try:
             async with self.app_context():
                 for func in self.after_serving_funcs:
@@ -1796,6 +1794,8 @@ class Quart(Scaffold):
         except Exception as error:
             await got_serving_exception.send(self, exception=error)
             self.log_exception(sys.exc_info())
+
+        await asyncio.gather(*self.background_tasks)
 
 
 def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
