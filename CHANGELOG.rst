@@ -1,3 +1,9 @@
+0.16.2 2021-12-14
+-----------------
+
+* Bugfix await background task shutdown after shutdown funcs.
+* Bugfix use the before websocket not request funcs.
+
 0.16.1 2021-11-17
 -----------------
 
