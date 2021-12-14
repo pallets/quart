@@ -1654,7 +1654,7 @@ class Quart(Scaffold):
                 processor(request.endpoint, request.view_args)
 
         for name in names:
-            for function in self.before_request_funcs[name]:
+            for function in self.before_websocket_funcs[name]:
                 result = await self.ensure_async(function)()
                 if result is not None:
                     return result
