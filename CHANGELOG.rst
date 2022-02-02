@@ -1,3 +1,8 @@
+0.16.3 2022-02-02
+-----------------
+
+* Bugfix ensure auth is sent on test client requests.
+
 0.16.2 2021-12-14
 -----------------
 
