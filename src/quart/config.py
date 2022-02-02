@@ -142,7 +142,7 @@ class Config(dict):
                 self.from_mapping(parser["section"])
             else:
                 module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)  # type: ignore
+                spec.loader.exec_module(module)
                 self.from_object(module)
         except (FileNotFoundError, IsADirectoryError):
             if not silent:

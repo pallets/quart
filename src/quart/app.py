@@ -1467,7 +1467,7 @@ class Quart(Scaffold):
                 or isgenerator(value)
                 or isasyncgen(value)
             ):
-                response = self.response_class(value)
+                response = self.response_class(value)  # type: ignore
             elif isinstance(value, dict):
                 response = jsonify(value)
             else:

@@ -293,9 +293,9 @@ class ASGIWebsocketConnection:
 
         spec_version = _convert_version(self.scope.get("asgi", {}).get("spec_version", "2.0"))
         if spec_version >= [2, 3]:
-            await send({"type": "websocket.close", "code": code, "reason": reason})  # type: ignore
+            await send({"type": "websocket.close", "code": code, "reason": reason})
         else:
-            await send({"type": "websocket.close", "code": code})
+            await send({"type": "websocket.close", "code": code})  # type: ignore
         self._closed = True
 
 

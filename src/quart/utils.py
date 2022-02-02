@@ -67,7 +67,7 @@ def run_sync(func: Callable[..., Any]) -> Callable[..., Coroutine[None, None, An
             None, copy_context().run, partial(func, *args, **kwargs)
         )
         if inspect.isgenerator(result):
-            return run_sync_iterable(result)  # type: ignore
+            return run_sync_iterable(result)
         else:
             return result
 

@@ -94,9 +94,9 @@ class IterableBody(ResponseBody):
     def __init__(self, iterable: Union[AsyncGenerator[bytes, None], Iterable]) -> None:
         self.iter: AsyncGenerator[bytes, None]
         if isasyncgen(iterable):
-            self.iter = iterable  # type: ignore
+            self.iter = iterable
         elif isgenerator(iterable):
-            self.iter = run_sync_iterable(iterable)  # type: ignore
+            self.iter = run_sync_iterable(iterable)
         else:
 
             async def _aiter() -> AsyncGenerator[bytes, None]:

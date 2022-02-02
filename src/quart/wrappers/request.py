@@ -1,7 +1,18 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, AnyStr, Awaitable, Callable, Dict, Generator, NoReturn, Optional, overload
+from typing import (
+    Any,
+    AnyStr,
+    Awaitable,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    NoReturn,
+    Optional,
+    overload,
+)
 
 from hypercorn.typing import HTTPScope
 from werkzeug.datastructures import CombinedMultiDict, Headers, MultiDict
@@ -246,7 +257,7 @@ class Request(BaseRequestWebsocket):
             form = await self.form
             sources.append(form)
 
-        multidict_sources = []
+        multidict_sources: List[MultiDict] = []
         for source in sources:
             if not isinstance(source, MultiDict):
                 multidict_sources.append(MultiDict(source))
