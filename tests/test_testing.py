@@ -430,3 +430,17 @@ async def test_middleware() -> None:
     assert response.status_code == 200
     response = await client.get("/odd")
     assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_auth() -> None:
+    app = Quart(__name__)
+
+    @app.get("/")
+    async def echo() -> str:
+        return f"{request.authorization.username}:{request.authorization.password}"
+
+    client = Client(app)
+
+    response = await client.get("/", auth=("user", "pass"))
+    assert (await response.get_data(as_text=True)) == "user:pass"

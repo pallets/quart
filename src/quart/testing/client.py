@@ -108,6 +108,7 @@ class QuartClient:
             root_path,
             http_version,
             scope_base,
+            auth,
         )
         if follow_redirects:
             while response.status_code >= 300 and response.status_code <= 399:
