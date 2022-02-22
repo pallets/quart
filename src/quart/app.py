@@ -1778,6 +1778,7 @@ class Quart(Scaffold):
         except Exception as error:
             await got_serving_exception.send(self, exception=error)
             self.log_exception(sys.exc_info())
+            raise
 
     async def shutdown(self) -> None:
         try:
@@ -1794,6 +1795,7 @@ class Quart(Scaffold):
         except Exception as error:
             await got_serving_exception.send(self, exception=error)
             self.log_exception(sys.exc_info())
+            raise
 
         await asyncio.gather(*self.background_tasks)
 
