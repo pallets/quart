@@ -61,5 +61,22 @@ decorators :func:`~quart.ctx.copy_current_request_context` and
         asyncio.ensure_future(background_task())
         ...
 
+If you need to provide the ``request`` context in an asynchronous
+generator, use the :func:`quart.helpers.stream_with_context` decorator
+as discussed in :ref:`streaming_response`:
+
+.. code-block:: python
+
+    @app.route('/')
+    async def index():
+
+        @stream_with_context
+        async def async_generator():
+            async for data in request.body:
+                yield data
+
+        await consume_data(async_generator())
+        ...
+
 .. note:: The decorator must be used within an existing context, hence
           the nested function.
