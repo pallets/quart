@@ -78,5 +78,5 @@ as discussed in :ref:`streaming_response`:
         await consume_data(async_generator())
         ...
 
-.. note:: The decorator must be used within an existing context, hence
-          the nested function.
+.. note:: These decorators must be used within an existing context, hence
+          the background task is defined as a nested function.
