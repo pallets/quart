@@ -9,3 +9,4 @@ Reference
    cheatsheet.rst
    logo.rst
    response_values.rst
+   versioning.rst
