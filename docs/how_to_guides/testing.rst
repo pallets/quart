@@ -64,6 +64,26 @@ returned. An example:
         result = await response.get_json()
         assert result == data
 
+To test test routes which stream requests or responses, use the
+:meth:`~quart.testing.client.QuartClient.request` method:
+
+.. code-block:: python
+
+    async def test_stream() -> None:
+        test_client = app.test_client()
+        async with test_client.request(...) as connection:
+            await connection.send(b"data")
+            await connection.send_complete()
+            ...
+            # receive a chunk of the response
+            data = await connection.receive()
+            ...
+        # assemble the rest of the response without the first bit
+        response = await connection.as_response()
+
+To learn more about streaming requests and responses, read :ref:`request_body`
+and :ref:`streaming_response`.
+
 Context testing
 ---------------
 
