@@ -16,7 +16,7 @@ str
 .. code-block:: python
 
     return "Hello"
-    return render_template("index.html")
+    return await render_template("index.html")
 
 A solitary string return indicates that you intend to return a string
 mimetype ``text/html``. The string will be encoded using the default

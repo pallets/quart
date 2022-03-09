@@ -25,8 +25,8 @@ the ``__init__.py`` file should contain something like,
     blueprint = Blueprint('store', __name__)
 
     @blueprint.route('/')
-    def index():
-        return render_template('index.html')
+    async def index():
+        return await render_template('index.html')
 
 
 the endpoint is then identified as ``store.index`` for example when
