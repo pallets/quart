@@ -8,7 +8,7 @@ from time import mktime
 from typing import Any, Dict, IO, Optional, Type, TYPE_CHECKING
 from uuid import UUID
 
-from jinja2 import Markup
+from markupsafe import Markup
 
 from ..globals import _app_ctx_stack, _request_ctx_stack, current_app, request
 

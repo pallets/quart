@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from jinja2 import escape, Markup
+from markupsafe import escape, Markup
 from werkzeug.exceptions import abort
 from werkzeug.utils import redirect
 

@@ -33,6 +33,7 @@ hypercorn = ">=0.11.2"
 importlib_metadata = { version = "*", python = "<3.8" }
 itsdangerous = "*"
 jinja2 = "*"
+markupsafe = "*"
 python-dotenv = { version = "*", optional = true }
 toml = "*"
 typing_extensions = { version = "*", python = "<3.8" }

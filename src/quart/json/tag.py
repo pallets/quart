@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Type
 from uuid import UUID
 
-from jinja2 import Markup
+from markupsafe import Markup
 from werkzeug.http import parse_date
 
 from quart.json import dumps, loads
