@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from jinja2 import escape, Markup
 from werkzeug.exceptions import abort
+from werkzeug.utils import redirect
 
 from .app import Quart
 from .blueprints import Blueprint
@@ -57,7 +58,6 @@ from .signals import (
 )
 from .templating import render_template, render_template_string
 from .typing import ResponseReturnValue
-from .utils import redirect
 from .wrappers import Request, Response, Websocket
 
 __all__ = (

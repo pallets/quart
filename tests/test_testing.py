@@ -5,6 +5,7 @@ from typing import Callable, Optional
 
 import pytest
 from werkzeug.datastructures import Headers
+from werkzeug.wrappers import Response as WerkzeugResponse
 
 from quart import jsonify, Quart, redirect, request, Response, session, websocket
 from quart.datastructures import FileStorage
@@ -247,7 +248,7 @@ async def test_redirect() -> None:
         return request.method
 
     @app.route("/redirect", methods=["GET"])
-    async def redir() -> Response:
+    async def redir() -> WerkzeugResponse:
         return redirect("/")
 
     client = Client(app)
@@ -281,7 +282,7 @@ async def test_redirect_cookie_jar() -> None:
     app.secret_key = "secret"
 
     @app.route("/a")
-    async def a() -> Response:
+    async def a() -> WerkzeugResponse:
         response = redirect("/b")
         response.set_cookie("bar", "foo")
         return response

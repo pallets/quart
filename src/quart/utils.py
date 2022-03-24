@@ -22,22 +22,10 @@ from typing import (
 
 from werkzeug.datastructures import Headers
 
-from .globals import current_app
 from .typing import FilePath
 
 if TYPE_CHECKING:
     from .wrappers.response import Response  # noqa: F401
-
-
-def redirect(location: str, code: int = 302) -> "Response":
-    body = f"""
-<!doctype html>
-<title>Redirect</title>
-<h1>Redirect</h1>
-You should be redirected to <a href="{location}">{location}</a>, if not please click the link
-    """
-
-    return current_app.response_class(body, status=code, headers={"Location": location})
 
 
 def file_path_to_path(*paths: FilePath) -> Path:
