@@ -56,12 +56,12 @@ def _patch_task() -> None:
     def enter_task(loop, task):  # type: ignore
         asyncio.tasks._current_tasks[loop] = task  # type: ignore[attr-defined]
 
-    asyncio.tasks._enter_task = enter_task  # type: ignore
+    asyncio.tasks._enter_task = enter_task
 
     def leave_task(loop, task):  # type: ignore
         del asyncio.tasks._current_tasks[loop]  # type: ignore[attr-defined]
 
-    asyncio.tasks._leave_task = leave_task  # type: ignore
+    asyncio.tasks._leave_task = leave_task
 
     def step(self, exception=None):  # type: ignore
         current_task = asyncio.tasks._current_tasks.get(self._loop)  # type: ignore[attr-defined]
