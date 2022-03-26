@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "Quart"
-version = "0.16.3"
+version = "0.17.0"
 description = "A Python ASGI web microframework with the same API as Flask"
 authors = ["pgjones <philip.graham.jones@googlemail.com>"]
 classifiers = [

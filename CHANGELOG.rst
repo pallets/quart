@@ -1,3 +1,11 @@
+0.17.0 2022-03-26
+-----------------
+
+* Raise startup and shutdown errors.
+* Allow loading of environment variables into the config.
+* Bugfix switch to Werkzeug's redirect.
+* Bugfix import Markup and escape from MarkupSafe.
+
 0.16.3 2022-02-02
 -----------------
 
