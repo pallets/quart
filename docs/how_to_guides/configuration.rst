@@ -3,9 +3,23 @@
 Configuration
 =============
 
-A common pattern for configuration loading is to use class inheritance
-to define common settings with production and development overrides,
-for example,
+A common pattern is to store configuration values in the
+environment. Quart supports this via
+:meth:`~quart.Config.from_prefixed_env` which can be used to load
+environment variables into the configuration. Only environment
+variables starting with the prefix, default ``QUART_`` will be
+loaded. For example if the environment variable ``QUART_TESTING=true``
+is set then,
+
+.. code-block:: python
+
+    app = Quart(__name__)
+    app.config.from_prefixed_env()
+    assert app.config["TESTING"] is True
+
+Another common pattern for configuration loading is to use class
+inheritance to define common settings with production and development
+overrides, for example,
 
 .. code-block:: python
 
