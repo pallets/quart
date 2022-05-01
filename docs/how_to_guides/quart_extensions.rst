@@ -17,13 +17,15 @@ here,
   Resource Sharing (access control) support.
 - `Quart-events <https://github.com/smithk86/quart-events>`_ event
   broadcasting via WebSockets or SSE.
+- `Quart-Login <https://github.com/0000matteo0000/quart-login>`_ a
+  port of Flask-Login to work natively with Quart.
 - `Quart-minify <https://github.com/AceFire6/quart_minify/>`_ minify
   quart response for HTML, JS, CSS and less.
 - `Quart-Motor <https://github.com/marirs/quart-motor>`_ Motor
   (MongoDB) support for Quart applications.
 - `Quart-OpenApi <https://github.com/factset/quart-openapi/>`_ RESTful
   API building.
-- `Quart-Session-OpenID <https://github.com/sanderfoobar/quart-session-openid>`_ 
+- `Quart-Session-OpenID <https://github.com/sanderfoobar/quart-session-openid>`_
   Support for OAuth2 OpenID Connect (OIDC).
 - `Quart-Rapidoc <https://github.com/marirs/quart-rapidoc>`_ API
   documentation from OpenAPI Specification.
