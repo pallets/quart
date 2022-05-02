@@ -32,7 +32,6 @@ from .helpers import (
     get_template_attribute,
     make_push_promise,
     make_response,
-    safe_join,
     send_file,
     send_from_directory,
     stream_with_context,

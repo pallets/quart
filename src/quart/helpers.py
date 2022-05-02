@@ -14,6 +14,7 @@ from zlib import adler32
 
 from werkzeug.exceptions import NotFound
 from werkzeug.routing import BuildError
+from werkzeug.utils import safe_join
 from werkzeug.wrappers import Response as WerkzeugResponse
 
 from .ctx import _app_ctx_stack, _request_ctx_stack, _websocket_ctx_stack
@@ -288,25 +289,6 @@ def find_package(name: str) -> Tuple[Optional[Path], Path]:
         return sys_prefix, package_path
 
 
-def safe_join(directory: FilePath, *paths: FilePath) -> Path:
-    """Safely join the paths to the known directory to return a full path.
-
-    Raises:
-        NotFound: if the full path does not share a commonprefix with
-        the directory.
-    """
-    try:
-        safe_path = file_path_to_path(directory).resolve(strict=True)
-        full_path = file_path_to_path(directory, *paths).resolve(strict=True)
-    except FileNotFoundError:
-        raise NotFound()
-    try:
-        full_path.relative_to(safe_path)
-    except ValueError:
-        raise NotFound()
-    return full_path
-
-
 async def send_from_directory(
     directory: FilePath,
     file_name: str,
@@ -329,7 +311,7 @@ async def send_from_directory(
 
     See :func:`send_file` for the other arguments.
     """
-    file_path = safe_join(directory, file_name)
+    file_path = Path(safe_join(str(directory), file_name))
     if not file_path.is_file():
         raise NotFound()
     return await send_file(

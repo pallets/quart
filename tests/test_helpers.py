@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
-from typing import AsyncGenerator, List
+from typing import AsyncGenerator
 
 import pytest
 from py._path.local import LocalPath
@@ -14,7 +14,6 @@ from quart.helpers import (
     flash,
     get_flashed_messages,
     make_response,
-    safe_join,
     send_file,
     send_from_directory,
     stream_with_context,
@@ -186,21 +185,6 @@ async def test_stream_with_context() -> None:
     response = await test_client.get("/")
     result = await response.get_data(as_text=False)
     assert result == b"GET /"
-
-
-def test_safe_join(tmpdir: LocalPath) -> None:
-    directory = tmpdir.realpath()
-    tmpdir.join("file.txt").write("something")
-    assert safe_join(directory, "file.txt") == Path(directory, "file.txt")
-
-
-@pytest.mark.parametrize("paths", [[".."], ["..", "other"], ["..", "safes", "file"]])
-def test_safe_join_raises(paths: List[str], tmpdir: LocalPath) -> None:
-    directory = tmpdir.mkdir("safe").realpath()
-    tmpdir.mkdir("other")
-    tmpdir.mkdir("safes").join("file").write("something")
-    with pytest.raises(NotFound):
-        safe_join(directory, *paths)
 
 
 @pytest.mark.asyncio
