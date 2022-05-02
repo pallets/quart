@@ -1256,15 +1256,15 @@ class Quart(Scaffold):
             keyfile,
             shutdown_trigger=shutdown_event.wait,  # type: ignore
         )
-        print(f" * Serving Quart app '{self.name}'")  # noqa: T001, T002
-        print(f" * Environment: {self.env}")  # noqa: T001, T002
+        print(f" * Serving Quart app '{self.name}'")  # noqa: T201
+        print(f" * Environment: {self.env}")  # noqa: T201
         if self.env == "production":
-            print(  # noqa: T001, T002
+            print(  # noqa: T201
                 " * Please use an ASGI server (e.g. Hypercorn) directly in production"
             )
-        print(f" * Debug mode: {self.debug or False}")  # noqa: T001, T002
+        print(f" * Debug mode: {self.debug or False}")  # noqa: T201
         scheme = "https" if certfile is not None and keyfile is not None else "http"
-        print(f" * Running on {scheme}://{host}:{port} (CTRL + C to quit)")  # noqa: T001, T002
+        print(f" * Running on {scheme}://{host}:{port} (CTRL + C to quit)")  # noqa: T201
 
         try:
             loop.run_until_complete(task)

@@ -107,7 +107,7 @@ class ScriptInfo:
             if Path(".quartenv").is_file():
                 load_dotenv(dotenv_path=Path(".") / ".quartenv")
         except NameError:
-            print(  # noqa: T001, T002
+            print(  # noqa: T201
                 "* Tip: There are .env files present. "
                 'Do "pip install python-dotenv" to use them.'
             )
@@ -129,7 +129,7 @@ def with_appcontext(fn: Optional[Callable] = None) -> Callable:
                     return __ctx.invoke(fn, *args, **kwargs)
                 except RuntimeError as error:
                     if error.args[0] == "Cannot run the event loop while another loop is running":
-                        print(  # noqa: T001, T002
+                        print(  # noqa: T201
                             "The appcontext cannot be used with a command that runs an event loop. "
                             "See quart#361 for more details"
                         )
@@ -148,7 +148,7 @@ class AppGroup(click.Group):
     Not to be confused with :class:`QuartGroup`.
     """
 
-    def command(self, *args: Any, **kwargs: Any) -> Callable:
+    def command(self, *args: Any, **kwargs: Any) -> Callable:  # type: ignore
         """This works exactly like the method of the same name on a regular
         :class:`click.Group` but it wraps callbacks in :func:`with_appcontext`
         if it's enabled by passing ``with_appcontext=True``.
@@ -162,7 +162,7 @@ class AppGroup(click.Group):
 
         return decorator
 
-    def group(self, *args: Any, **kwargs: Any) -> Callable:
+    def group(self, *args: Any, **kwargs: Any) -> Callable:  # type: ignore
         kwargs.setdefault("cls", AppGroup)
         return super().group(*args, **kwargs)
 
