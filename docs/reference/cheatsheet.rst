@@ -24,7 +24,7 @@ Routing
 
 .. code-block:: python
 
-    @app.route("/hello/<string: name>")  # example.com/hello/quart
+    @app.route("/hello/<string:name>")  # example.com/hello/quart
     async def hello(name):
         return f"Hello, {name}!"
 
