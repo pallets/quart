@@ -10,13 +10,14 @@
 Quart
 =====
 
-Quart is a Python web microframework. Using Quart you can,
+Quart is a Fast Python web microframework. Using Quart you can,
 
- * render and serve :ref:`HTML templates<templating>`,
- * write (RESTful) JSON APIs,
- * :ref:`serve WebSockets<websocket_tutorial>`,
- * stream request and :ref:`response data<broadcast_tutorial>`,
- * do pretty much anything over the HTTP or WebSocket protocols.
+ * write JSON APIs e.g. :ref:`a RESTful API<api_tutorial>`,
+ * render and serve HTML e.g. :ref:`a blog<blog_tutorial>`,
+ * serve WebSockets e.g. :ref:`a simple chat<chat_tutorial>`,
+ * stream responses e.g. :ref:`serve video<video_tutorial>`,
+ * all of the above in a single app,
+ * or do pretty much anything over the HTTP or WebSocket protocols.
 
 With all of the above possible using asynchronous (asyncio)
 libraries/code or :ref:`synchronous<sync_code>` libraries/code.

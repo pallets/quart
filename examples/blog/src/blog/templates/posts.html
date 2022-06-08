@@ -1,0 +1,10 @@
+<main>
+  {% for post in posts %}
+    <article>
+      <h2>{{ post.title }}</h2>
+      <p>{{ post.text|safe }}</p>
+    </article>
+  {% else %}
+    <p>No posts available</p>
+  {% endfor %}
+</main>

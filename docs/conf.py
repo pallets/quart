@@ -48,7 +48,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Quart'
-copyright = '2017-2020 Philip Jones'
+copyright = '2017-2022 Philip Jones'
 author = 'Philip Jones'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -106,7 +106,9 @@ html_theme_options = {
     ],
 }
 
-# html_sidebars = {}
+html_sidebars = {
+    "index": [],
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

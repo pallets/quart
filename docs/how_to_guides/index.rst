@@ -10,6 +10,7 @@ How to guides
    blueprints.rst
    command_line.rst
    configuration.rst
+   developing.rst
    disconnections.rst
    event_loop.rst
    flask_extensions.rst
@@ -19,6 +20,7 @@ How to guides
    middleware.rst
    request_body.rst
    routing.rst
+   server_sent_events.rst
    session_storage.rst
    startup_shutdown.rst
    streaming_response.rst

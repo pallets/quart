@@ -1,7 +1,7 @@
-Tutorial: Serving video
-=======================
+Tutorial: Building a chat server
+================================
 
-This is the example code for the video server tutorial. It is managed
+This is the example code for the chat server tutorial. It is managed
 using `Poetry <https://python-poetry.org>`_ with the following
 commands,
 

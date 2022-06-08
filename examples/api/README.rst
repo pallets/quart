@@ -1,7 +1,7 @@
-Tutorial: Building a simple blog
+Tutorial: Building a RESTful API
 ================================
 
-This is the example code for the blog tutorial. It is managed using
+This is the example code for the api tutorial. It is managed using
 `Poetry <https://python-poetry.org>`_ with the following commands,
 
 .. code-block:: console
