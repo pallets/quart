@@ -35,7 +35,6 @@ itsdangerous = "*"
 jinja2 = "*"
 markupsafe = "*"
 python-dotenv = { version = "*", optional = true }
-toml = "*"
 typing_extensions = { version = "*", python = "<3.8" }
 werkzeug = ">=2.0.0"
 
