@@ -18,11 +18,6 @@ try:
 except ModuleNotFoundError:
     from importlib_metadata import version  # type: ignore
 
-try:
-    from dotenv import load_dotenv
-except ImportError:
-    pass
-
 __version__ = version("quart")
 
 if TYPE_CHECKING:
@@ -98,19 +93,24 @@ class ScriptInfo:
         if os.environ.get("QUART_SKIP_DOTENV") == "1":
             return
 
-        if not Path(".env").is_file() and not Path(".quartenv").is_file():
+        try:
+            import dotenv
+        except ImportError:
+            if path or os.path.isfile(".env") or os.path.isfile(".quartenv"):
+                print(  # noqa: T201
+                    " * Tip: There are .env or .flaskenv files present."
+                    ' Do "pip install python-dotenv" to use them.',
+                )
+
             return
 
-        try:
-            if Path(".env").is_file():
-                load_dotenv()
-            if Path(".quartenv").is_file():
-                load_dotenv(dotenv_path=Path(".") / ".quartenv")
-        except NameError:
-            print(  # noqa: T201
-                "* Tip: There are .env files present. "
-                'Do "pip install python-dotenv" to use them.'
-            )
+        for name in (".env", ".quartenv"):
+            path = dotenv.find_dotenv(name, usecwd=True)
+
+            if not path:
+                continue
+
+            dotenv.load_dotenv(path, encoding="utf-8")
 
 
 pass_script_info = click.make_pass_decorator(ScriptInfo, ensure=True)
