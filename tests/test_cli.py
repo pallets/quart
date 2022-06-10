@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import code
 import os
+import random
+import string
+import tempfile
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
@@ -49,6 +53,18 @@ def debug_env_patch(monkeypatch: MonkeyPatch) -> None:
 @pytest.fixture(name="no_debug_env")
 def no_debug_env_patch(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("QUART_DEBUG", "false")
+
+
+@pytest.fixture(name="empty_cwd")
+def empty_cwd():
+    directory = tempfile.TemporaryDirectory()
+    cwd = os.getcwd()
+    os.chdir(directory.name)
+
+    yield Path(directory.name)
+
+    os.chdir(cwd)
+    directory.cleanup()
 
 
 def test_script_info_load_app(app: Mock) -> None:
@@ -108,3 +124,59 @@ def test_run_command_development_debug_disabled(
     dev_app.run.assert_called_once_with(
         debug=False, host="127.0.0.1", port=5000, certfile=None, keyfile=None, use_reloader=True
     )
+
+
+def test_load_dotenv(empty_cwd: Path) -> None:
+    value = "dotenv"
+    with open(empty_cwd / ".env", "w", encoding="utf8") as env:
+        env.write(f"TEST_ENV_VAR={value}\n")
+
+    info = ScriptInfo(None)
+    info.load_dotenv_if_exists()
+
+    assert os.environ.pop("TEST_ENV_VAR", None) == value
+
+
+def test_load_dotquartenv(empty_cwd: Path) -> None:
+    value = "dotquartenv"
+    with open(empty_cwd / ".quartenv", "w", encoding="utf8") as env:
+        env.write(f"TEST_ENV_VAR={value}\n")
+
+    info = ScriptInfo(None)
+    info.load_dotenv_if_exists()
+
+    assert os.environ.pop("TEST_ENV_VAR", None) == value
+
+
+def test_load_dotenv_beats_dotquartenv(empty_cwd: Path) -> None:
+    env_value = "dotenv"
+    quartenv_value = "dotquartenv"
+
+    with open(empty_cwd / ".env", "w", encoding="utf8") as env:
+        env.write(f"TEST_ENV_VAR={env_value}\n")
+    with open(empty_cwd / ".quartenv", "w", encoding="utf8") as env:
+        env.write(f"TEST_ENV_VAR={quartenv_value}\n")
+
+    info = ScriptInfo(None)
+    info.load_dotenv_if_exists()
+
+    assert os.environ.pop("TEST_ENV_VAR", None) == env_value
+
+
+def test_load_dotenv_inhibited_by_env_var(empty_cwd: Path) -> None:
+    env_value = "dotenv"
+    quartenv_value = "dotquartenv"
+
+    with open(empty_cwd / ".env", "w", encoding="utf8") as env:
+        env.write(f"TEST_ENV_VAR={env_value}\n")
+    with open(empty_cwd / ".quartenv", "w", encoding="utf8") as env:
+        env.write(f"TEST_ENV_VAR={quartenv_value}\n")
+
+    os.environ["QUART_SKIP_DOTENV"] = "1"
+
+    info = ScriptInfo(None)
+    info.load_dotenv_if_exists()
+
+    assert os.environ.pop("TEST_ENV_VAR", None) is None
+
+    del os.environ["QUART_SKIP_DOTENV"]
