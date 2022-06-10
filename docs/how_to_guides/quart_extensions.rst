@@ -54,5 +54,5 @@ the decorated function,
         @wraps(func)
         async def wrapper(*args, **kwargs):
             ...  # Extension logic
-            return await current_app.ensure_sync(func)(*args, **kwargs)
+            return await current_app.ensure_async(func)(*args, **kwargs)
         return wrapper

@@ -56,7 +56,7 @@ provides methods to iterate over the body,
     the data is not possible unless it is saved during the iteration.
 
 Testing
-'''''''
+-------
 
 To test that a route consumes the body iteratively you will need to use
 the :meth:`~quart.testing.client.QuartClient.request` method,

@@ -1,7 +1,7 @@
 .. _streaming_response:
 
-Streaming response
-==================
+Streaming responses
+===================
 
 Quart supports responses that are meant to be streamed to the client,
 rather than received in one block. If you are interested in streaming
@@ -23,7 +23,7 @@ every second,
         return async_generator(), 200, {'X-Something': 'value'}
 
 With context
-''''''''''''
+------------
 
 If you want to make use of the ``request`` context whilst streaming
 you will need to use the :func:`quart.helpers.stream_with_context`
@@ -40,7 +40,7 @@ decorator,
         return async_generator(), 200, {'X-Something': 'value'}
 
 Timeout
-'''''''
+-------
 
 Quart by default will timeout long responses to protect against
 possible denial of service attacks, see :ref:`dos_mitigations`. This
@@ -60,14 +60,8 @@ the timeout attribute on a specific response to ``None``,
         response.timeout = None  # No timeout for this route
         return response
 
-Server Sent Events
-''''''''''''''''''
-
-See the :ref:`broadcast_tutorial` for details on how to utilise server
-sent events.
-
 Testing
-'''''''
+-------
 
 The test client :meth:`~quart.testing.client.QuartClient.get` and
 associated methods will collate the entire streamed response. If you
@@ -85,3 +79,8 @@ the :meth:`~quart.testing.client.QuartClient.request` method,
             assert connection.status_code == 200
             ...
             await connection.disconnect()  # For infinite streams
+
+See also
+--------
+
+:ref:`server_sent_events`

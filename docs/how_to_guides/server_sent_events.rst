@@ -71,3 +71,8 @@ this reason the timeout is disabled. This can be done globally,
 however that could make other routes DOS vulnerable, therefore the
 recommendation is to set the timeout attribute on the specific
 response to ``None``.
+
+See also
+--------
+
+:ref:`streaming_response`

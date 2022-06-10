@@ -24,6 +24,11 @@ called a push promise. Server push is very useful when the server
 knows the client will likely initiate a request, say for the css or js
 referenced in a html response.
 
+.. note::
+
+   Browsers are deprecating support for server push, and usage is not
+   recommended. This section is kept for reference.
+
 In Quart server push can be initiated during a request via the
 function :func:`~quart.helpers.make_push_promise`, for example,
 
@@ -59,7 +64,7 @@ the path and headers, for example,
         assert test_client.push_promises[0] == ("/", {})
 
 HTTP/2 clients
-''''''''''''''
+--------------
 
 At the time of writing there aren't that many HTTP/2 clients. The best
 option is to use a browser and inspect the network connections (turn
@@ -70,6 +75,5 @@ support is `installed <https://curl.haxx.se/docs/http2.html>`_, as so,
 
     $ curl --http2 ...
 
-If you wish to communicate via HTTP/2 in python the `Hyper
-<https://hyper.readthedocs.io>`_ library is the best choice. It can be
-configured to work with requests.
+If you wish to communicate via HTTP/2 in python `httpx
+<https://github.com/encode/httpx>`_ is the best choice.

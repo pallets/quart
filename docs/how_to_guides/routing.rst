@@ -39,7 +39,7 @@ will match paths ``/page/1``, ``/page/2``, and ``/page/jeff`` with the
 respectively.
 
 Converters
-~~~~~~~~~~
+^^^^^^^^^^
 
 It is often necessary and useful to specify how the variable should
 convert and by implication match paths. This works by adding the
@@ -69,6 +69,14 @@ The available converters are,
 note that additional converters can be added to the
 :attr:`~quart.app.Quart.url_map` :attr:`~quart.routing.Map.converters`
 dictionary.
+
+
+Catch all route
+^^^^^^^^^^^^^^^
+
+A ``/<path:path>`` route definition will catch all requests that do
+not match any other routes.
+
 
 Default values
 --------------
@@ -102,3 +110,8 @@ The ``subdomain`` option can only be used if the app config
 
 Note that the variable converters can be used in the host or subdomain
 options.
+
+See also
+--------
+
+Quart uses `Werkzeug's router <https://werkzeug.palletsprojects.com/en/2.1.x/routing/>`_

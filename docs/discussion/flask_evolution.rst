@@ -17,7 +17,7 @@ There are parts of the Flask API that I've decided to either not
 implement, these are,
 
 request.stream
-~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^
 
 The ``stream`` method present on Flask request instances allows the
 request body to be 'streamed' via a file like interface. In Quart

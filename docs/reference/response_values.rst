@@ -11,7 +11,7 @@ Response Values
 ---------------
 
 str
-'''
+^^^
 
 .. code-block:: python
 
@@ -23,7 +23,7 @@ mimetype ``text/html``. The string will be encoded using the default
 :attr:`~quart.wrappers._BaseRequestResponse.charset`.
 
 dict
-''''
+^^^^
 
 .. code-block:: python
 
@@ -34,7 +34,7 @@ A solitary dict return indicates that you intend to return json,
 dictionary.
 
 Response
-''''''''
+^^^^^^^^
 
 .. code-block:: python
 
@@ -46,7 +46,7 @@ Returning a Response instance indicates that you know exactly what you
 wish to return.
 
 AsyncGenerator[bytes, None]
-'''''''''''''''''''''''''''
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -64,7 +64,7 @@ the client, thereby lowing the peak memory usage, if combined with a
 ``Transfer-Encoding`` header with value ``chunked``.
 
 Generator[bytes, None, None]
-''''''''''''''''''''''''''''
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -86,7 +86,7 @@ Combinations
 Any of the above Response Values can be combined, as described,
 
 Tuple[ResponseValue, int]
-'''''''''''''''''''''''''
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -98,7 +98,7 @@ A tuple of a Response Value and a integer indicates that you intend to
 specify the status code.
 
 Tuple[str, int, Dict[str, str]]
-'''''''''''''''''''''''''''''''
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 

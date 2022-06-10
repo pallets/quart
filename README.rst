@@ -74,7 +74,7 @@ welcome), by proposing a `merge request
 <https://gitlab.com/pgjones/quart/merge_requests>`_.
 
 Testing
-~~~~~~~
+^^^^^^^
 
 The best way to test Quart is with `Tox
 <https://tox.readthedocs.io>`_,
@@ -109,7 +109,7 @@ Like Flask Quart has an ecosystem of extensions for more specific
 needs. In addition a number of the Flask extensions work with Quart.
 
 Migrating from Flask
-~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^
 
 It should be possible to migrate to Quart from Flask by a find and
 replace of ``flask`` to ``quart`` and then adding ``async`` and
