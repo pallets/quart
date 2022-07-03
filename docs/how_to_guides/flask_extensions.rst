@@ -75,8 +75,9 @@ with quart,
 
 - `Flask-CORS <https://github.com/corydolphin/flask-cors>`_, as it
   uses ``app.make_response`` which must be awaited. Try `Quart-CORS
-  <https://gitlab.com/pgjones/quart-cors>`_ instead.
+  <https://github.com/pgjones/quart-cors>`_ instead.
 - `Flask-Restful <https://github.com/flask-restful/flask-restful/>`_
   as it subclasses the Quart (app) class with synchronous methods
   overriding asynchronous methods. Try `Quart-OpenApi
-  <https://github.com/factset/quart-openapi/>`_ instead.
+  <https://github.com/factset/quart-openapi/>`_ or `Quart-Schema
+  <https://github.com/pgjones/quart-schema>`_ instead.

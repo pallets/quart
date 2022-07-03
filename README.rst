@@ -1,7 +1,7 @@
 Quart
 =====
 
-.. image:: https://assets.gitlab-static.net/pgjones/quart/raw/main/artwork/logo.png
+.. image:: https://raw.githubusercontent.com/pallets/quart/main/artwork/logo.png
    :alt: Quart logo
 
 |Build Status| |docs| |pypi| |python| |license| |chat|
@@ -66,12 +66,12 @@ documentation.
 Contributing
 ------------
 
-Quart is developed on `GitLab <https://gitlab.com/pgjones/quart>`_. If
+Quart is developed on `GitHub <https://github.com/pallets/quart>`_. If
 you come across an issue, or have a feature request please open an
-`issue <https://gitlab.com/pgjones/quart/issues>`_. If you want to
+`issue <https://github.com/pallets/quart/issues>`_. If you want to
 contribute a fix or the feature-implementation please do (typo fixes
 welcome), by proposing a `merge request
-<https://gitlab.com/pgjones/quart/merge_requests>`_.
+<https://github.com/pallets/quart/merge_requests>`_.
 
 Testing
 ^^^^^^^
@@ -96,7 +96,7 @@ best places to start, after that try searching `stack overflow
 <https://stackoverflow.com/questions/tagged/quart>`_ or ask for help
 `on gitter <https://gitter.im/python-quart/lobby>`_. If you still
 can't find an answer please `open an issue
-<https://gitlab.com/pgjones/quart/issues>`_.
+<https://github.com/pallets/quart/issues>`_.
 
 Relationship with Flask
 -----------------------
@@ -118,8 +118,8 @@ replace of ``flask`` to ``quart`` and then adding ``async`` and
 for more help.
 
 
-.. |Build Status| image:: https://gitlab.com/pgjones/quart/badges/main/pipeline.svg
-   :target: https://gitlab.com/pgjones/quart/commits/main
+.. |Build Status| image:: https://github.com/pallets/quart/actions/workflows/tests.yaml/badge.svg
+   :target: https://github.com/pallets/quart/commits/main
 
 .. |docs| image:: https://img.shields.io/badge/docs-passing-brightgreen.svg
    :target: https://pgjones.gitlab.io/quart/
@@ -131,7 +131,7 @@ for more help.
    :target: https://pypi.python.org/pypi/Quart/
 
 .. |license| image:: https://img.shields.io/badge/license-MIT-blue.svg
-   :target: https://gitlab.com/pgjones/quart/blob/main/LICENSE
+   :target: https://github.com/pallets/quart/blob/main/LICENSE
 
 .. |chat| image:: https://img.shields.io/badge/chat-join_now-brightgreen.svg
    :target: https://gitter.im/python-quart/lobby

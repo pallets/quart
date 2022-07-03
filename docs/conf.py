@@ -94,14 +94,14 @@ html_logo = "_static/logo_short.png"
 #
 html_theme_options = {
     "external_links": [
-        {"name": "Source code", "url": "https://gitlab.com/pgjones/quart"},
-        {"name": "Issues", "url": "https://gitlab.com/pgjones/quart/issues"},
+        {"name": "Source code", "url": "https://github.com/pallets/quart"},
+        {"name": "Issues", "url": "https://github.com/pallets/quart/issues"},
     ],
     "icon_links": [
         {
-            "name": "GitLab",
-            "url": "https://gitlab.com/pgjones/quart",
-            "icon": "fab fa-gitlab",
+            "name": "Github",
+            "url": "https://github.com/pallets/quart",
+            "icon": "fab fa-github",
         },
     ],
 }

@@ -6,15 +6,17 @@ Using Quart Extensions
 There are a number of extensions for Quart, some of which are listed
 here,
 
-- `Quart-Auth <https://gitlab.com/pgjones/quart-auth>`_ Secure cookie
+- `Quart-Auth <https://github.com/pgjones/quart-auth>`_ Secure cookie
   sessions, allows login, authentication and logout.
 - `Quart-compress <https://github.com/AceFire6/quart-compress>`_
   compress your application's responses with gzip.
 - `Quart-compress2
   <https://github.com/DahlitzFlorian/quart-compress>`_ A package to
   compress responses in your Quart app with gzip .
-- `Quart-CORS <https://gitlab.com/pgjones/quart-cors>`_ Cross Origin
+- `Quart-CORS <https://github.com/pgjones/quart-cors>`_ Cross Origin
   Resource Sharing (access control) support.
+- `Quart-DB <https://github.com/pgjones/quart-db>`_ Managed
+  connection(s) to postgresql database(s).
 - `Quart-events <https://github.com/smithk86/quart-events>`_ event
   broadcasting via WebSockets or SSE.
 - `Quart-Login <https://github.com/0000matteo0000/quart-login>`_ a
@@ -30,11 +32,11 @@ here,
 - `Quart-Rapidoc <https://github.com/marirs/quart-rapidoc>`_ API
   documentation from OpenAPI Specification.
 - `Quart-Rate-Limiter
-  <https://gitlab.com/pgjones/quart-rate-limiter>`_ Rate limiting
+  <https://github.com/pgjones/quart-rate-limiter>`_ Rate limiting
   support.
 - `Webargs-Quart <https://github.com/esfoobar/webargs-quart>`_ Webargs
   parsing for Quart.
-- `Quart-Schema <https://gitlab.com/pgjones/quart-schema>`_ Schema
+- `Quart-Schema <https://github.com/pgjones/quart-schema>`_ Schema
   validation and auto-generated API documentation.
 - `Quart-session <https://github.com/sanderfoobar/quart-session>`_ server
   side session support.

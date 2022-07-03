@@ -21,7 +21,7 @@ classifiers = [
 include = ["src/quart_auth/py.typed"]
 license = "MIT"
 readme = "README.rst"
-repository = "https://gitlab.com/pgjones/quart/"
+repository = "https://github.com/pallets/quart/"
 documentation = "https://pgjones.gitlab.io/quart/"
 
 [tool.poetry.dependencies]

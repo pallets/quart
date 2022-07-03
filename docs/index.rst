@@ -40,13 +40,13 @@ Like Flask Quart has an ecosystem of
 addition a number of the Flask :ref:`extensions<flask_extensions>`
 work with Quart.
 
-Quart is developed on `GitLab <https://gitlab.com/pgjones/quart>`_. If
+Quart is developed on `Github <https://github.com/pallets/quart>`_. If
 you come across an issue, or have a feature request please open an
-`issue <https://gitlab.com/pgjones/quart/issues>`_.If you want to
+`issue <https://github.com/pallets/quart/issues>`_.If you want to
 contribute a fix or the feature-implementation please do (typo fixes
 welcome), by proposing a `merge request
-<https://gitlab.com/pgjones/quart/merge_requests>`_. If you want to
-ask for help try `on gitter <https://gitter.im/python-quart/lobby>`_.
+<https://github.com/pallets/quart/merge_requests>`_. If you want to
+ask for help try `on discord <https://discord.gg/pallets>`_.
 
 .. note::
 
