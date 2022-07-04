@@ -25,8 +25,8 @@ Quart can be installed via `pip
     $ pip install quart
 
 and requires Python 3.7.0 or higher (see `python version support
-<https://pgjones.gitlab.io/quart/discussion/python_versions.html>`_ for
-reasoning).
+<https://quart.palletsprojects.com/en/latest/discussion/python_versions.html>`_
+for reasoning).
 
 A minimal Quart example is,
 
@@ -60,7 +60,7 @@ if the above is in a file called ``app.py`` it can be run as,
     $ python app.py
 
 To deploy this app in a production setting see the `deployment
-<https://pgjones.gitlab.io/quart/tutorials/deployment.html>`_
+<https://quart.palletsprojects.com/en/latest/tutorials/deployment.html>`_
 documentation.
 
 Contributing
@@ -89,10 +89,10 @@ this will check the code style and run the tests.
 Help
 ----
 
-The Quart `documentation <https://pgjones.gitlab.io/quart/>`_ or
+The Quart `documentation <https://quart.palletsprojects.com>`_ or
 `cheatsheet
-<https://pgjones.gitlab.io/quart/reference/cheatsheet.html>`_ are the
-best places to start, after that try searching `stack overflow
+<https://quart.palletsprojects.com/en/latest/reference/cheatsheet.html>`_
+are the best places to start, after that try searching `stack overflow
 <https://stackoverflow.com/questions/tagged/quart>`_ or ask for help
 `on gitter <https://gitter.im/python-quart/lobby>`_. If you still
 can't find an answer please `open an issue
@@ -114,7 +114,7 @@ Migrating from Flask
 It should be possible to migrate to Quart from Flask by a find and
 replace of ``flask`` to ``quart`` and then adding ``async`` and
 ``await`` keywords. See the `docs
-<https://pgjones.gitlab.io/quart/how_to_guides/flask_migration.html>`_
+<https://quart.palletsprojects.com/en/latest/how_to_guides/flask_migration.html>`_
 for more help.
 
 
@@ -122,7 +122,7 @@ for more help.
    :target: https://github.com/pallets/quart/commits/main
 
 .. |docs| image:: https://img.shields.io/badge/docs-passing-brightgreen.svg
-   :target: https://pgjones.gitlab.io/quart/
+   :target: https://quart.palletsprojects.com
 
 .. |pypi| image:: https://img.shields.io/pypi/v/quart.svg
    :target: https://pypi.python.org/pypi/Quart/

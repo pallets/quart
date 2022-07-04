@@ -22,7 +22,7 @@ include = ["src/quart_auth/py.typed"]
 license = "MIT"
 readme = "README.rst"
 repository = "https://github.com/pallets/quart/"
-documentation = "https://pgjones.gitlab.io/quart/"
+documentation = "https://quart.palletsprojects.com"
 
 [tool.poetry.dependencies]
 python = ">=3.7"
