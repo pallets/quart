@@ -94,7 +94,7 @@ The Quart `documentation <https://quart.palletsprojects.com>`_ or
 <https://quart.palletsprojects.com/en/latest/reference/cheatsheet.html>`_
 are the best places to start, after that try searching `stack overflow
 <https://stackoverflow.com/questions/tagged/quart>`_ or ask for help
-`on gitter <https://gitter.im/python-quart/lobby>`_. If you still
+`on discord <https://discord.gg/pallets>`_. If you still
 can't find an answer please `open an issue
 <https://github.com/pallets/quart/issues>`_.
 
@@ -134,4 +134,4 @@ for more help.
    :target: https://github.com/pallets/quart/blob/main/LICENSE
 
 .. |chat| image:: https://img.shields.io/badge/chat-join_now-brightgreen.svg
-   :target: https://gitter.im/python-quart/lobby
+   :target: https://discord.gg/pallets
