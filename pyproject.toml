@@ -34,6 +34,7 @@ importlib_metadata = { version = "*", python = "<3.8" }
 itsdangerous = "*"
 jinja2 = "*"
 markupsafe = "*"
+pydata_sphinx_theme = { version = "*", optional = true }
 python-dotenv = { version = "*", optional = true }
 typing_extensions = { version = "*", python = "<3.8" }
 werkzeug = ">=2.0.0"
@@ -48,6 +49,7 @@ pytest-asyncio = "*"
 quart = "quart.cli:main"
 
 [tool.poetry.extras]
+docs = ["pydata_sphinx_theme"]
 dotenv = ["python-dotenv"]
 
 [tool.black]
