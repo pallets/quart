@@ -40,10 +40,12 @@ from .typing import (
     BeforeWebsocketCallable,
     ErrorHandlerCallable,
     FilePath,
+    RouteCallable,
     TeardownCallable,
     TemplateContextProcessorCallable,
     URLDefaultCallable,
     URLValuePreprocessorCallable,
+    WebsocketCallable,
 )
 from .utils import file_path_to_path
 
@@ -52,6 +54,19 @@ if TYPE_CHECKING:
 
 
 F = TypeVar("F", bound=Callable)
+T_after_request = TypeVar("T_after_request", bound=AfterRequestCallable)
+T_after_websocket = TypeVar("T_after_websocket", bound=AfterWebsocketCallable)
+T_before_request = TypeVar("T_before_request", bound=BeforeRequestCallable)
+T_before_websocket = TypeVar("T_before_websocket", bound=BeforeWebsocketCallable)
+T_error_handler = TypeVar("T_error_handler", bound=ErrorHandlerCallable)
+T_teardown = TypeVar("T_teardown", bound=TeardownCallable)
+T_template_context_processor = TypeVar(
+    "T_template_context_processor", bound=TemplateContextProcessorCallable
+)
+T_url_defaults = TypeVar("T_url_defaults", bound=URLDefaultCallable)
+T_url_value_preprocessor = TypeVar("T_url_value_preprocessor", bound=URLValuePreprocessorCallable)
+T_route = TypeVar("T_route", bound=RouteCallable)
+T_websocket = TypeVar("T_websocket", bound=WebsocketCallable)
 
 
 def setupmethod(func: F) -> F:
@@ -231,34 +246,34 @@ class Scaffold:
             raise ValueError("Files can only be opened for reading")
         return async_open(self.root_path / file_path_to_path(path), mode)  # type: ignore
 
-    def _method_route(self, method: str, rule: str, options: dict) -> Callable:
+    def _method_route(self, method: str, rule: str, options: dict) -> Callable[[T_route], T_route]:
         if "methods" in options:
             raise TypeError("Methods cannot be supplied, use the 'route' decorator instead.")
 
         return self.route(rule, methods=[method], **options)
 
     @setupmethod
-    def get(self, rule: str, **options: Any) -> Callable:
+    def get(self, rule: str, **options: Any) -> Callable[[T_route], T_route]:
         """Syntactic sugar for :meth:`route` with ``methods=["GET"]``."""
         return self._method_route("GET", rule, options)
 
     @setupmethod
-    def post(self, rule: str, **options: Any) -> Callable:
+    def post(self, rule: str, **options: Any) -> Callable[[T_route], T_route]:
         """Syntactic sugar for :meth:`route` with ``methods=["POST"]``."""
         return self._method_route("POST", rule, options)
 
     @setupmethod
-    def put(self, rule: str, **options: Any) -> Callable:
+    def put(self, rule: str, **options: Any) -> Callable[[T_route], T_route]:
         """Syntactic sugar for :meth:`route` with ``methods=["PUT"]``."""
         return self._method_route("PUT", rule, options)
 
     @setupmethod
-    def delete(self, rule: str, **options: Any) -> Callable:
+    def delete(self, rule: str, **options: Any) -> Callable[[T_route], T_route]:
         """Syntactic sugar for :meth:`route` with ``methods=["DELETE"]``."""
         return self._method_route("DELETE", rule, options)
 
     @setupmethod
-    def patch(self, rule: str, **options: Any) -> Callable:
+    def patch(self, rule: str, **options: Any) -> Callable[[T_route], T_route]:
         """Syntactic sugar for :meth:`route` with ``methods=["PATCH"]``."""
         return self._method_route("PATCH", rule, options)
 
@@ -274,7 +289,7 @@ class Scaffold:
         *,
         provide_automatic_options: Optional[bool] = None,
         strict_slashes: Optional[bool] = None,
-    ) -> Callable:
+    ) -> Callable[[T_route], T_route]:
         """Add a HTTP request handling route.
 
         This is designed to be used as a decorator, if used to
@@ -313,7 +328,7 @@ class Scaffold:
                 path. Will redirect a leaf (no slash) to a branch (with slash).
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: T_route) -> T_route:
             self.add_url_rule(
                 rule,
                 endpoint,
@@ -334,7 +349,7 @@ class Scaffold:
         self,
         rule: str,
         endpoint: Optional[str] = None,
-        view_func: Optional[Callable] = None,
+        view_func: Optional[RouteCallable] = None,
         provide_automatic_options: Optional[bool] = None,
         *,
         methods: Optional[Iterable[str]] = None,
@@ -396,7 +411,7 @@ class Scaffold:
         subdomain: Optional[str] = None,
         *,
         strict_slashes: Optional[bool] = None,
-    ) -> Callable:
+    ) -> Callable[[T_websocket], T_websocket]:
         """Add a websocket to the application.
 
         This is designed to be used as a decorator, if used to
@@ -432,7 +447,7 @@ class Scaffold:
                 path. Will redirect a leaf (no slash) to a branch (with slash).
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: T_websocket) -> T_websocket:
             self.add_websocket(
                 rule,
                 endpoint,
@@ -450,7 +465,7 @@ class Scaffold:
         self,
         rule: str,
         endpoint: Optional[str] = None,
-        view_func: Optional[Callable] = None,
+        view_func: Optional[WebsocketCallable] = None,
         defaults: Optional[dict] = None,
         host: Optional[str] = None,
         subdomain: Optional[str] = None,
@@ -505,7 +520,7 @@ class Scaffold:
         )
 
     @setupmethod
-    def endpoint(self, endpoint: str) -> Callable:
+    def endpoint(self, endpoint: str) -> Callable[[F], F]:
         """Register a function as an endpoint.
 
         This is designed to be used as a decorator, if used to
@@ -523,7 +538,7 @@ class Scaffold:
             endpoint: The endpoint name to use.
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: F) -> F:
             self.view_functions[endpoint] = func
             return func
 
@@ -532,8 +547,8 @@ class Scaffold:
     @setupmethod
     def before_request(
         self,
-        func: BeforeRequestCallable,
-    ) -> BeforeRequestCallable:
+        func: T_before_request,
+    ) -> T_before_request:
         """Add a before request function.
 
         This is designed to be used as a decorator, if used to
@@ -556,8 +571,8 @@ class Scaffold:
     @setupmethod
     def after_request(
         self,
-        func: AfterRequestCallable,
-    ) -> AfterRequestCallable:
+        func: T_after_request,
+    ) -> T_after_request:
         """Add an after request function.
 
         This is designed to be used as a decorator, if used to
@@ -580,8 +595,8 @@ class Scaffold:
     @setupmethod
     def before_websocket(
         self,
-        func: BeforeWebsocketCallable,
-    ) -> BeforeWebsocketCallable:
+        func: T_before_websocket,
+    ) -> T_before_websocket:
         """Add a before websocket function.
 
         This is designed to be used as a decorator, if used to
@@ -604,8 +619,8 @@ class Scaffold:
     @setupmethod
     def after_websocket(
         self,
-        func: AfterWebsocketCallable,
-    ) -> AfterWebsocketCallable:
+        func: T_after_websocket,
+    ) -> T_after_websocket:
         """Add an after websocket function.
 
         This is designed to be used as a decorator, if used to
@@ -628,8 +643,8 @@ class Scaffold:
     @setupmethod
     def teardown_request(
         self,
-        func: TeardownCallable,
-    ) -> TeardownCallable:
+        func: T_teardown,
+    ) -> T_teardown:
         """Add a teardown request function.
 
         This is designed to be used as a decorator, if used to
@@ -652,8 +667,8 @@ class Scaffold:
     @setupmethod
     def teardown_websocket(
         self,
-        func: TeardownCallable,
-    ) -> TeardownCallable:
+        func: T_teardown,
+    ) -> T_teardown:
         """Add a teardown websocket function.
 
         This is designed to be used as a decorator, if used to
@@ -677,8 +692,8 @@ class Scaffold:
     @setupmethod
     def context_processor(
         self,
-        func: TemplateContextProcessorCallable,
-    ) -> TemplateContextProcessorCallable:
+        func: T_template_context_processor,
+    ) -> T_template_context_processor:
         """Add a template context processor.
 
         This is designed to be used as a decorator, if used to
@@ -698,8 +713,9 @@ class Scaffold:
 
     @setupmethod
     def url_value_preprocessor(
-        self, func: URLValuePreprocessorCallable
-    ) -> URLValuePreprocessorCallable:
+        self,
+        func: T_url_value_preprocessor,
+    ) -> T_url_value_preprocessor:
         """Add a url value preprocessor.
 
         This is designed to be used as a decorator. An example usage,
@@ -714,7 +730,7 @@ class Scaffold:
         return func
 
     @setupmethod
-    def url_defaults(self, func: URLDefaultCallable) -> URLDefaultCallable:
+    def url_defaults(self, func: T_url_defaults) -> T_url_defaults:
         """Add a url default preprocessor.
 
         This is designed to be used as a decorator. An example usage,
@@ -731,7 +747,7 @@ class Scaffold:
     @setupmethod
     def errorhandler(
         self, error: Union[Type[Exception], int]
-    ) -> Callable[[ErrorHandlerCallable], ErrorHandlerCallable]:
+    ) -> Callable[[T_error_handler], T_error_handler]:
         """Register a function as an error handler.
 
         This is designed to be used as a decorator. An example usage,
@@ -746,7 +762,7 @@ class Scaffold:
             error: The error code or Exception to handle.
         """
 
-        def decorator(func: ErrorHandlerCallable) -> ErrorHandlerCallable:
+        def decorator(func: T_error_handler) -> T_error_handler:
             self.register_error_handler(error, func)
             return func
 

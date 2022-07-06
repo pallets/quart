@@ -2,7 +2,18 @@ from __future__ import annotations
 
 from collections import defaultdict
 from functools import update_wrapper
-from typing import Any, Callable, Iterable, List, Optional, Tuple, Type, TYPE_CHECKING, Union
+from typing import (
+    Any,
+    Callable,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TYPE_CHECKING,
+    TypeVar,
+    Union,
+)
 
 from .scaffold import _endpoint_from_view_func, Scaffold, setupmethod
 from .typing import (
@@ -14,6 +25,7 @@ from .typing import (
     BeforeServingCallable,
     BeforeWebsocketCallable,
     ErrorHandlerCallable,
+    RouteCallable,
     TeardownCallable,
     TemplateContextProcessorCallable,
     TemplateFilterCallable,
@@ -21,12 +33,30 @@ from .typing import (
     TemplateTestCallable,
     URLDefaultCallable,
     URLValuePreprocessorCallable,
+    WebsocketCallable,
 )
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa
 
 DeferredSetupFunction = Callable[["BlueprintSetupState"], Callable]
+T_after_request = TypeVar("T_after_request", bound=AfterRequestCallable)
+T_after_websocket = TypeVar("T_after_websocket", bound=AfterWebsocketCallable)
+T_after_serving = TypeVar("T_after_serving", bound=AfterServingCallable)
+T_before_first_request = TypeVar("T_before_first_request", bound=BeforeFirstRequestCallable)
+T_before_request = TypeVar("T_before_request", bound=BeforeRequestCallable)
+T_before_websocket = TypeVar("T_before_websocket", bound=BeforeWebsocketCallable)
+T_before_serving = TypeVar("T_before_serving", bound=BeforeServingCallable)
+T_error_handler = TypeVar("T_error_handler", bound=ErrorHandlerCallable)
+T_teardown = TypeVar("T_teardown", bound=TeardownCallable)
+T_template_context_processor = TypeVar(
+    "T_template_context_processor", bound=TemplateContextProcessorCallable
+)
+T_template_filter = TypeVar("T_template_filter", bound=TemplateFilterCallable)
+T_template_global = TypeVar("T_template_global", bound=TemplateGlobalCallable)
+T_template_test = TypeVar("T_template_test", bound=TemplateTestCallable)
+T_url_defaults = TypeVar("T_url_defaults", bound=URLDefaultCallable)
+T_url_value_preprocessor = TypeVar("T_url_value_preprocessor", bound=URLValuePreprocessorCallable)
 
 
 class Blueprint(Scaffold):
@@ -91,7 +121,7 @@ class Blueprint(Scaffold):
         self,
         rule: str,
         endpoint: Optional[str] = None,
-        view_func: Optional[Callable] = None,
+        view_func: Optional[Union[RouteCallable, WebsocketCallable]] = None,
         provide_automatic_options: Optional[bool] = None,
         *,
         methods: Optional[Iterable[str]] = None,
@@ -138,7 +168,7 @@ class Blueprint(Scaffold):
     @setupmethod
     def app_template_filter(
         self, name: Optional[str] = None
-    ) -> Callable[[TemplateFilterCallable], TemplateFilterCallable]:
+    ) -> Callable[[T_template_filter], T_template_filter]:
         """Add an application wide template filter.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -152,7 +182,7 @@ class Blueprint(Scaffold):
                 ...
         """
 
-        def decorator(func: TemplateFilterCallable) -> TemplateFilterCallable:
+        def decorator(func: T_template_filter) -> T_template_filter:
             self.add_app_template_filter(func, name=name)
             return func
 
@@ -181,7 +211,7 @@ class Blueprint(Scaffold):
     @setupmethod
     def app_template_test(
         self, name: Optional[str] = None
-    ) -> Callable[[TemplateTestCallable], TemplateTestCallable]:
+    ) -> Callable[[T_template_test], T_template_test]:
         """Add an application wide template test.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -195,7 +225,7 @@ class Blueprint(Scaffold):
                 ...
         """
 
-        def decorator(func: TemplateTestCallable) -> TemplateTestCallable:
+        def decorator(func: T_template_test) -> T_template_test:
             self.add_app_template_test(func, name=name)
             return func
 
@@ -222,7 +252,7 @@ class Blueprint(Scaffold):
     @setupmethod
     def app_template_global(
         self, name: Optional[str] = None
-    ) -> Callable[[TemplateGlobalCallable], TemplateGlobalCallable]:
+    ) -> Callable[[T_template_global], T_template_global]:
         """Add an application wide template global.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -236,7 +266,7 @@ class Blueprint(Scaffold):
                 ...
         """
 
-        def decorator(func: TemplateGlobalCallable) -> TemplateGlobalCallable:
+        def decorator(func: T_template_global) -> T_template_global:
             self.add_app_template_global(func, name=name)
             return func
 
@@ -263,7 +293,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.register_template_global(func, name))
 
     @setupmethod
-    def before_app_request(self, func: BeforeRequestCallable) -> BeforeRequestCallable:
+    def before_app_request(self, func: T_before_request) -> T_before_request:
         """Add a before request function to the app.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -281,7 +311,7 @@ class Blueprint(Scaffold):
         return func
 
     @setupmethod
-    def before_app_websocket(self, func: BeforeWebsocketCallable) -> BeforeWebsocketCallable:
+    def before_app_websocket(self, func: T_before_websocket) -> T_before_websocket:
         """Add a before websocket to the App.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -300,7 +330,7 @@ class Blueprint(Scaffold):
         return func
 
     @setupmethod
-    def before_app_serving(self, func: BeforeServingCallable) -> BeforeServingCallable:
+    def before_app_serving(self, func: T_before_serving) -> T_before_serving:
         """Add a before serving to the App.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -318,9 +348,7 @@ class Blueprint(Scaffold):
         return func
 
     @setupmethod
-    def before_app_first_request(
-        self, func: BeforeFirstRequestCallable
-    ) -> BeforeFirstRequestCallable:
+    def before_app_first_request(self, func: T_before_first_request) -> T_before_first_request:
         """Add a before request first function to the app.
 
         This is designed to be used as a decorator, and has the same
@@ -340,7 +368,7 @@ class Blueprint(Scaffold):
         return func
 
     @setupmethod
-    def after_app_request(self, func: AfterRequestCallable) -> AfterRequestCallable:
+    def after_app_request(self, func: T_after_request) -> T_after_request:
         """Add a after request function to the app.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -358,7 +386,7 @@ class Blueprint(Scaffold):
         return func
 
     @setupmethod
-    def after_app_websocket(self, func: AfterWebsocketCallable) -> AfterWebsocketCallable:
+    def after_app_websocket(self, func: T_after_websocket) -> T_after_websocket:
         """Add an after websocket function to the App.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -376,7 +404,7 @@ class Blueprint(Scaffold):
         return func
 
     @setupmethod
-    def after_app_serving(self, func: AfterServingCallable) -> AfterServingCallable:
+    def after_app_serving(self, func: T_after_serving) -> T_after_serving:
         """Add an after serving function to the App.
 
         This is designed to be used as a decorator, and has the same arguments
@@ -393,7 +421,7 @@ class Blueprint(Scaffold):
         return func
 
     @setupmethod
-    def teardown_app_request(self, func: TeardownCallable) -> TeardownCallable:
+    def teardown_app_request(self, func: T_teardown) -> T_teardown:
         """Add a teardown request function to the app.
 
         This is designed to be used as a decorator, and has the same
@@ -412,7 +440,7 @@ class Blueprint(Scaffold):
         return func
 
     @setupmethod
-    def teardown_app_websocket(self, func: TeardownCallable) -> TeardownCallable:
+    def teardown_app_websocket(self, func: T_teardown) -> T_teardown:
         """Add a teardown websocket function to the app.
 
         This is designed to be used as a decorator, and has the same
@@ -431,7 +459,9 @@ class Blueprint(Scaffold):
         return func
 
     @setupmethod
-    def app_errorhandler(self, error: Union[Type[Exception], int]) -> Callable:
+    def app_errorhandler(
+        self, error: Union[Type[Exception], int]
+    ) -> Callable[[T_error_handler], T_error_handler]:
         """Add an error handler function to the App.
 
         This is designed to be used as a decorator, and has the same
@@ -446,7 +476,7 @@ class Blueprint(Scaffold):
                 ...
         """
 
-        def decorator(func: ErrorHandlerCallable) -> ErrorHandlerCallable:
+        def decorator(func: T_error_handler) -> T_error_handler:
             self.record_once(lambda state: state.app.register_error_handler(error, func))
             return func
 
@@ -454,8 +484,9 @@ class Blueprint(Scaffold):
 
     @setupmethod
     def app_context_processor(
-        self, func: TemplateContextProcessorCallable
-    ) -> TemplateContextProcessorCallable:
+        self,
+        func: T_template_context_processor,
+    ) -> T_template_context_processor:
         """Add a context processor function to the app.
 
         This is designed to be used as a decorator, and has the same
@@ -474,8 +505,8 @@ class Blueprint(Scaffold):
 
     @setupmethod
     def app_url_value_preprocessor(
-        self, func: URLValuePreprocessorCallable
-    ) -> URLValuePreprocessorCallable:
+        self, func: T_url_value_preprocessor
+    ) -> T_url_value_preprocessor:
         """Add a url value preprocessor.
 
         This is designed to be used as a decorator, and has the same
@@ -495,7 +526,7 @@ class Blueprint(Scaffold):
         return func
 
     @setupmethod
-    def app_url_defaults(self, func: URLDefaultCallable) -> URLDefaultCallable:
+    def app_url_defaults(self, func: T_url_defaults) -> T_url_defaults:
         """Add a url default preprocessor.
 
         This is designed to be used as a decorator, and has the same
@@ -526,7 +557,7 @@ class Blueprint(Scaffold):
             if state.first_registration:
                 func(state)
 
-        return self.record(update_wrapper(wrapper, func))
+        self.record(update_wrapper(wrapper, func))
 
     @setupmethod
     def register_blueprint(self, blueprint: "Blueprint", **options: Any) -> None:

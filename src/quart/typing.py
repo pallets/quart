@@ -93,6 +93,7 @@ ErrorHandlerCallable = Union[
     Callable[[Exception], ResponseReturnValue],
     Callable[[Exception], Awaitable[ResponseReturnValue]],
 ]
+ShellContextProcessorCallable = Callable[[], Dict[str, Any]]
 TeardownCallable = Union[
     Callable[[Optional[BaseException]], None],
     Callable[[Optional[BaseException]], Awaitable[None]],
@@ -105,6 +106,16 @@ TemplateGlobalCallable = Callable[[Any], Any]
 TemplateTestCallable = Callable[[Any], bool]
 URLDefaultCallable = Callable[[str, dict], None]
 URLValuePreprocessorCallable = Callable[[Optional[str], Optional[dict]], None]
+WhileServingCallable = Callable[[], AsyncGenerator[None, None]]
+
+RouteCallable = Union[
+    Callable[..., ResponseReturnValue],
+    Callable[..., Awaitable[ResponseReturnValue]],
+]
+WebsocketCallable = Union[
+    Callable[..., Optional[ResponseReturnValue]],
+    Callable[..., Awaitable[Optional[ResponseReturnValue]]],
+]
 
 
 class ASGIHTTPProtocol(Protocol):

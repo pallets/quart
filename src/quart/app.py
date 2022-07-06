@@ -27,6 +27,7 @@ from typing import (
     Set,
     Tuple,
     Type,
+    TypeVar,
     Union,
     ValuesView,
 )
@@ -106,6 +107,7 @@ from .typing import (
     FilePath,
     HeadersValue,
     ResponseReturnValue,
+    ShellContextProcessorCallable,
     StatusCode,
     TeardownCallable,
     TemplateFilterCallable,
@@ -113,11 +115,23 @@ from .typing import (
     TemplateTestCallable,
     TestAppProtocol,
     TestClientProtocol,
+    WhileServingCallable,
 )
 from .utils import file_path_to_path, is_coroutine_function, run_sync
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
+T_after_serving = TypeVar("T_after_serving", bound=AfterServingCallable)
+T_before_first_request = TypeVar("T_before_first_request", bound=BeforeFirstRequestCallable)
+T_before_serving = TypeVar("T_before_serving", bound=BeforeServingCallable)
+T_shell_context_processor = TypeVar(
+    "T_shell_context_processor", bound=ShellContextProcessorCallable
+)
+T_teardown = TypeVar("T_teardown", bound=TeardownCallable)
+T_template_filter = TypeVar("T_template_filter", bound=TemplateFilterCallable)
+T_template_global = TypeVar("T_template_global", bound=TemplateGlobalCallable)
+T_template_test = TypeVar("T_template_test", bound=TemplateTestCallable)
+T_while_serving = TypeVar("T_while_serving", bound=WhileServingCallable)
 
 
 def _convert_timedelta(value: Union[float, timedelta]) -> timedelta:
@@ -622,7 +636,7 @@ class Quart(Scaffold):
     @setupmethod
     def template_filter(
         self, name: Optional[str] = None
-    ) -> Callable[[TemplateFilterCallable], TemplateFilterCallable]:
+    ) -> Callable[[T_template_filter], T_template_filter]:
         """Add a template filter.
 
         This is designed to be used as a decorator. An example usage,
@@ -637,7 +651,7 @@ class Quart(Scaffold):
             name: The filter name (defaults to function name).
         """
 
-        def decorator(func: TemplateFilterCallable) -> TemplateFilterCallable:
+        def decorator(func: T_template_filter) -> T_template_filter:
             self.add_template_filter(func, name=name)
             return func
 
@@ -666,7 +680,7 @@ class Quart(Scaffold):
     @setupmethod
     def template_test(
         self, name: Optional[str] = None
-    ) -> Callable[[TemplateTestCallable], TemplateTestCallable]:
+    ) -> Callable[[T_template_test], T_template_test]:
         """Add a template test.
 
         This is designed to be used as a decorator. An example usage,
@@ -681,7 +695,7 @@ class Quart(Scaffold):
             name: The test name (defaults to function name).
         """
 
-        def decorator(func: TemplateTestCallable) -> TemplateTestCallable:
+        def decorator(func: T_template_test) -> T_template_test:
             self.add_template_test(func, name=name)
             return func
 
@@ -710,7 +724,7 @@ class Quart(Scaffold):
     @setupmethod
     def template_global(
         self, name: Optional[str] = None
-    ) -> Callable[[TemplateGlobalCallable], TemplateGlobalCallable]:
+    ) -> Callable[[T_template_global], T_template_global]:
         """Add a template global.
 
         This is designed to be used as a decorator. An example usage,
@@ -725,7 +739,7 @@ class Quart(Scaffold):
             name: The global name (defaults to function name).
         """
 
-        def decorator(func: TemplateGlobalCallable) -> TemplateGlobalCallable:
+        def decorator(func: T_template_global) -> T_template_global:
             self.add_template_global(func, name=name)
             return func
 
@@ -754,8 +768,8 @@ class Quart(Scaffold):
     @setupmethod
     def before_first_request(
         self,
-        func: BeforeFirstRequestCallable,
-    ) -> BeforeFirstRequestCallable:
+        func: T_before_first_request,
+    ) -> T_before_first_request:
         """Add a before **first** request function.
 
         This is designed to be used as a decorator, if used to
@@ -778,8 +792,8 @@ class Quart(Scaffold):
     @setupmethod
     def before_serving(
         self,
-        func: BeforeServingCallable,
-    ) -> Callable[[], Awaitable[None]]:
+        func: T_before_serving,
+    ) -> T_before_serving:
         """Add a before serving function.
 
         This will allow the function provided to be called once before
@@ -804,8 +818,9 @@ class Quart(Scaffold):
 
     @setupmethod
     def while_serving(
-        self, func: Callable[[], AsyncGenerator[None, None]]
-    ) -> Callable[[], AsyncGenerator[None, None]]:
+        self,
+        func: T_while_serving,
+    ) -> T_while_serving:
         """Add a while serving generator function.
 
         This will allow the generator provided to be invoked at
@@ -831,8 +846,8 @@ class Quart(Scaffold):
     @setupmethod
     def after_serving(
         self,
-        func: AfterServingCallable,
-    ) -> Callable[[], Awaitable[None]]:
+        func: T_after_serving,
+    ) -> T_after_serving:
         """Add a after serving function.
 
         This will allow the function provided to be called once after
@@ -874,7 +889,7 @@ class Quart(Scaffold):
         return None
 
     @setupmethod
-    def shell_context_processor(self, func: Callable[[], None]) -> Callable:
+    def shell_context_processor(self, func: T_shell_context_processor) -> T_shell_context_processor:
         """Add a shell context processor.
 
         This is designed to be used as a decorator. An example usage,
@@ -1060,8 +1075,8 @@ class Quart(Scaffold):
     @setupmethod
     def teardown_appcontext(
         self,
-        func: TeardownCallable,
-    ) -> TeardownCallable:
+        func: T_teardown,
+    ) -> T_teardown:
         """Add a teardown app (context) function.
 
         This is designed to be used as a decorator, if used to
