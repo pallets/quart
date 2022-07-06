@@ -57,11 +57,7 @@ F = TypeVar("F", bound=Callable)
 def setupmethod(func: F) -> F:
     @wraps(func)
     def wrapper(self: "Scaffold", *args: Any, **kwargs: Any) -> Any:
-        if self._is_setup_finished():
-            raise AssertionError(
-                "The first request has already been handled by the app, "
-                "calling this function now has no affect."
-            )
+        self._check_setup_finished(func.__name__)
         return func(self, *args, **kwargs)
 
     return cast(F, wrapper)
@@ -241,22 +237,27 @@ class Scaffold:
 
         return self.route(rule, methods=[method], **options)
 
+    @setupmethod
     def get(self, rule: str, **options: Any) -> Callable:
         """Syntactic sugar for :meth:`route` with ``methods=["GET"]``."""
         return self._method_route("GET", rule, options)
 
+    @setupmethod
     def post(self, rule: str, **options: Any) -> Callable:
         """Syntactic sugar for :meth:`route` with ``methods=["POST"]``."""
         return self._method_route("POST", rule, options)
 
+    @setupmethod
     def put(self, rule: str, **options: Any) -> Callable:
         """Syntactic sugar for :meth:`route` with ``methods=["PUT"]``."""
         return self._method_route("PUT", rule, options)
 
+    @setupmethod
     def delete(self, rule: str, **options: Any) -> Callable:
         """Syntactic sugar for :meth:`route` with ``methods=["DELETE"]``."""
         return self._method_route("DELETE", rule, options)
 
+    @setupmethod
     def patch(self, rule: str, **options: Any) -> Callable:
         """Syntactic sugar for :meth:`route` with ``methods=["PATCH"]``."""
         return self._method_route("PATCH", rule, options)
@@ -803,7 +804,7 @@ class Scaffold:
         else:
             return error_type, None
 
-    def _is_setup_finished(self) -> bool:
+    def _check_setup_finished(self, f_name: str) -> None:
         raise NotImplementedError()
 
 

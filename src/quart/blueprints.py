@@ -4,7 +4,7 @@ from collections import defaultdict
 from functools import update_wrapper
 from typing import Any, Callable, Iterable, List, Optional, Tuple, Type, TYPE_CHECKING, Union
 
-from .scaffold import _endpoint_from_view_func, Scaffold
+from .scaffold import _endpoint_from_view_func, Scaffold, setupmethod
 from .typing import (
     AfterRequestCallable,
     AfterServingCallable,
@@ -74,9 +74,19 @@ class Blueprint(Scaffold):
         self.cli_group = cli_group
         self._blueprints: List[Tuple["Blueprint", dict]] = []
 
-    def _is_setup_finished(self) -> bool:
-        return self.warn_on_modifications and self._got_registered_once
+    def _check_setup_finished(self, f_name: str) -> None:
+        if self._got_registered_once:
+            raise AssertionError(
+                f"The setup method '{f_name}' can no longer be called on"
+                f" the blueprint '{self.name}'. It has already been"
+                " registered at least once, any changes will not be"
+                " applied consistently.\n"
+                "Make sure all imports, decorators, functions, etc."
+                " needed to set up the blueprint are done before"
+                " registering it.\n"
+            )
 
+    @setupmethod
     def add_url_rule(
         self,
         rule: str,
@@ -125,6 +135,7 @@ class Blueprint(Scaffold):
             )
         )
 
+    @setupmethod
     def app_template_filter(
         self, name: Optional[str] = None
     ) -> Callable[[TemplateFilterCallable], TemplateFilterCallable]:
@@ -147,6 +158,7 @@ class Blueprint(Scaffold):
 
         return decorator
 
+    @setupmethod
     def add_app_template_filter(
         self, func: TemplateFilterCallable, name: Optional[str] = None
     ) -> None:
@@ -166,6 +178,7 @@ class Blueprint(Scaffold):
         """
         self.record_once(lambda state: state.register_template_filter(func, name))
 
+    @setupmethod
     def app_template_test(
         self, name: Optional[str] = None
     ) -> Callable[[TemplateTestCallable], TemplateTestCallable]:
@@ -188,6 +201,7 @@ class Blueprint(Scaffold):
 
         return decorator
 
+    @setupmethod
     def add_app_template_test(self, func: TemplateTestCallable, name: Optional[str] = None) -> None:
         """Add an application wide template test.
 
@@ -205,6 +219,7 @@ class Blueprint(Scaffold):
         """
         self.record_once(lambda state: state.register_template_test(func, name))
 
+    @setupmethod
     def app_template_global(
         self, name: Optional[str] = None
     ) -> Callable[[TemplateGlobalCallable], TemplateGlobalCallable]:
@@ -227,6 +242,7 @@ class Blueprint(Scaffold):
 
         return decorator
 
+    @setupmethod
     def add_app_template_global(
         self, func: TemplateGlobalCallable, name: Optional[str] = None
     ) -> None:
@@ -246,6 +262,7 @@ class Blueprint(Scaffold):
         """
         self.record_once(lambda state: state.register_template_global(func, name))
 
+    @setupmethod
     def before_app_request(self, func: BeforeRequestCallable) -> BeforeRequestCallable:
         """Add a before request function to the app.
 
@@ -263,6 +280,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.before_request(func))
         return func
 
+    @setupmethod
     def before_app_websocket(self, func: BeforeWebsocketCallable) -> BeforeWebsocketCallable:
         """Add a before websocket to the App.
 
@@ -281,6 +299,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.before_websocket(func))
         return func
 
+    @setupmethod
     def before_app_serving(self, func: BeforeServingCallable) -> BeforeServingCallable:
         """Add a before serving to the App.
 
@@ -298,6 +317,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.before_serving(func))
         return func
 
+    @setupmethod
     def before_app_first_request(
         self, func: BeforeFirstRequestCallable
     ) -> BeforeFirstRequestCallable:
@@ -319,6 +339,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.before_first_request(func))
         return func
 
+    @setupmethod
     def after_app_request(self, func: AfterRequestCallable) -> AfterRequestCallable:
         """Add a after request function to the app.
 
@@ -336,6 +357,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.after_request(func))
         return func
 
+    @setupmethod
     def after_app_websocket(self, func: AfterWebsocketCallable) -> AfterWebsocketCallable:
         """Add an after websocket function to the App.
 
@@ -353,6 +375,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.after_websocket(func))
         return func
 
+    @setupmethod
     def after_app_serving(self, func: AfterServingCallable) -> AfterServingCallable:
         """Add an after serving function to the App.
 
@@ -369,6 +392,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.after_serving(func))
         return func
 
+    @setupmethod
     def teardown_app_request(self, func: TeardownCallable) -> TeardownCallable:
         """Add a teardown request function to the app.
 
@@ -387,6 +411,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.teardown_request(func))
         return func
 
+    @setupmethod
     def teardown_app_websocket(self, func: TeardownCallable) -> TeardownCallable:
         """Add a teardown websocket function to the app.
 
@@ -405,6 +430,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.teardown_websocket(func))
         return func
 
+    @setupmethod
     def app_errorhandler(self, error: Union[Type[Exception], int]) -> Callable:
         """Add an error handler function to the App.
 
@@ -426,6 +452,7 @@ class Blueprint(Scaffold):
 
         return decorator
 
+    @setupmethod
     def app_context_processor(
         self, func: TemplateContextProcessorCallable
     ) -> TemplateContextProcessorCallable:
@@ -445,6 +472,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.context_processor(func))
         return func
 
+    @setupmethod
     def app_url_value_preprocessor(
         self, func: URLValuePreprocessorCallable
     ) -> URLValuePreprocessorCallable:
@@ -466,6 +494,7 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.url_value_preprocessor(func))
         return func
 
+    @setupmethod
     def app_url_defaults(self, func: URLDefaultCallable) -> URLDefaultCallable:
         """Add a url default preprocessor.
 
@@ -484,10 +513,12 @@ class Blueprint(Scaffold):
         self.record_once(lambda state: state.app.url_defaults(func))
         return func
 
+    @setupmethod
     def record(self, func: DeferredSetupFunction) -> None:
         """Used to register a deferred action."""
         self.deferred_functions.append(func)
 
+    @setupmethod
     def record_once(self, func: DeferredSetupFunction) -> None:
         """Used to register a deferred action that happens only once."""
 
@@ -497,6 +528,7 @@ class Blueprint(Scaffold):
 
         return self.record(update_wrapper(wrapper, func))
 
+    @setupmethod
     def register_blueprint(self, blueprint: "Blueprint", **options: Any) -> None:
         """Register a :class:`~quart.Blueprint` on this blueprint.
 

@@ -69,7 +69,7 @@ from .helpers import (
 from .json import JSONDecoder, JSONEncoder, jsonify, tojson_filter
 from .logging import create_logger, create_serving_logger
 from .routing import QuartMap, QuartRule
-from .scaffold import _endpoint_from_view_func, Scaffold
+from .scaffold import _endpoint_from_view_func, Scaffold, setupmethod
 from .sessions import SecureCookieSessionInterface
 from .signals import (
     appcontext_tearing_down,
@@ -291,8 +291,17 @@ class Quart(Scaffold):
 
         self.template_context_processors[None] = [_default_template_context_processor]
 
-    def _is_setup_finished(self) -> bool:
-        return self.debug and self._got_first_request
+    def _check_setup_finished(self, f_name: str) -> None:
+        if self._got_first_request:
+            raise AssertionError(
+                f"The setup method '{f_name}' can no longer be called"
+                " on the application. It has already handled its first"
+                " request, any changes will not be applied"
+                " consistently.\n"
+                "Make sure all imports, decorators, functions, etc."
+                " needed to set up the application are done before"
+                " running it."
+            )
 
     @property
     def name(self) -> str:  # type: ignore
@@ -491,6 +500,7 @@ class Quart(Scaffold):
         """Creates and returns a CLI test runner."""
         return self.test_cli_runner_class(self, **kwargs)
 
+    @setupmethod
     def register_blueprint(
         self,
         blueprint: Blueprint,
@@ -513,6 +523,7 @@ class Quart(Scaffold):
         """Return a iterator over the blueprints."""
         return self.blueprints.values()
 
+    @setupmethod
     def add_url_rule(
         self,
         rule: str,
@@ -608,6 +619,7 @@ class Quart(Scaffold):
 
             self.view_functions[endpoint] = view_func
 
+    @setupmethod
     def template_filter(
         self, name: Optional[str] = None
     ) -> Callable[[TemplateFilterCallable], TemplateFilterCallable]:
@@ -631,6 +643,7 @@ class Quart(Scaffold):
 
         return decorator
 
+    @setupmethod
     def add_template_filter(self, func: TemplateFilterCallable, name: Optional[str] = None) -> None:
         """Add a template filter.
 
@@ -650,6 +663,7 @@ class Quart(Scaffold):
         """
         self.jinja_env.filters[name or func.__name__] = func
 
+    @setupmethod
     def template_test(
         self, name: Optional[str] = None
     ) -> Callable[[TemplateTestCallable], TemplateTestCallable]:
@@ -673,6 +687,7 @@ class Quart(Scaffold):
 
         return decorator
 
+    @setupmethod
     def add_template_test(self, func: TemplateTestCallable, name: Optional[str] = None) -> None:
         """Add a template test.
 
@@ -692,6 +707,7 @@ class Quart(Scaffold):
         """
         self.jinja_env.tests[name or func.__name__] = func
 
+    @setupmethod
     def template_global(
         self, name: Optional[str] = None
     ) -> Callable[[TemplateGlobalCallable], TemplateGlobalCallable]:
@@ -715,6 +731,7 @@ class Quart(Scaffold):
 
         return decorator
 
+    @setupmethod
     def add_template_global(self, func: TemplateGlobalCallable, name: Optional[str] = None) -> None:
         """Add a template global.
 
@@ -734,6 +751,7 @@ class Quart(Scaffold):
         """
         self.jinja_env.globals[name or func.__name__] = func
 
+    @setupmethod
     def before_first_request(
         self,
         func: BeforeFirstRequestCallable,
@@ -757,6 +775,7 @@ class Quart(Scaffold):
         self.before_first_request_funcs.append(func)
         return func
 
+    @setupmethod
     def before_serving(
         self,
         func: BeforeServingCallable,
@@ -783,6 +802,7 @@ class Quart(Scaffold):
         self.before_serving_funcs.append(func)
         return func
 
+    @setupmethod
     def while_serving(
         self, func: Callable[[], AsyncGenerator[None, None]]
     ) -> Callable[[], AsyncGenerator[None, None]]:
@@ -808,6 +828,7 @@ class Quart(Scaffold):
         self.while_serving_gens.append(func())
         return func
 
+    @setupmethod
     def after_serving(
         self,
         func: AfterServingCallable,
@@ -852,6 +873,7 @@ class Quart(Scaffold):
             return self.url_map.bind(self.config["SERVER_NAME"], url_scheme=scheme)
         return None
 
+    @setupmethod
     def shell_context_processor(self, func: Callable[[], None]) -> Callable:
         """Add a shell context processor.
 
@@ -1035,6 +1057,7 @@ class Quart(Scaffold):
     def raise_routing_exception(self, request: BaseRequestWebsocket) -> NoReturn:
         raise request.routing_exception
 
+    @setupmethod
     def teardown_appcontext(
         self,
         func: TeardownCallable,
