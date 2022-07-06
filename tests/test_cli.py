@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import code
 import os
-import random
-import string
 import tempfile
 from pathlib import Path
+from typing import Generator
 from unittest.mock import Mock
 
 import pytest
@@ -56,7 +55,7 @@ def no_debug_env_patch(monkeypatch: MonkeyPatch) -> None:
 
 
 @pytest.fixture(name="empty_cwd")
-def empty_cwd():
+def empty_cwd() -> Generator[Path, None, None]:
     directory = tempfile.TemporaryDirectory()
     cwd = os.getcwd()
     os.chdir(directory.name)

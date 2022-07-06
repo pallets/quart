@@ -96,21 +96,19 @@ class ScriptInfo:
         try:
             import dotenv
         except ImportError:
-            if path or os.path.isfile(".env") or os.path.isfile(".quartenv"):
-                print(  # noqa: T201
+            if Path(".env").is_file() or Path(".quartenv").is_file():
+                click.echo(
                     " * Tip: There are .env or .flaskenv files present."
                     ' Do "pip install python-dotenv" to use them.',
                 )
 
             return
+        else:
+            for name in (".env", ".quartenv"):
+                path = dotenv.find_dotenv(name, usecwd=True)
 
-        for name in (".env", ".quartenv"):
-            path = dotenv.find_dotenv(name, usecwd=True)
-
-            if not path:
-                continue
-
-            dotenv.load_dotenv(path, encoding="utf-8")
+                if path is not None:
+                    dotenv.load_dotenv(path, encoding="utf-8")
 
 
 pass_script_info = click.make_pass_decorator(ScriptInfo, ensure=True)
@@ -129,7 +127,7 @@ def with_appcontext(fn: Optional[Callable] = None) -> Callable:
                     return __ctx.invoke(fn, *args, **kwargs)
                 except RuntimeError as error:
                     if error.args[0] == "Cannot run the event loop while another loop is running":
-                        print(  # noqa: T201
+                        click.echo(
                             "The appcontext cannot be used with a command that runs an event loop. "
                             "See quart#361 for more details"
                         )
