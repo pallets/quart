@@ -106,7 +106,9 @@ class Config(dict):
             app.config.from_pyfile(filename)
         """
         value = os.environ.get(variable_name)
-        if value is None and not silent:
+        if value is None:
+            if silent:
+                return False
             raise RuntimeError(
                 f"Environment variable {variable_name} is not present, cannot load config"
             )

@@ -135,6 +135,17 @@ def test_config_from_envvar() -> None:
     _check_standard_config(config)
 
 
+def test_config_from_envvar_not_set_with_silent() -> None:
+    config = Config(Path(__file__).parent)
+    config.from_envvar("UNKNOWN_CONFIG", silent=True)
+
+
+def test_config_from_envvar_not_set_without_silent() -> None:
+    config = Config(Path(__file__).parent)
+    with pytest.raises(RuntimeError):
+        config.from_envvar("UNKNOWN_CONFIG")
+
+
 def test_config_from_json() -> None:
     config = Config(Path(__file__).parent)
     config.from_json("assets/config.json")
