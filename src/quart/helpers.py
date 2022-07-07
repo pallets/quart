@@ -139,6 +139,20 @@ def get_flashed_messages(
     return flashes
 
 
+def get_root_path(import_name: str) -> str:
+    """Find the root path of the *import_name*"""
+    module = sys.modules.get(import_name)
+    if module is not None and hasattr(module, "__file__"):
+        file_path = module.__file__
+    else:
+        loader = pkgutil.get_loader(import_name)
+        if loader is None or import_name == "__main__":
+            return str(Path.cwd())
+        else:
+            file_path = loader.get_filename(import_name)  # type: ignore
+    return str(Path(file_path).resolve().parent)
+
+
 def get_template_attribute(template_name: str, attribute: str) -> Any:
     """Load a attribute from a template.
 

@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import os
-import pkgutil
-import sys
 from collections import defaultdict
 from functools import wraps
 from json import JSONDecoder, JSONEncoder
@@ -30,7 +28,7 @@ from werkzeug.exceptions import default_exceptions, HTTPException
 
 from .cli import AppGroup
 from .globals import current_app
-from .helpers import send_from_directory
+from .helpers import get_root_path, send_from_directory
 from .templating import _default_template_context_processor
 from .typing import (
     AfterRequestCallable,
@@ -103,7 +101,10 @@ class Scaffold:
         self.import_name = import_name
         self.template_folder = Path(template_folder) if template_folder is not None else None
 
-        self.root_path = _find_root_path(import_name, root_path)
+        if root_path is None:
+            self.root_path = Path(get_root_path(import_name))
+        else:
+            self.root_path = Path(root_path)
 
         self._static_folder: Optional[Path] = None
         self._static_url_path: Optional[str] = None
@@ -827,19 +828,3 @@ class Scaffold:
 def _endpoint_from_view_func(view_func: Callable) -> str:
     assert view_func is not None
     return view_func.__name__
-
-
-def _find_root_path(import_name: str, root_path: Optional[str] = None) -> Path:
-    if root_path is not None:
-        return Path(root_path)
-    else:
-        module = sys.modules.get(import_name)
-        if module is not None and hasattr(module, "__file__"):
-            file_path = module.__file__
-        else:
-            loader = pkgutil.get_loader(import_name)
-            if loader is None or import_name == "__main__":
-                return Path.cwd()
-            else:
-                file_path = loader.get_filename(import_name)  # type: ignore
-        return Path(file_path).resolve().parent
