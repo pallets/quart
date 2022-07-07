@@ -3,12 +3,17 @@
 Background tasks
 ================
 
-Some actions can often take a lot of time to complete, which may cause
-the client to timeout before receiving a response. Equally some tasks
-just don't need to be completed before the response is sent and
-instead can be done in the background. Quart provides a way to create
-and run a task in the background via the app ``add_background_task``
-method,
+If you have a task to perform where the outcome or result isn't
+required you can utilise a background task to run it. Background tasks
+run concurrently with the route handlers etc, i.e. in the
+background. Background tasks are very useful when they contain actions
+that take a lot of time to complete, as they allow a response to be
+sent to the client whilst the task itself is carried out. Equally some
+tasks just don't need to be completed before the response is sent and
+instead can be done in the background.
+
+Background tasks in Quart are created via the ``add_background_task``
+method:
 
 .. code-block:: python
 
@@ -20,9 +25,18 @@ method,
         app.add_background_task(background_task)
         return 'Success'
 
+    @app.before_serving
+    async def startup():
+        app.add_background_task(background_task)
+
+
 The background tasks will have access to the app context. The tasks
 will be awaited during shutdown to ensure they complete before the app
-shutdowns.
+shuts down. If your task does not complete it will eventually be
+cancelled as the app is forceably shut down by the server.
+
+Synchronous background tasks are supported and will run in a separate
+thread.
 
 .. warning::
 
@@ -36,6 +50,21 @@ shutdowns.
 
 Testing background tasks
 ------------------------
+
+To ensure that background tasks complete in tests utilise the
+``test_app`` context manager. This will wait for any background
+tasks to complete before allowing the test to continue:
+
+.. code-block:: python
+
+    async def test_tasks_complete():
+        async with app.test_app():
+            app.add_background_task(...)
+        # Background task has completed here
+        assert task_has_done_something
+
+Note when testing an app the ``test_client`` usage should be within
+the ``test_app`` context block.
 
 The background task coroutine function can be tested by creating an
 app context and await the function,
