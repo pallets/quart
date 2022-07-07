@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List, Optional, Type
 
 from .globals import current_app, request
 from .typing import ResponseReturnValue
@@ -62,7 +62,7 @@ class View:
             for decorator in cls.decorators:
                 view = decorator(view)
 
-        view.view_class: View = cls  # type: ignore
+        view.view_class: Type[View] = cls  # type: ignore
         view.__name__ = name
         view.__doc__ = cls.__doc__
         view.__module__ = cls.__module__
