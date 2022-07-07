@@ -115,6 +115,11 @@ def test_response_cache_control() -> None:
     assert response.headers["Cache-Control"] == "max-age=2, no-cache"
 
 
+async def test_empty_response() -> None:
+    response = Response()
+    assert b"" == (await response.get_data())  # type: ignore
+
+
 @given(
     value=strategies.datetimes(
         timezones=strategies.just(timezone.utc),

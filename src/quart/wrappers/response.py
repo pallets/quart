@@ -259,7 +259,7 @@ class Response(SansIOResponse):
 
     def __init__(
         self,
-        response: Union[ResponseBody, AnyStr, Iterable],
+        response: Union[ResponseBody, AnyStr, Iterable, None] = None,
         status: Optional[int] = None,
         headers: Optional[Union[dict, Headers]] = None,
         mimetype: Optional[str] = None,
@@ -288,7 +288,9 @@ class Response(SansIOResponse):
         self.timeout: Any = Ellipsis
 
         self.response: ResponseBody
-        if isinstance(response, ResponseBody):
+        if response is None:
+            self.response = self.iterable_body_class([])
+        elif isinstance(response, ResponseBody):
             self.response = response
         elif isinstance(response, (str, bytes)):
             self.set_data(response)  # type: ignore
