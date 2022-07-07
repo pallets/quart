@@ -1431,7 +1431,7 @@ class Quart(Scaffold):
     def add_background_task(self, func: Callable, *args: Any, **kwargs: Any) -> None:
         async def _wrapper() -> None:
             try:
-                await copy_current_app_context(func)(*args, **kwargs)
+                await copy_current_app_context(self.ensure_async(func))(*args, **kwargs)
             except Exception as error:
                 await self.handle_background_exception(error)
 
