@@ -34,6 +34,7 @@ from .typing import (
     URLDefaultCallable,
     URLValuePreprocessorCallable,
     WebsocketCallable,
+    WhileServingCallable,
 )
 
 if TYPE_CHECKING:
@@ -57,6 +58,7 @@ T_template_global = TypeVar("T_template_global", bound=TemplateGlobalCallable)
 T_template_test = TypeVar("T_template_test", bound=TemplateTestCallable)
 T_url_defaults = TypeVar("T_url_defaults", bound=URLDefaultCallable)
 T_url_value_preprocessor = TypeVar("T_url_value_preprocessor", bound=URLValuePreprocessorCallable)
+T_while_serving = TypeVar("T_while_serving", bound=WhileServingCallable)
 
 
 class Blueprint(Scaffold):
@@ -418,6 +420,25 @@ class Blueprint(Scaffold):
                 ...
         """
         self.record_once(lambda state: state.app.after_serving(func))
+        return func
+
+    @setupmethod
+    def while_app_serving(self, func: T_while_serving) -> T_while_serving:
+        """Add a while serving function to the App.
+
+        This is designed to be used as a decorator, and has the same arguments
+        as :meth:`~quart.Quart.while_serving`. An example usage,
+
+        .. code-block:: python
+
+            @blueprint.while_serving
+            async def func():
+                ...  # Startup
+                yield
+                ...  # Shutdown
+
+        """
+        self.record_once(lambda state: state.app.while_serving(func))
         return func
 
     @setupmethod
