@@ -29,6 +29,27 @@ async def test_background_task() -> None:
     assert data == "data"
 
 
+async def test_lifespan_background_task() -> None:
+    app = Quart(__name__)
+    app.config["DATA"] = "data"
+
+    data = None
+
+    async def background() -> None:
+        nonlocal data
+        await asyncio.sleep(0.5)
+        data = current_app.config["DATA"]
+
+    @app.before_serving
+    async def startup() -> None:
+        app.add_background_task(background)
+
+    async with app.test_app():
+        pass
+
+    assert data == "data"
+
+
 async def test_sync_background_task() -> None:
     app = Quart(__name__)
     app.config["DATA"] = "data"
