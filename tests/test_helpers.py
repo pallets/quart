@@ -63,7 +63,6 @@ def host_matched_app() -> Quart:
     return app
 
 
-@pytest.mark.asyncio
 async def test_make_response(app: Quart) -> None:
     async with app.app_context():
         response = await make_response("foo", 202)
@@ -71,7 +70,6 @@ async def test_make_response(app: Quart) -> None:
         assert b"foo" in (await response.get_data())  # type: ignore
 
 
-@pytest.mark.asyncio
 async def test_flash(app: Quart) -> None:
     async with app.test_request_context("/"):
         await flash("message")
@@ -79,7 +77,6 @@ async def test_flash(app: Quart) -> None:
         assert get_flashed_messages() == ["message"]
 
 
-@pytest.mark.asyncio
 async def test_flash_category(app: Quart) -> None:
     async with app.test_request_context("/"):
         await flash("bar", "error")
@@ -88,7 +85,6 @@ async def test_flash_category(app: Quart) -> None:
         assert get_flashed_messages(with_categories=True) == [("error", "bar"), ("info", "foo")]
 
 
-@pytest.mark.asyncio
 async def test_flash_category_filter(app: Quart) -> None:
     async with app.test_request_context("/"):
         await flash("bar", "error")
@@ -97,7 +93,6 @@ async def test_flash_category_filter(app: Quart) -> None:
         assert get_flashed_messages(category_filter=["error"]) == ["bar"]
 
 
-@pytest.mark.asyncio
 async def test_url_for(app: Quart) -> None:
     async with app.test_request_context("/"):
         assert url_for("index") == "/"
@@ -105,14 +100,12 @@ async def test_url_for(app: Quart) -> None:
         assert url_for("resource", id=5) == "/resource/5"
 
 
-@pytest.mark.asyncio
 async def test_url_for_host_matching(host_matched_app: Quart) -> None:
     async with host_matched_app.app_context():
         assert url_for("index", _external=True) == "http:///"
         assert url_for("host", _external=True) == "http://quart.com/"
 
 
-@pytest.mark.asyncio
 async def test_url_for_external(app: Quart) -> None:
     async with app.test_request_context("/"):
         assert url_for("index") == "/"
@@ -125,7 +118,6 @@ async def test_url_for_external(app: Quart) -> None:
         assert url_for("index", _external=False) == "/"
 
 
-@pytest.mark.asyncio
 async def test_url_for_scheme(app: Quart) -> None:
     async with app.test_request_context("/"):
         with pytest.raises(ValueError):
@@ -137,14 +129,12 @@ async def test_url_for_scheme(app: Quart) -> None:
         )
 
 
-@pytest.mark.asyncio
 async def test_url_for_anchor(app: Quart) -> None:
     async with app.test_request_context("/"):
         assert url_for("index", _anchor="&foo") == "/#%26foo"
         assert url_for("resource", id=5, _anchor="&foo") == "/resource/5#%26foo"
 
 
-@pytest.mark.asyncio
 async def test_url_for_blueprint_relative(app: Quart) -> None:
     blueprint = Blueprint("blueprint", __name__)
 
@@ -159,7 +149,6 @@ async def test_url_for_blueprint_relative(app: Quart) -> None:
         assert url_for("index") == "/"
 
 
-@pytest.mark.asyncio
 async def test_url_for_root_path(app: Quart) -> None:
     async with app.test_request_context("/", root_path="/bob"):
         assert url_for("index") == "/bob/"
@@ -167,7 +156,6 @@ async def test_url_for_root_path(app: Quart) -> None:
         assert url_for("resource", id=5) == "/bob/resource/5"
 
 
-@pytest.mark.asyncio
 async def test_stream_with_context() -> None:
     app = Quart(__name__)
 
@@ -187,13 +175,11 @@ async def test_stream_with_context() -> None:
     assert result == b"GET /"
 
 
-@pytest.mark.asyncio
 async def test_send_from_directory_raises() -> None:
     with pytest.raises(NotFound):
         await send_from_directory(str(ROOT_PATH), "no_file.no")
 
 
-@pytest.mark.asyncio
 async def test_send_file_path(tmpdir: LocalPath) -> None:
     app = Quart(__name__)
     file_ = tmpdir.join("send.img")
@@ -203,7 +189,6 @@ async def test_send_file_path(tmpdir: LocalPath) -> None:
     assert (await response.get_data(as_text=False)) == file_.read_binary()
 
 
-@pytest.mark.asyncio
 async def test_send_file_bytes_io() -> None:
     app = Quart(__name__)
     io_stream = BytesIO(b"something")
@@ -212,7 +197,6 @@ async def test_send_file_bytes_io() -> None:
     assert (await response.get_data(as_text=False)) == b"something"
 
 
-@pytest.mark.asyncio
 async def test_send_file_no_mimetype() -> None:
     app = Quart(__name__)
     async with app.app_context():
@@ -220,7 +204,6 @@ async def test_send_file_no_mimetype() -> None:
             await send_file(BytesIO(b"something"))
 
 
-@pytest.mark.asyncio
 async def test_send_file_as_attachment(tmpdir: LocalPath) -> None:
     app = Quart(__name__)
     file_ = tmpdir.join("send.img")
@@ -230,7 +213,6 @@ async def test_send_file_as_attachment(tmpdir: LocalPath) -> None:
     assert response.headers["content-disposition"] == "attachment; filename=send.img"
 
 
-@pytest.mark.asyncio
 async def test_send_file_as_attachment_name(tmpdir: LocalPath) -> None:
     app = Quart(__name__)
     file_ = tmpdir.join("send.img")
@@ -242,7 +224,6 @@ async def test_send_file_as_attachment_name(tmpdir: LocalPath) -> None:
     assert response.headers["content-disposition"] == "attachment; filename=send.html"
 
 
-@pytest.mark.asyncio
 async def test_send_file_mimetype(tmpdir: LocalPath) -> None:
     app = Quart(__name__)
     file_ = tmpdir.join("send.bob")
@@ -253,7 +234,6 @@ async def test_send_file_mimetype(tmpdir: LocalPath) -> None:
     assert response.headers["Content-Type"] == "application/bob"
 
 
-@pytest.mark.asyncio
 async def test_send_file_last_modified(tmpdir: LocalPath) -> None:
     app = Quart(__name__)
     file_ = tmpdir.join("send.img")
@@ -265,7 +245,6 @@ async def test_send_file_last_modified(tmpdir: LocalPath) -> None:
     assert response.last_modified == mtime
 
 
-@pytest.mark.asyncio
 async def test_send_file_last_modified_override(tmpdir: LocalPath) -> None:
     app = Quart(__name__)
     file_ = tmpdir.join("send.img")
@@ -276,7 +255,6 @@ async def test_send_file_last_modified_override(tmpdir: LocalPath) -> None:
     assert response.last_modified == last_modified
 
 
-@pytest.mark.asyncio
 async def test_send_file_max_age(tmpdir: LocalPath) -> None:
     app = Quart(__name__)
     file_ = tmpdir.join("send.img")

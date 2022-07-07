@@ -71,7 +71,6 @@ app context and await the function,
 
 .. code-block:: python
 
-    @pytest.mark.asyncio
     async def test_background_task():
         async with app.app_context():
             await background_task()

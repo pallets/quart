@@ -61,7 +61,6 @@ def test_null_session_no_modification() -> None:
         session["a"] = "b"
 
 
-@pytest.mark.asyncio
 async def test_secure_cookie_session_interface_open_session(http_scope: HTTPScope) -> None:
     session = SecureCookieSession()
     session["something"] = "else"
@@ -78,7 +77,6 @@ async def test_secure_cookie_session_interface_open_session(http_scope: HTTPScop
     assert new_session == session
 
 
-@pytest.mark.asyncio
 async def test_secure_cookie_session_interface_save_session() -> None:
     session = SecureCookieSession()
     session["something"] = "else"
@@ -100,7 +98,6 @@ async def test_secure_cookie_session_interface_save_session() -> None:
     assert response.headers["Vary"] == "Cookie"
 
 
-@pytest.mark.asyncio
 async def _save_session(session: SecureCookieSession) -> Response:
     interface = SecureCookieSessionInterface()
     app = Quart(__name__)
@@ -110,7 +107,6 @@ async def _save_session(session: SecureCookieSession) -> Response:
     return response
 
 
-@pytest.mark.asyncio
 async def test_secure_cookie_session_interface_save_session_no_modification() -> None:
     session = SecureCookieSession()
     session["something"] = "else"
@@ -119,7 +115,6 @@ async def test_secure_cookie_session_interface_save_session_no_modification() ->
     assert response.headers.get("Set-Cookie") is None
 
 
-@pytest.mark.asyncio
 async def test_secure_cookie_session_interface_save_session_no_access() -> None:
     session = SecureCookieSession()
     session["something"] = "else"

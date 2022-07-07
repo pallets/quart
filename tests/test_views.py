@@ -14,7 +14,6 @@ def app() -> Quart:
     return app
 
 
-@pytest.mark.asyncio
 async def test_view(app: Quart) -> None:
     class Views(View):
         methods = ["GET", "POST"]
@@ -31,7 +30,6 @@ async def test_view(app: Quart) -> None:
     assert response.status_code == 405
 
 
-@pytest.mark.asyncio
 async def test_method_view(app: Quart) -> None:
     class Views(MethodView):
         async def get(self) -> ResponseReturnValue:
@@ -49,7 +47,6 @@ async def test_method_view(app: Quart) -> None:
     assert "POST" == (await response.get_data(as_text=True))
 
 
-@pytest.mark.asyncio
 async def test_view_decorators(app: Quart) -> None:
     def decorate_status_code(func: Callable) -> Callable:
         async def wrapper(*args: Any, **kwargs: Any) -> ResponseReturnValue:

@@ -77,7 +77,6 @@ and the ``while_serving`` generator has been advanced,
 
 .. code-block:: python
 
-    @pytest.mark.asyncio
     async def test_index(app):
         test_client = app.test_client()
         await test_client.get("/")

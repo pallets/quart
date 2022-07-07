@@ -18,7 +18,6 @@ from quart import (
 from quart.views import MethodView
 
 
-@pytest.mark.asyncio
 async def test_blueprint_route() -> None:
     app = Quart(__name__)
     blueprint = Blueprint("blueprint", __name__)
@@ -33,7 +32,6 @@ async def test_blueprint_route() -> None:
         assert request.blueprint == "blueprint"
 
 
-@pytest.mark.asyncio
 async def test_blueprint_websocket() -> None:
     app = Quart(__name__)
     blueprint = Blueprint("blueprint", __name__)
@@ -51,7 +49,6 @@ async def test_blueprint_websocket() -> None:
     assert cast(bytes, result) == b"blueprint"
 
 
-@pytest.mark.asyncio
 async def test_blueprint_url_prefix() -> None:
     app = Quart(__name__)
     blueprint = Blueprint("blueprint", __name__)
@@ -76,7 +73,6 @@ async def test_blueprint_url_prefix() -> None:
         assert request.blueprint == "blueprint"
 
 
-@pytest.mark.asyncio
 async def test_blueprint_template_filter() -> None:
     app = Quart(__name__)
     blueprint = Blueprint("blueprint", __name__)
@@ -95,7 +91,6 @@ async def test_blueprint_template_filter() -> None:
     assert b"olleh" in (await response.get_data())  # type: ignore
 
 
-@pytest.mark.asyncio
 async def test_blueprint_error_handler() -> None:
     app = Quart(__name__)
     blueprint = Blueprint("blueprint", __name__)
@@ -116,7 +111,6 @@ async def test_blueprint_error_handler() -> None:
     assert b"Something Unique" in (await response.get_data())  # type: ignore
 
 
-@pytest.mark.asyncio
 async def test_blueprint_method_view() -> None:
     app = Quart(__name__)
     blueprint = Blueprint("blueprint", __name__)
@@ -164,7 +158,6 @@ def test_cli_blueprints(cli_group: Optional[str], args: List[str]) -> None:
     assert "command" in result.output
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "parent_init, child_init, parent_registration, child_registration",
     [
@@ -197,7 +190,6 @@ async def test_nesting_url_prefixes(
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_nesting_and_sibling() -> None:
     app = Quart(__name__)
 
@@ -231,7 +223,6 @@ def test_unique_blueprint_names() -> None:
     app.register_blueprint(bp, name="alt")
 
 
-@pytest.mark.asyncio
 async def test_nested_blueprint() -> None:
     app = Quart(__name__)
 
@@ -294,7 +285,6 @@ async def test_nested_blueprint() -> None:
     assert (await (await client.get("/parent/child/grandchild/no")).get_data()) == b"Grandchild no"  # type: ignore  # noqa: E501
 
 
-@pytest.mark.asyncio
 async def test_blueprint_renaming() -> None:
     app = Quart(__name__)
 
@@ -338,7 +328,6 @@ def test_self_registration() -> None:
         bp.register_blueprint(bp)
 
 
-@pytest.mark.asyncio
 async def test_nested_callback_order() -> None:
     app = Quart(__name__)
 

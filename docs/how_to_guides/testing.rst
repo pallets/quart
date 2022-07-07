@@ -16,7 +16,6 @@ e.g.
 
 .. code-block:: python
 
-    @pytest.mark.asyncio
     async def test_app(app):
         client = app.test_client()
         response = await client.get('/')
@@ -38,10 +37,9 @@ call the async functions. This is possible to do manually, for example
     async def test_app(app)
         ...
 
-However it is much easier to use ``pytest-asyncio`` and the
-``@pytest.mark.asyncio`` decorator to do this for you. Note that
-``pytest`` is the recommended test runner and the examples throughout
-assume ``pytest`` is used with ``pytest-asyncio``.
+However it is much easier to use ``pytest-asyncio`` and the to do this
+for you. Note that ``pytest`` is the recommended test runner and the
+examples throughout assume ``pytest`` is used with ``pytest-asyncio``.
 
 Calling routes
 --------------
@@ -55,7 +53,6 @@ returned. An example:
 
 .. code-block:: python
 
-    @pytest.mark.asyncio
     async def test_create(app):
         test_client = app.test_client()
         data = {'name': 'foo'}
@@ -92,7 +89,6 @@ contexts.  This is simple enough for the app context,
 
 .. code-block:: python
 
-    @pytest.mark.asyncio
     async def test_app_context(app):
         async with app.app_context():
             current_app.[use]
@@ -102,7 +98,6 @@ at a minimum this means the method and path must be supplied, e.g.
 
 .. code-block:: python
 
-    @pytest.mark.asyncio
     async def test_app_context(app):
         async with app.test_request_context("/", method="GET"):
             request.[use]
@@ -116,7 +111,6 @@ at a minimum this means the method and path must be supplied, e.g.
 
 .. code-block:: python
 
-    @pytest.mark.asyncio
     async def test_app_context(app):
         async with app.test_request_context("/", method="GET"):
             await app.preprocess_request()

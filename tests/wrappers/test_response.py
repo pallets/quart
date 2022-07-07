@@ -15,7 +15,6 @@ from werkzeug.exceptions import RequestedRangeNotSatisfiable
 from quart.wrappers.response import DataBody, FileBody, IOBody, IterableBody, Response
 
 
-@pytest.mark.asyncio
 async def test_data_wrapper() -> None:
     wrapper = DataBody(b"abcdef")
     results = []
@@ -30,7 +29,6 @@ async def _simple_async_generator() -> AsyncGenerator[bytes, None]:
     yield b"def"
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "iterable", [[b"abc", b"def"], (data for data in [b"abc", b"def"]), _simple_async_generator()]
 )
@@ -43,7 +41,6 @@ async def test_iterable_wrapper(iterable: Any) -> None:
     assert results == [b"abc", b"def"]
 
 
-@pytest.mark.asyncio
 async def test_file_wrapper(tmpdir: LocalPath) -> None:
     file_ = tmpdir.join("file_wrapper")
     file_.write("abcdef")
@@ -55,7 +52,6 @@ async def test_file_wrapper(tmpdir: LocalPath) -> None:
     assert results == [b"abc", b"def"]
 
 
-@pytest.mark.asyncio
 async def test_io_wrapper() -> None:
     wrapper = IOBody(BytesIO(b"abcdef"), buffer_size=3)
     results = []
@@ -73,7 +69,6 @@ def test_response_status(status: Any, expected: int) -> None:
     assert response.status_code == expected
 
 
-@pytest.mark.asyncio
 async def test_response_body() -> None:
     response = Response(b"Body")
     assert b"Body" == (await response.get_data())  # type: ignore
@@ -81,7 +76,6 @@ async def test_response_body() -> None:
     assert b"Body" == (await response.get_data())  # type: ignore
 
 
-@pytest.mark.asyncio
 async def test_response_make_conditional() -> None:
     response = Response(b"abcdef")
     await response.make_conditional(Range("bytes", [(0, 3)]))
@@ -94,7 +88,6 @@ async def test_response_make_conditional() -> None:
     assert response.content_range.length == 6
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("range_", [Range("", []), Range("bytes", [(0, 6)])])
 async def test_response_make_conditional_no_condition(range_: Range) -> None:
     response = Response(b"abcdef")
@@ -104,7 +97,6 @@ async def test_response_make_conditional_no_condition(range_: Range) -> None:
     assert response.accept_ranges == "bytes"
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "range_",
     [Range("seconds", [(0, 3)]), Range("bytes", [(0, 2), (3, 5)]), Range("bytes", [(0, 8)])],

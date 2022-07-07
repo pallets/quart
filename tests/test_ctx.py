@@ -27,7 +27,6 @@ from quart.testing import make_test_headers_path_and_query_string, no_op_push
 from quart.wrappers import Request
 
 
-@pytest.mark.asyncio
 async def test_request_context_match(http_scope: HTTPScope) -> None:
     app = Quart(__name__)
     url_adapter = Mock()
@@ -50,7 +49,6 @@ async def test_request_context_match(http_scope: HTTPScope) -> None:
         assert request.view_args == {"arg": "value"}
 
 
-@pytest.mark.asyncio
 async def test_bad_request_if_websocket_route(http_scope: HTTPScope) -> None:
     app = Quart(__name__)
     url_adapter = Mock()
@@ -71,7 +69,6 @@ async def test_bad_request_if_websocket_route(http_scope: HTTPScope) -> None:
         assert isinstance(request.routing_exception, BadRequest)
 
 
-@pytest.mark.asyncio
 async def test_after_this_request(http_scope: HTTPScope) -> None:
     app = Quart(__name__)
     headers, path, query_string = make_test_headers_path_and_query_string(app, "/")
@@ -93,7 +90,6 @@ async def test_after_this_request(http_scope: HTTPScope) -> None:
         assert context._after_request_functions[0]() == "hello"  # type: ignore
 
 
-@pytest.mark.asyncio
 async def test_has_request_context(http_scope: HTTPScope) -> None:
     app = Quart(__name__)
     headers, path, query_string = make_test_headers_path_and_query_string(app, "/")
@@ -115,7 +111,6 @@ async def test_has_request_context(http_scope: HTTPScope) -> None:
     assert has_app_context() is False
 
 
-@pytest.mark.asyncio
 async def test_has_app_context() -> None:
     async with AppContext(Quart(__name__)):
         assert has_app_context() is True
@@ -158,7 +153,6 @@ def test_app_ctx_globals_iter() -> None:
     assert sorted(iter(g)) == ["bar", "foo"]
 
 
-@pytest.mark.asyncio
 async def test_copy_current_app_context() -> None:
     app = Quart(__name__)
 
@@ -183,7 +177,6 @@ def test_copy_current_app_context_error() -> None:
         copy_current_app_context(lambda: None)()
 
 
-@pytest.mark.asyncio
 async def test_copy_current_request_context() -> None:
     app = Quart(__name__)
 
@@ -206,7 +199,6 @@ def test_copy_current_request_context_error() -> None:
         copy_current_request_context(lambda: None)()
 
 
-@pytest.mark.asyncio
 async def test_works_without_copy_current_request_context() -> None:
     app = Quart(__name__)
 
@@ -223,7 +215,6 @@ async def test_works_without_copy_current_request_context() -> None:
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_copy_current_websocket_context() -> None:
     app = Quart(__name__)
 

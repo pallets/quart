@@ -7,7 +7,6 @@ import pytest
 from quart.signals import AsyncNamedSignal
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("weak", [True, False])
 async def test_sync_signal(weak: bool) -> None:
     signal = AsyncNamedSignal("name")
@@ -23,7 +22,6 @@ async def test_sync_signal(weak: bool) -> None:
     assert fired
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("weak", [True, False])
 async def test_async_signal(weak: bool) -> None:
     signal = AsyncNamedSignal("name")

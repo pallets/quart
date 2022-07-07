@@ -18,7 +18,6 @@ except ImportError:
     from mock import AsyncMock  # type: ignore
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("headers, expected", [([(b"host", b"quart")], "quart"), ([], "")])
 async def test_http_1_0_host_header(headers: list, expected: str) -> None:
     app = Quart(__name__)
@@ -42,7 +41,6 @@ async def test_http_1_0_host_header(headers: list, expected: str) -> None:
     assert request.headers["host"] == expected
 
 
-@pytest.mark.asyncio
 async def test_http_completion() -> None:
     # Ensure that the connecion callable returns on completion
     app = Quart(__name__)
@@ -77,7 +75,6 @@ async def test_http_completion() -> None:
     await asyncio.wait_for(connection(receive, send), timeout=1)
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "request_message",
     [
@@ -122,7 +119,6 @@ async def test_http_request_without_body(request_message: dict) -> None:
     assert body == b""
 
 
-@pytest.mark.asyncio
 async def test_websocket_completion() -> None:
     # Ensure that the connecion callable returns on completion
     app = Quart(__name__)
@@ -201,7 +197,6 @@ def test_websocket_path_from_absolute_target() -> None:
     assert websocket.path == "/path"
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "scope, headers, subprotocol, has_headers",
     [
@@ -232,7 +227,6 @@ async def test_websocket_accept_connection(
         )
 
 
-@pytest.mark.asyncio
 async def test_websocket_accept_connection_warns(websocket_scope: WebsocketScope) -> None:
     connection = ASGIWebsocketConnection(Quart(__name__), websocket_scope)
 

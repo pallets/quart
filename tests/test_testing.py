@@ -18,7 +18,6 @@ from quart.testing import (
 )
 
 
-@pytest.mark.asyncio
 async def test_methods() -> None:
     app = Quart(__name__)
 
@@ -169,7 +168,6 @@ def test_build_headers_path_and_query_string_headers_defaults(
     assert query_string == b""
 
 
-@pytest.mark.asyncio
 async def test_remote_addr() -> None:
     app = Quart(__name__)
 
@@ -182,7 +180,6 @@ async def test_remote_addr() -> None:
     assert (await response.get_data(as_text=True)) == "127.0.0.2"
 
 
-@pytest.mark.asyncio
 async def test_json() -> None:
     app = Quart(__name__)
 
@@ -196,7 +193,6 @@ async def test_json() -> None:
     assert (await response.get_json()) == {"a": "b"}
 
 
-@pytest.mark.asyncio
 async def test_form() -> None:
     app = Quart(__name__)
 
@@ -210,7 +206,6 @@ async def test_form() -> None:
     assert (await response.get_json()) == {"a": "b"}
 
 
-@pytest.mark.asyncio
 async def test_data() -> None:
     app = Quart(__name__)
 
@@ -225,7 +220,6 @@ async def test_data() -> None:
     assert (await response.get_data(as_text=False)) == b"ABCDEFG"
 
 
-@pytest.mark.asyncio
 async def test_query_string() -> None:
     app = Quart(__name__)
 
@@ -239,7 +233,6 @@ async def test_query_string() -> None:
     assert (await response.get_json()) == {"a": "b"}
 
 
-@pytest.mark.asyncio
 async def test_redirect() -> None:
     app = Quart(__name__)
 
@@ -255,7 +248,6 @@ async def test_redirect() -> None:
     assert (await client.get("/redirect", follow_redirects=True)).status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_cookie_jar() -> None:
     app = Quart(__name__)
     app.secret_key = "secret"
@@ -276,7 +268,6 @@ async def test_cookie_jar() -> None:
     assert (await response.get_json()) == {"foo": "bar", "bar": "foo"}
 
 
-@pytest.mark.asyncio
 async def test_redirect_cookie_jar() -> None:
     app = Quart(__name__)
     app.secret_key = "secret"
@@ -298,7 +289,6 @@ async def test_redirect_cookie_jar() -> None:
     assert (await response.get_json()) == {"bar": "foo"}
 
 
-@pytest.mark.asyncio
 async def test_set_cookie() -> None:
     app = Quart(__name__)
 
@@ -312,7 +302,6 @@ async def test_set_cookie() -> None:
     assert (await response.get_json()) == {"foo": "bar"}
 
 
-@pytest.mark.asyncio
 async def test_websocket_bad_request() -> None:
     app = Quart(__name__)
 
@@ -326,7 +315,6 @@ async def test_websocket_bad_request() -> None:
             pass
 
 
-@pytest.mark.asyncio
 async def test_push_promise() -> None:
     app = Quart(__name__)
 
@@ -340,7 +328,6 @@ async def test_push_promise() -> None:
     assert test_client.push_promises[0][0] == "/"
 
 
-@pytest.mark.asyncio
 async def test_session_transactions() -> None:
     app = Quart(__name__)
     app.secret_key = "secret"
@@ -362,7 +349,6 @@ async def test_session_transactions() -> None:
         assert local_session["foo"] == [42]
 
 
-@pytest.mark.asyncio
 async def test_with_usage() -> None:
     app = Quart(__name__)
     app.secret_key = "secret"
@@ -378,7 +364,6 @@ async def test_with_usage() -> None:
         assert session["hello"] == "world"
 
 
-@pytest.mark.asyncio
 async def test_websocket_json() -> None:
     app = Quart(__name__)
 
@@ -393,7 +378,6 @@ async def test_websocket_json() -> None:
         assert data == {"foo": "bar"}
 
 
-@pytest.mark.asyncio
 async def test_middleware() -> None:
     app = Quart(__name__)
 
@@ -433,7 +417,6 @@ async def test_middleware() -> None:
     assert response.status_code == 401
 
 
-@pytest.mark.asyncio
 async def test_auth() -> None:
     app = Quart(__name__)
 

@@ -125,7 +125,6 @@ def test_add_url_rule_automatic_options(
     )
 
 
-@pytest.mark.asyncio
 async def test_host_matching() -> None:
     app = Quart(__name__, static_host="quart.com", host_matching=True)
 
@@ -141,7 +140,6 @@ async def test_host_matching() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.asyncio
 async def test_subdomain() -> None:
     app = Quart(__name__, subdomain_matching=True)
     app.config["SERVER_NAME"] = "quart.com"
@@ -155,7 +153,6 @@ async def test_subdomain() -> None:
     assert (await response.get_data(as_text=True)) == "sub"
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "result, expected, raises",
     [
@@ -243,14 +240,12 @@ def _basic_app() -> Quart:
     return app
 
 
-@pytest.mark.asyncio
 async def test_app_route_exception(basic_app: Quart) -> None:
     test_client = basic_app.test_client()
     response = await test_client.get("/exception/")
     assert response.status_code == 500
 
 
-@pytest.mark.asyncio
 async def test_app_before_request_exception(basic_app: Quart) -> None:
     @basic_app.before_request
     def before() -> None:
@@ -261,7 +256,6 @@ async def test_app_before_request_exception(basic_app: Quart) -> None:
     assert response.status_code == 500
 
 
-@pytest.mark.asyncio
 async def test_app_after_request_exception(basic_app: Quart) -> None:
     @basic_app.after_request
     def after(_: Response) -> None:
@@ -272,7 +266,6 @@ async def test_app_after_request_exception(basic_app: Quart) -> None:
     assert response.status_code == 500
 
 
-@pytest.mark.asyncio
 async def test_app_after_request_handler_exception(basic_app: Quart) -> None:
     @basic_app.after_request
     def after(_: Response) -> None:
@@ -283,7 +276,6 @@ async def test_app_after_request_handler_exception(basic_app: Quart) -> None:
     assert response.status_code == 500
 
 
-@pytest.mark.asyncio
 async def test_app_handle_request_asyncio_cancelled_error(http_scope: HTTPScope) -> None:
     app = Quart(__name__)
 
@@ -306,7 +298,6 @@ async def test_app_handle_request_asyncio_cancelled_error(http_scope: HTTPScope)
         await app.handle_request(request)
 
 
-@pytest.mark.asyncio
 async def test_app_handle_websocket_asyncio_cancelled_error(
     websocket_scope: WebsocketScope,
 ) -> None:
@@ -360,7 +351,6 @@ def _session_app() -> Quart:
     return app
 
 
-@pytest.mark.asyncio
 async def test_app_session(session_app: Quart) -> None:
     test_client = session_app.test_client()
     await test_client.get("/")
@@ -368,7 +358,6 @@ async def test_app_session(session_app: Quart) -> None:
     session_app.session_interface.save_session.assert_called()  # type: ignore
 
 
-@pytest.mark.asyncio
 async def test_app_session_websocket(session_app: Quart) -> None:
     test_client = session_app.test_client()
     async with test_client.websocket("/ws/") as test_websocket:
@@ -377,7 +366,6 @@ async def test_app_session_websocket(session_app: Quart) -> None:
     session_app.session_interface.save_session.assert_called()  # type: ignore
 
 
-@pytest.mark.asyncio
 async def test_app_session_websocket_return(session_app: Quart) -> None:
     test_client = session_app.test_client()
     async with test_client.websocket("/ws_return/") as test_websocket:
@@ -387,7 +375,6 @@ async def test_app_session_websocket_return(session_app: Quart) -> None:
     session_app.session_interface.save_session.assert_called()  # type: ignore
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "debug, testing, raises",
     [(False, False, False), (True, False, True), (False, True, True), (True, True, True)],
@@ -423,7 +410,6 @@ async def test_propagation(debug: bool, testing: bool, raises: bool, http_scope:
         assert response.status_code == 500
 
 
-@pytest.mark.asyncio
 async def test_test_app() -> None:
     startup = False
     shutdown = False

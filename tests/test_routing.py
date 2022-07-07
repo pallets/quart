@@ -9,7 +9,6 @@ from quart.testing import no_op_push
 from quart.wrappers.request import Request
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "server_name, expected",
     [("localhost", 0), ("quart.com", 1)],

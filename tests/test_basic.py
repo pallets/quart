@@ -78,7 +78,6 @@ def app() -> Quart:
     return app
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("path", ["/", "/sync/"])
 async def test_index(path: str, app: Quart) -> None:
     test_client = app.test_client()
@@ -87,14 +86,12 @@ async def test_index(path: str, app: Quart) -> None:
     assert b"index" in (await response.get_data())  # type: ignore
 
 
-@pytest.mark.asyncio
 async def test_iri(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get("/❤️")
     assert "💔".encode() in (await response.get_data())  # type: ignore
 
 
-@pytest.mark.asyncio
 async def test_options(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.options("/")
@@ -106,7 +103,6 @@ async def test_options(app: Quart) -> None:
     }
 
 
-@pytest.mark.asyncio
 async def test_json(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.post("/json/", json={"value": "json"})
@@ -114,7 +110,6 @@ async def test_json(app: Quart) -> None:
     assert b'{"value":"json"}' == (await response.get_data())  # type: ignore
 
 
-@pytest.mark.asyncio
 async def test_implicit_json(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.post("/implicit_json/", json={"value": "json"})
@@ -122,7 +117,6 @@ async def test_implicit_json(app: Quart) -> None:
     assert b'{"value":"json"}' == (await response.get_data())  # type: ignore
 
 
-@pytest.mark.asyncio
 async def test_werkzeug(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get("/werkzeug/")
@@ -130,7 +124,6 @@ async def test_werkzeug(app: Quart) -> None:
     assert b"Hello" == (await response.get_data())  # type: ignore
 
 
-@pytest.mark.asyncio
 async def test_generic_error(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get("/error/")
@@ -138,7 +131,6 @@ async def test_generic_error(app: Quart) -> None:
     assert b"Something Unique" in (await response.get_data())  # type: ignore
 
 
-@pytest.mark.asyncio
 async def test_url_defaults(app: Quart) -> None:
     @app.url_defaults
     def defaults(_: str, values: dict) -> None:
@@ -148,7 +140,6 @@ async def test_url_defaults(app: Quart) -> None:
         assert url_for("param") == "/param/hello"
 
 
-@pytest.mark.asyncio
 async def test_not_found_error(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get("/not_found/")
@@ -156,7 +147,6 @@ async def test_not_found_error(app: Quart) -> None:
     assert b"Not Found" in (await response.get_data())  # type: ignore
 
 
-@pytest.mark.asyncio
 async def test_make_response_str(app: Quart) -> None:
     response = await app.make_response("Result")
     assert response.status_code == 200
@@ -173,7 +163,6 @@ async def test_make_response_str(app: Quart) -> None:
     assert response.headers["name"] == "value"
 
 
-@pytest.mark.asyncio
 async def test_make_response_response(app: Quart) -> None:
     response = await app.make_response(Response("Result"))
     assert response.status_code == 200
@@ -190,7 +179,6 @@ async def test_make_response_response(app: Quart) -> None:
     assert response.headers["name"] == "value"
 
 
-@pytest.mark.asyncio
 async def test_websocket(app: Quart) -> None:
     test_client = app.test_client()
     data = b"bob"
@@ -200,7 +188,6 @@ async def test_websocket(app: Quart) -> None:
     assert cast(bytes, result) == data
 
 
-@pytest.mark.asyncio
 async def test_websocket_abort(app: Quart) -> None:
     test_client = app.test_client()
     try:
@@ -210,7 +197,6 @@ async def test_websocket_abort(app: Quart) -> None:
         assert error.response.status_code == 401
 
 
-@pytest.mark.asyncio
 async def test_root_path(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get("/", root_path="/bob")
@@ -219,7 +205,6 @@ async def test_root_path(app: Quart) -> None:
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_stream(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get("/stream")
