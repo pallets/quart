@@ -40,7 +40,7 @@ from hypercorn.asyncio import serve
 from hypercorn.config import Config as HyperConfig
 from hypercorn.typing import ASGIReceiveCallable, ASGISendCallable, Scope
 from werkzeug.datastructures import Authorization, Headers
-from werkzeug.exceptions import HTTPException, InternalServerError
+from werkzeug.exceptions import Aborter, HTTPException, InternalServerError
 from werkzeug.routing import MapAdapter, RoutingException
 from werkzeug.wrappers import Response as WerkzeugResponse
 
@@ -152,6 +152,8 @@ class Quart(Scaffold):
     can be replaced.
 
     Attributes:
+        aborter_class: The class to use to raise HTTP error via the abort
+            helper function.
         app_ctx_globals_class: The class to use for the ``g`` object
         asgi_http_class: The class to use to handle the ASGI HTTP
             protocol.
@@ -192,6 +194,7 @@ class Quart(Scaffold):
     test_app_class: Type[TestAppProtocol]
     test_client_class: Type[TestClientProtocol]
 
+    aborter_class = Aborter
     app_ctx_globals_class = _AppCtxGlobals
     asgi_http_class = ASGIHTTPConnection
     asgi_lifespan_class = ASGILifespan
@@ -270,6 +273,7 @@ class Quart(Scaffold):
             raise ValueError("The instance_path must be an absolute path.")
         self.instance_path = instance_path
 
+        self.aborter = self.make_aborter()
         self.config = self.make_config(instance_relative_config)
 
         self.after_serving_funcs: List[Callable[[], Awaitable[None]]] = []
@@ -378,6 +382,10 @@ class Quart(Scaffold):
     def got_first_request(self) -> bool:
         """Return if the app has received a request."""
         return self._got_first_request
+
+    def make_aborter(self) -> Aborter:
+        """Create and return the aborter instance."""
+        return self.aborter_class()
 
     def make_config(self, instance_relative: bool = False) -> Config:
         """Create and return the configuration with appropriate defaults."""

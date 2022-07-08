@@ -8,11 +8,11 @@ from datetime import datetime, timedelta
 from functools import lru_cache, wraps
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Optional, Tuple, Union
+from typing import Any, Callable, Iterable, List, NoReturn, Optional, Tuple, Union
 from urllib.parse import quote
 from zlib import adler32
 
-from werkzeug.exceptions import NotFound
+from werkzeug.exceptions import abort as werkzeug_abort, NotFound
 from werkzeug.routing import BuildError
 from werkzeug.utils import safe_join
 from werkzeug.wrappers import Response as WerkzeugResponse
@@ -421,3 +421,11 @@ def _split_blueprint_path(name: str) -> List[str]:
     while "." in bps[-1]:
         bps.append(bps[-1].rpartition(".")[0])
     return bps
+
+
+def abort(code: int, *args: Any, **kwargs: Any) -> NoReturn:  # type: ignore[misc]
+    """Raise an HTTPException for the given status code."""
+    if current_app:
+        current_app.aborter(code, *args, **kwargs)
+
+    werkzeug_abort(code, *args, **kwargs)

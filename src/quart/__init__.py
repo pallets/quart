@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from markupsafe import escape as escape, Markup as Markup
-from werkzeug.exceptions import abort as abort
 from werkzeug.utils import redirect as redirect
 
 from .app import Quart as Quart
@@ -27,6 +26,7 @@ from .globals import (
     websocket as websocket,
 )
 from .helpers import (
+    abort as abort,
     flash as flash,
     get_flashed_messages as get_flashed_messages,
     get_template_attribute as get_template_attribute,
