@@ -68,7 +68,7 @@ from .helpers import (
     url_for,
 )
 from .json import JSONDecoder, JSONEncoder, jsonify, tojson_filter
-from .logging import create_logger, create_serving_logger
+from .logging import create_logger
 from .routing import QuartMap, QuartRule
 from .scaffold import _endpoint_from_view_func, Scaffold, setupmethod
 from .sessions import SecureCookieSessionInterface
@@ -1343,7 +1343,7 @@ class Quart(Scaffold):
         """
         config = HyperConfig()
         config.access_log_format = "%(h)s %(r)s %(s)s %(b)s %(D)s"
-        config.accesslog = create_serving_logger()
+        config.accesslog = "-"
         config.bind = [f"{host}:{port}"]
         config.ca_certs = ca_certs
         config.certfile = certfile
