@@ -14,7 +14,7 @@ from zlib import adler32
 
 from werkzeug.exceptions import abort as werkzeug_abort, NotFound
 from werkzeug.routing import BuildError
-from werkzeug.utils import safe_join
+from werkzeug.utils import redirect as werkzeug_redirect, safe_join
 from werkzeug.wrappers import Response as WerkzeugResponse
 
 from .ctx import _app_ctx_stack, _request_ctx_stack, _websocket_ctx_stack
@@ -429,3 +429,11 @@ def abort(code: int, *args: Any, **kwargs: Any) -> NoReturn:  # type: ignore[mis
         current_app.aborter(code, *args, **kwargs)
 
     werkzeug_abort(code, *args, **kwargs)
+
+
+def redirect(location: str, code: int = 302) -> WerkzeugResponse:
+    """Redirect to the location with the status code."""
+    if current_app:
+        return current_app.redirect(location, code=code)
+
+    return werkzeug_redirect(location, code=code)

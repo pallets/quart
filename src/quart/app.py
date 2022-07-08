@@ -42,6 +42,7 @@ from hypercorn.typing import ASGIReceiveCallable, ASGISendCallable, Scope
 from werkzeug.datastructures import Authorization, Headers
 from werkzeug.exceptions import Aborter, HTTPException, InternalServerError
 from werkzeug.routing import MapAdapter, RoutingException
+from werkzeug.utils import redirect as werkzeug_redirect
 from werkzeug.wrappers import Response as WerkzeugResponse
 
 from .asgi import ASGIHTTPConnection, ASGILifespan, ASGIWebsocketConnection
@@ -1469,6 +1470,10 @@ class Quart(Scaffold):
             for function in self.before_first_request_funcs:
                 await self.ensure_async(function)()
             self._got_first_request = True
+
+    def redirect(self, location: str, code: int = 302) -> WerkzeugResponse:
+        """Create a redirect response object."""
+        return werkzeug_redirect(location, code=code, Response=self.response_class)  # type: ignore
 
     async def make_default_options_response(self) -> Response:
         """This is the default route function for OPTIONS requests."""

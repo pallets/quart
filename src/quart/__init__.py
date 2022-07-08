@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from markupsafe import escape as escape, Markup as Markup
-from werkzeug.utils import redirect as redirect
 
 from .app import Quart as Quart
 from .blueprints import Blueprint as Blueprint
@@ -32,6 +31,7 @@ from .helpers import (
     get_template_attribute as get_template_attribute,
     make_push_promise as make_push_promise,
     make_response as make_response,
+    redirect as redirect,
     send_file as send_file,
     send_from_directory as send_from_directory,
     stream_with_context as stream_with_context,
