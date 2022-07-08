@@ -29,7 +29,7 @@ from werkzeug.exceptions import default_exceptions, HTTPException
 from .cli import AppGroup
 from .globals import current_app
 from .helpers import get_root_path, send_from_directory
-from .templating import _default_template_context_processor
+from .templating import _default_template_ctx_processor
 from .typing import (
     AfterRequestCallable,
     AfterWebsocketCallable,
@@ -160,7 +160,7 @@ class Scaffold:
         # app).
         self.template_context_processors: Dict[
             AppOrBlueprintKey, List[TemplateContextProcessorCallable]
-        ] = defaultdict(list, {None: [_default_template_context_processor]})
+        ] = defaultdict(list, {None: [_default_template_ctx_processor]})
 
         # View functions keyed by endpoint.
         self.view_functions: Dict[str, Callable] = {}

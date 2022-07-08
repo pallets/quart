@@ -3,12 +3,12 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, is_dataclass
 from datetime import date
-from email.utils import formatdate
-from time import mktime
+from decimal import Decimal
 from typing import Any, Dict, IO, Optional, Type, TYPE_CHECKING
 from uuid import UUID
 
-from markupsafe import Markup
+from jinja2.utils import htmlsafe_json_dumps as jinja_htmlsafe_dumps
+from werkzeug.http import http_date
 
 from ..globals import _app_ctx_stack, _request_ctx_stack, current_app, request
 
@@ -71,17 +71,7 @@ def load(fp: IO[str], app: Optional["Quart"] = None, **kwargs: Any) -> Any:
 
 
 def htmlsafe_dumps(object_: Any, **kwargs: Any) -> str:
-    return (
-        dumps(object_, **kwargs)
-        .replace("<", "\\u003c")
-        .replace(">", "\\u003e")
-        .replace("&", "\\u0026")
-        .replace("'", "\\u0027")
-    )
-
-
-def tojson_filter(object_: Any, **kwargs: Any) -> Markup:
-    return Markup(htmlsafe_dumps(object_, **kwargs))
+    return jinja_htmlsafe_dumps(object_, dumps=dumps, **kwargs)
 
 
 def jsonify(*args: Any, **kwargs: Any) -> "Response":
@@ -105,8 +95,8 @@ def jsonify(*args: Any, **kwargs: Any) -> "Response":
 class JSONEncoder(json.JSONEncoder):
     def default(self, object_: Any) -> Any:
         if isinstance(object_, date):
-            return formatdate(timeval=mktime((object_.timetuple())), localtime=False, usegmt=True)
-        if isinstance(object_, UUID):
+            return http_date(object_)
+        if isinstance(object_, (Decimal, UUID)):
             return str(object_)
         if is_dataclass(object_):
             return asdict(object_)

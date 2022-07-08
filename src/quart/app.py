@@ -68,7 +68,7 @@ from .helpers import (
     get_flashed_messages,
     url_for,
 )
-from .json import JSONDecoder, JSONEncoder, jsonify, tojson_filter
+from .json import dumps, JSONDecoder, JSONEncoder, jsonify
 from .logging import create_logger
 from .routing import QuartMap, QuartRule
 from .scaffold import _endpoint_from_view_func, Scaffold, setupmethod
@@ -86,7 +86,7 @@ from .signals import (
     websocket_started,
     websocket_tearing_down,
 )
-from .templating import _default_template_context_processor, DispatchingJinjaLoader, Environment
+from .templating import _default_template_ctx_processor, DispatchingJinjaLoader, Environment
 from .testing import (
     make_test_body_with_headers,
     make_test_headers_path_and_query_string,
@@ -308,7 +308,7 @@ class Quart(Scaffold):
                 host=static_host,
             )
 
-        self.template_context_processors[None] = [_default_template_context_processor]
+        self.template_context_processors[None] = [_default_template_ctx_processor]
 
     def _check_setup_finished(self, f_name: str) -> None:
         if self._got_first_request:
@@ -454,7 +454,7 @@ class Quart(Scaffold):
                 "url_for": url_for,
             }
         )
-        jinja_env.filters["tojson"] = tojson_filter
+        jinja_env.policies["json.dumps_function"] = dumps
         return jinja_env
 
     def create_global_jinja_loader(self) -> DispatchingJinjaLoader:

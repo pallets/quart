@@ -122,7 +122,7 @@ async def _render(template: Template, context: dict, app: "Quart") -> str:
     return rendered_template
 
 
-async def _default_template_context_processor() -> Dict[str, Any]:
+async def _default_template_ctx_processor() -> Dict[str, Any]:
     context = {}
     if has_app_context():
         context["g"] = _app_ctx_stack.top.g
