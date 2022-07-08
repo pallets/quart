@@ -55,7 +55,12 @@ from .signals import (
     websocket_started,
     websocket_tearing_down,
 )
-from .templating import render_template, render_template_string
+from .templating import (
+    render_template,
+    render_template_string,
+    stream_template,
+    stream_template_string,
+)
 from .typing import ResponseReturnValue
 from .wrappers import Request, Response, Websocket
 
@@ -106,6 +111,8 @@ __all__ = (
     "send_from_directory",
     "session",
     "signals_available",
+    "stream_template",
+    "stream_template_string",
     "stream_with_context",
     "template_rendered",
     "url_for",

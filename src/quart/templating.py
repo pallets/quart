@@ -1,11 +1,23 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import (
+    Any,
+    AsyncIterator,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 from jinja2 import BaseLoader, Environment as BaseEnvironment, Template, TemplateNotFound
 
 from .ctx import has_app_context, has_request_context
 from .globals import _app_ctx_stack, _request_ctx_stack, current_app
+from .helpers import stream_with_context
 from .signals import before_render_template, template_rendered
 
 if TYPE_CHECKING:
@@ -118,3 +130,51 @@ async def _default_template_context_processor() -> Dict[str, Any]:
         context["request"] = _request_ctx_stack.top.request
         context["session"] = _request_ctx_stack.top.session
     return context
+
+
+async def stream_template(
+    template_name_or_list: Union[str, Template, List[Union[str, Template]]], **context: Any
+) -> AsyncIterator[str]:
+    """Render a template by name with the given context as a stream.
+
+    This returns an iterator of strings, which can be used as a
+    streaming response from a view.
+
+    Arguments:
+        template_name_or_list: The name of the template to render. If a
+            list is given, the first name to exist will be rendered.
+        context: The variables to make available in the template.
+    """
+    await current_app.update_template_context(context)
+    template = current_app.jinja_env.get_or_select_template(template_name_or_list)
+    return await _stream(current_app._get_current_object(), template, context)  # type: ignore
+
+
+async def stream_template_string(source: str, **context: Any) -> AsyncIterator[str]:
+    """Render a template from the given source with the *context* as a stream.
+
+    This returns an iterator of strings, which can
+    be used as a streaming response from a view.
+
+    Arguments:
+        source: The source code of the template to render.
+        context: The variables to make available in the template.
+    """
+    await current_app.update_template_context(context)
+    template = current_app.jinja_env.from_string(source)
+    return await _stream(current_app._get_current_object(), template, context)  # type: ignore
+
+
+async def _stream(app: "Quart", template: Template, context: Dict[str, Any]) -> AsyncIterator[str]:
+    await before_render_template.send(app, template=template, context=context)
+
+    async def generate() -> AsyncIterator[str]:
+        async for chunk in template.generate_async(context):
+            yield chunk
+        await template_rendered.send(app, template=template, context=context)
+
+    # If a request context is active, keep it while generating.
+    if has_request_context():
+        return stream_with_context(generate)()
+    else:
+        return generate()
