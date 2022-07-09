@@ -436,11 +436,3 @@ class Response(SansIOResponse):
             self.headers.pop(key, None)
         else:
             self.headers[key] = value
-
-    @property
-    def referrer(self) -> Optional[str]:
-        return self.headers.get("Referer")
-
-    @referrer.setter
-    def referrer(self, value: str) -> None:
-        self.headers["Referer"] = value
