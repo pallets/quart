@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Callable, List, Optional, Type
+from typing import Any, Callable, ClassVar, Collection, List, Optional, Type
 
 from .globals import current_app, request
-from .typing import ResponseReturnValue
+from .typing import ResponseReturnValue, RouteCallable
 
 http_method_funcs = frozenset(["get", "post", "head", "options", "delete", "put", "trace", "patch"])
 
@@ -36,13 +36,16 @@ class View:
         methods: List of methods this view allows.
         provide_automatic_options: Override automatic OPTIONS
             if set, to either True or False.
+        init_every_request: Create a new instance of this class
+            for every request.
     """
 
-    decorators: List[Callable] = []
-    methods: Optional[List[str]] = None
-    provide_automatic_options: Optional[bool] = None
+    decorators: ClassVar[List[Callable]] = []
+    methods: ClassVar[Optional[Collection[str]]] = None
+    provide_automatic_options: ClassVar[Optional[bool]] = None
+    init_every_request: ClassVar[bool] = True
 
-    async def dispatch_request(self, *args: Any, **kwargs: Any) -> ResponseReturnValue:
+    async def dispatch_request(self, **kwargs: Any) -> ResponseReturnValue:
         """Override and return a Response.
 
         This will be called with the request view_args, i.e. any url
@@ -51,10 +54,18 @@ class View:
         raise NotImplementedError()
 
     @classmethod
-    def as_view(cls, name: str, *class_args: Any, **class_kwargs: Any) -> Callable:
-        async def view(*args: Any, **kwargs: Any) -> ResponseReturnValue:
-            self = view.view_class(*class_args, **class_kwargs)  # type: ignore
-            return await current_app.ensure_async(self.dispatch_request)(*args, **kwargs)
+    def as_view(cls, name: str, *class_args: Any, **class_kwargs: Any) -> RouteCallable:
+        if cls.init_every_request:
+
+            async def view(**kwargs: Any) -> ResponseReturnValue:
+                self = view.view_class(*class_args, **class_kwargs)  # type: ignore
+                return await current_app.ensure_async(self.dispatch_request)(**kwargs)
+
+        else:
+            self = cls(*class_args, **class_kwargs)
+
+            async def view(**kwargs: Any) -> ResponseReturnValue:
+                return current_app.ensure_async(self.dispatch_request)(**kwargs)
 
         if cls.decorators:
             view.__name__ = name
@@ -71,22 +82,7 @@ class View:
         return view
 
 
-class MethodViewType(type):
-    def __init__(cls, name, bases, attributes):  # type: ignore # noqa
-        super().__init__(name, bases, attributes)
-
-        if "methods" not in attributes:
-            methods = []
-
-            for key in http_method_funcs:
-                if hasattr(cls, key):
-                    methods.append(key.upper())
-
-            if methods:
-                cls.methods = methods
-
-
-class MethodView(View, metaclass=MethodViewType):
+class MethodView(View):
     """A HTTP Method (verb) specific view class.
 
     This has an implementation of :meth:`dispatch_request` such that
@@ -105,10 +101,27 @@ class MethodView(View, metaclass=MethodViewType):
           app.add_url_rule('/<id>', view_func=SimpleView.as_view('simple'))
     """
 
-    async def dispatch_request(self, *args: Any, **kwargs: Any) -> ResponseReturnValue:
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+
+        if "methods" not in cls.__dict__:
+            methods = set()
+
+            for base in cls.__bases__:
+                if getattr(base, "methods", None):
+                    methods.update(base.methods)  # type: ignore[attr-defined]
+
+            for key in http_method_funcs:
+                if hasattr(cls, key):
+                    methods.add(key.upper())
+
+            if methods:
+                cls.methods = methods
+
+    async def dispatch_request(self, **kwargs: Any) -> ResponseReturnValue:
         handler = getattr(self, request.method.lower(), None)
 
         if handler is None and request.method == "HEAD":
             handler = getattr(self, "get", None)
 
-        return await current_app.ensure_async(handler)(*args, **kwargs)
+        return await current_app.ensure_async(handler)(**kwargs)
