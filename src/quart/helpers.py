@@ -9,24 +9,13 @@ from functools import lru_cache, wraps
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Callable, Iterable, List, NoReturn, Optional, Tuple, Union
-from urllib.parse import quote
 from zlib import adler32
 
 from werkzeug.exceptions import abort as werkzeug_abort, NotFound
-from werkzeug.routing import BuildError
 from werkzeug.utils import redirect as werkzeug_redirect, safe_join
 from werkzeug.wrappers import Response as WerkzeugResponse
 
-from .globals import (
-    _cv_app,
-    _cv_request,
-    _cv_websocket,
-    current_app,
-    request,
-    request_ctx,
-    session,
-    websocket,
-)
+from .globals import _cv_request, current_app, request, request_ctx, session
 from .signals import message_flashed
 from .typing import FilePath
 from .utils import file_path_to_path
@@ -197,61 +186,14 @@ def url_for(
         values: The values to build into the URL, as specified in
             the endpoint rule.
     """
-    app_context = _cv_app.get(None)
-    request_context = _cv_request.get(None)
-    websocket_context = _cv_websocket.get(None)
-
-    if request_context is not None:
-        url_adapter = request_context.url_adapter
-        if endpoint.startswith("."):
-            if request.blueprint is not None:
-                endpoint = request.blueprint + endpoint
-            else:
-                endpoint = endpoint[1:]
-        if _external is None:
-            _external = False
-    elif websocket_context is not None:
-        url_adapter = websocket_context.url_adapter
-        if endpoint.startswith("."):
-            if websocket.blueprint is not None:
-                endpoint = websocket.blueprint + endpoint
-            else:
-                endpoint = endpoint[1:]
-        if _external is None:
-            _external = False
-    elif app_context is not None:
-        url_adapter = app_context.url_adapter
-        if _external is None:
-            _external = True
-    else:
-        raise RuntimeError("Cannot create a url outside of an application context")
-
-    if url_adapter is None:
-        raise RuntimeError(
-            "Unable to create a url adapter, try setting the SERVER_NAME config variable."
-        )
-    if _scheme is not None and not _external:
-        raise ValueError("External must be True for scheme usage")
-
-    app_context.app.inject_url_defaults(endpoint, values)
-
-    old_scheme = None
-    if _scheme is not None:
-        old_scheme = url_adapter.url_scheme
-        url_adapter.url_scheme = _scheme
-
-    try:
-        url = url_adapter.build(endpoint, values, method=_method, force_external=_external)
-    except BuildError as error:
-        return app_context.app.handle_url_build_error(error, endpoint, values)
-    finally:
-        if old_scheme is not None:
-            url_adapter.url_scheme = old_scheme
-
-    if _anchor is not None:
-        quoted_anchor = quote(_anchor)
-        url = f"{url}#{quoted_anchor}"
-    return url
+    return current_app.url_for(
+        endpoint,
+        _anchor=_anchor,
+        _method=_method,
+        _scheme=_scheme,
+        _external=_external,
+        **values,
+    )
 
 
 def stream_with_context(func: Callable) -> Callable:

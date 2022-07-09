@@ -41,7 +41,8 @@ from hypercorn.config import Config as HyperConfig
 from hypercorn.typing import ASGIReceiveCallable, ASGISendCallable, Scope
 from werkzeug.datastructures import Authorization, Headers
 from werkzeug.exceptions import Aborter, HTTPException, InternalServerError
-from werkzeug.routing import MapAdapter, RoutingException
+from werkzeug.routing import BuildError, MapAdapter, RoutingException
+from werkzeug.urls import url_quote
 from werkzeug.utils import redirect as werkzeug_redirect
 from werkzeug.wrappers import Response as WerkzeugResponse
 
@@ -57,14 +58,23 @@ from .ctx import (
     RequestContext,
     WebsocketContext,
 )
-from .globals import g, request, request_ctx, session, websocket_ctx
+from .globals import (
+    _cv_app,
+    _cv_request,
+    _cv_websocket,
+    g,
+    request,
+    request_ctx,
+    session,
+    websocket,
+    websocket_ctx,
+)
 from .helpers import (
     _split_blueprint_path,
     find_package,
     get_debug_flag,
     get_env,
     get_flashed_messages,
-    url_for,
 )
 from .json import dumps, JSONDecoder, JSONEncoder, jsonify
 from .logging import create_logger
@@ -449,7 +459,7 @@ class Quart(Scaffold):
                 "get_flashed_messages": get_flashed_messages,
                 "request": request,
                 "session": session,
-                "url_for": url_for,
+                "url_for": self.url_for,
             }
         )
         jinja_env.policies["json.dumps_function"] = dumps
@@ -914,8 +924,7 @@ class Quart(Scaffold):
     def inject_url_defaults(self, endpoint: str, values: dict) -> None:
         """Injects default URL values into the passed values dict.
 
-        This is used to assist when building urls, see
-        :func:`~quart.helpers.url_for`.
+        This is used to assist when building urls, see `url_for`.
         """
         names: List[Optional[str]] = [None]
         if "." in endpoint:
@@ -924,6 +933,90 @@ class Quart(Scaffold):
         for name in names:
             for function in self.url_default_functions[name]:
                 function(endpoint, values)
+
+    def url_for(
+        self,
+        endpoint: str,
+        *,
+        _anchor: Optional[str] = None,
+        _external: Optional[bool] = None,
+        _method: Optional[str] = None,
+        _scheme: Optional[str] = None,
+        **values: Any,
+    ) -> str:
+        """Return the url for a specific endpoint.
+
+        This is most useful in templates and redirects to create a URL
+        that can be used in the browser.
+
+        Arguments:
+            endpoint: The endpoint to build a url for, if prefixed with
+                ``.`` it targets endpoint's in the current blueprint.
+            _anchor: Additional anchor text to append (i.e. #text).
+            _external: Return an absolute url for external (to app) usage.
+            _method: The method to consider alongside the endpoint.
+            _scheme: A specific scheme to use.
+            values: The values to build into the URL, as specified in
+                the endpoint rule.
+        """
+
+        app_context = _cv_app.get(None)
+        request_context = _cv_request.get(None)
+        websocket_context = _cv_websocket.get(None)
+
+        if request_context is not None:
+            url_adapter = request_context.url_adapter
+            if endpoint.startswith("."):
+                if request.blueprint is not None:
+                    endpoint = request.blueprint + endpoint
+                else:
+                    endpoint = endpoint[1:]
+            if _external is None:
+                _external = _scheme is not None
+        elif websocket_context is not None:
+            url_adapter = websocket_context.url_adapter
+            if endpoint.startswith("."):
+                if websocket.blueprint is not None:
+                    endpoint = websocket.blueprint + endpoint
+                else:
+                    endpoint = endpoint[1:]
+            if _external is None:
+                _external = _scheme is not None
+        elif app_context is not None:
+            url_adapter = app_context.url_adapter
+            if _external is None:
+                _external = True
+        else:
+            url_adapter = self.create_url_adapter(None)
+            if _external is None:
+                _external = True
+
+        if url_adapter is None:
+            raise RuntimeError(
+                "Unable to create a url adapter, try setting the SERVER_NAME config variable."
+            )
+        if _scheme is not None and not _external:
+            raise ValueError("External must be True for scheme usage")
+
+        self.inject_url_defaults(endpoint, values)
+
+        old_scheme = None
+        if _scheme is not None:
+            old_scheme = url_adapter.url_scheme
+            url_adapter.url_scheme = _scheme
+
+        try:
+            url = url_adapter.build(endpoint, values, method=_method, force_external=_external)
+        except BuildError as error:
+            return self.handle_url_build_error(error, endpoint, values)
+        finally:
+            if old_scheme is not None:
+                url_adapter.url_scheme = old_scheme
+
+        if _anchor is not None:
+            quoted_anchor = url_quote(_anchor)
+            url = f"{url}#{quoted_anchor}"
+        return url
 
     def handle_url_build_error(self, error: Exception, endpoint: str, values: dict) -> str:
         """Handle a build error.

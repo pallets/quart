@@ -120,8 +120,7 @@ async def test_url_for_external(app: Quart) -> None:
 
 async def test_url_for_scheme(app: Quart) -> None:
     async with app.test_request_context("/"):
-        with pytest.raises(ValueError):
-            url_for("index", _scheme="https")
+        assert url_for("index", _scheme="https") == "https://localhost/"
         assert url_for("index", _scheme="https", _external=True) == "https://localhost/"
         assert (
             url_for("resource", id=5, _scheme="https", _external=True)
