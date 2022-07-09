@@ -33,6 +33,17 @@ A solitary dict return indicates that you intend to return json,
 ``application/json``. The jsonify function will be used to encode the
 dictionary.
 
+list
+^^^^
+
+.. code-block:: python
+
+    return ["a", "b"]
+
+A solitary list return indicates that you intend to return json,
+``application/json``. The jsonify function will be used to encode the
+list.
+
 Response
 ^^^^^^^^
 

@@ -1517,7 +1517,7 @@ class Quart(Scaffold):
                 or isasyncgen(value)
             ):
                 response = self.response_class(value)  # type: ignore
-            elif isinstance(value, dict):
+            elif isinstance(value, (list, dict)):
                 response = jsonify(value)
             else:
                 raise TypeError(f"The response value type ({type(value).__name__}) is not valid")

@@ -117,6 +117,13 @@ async def test_implicit_json(app: Quart) -> None:
     assert b'{"value":"json"}' == (await response.get_data())  # type: ignore
 
 
+async def test_implicit_json_list(app: Quart) -> None:
+    test_client = app.test_client()
+    response = await test_client.post("/implicit_json/", json=["a", 2])
+    assert response.status_code == 200
+    assert b'["a",2]' == (await response.get_data())  # type: ignore
+
+
 async def test_werkzeug(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get("/werkzeug/")

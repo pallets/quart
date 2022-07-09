@@ -50,6 +50,7 @@ ResponseValue = Union[
     "WerkzeugResponse",
     AnyStr,
     Dict[str, Any],  # any jsonify-able dict
+    List[Any],  # any jsonify-able list
     AsyncGenerator[AnyStr, None],
     Generator[AnyStr, None, None],
 ]
