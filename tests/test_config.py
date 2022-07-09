@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 
@@ -148,7 +149,7 @@ def test_config_from_envvar_not_set_without_silent() -> None:
 
 def test_config_from_json() -> None:
     config = Config(Path(__file__).parent)
-    config.from_json("assets/config.json")
+    config.from_file("assets/config.json", json.load)
     _check_standard_config(config)
 
 

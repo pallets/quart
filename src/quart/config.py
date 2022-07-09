@@ -249,22 +249,6 @@ class Config(dict):
             if key.isupper():
                 self[key] = getattr(instance, key)
 
-    def from_json(self, filename: str, silent: bool = False) -> None:
-        """Load the configuration values from a JSON formatted file.
-
-        This allows configuration to be loaded as so
-
-        .. code-block:: python
-
-            app.config.from_json('config.json')
-
-        Arguments:
-            filename: The filename which when appended to
-                :attr:`root_path` gives the path to the file.
-            silent: If True any errors will fail silently.
-        """
-        self.from_file(filename, json.load, silent=silent)
-
     def from_file(
         self, filename: str, load: Callable[[IO[Any]], Mapping], silent: bool = False
     ) -> bool:
