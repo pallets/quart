@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import sys
+from contextvars import Token
 from functools import wraps
 from types import TracebackType
-from typing import Any, Callable, cast, Iterator, List, Optional, TYPE_CHECKING  # noqa: F401
+from typing import Any, Callable, cast, Iterator, List, Optional, Tuple, TYPE_CHECKING  # noqa: F401
 
 from werkzeug.exceptions import HTTPException
 
-from .globals import _app_ctx_stack, _request_ctx_stack, _websocket_ctx_stack
+from .globals import _cv_app, _cv_request, _cv_websocket
 from .sessions import SessionMixin  # noqa
 from .signals import appcontext_popped, appcontext_pushed
 from .typing import AfterRequestCallable, AfterWebsocketCallable
@@ -41,15 +42,7 @@ class _BaseRequestWebsocketContext:
         self.request_websocket.routing_exception = None
         self.session = session
         self.preserved = False
-        self._implicit_app_ctx_stack: List[Optional[AppContext]] = []
-
-    @property
-    def g(self) -> AppContext:
-        return _app_ctx_stack.top.g
-
-    @g.setter
-    def g(self, value: AppContext) -> None:
-        _app_ctx_stack.top.g = value
+        self._cv_tokens: List[Tuple[Token, Optional[AppContext]]] = []
 
     def copy(self) -> "_BaseRequestWebsocketContext":
         return self.__class__(self.app, self.request_websocket, self.session)
@@ -92,14 +85,15 @@ class _BaseRequestWebsocketContext:
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
         await self.auto_pop(exc_value)
 
-    async def _push_appctx(self) -> None:
-        app_ctx = _app_ctx_stack.top
-        if app_ctx is None or app_ctx.app != self.app:
+    async def _push_appctx(self, token: Token) -> None:
+        app_ctx = _cv_app.get(None)
+        if app_ctx is None or app_ctx.app is not self.app:
             app_ctx = self.app.app_context()
             await app_ctx.push()
-            self._implicit_app_ctx_stack.append(app_ctx)
         else:
-            self._implicit_app_ctx_stack.append(None)
+            app_ctx = None
+
+        self._cv_tokens.append((token, app_ctx))
 
     async def _push(self) -> None:
         if self.session is None:
@@ -142,22 +136,25 @@ class RequestContext(_BaseRequestWebsocketContext):
         return cast(Request, self.request_websocket)
 
     async def push(self) -> None:
-        await super()._push_appctx()
-        _request_ctx_stack.push(self)
+        await super()._push_appctx(_cv_request.set(self))
         await super()._push()
 
     async def pop(self, exc: Optional[BaseException] = _sentinel) -> None:  # type: ignore
-        app_ctx = self._implicit_app_ctx_stack.pop()
         try:
-            if not self._implicit_app_ctx_stack:
-                self.preserved = False
+            if len(self._cv_tokens) == 1:
                 if exc is _sentinel:
                     exc = sys.exc_info()[1]
                 await self.app.do_teardown_request(exc, self)
         finally:
-            _request_ctx_stack.pop()
+            ctx = _cv_request.get()
+            token, app_ctx = self._cv_tokens.pop()
+            _cv_request.reset(token)
+
             if app_ctx is not None:
                 await app_ctx.pop(exc)
+
+            if ctx is not self:
+                raise AssertionError(f"Popped wrong request context. ({ctx!r} instead of {self!r})")
 
     async def __aenter__(self) -> "RequestContext":
         await self.push()
@@ -190,22 +187,25 @@ class WebsocketContext(_BaseRequestWebsocketContext):
         return cast(Websocket, self.request_websocket)
 
     async def push(self) -> None:
-        await super()._push_appctx()
-        _websocket_ctx_stack.push(self)
+        await super()._push_appctx(_cv_websocket.set(self))
         await super()._push()
 
     async def pop(self, exc: Optional[BaseException] = _sentinel) -> None:  # type: ignore
-        app_ctx = self._implicit_app_ctx_stack.pop()
         try:
-            if not self._implicit_app_ctx_stack:
-                self.preserved = False
+            if len(self._cv_tokens) == 1:
                 if exc is _sentinel:
                     exc = sys.exc_info()[1]
                 await self.app.do_teardown_websocket(exc, self)
         finally:
-            _websocket_ctx_stack.pop()
+            ctx = _cv_websocket.get()
+            token, app_ctx = self._cv_tokens.pop()
+            _cv_websocket.reset(token)
+
             if app_ctx is not None:
                 await app_ctx.pop(exc)
+
+            if ctx is not self:
+                raise AssertionError(f"Popped wrong request context. ({ctx!r} instead of {self!r})")
 
     async def __aenter__(self) -> "WebsocketContext":
         await self.push()
@@ -230,7 +230,7 @@ class AppContext:
         self.app = app
         self.url_adapter = app.create_url_adapter(None)
         self.g = app.app_ctx_globals_class()
-        self._app_reference_count = 0
+        self._cv_tokens: List[Token] = []
 
     def copy(self) -> "AppContext":
         app_context = self.__class__(self.app)
@@ -238,19 +238,22 @@ class AppContext:
         return app_context
 
     async def push(self) -> None:
-        self._app_reference_count += 1
-        _app_ctx_stack.push(self)
+        self._cv_tokens.append(_cv_app.set(self))
         await appcontext_pushed.send(self.app)
 
     async def pop(self, exc: Optional[BaseException] = _sentinel) -> None:  # type: ignore
-        self._app_reference_count -= 1
         try:
-            if self._app_reference_count <= 0:
+            if len(self._cv_tokens) == 1:
                 if exc is _sentinel:
                     exc = sys.exc_info()[1]
                 await self.app.do_teardown_appcontext(exc)
         finally:
-            _app_ctx_stack.pop()
+            ctx = _cv_app.get()
+            _cv_app.reset(self._cv_tokens.pop())
+
+            if ctx is not self:
+                raise AssertionError(f"Popped wrong app context. ({ctx!r} instead of {self!r})")
+
         await appcontext_popped.send(self.app)
 
     async def __aenter__(self) -> "AppContext":
@@ -277,7 +280,10 @@ def after_this_request(func: AfterRequestCallable) -> AfterRequestCallable:
 
             ...
     """
-    _request_ctx_stack.top._after_request_functions.append(func)
+    ctx = _cv_request.get(None)
+    if ctx is None:
+        raise RuntimeError("Not within a request context")
+    ctx._after_request_functions.append(func)
     return func
 
 
@@ -303,7 +309,10 @@ def after_this_websocket(func: AfterWebsocketCallable) -> AfterWebsocketCallable
             ...
 
     """
-    _websocket_ctx_stack.top._after_websocket_functions.append(func)
+    ctx = _cv_websocket.get(None)
+    if ctx is None:
+        raise RuntimeError("Not within a websocket context")
+    ctx._after_websocket_functions.append(func)
     return func
 
 
@@ -325,7 +334,7 @@ def copy_current_app_context(func: Callable) -> Callable:
     if not has_app_context():
         raise RuntimeError("Attempt to copy app context outside of a app context")
 
-    app_context = _app_ctx_stack.top.copy()
+    app_context = _cv_app.get().copy()
 
     @wraps(func)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -353,7 +362,7 @@ def copy_current_request_context(func: Callable) -> Callable:
     if not has_request_context():
         raise RuntimeError("Attempt to copy request context outside of a request context")
 
-    request_context = _request_ctx_stack.top.copy()
+    request_context = _cv_request.get().copy()
 
     @wraps(func)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -381,7 +390,7 @@ def copy_current_websocket_context(func: Callable) -> Callable:
     if not has_websocket_context():
         raise RuntimeError("Attempt to copy websocket context outside of a websocket context")
 
-    websocket_context = _websocket_ctx_stack.top.copy()
+    websocket_context = _cv_websocket.get().copy()
 
     @wraps(func)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -404,7 +413,7 @@ def has_app_context() -> bool:
 
     See also :func:`has_request_context`
     """
-    return _app_ctx_stack.top is not None
+    return _cv_app.get(None) is not None
 
 
 def has_request_context() -> bool:
@@ -420,7 +429,7 @@ def has_request_context() -> bool:
 
     See also :func:`has_app_context`.
     """
-    return _request_ctx_stack.top is not None
+    return _cv_request.get(None) is not None
 
 
 def has_websocket_context() -> bool:
@@ -436,7 +445,7 @@ def has_websocket_context() -> bool:
 
     See also :func:`has_app_context`.
     """
-    return _websocket_ctx_stack.top is not None
+    return _cv_websocket.get(None) is not None
 
 
 class _AppCtxGlobals:
@@ -464,9 +473,9 @@ class _AppCtxGlobals:
         return iter(self.__dict__)
 
     def __repr__(self) -> str:
-        top = _app_ctx_stack.top
-        if top is not None:
-            return f"<quart.g of {top.app.name}>"
+        ctx = _cv_app.get(None)
+        if ctx is not None:
+            return f"<quart.g of '{ctx.app.name}'>"
         return object.__repr__(self)
 
     def __getattr__(self, name: str) -> Any:

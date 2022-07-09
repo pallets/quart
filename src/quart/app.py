@@ -50,8 +50,6 @@ from .blueprints import Blueprint
 from .config import Config, ConfigAttribute, DEFAULT_CONFIG
 from .ctx import (
     _AppCtxGlobals,
-    _request_ctx_stack,
-    _websocket_ctx_stack,
     AppContext,
     copy_current_app_context,
     has_request_context,
@@ -59,7 +57,7 @@ from .ctx import (
     RequestContext,
     WebsocketContext,
 )
-from .globals import g, request, session
+from .globals import g, request, request_ctx, session, websocket_ctx
 from .helpers import (
     _split_blueprint_path,
     find_package,
@@ -478,9 +476,9 @@ class Quart(Scaffold):
         """
         names = [None]
         if has_request_context():
-            names.extend(reversed(_request_ctx_stack.top.request.blueprints))
+            names.extend(reversed(request_ctx.request.blueprints))  # type: ignore
         elif has_websocket_context():
-            names.extend(reversed(_websocket_ctx_stack.top.websocket.blueprints))
+            names.extend(reversed(websocket_ctx.websocket.blueprints))  # type: ignore
 
         extra_context: dict = {}
         for name in names:
@@ -944,9 +942,9 @@ class Quart(Scaffold):
 
         names = []
         if has_request_context():
-            names.extend(_request_ctx_stack.top.request.blueprints)
+            names.extend(request_ctx.request.blueprints)
         elif has_websocket_context():
-            names.extend(_websocket_ctx_stack.top.websocket.blueprints)
+            names.extend(websocket_ctx.websocket.blueprints)
         names.append(None)
 
         for code in [error_code, None]:
@@ -1068,12 +1066,12 @@ class Quart(Scaffold):
         By default this is only invoked for unhandled exceptions.
         """
         if has_request_context():
-            request_ = _request_ctx_stack.top.request
+            request_ = request_ctx.request
             self.logger.error(
                 f"Exception on request {request_.method} {request_.path}", exc_info=exception_info
             )
         elif has_websocket_context():
-            websocket_ = _websocket_ctx_stack.top.websocket
+            websocket_ = websocket_ctx.websocket
             self.logger.error(f"Exception on websocket {websocket_.path}", exc_info=exception_info)
         else:
             self.logger.error("Exception", exc_info=exception_info)
@@ -1143,7 +1141,7 @@ class Quart(Scaffold):
             request_context: The request context, optional as Flask
                 omits this argument.
         """
-        names = [*(request_context or _request_ctx_stack.top).request.blueprints, None]
+        names = [*(request_context or request_ctx).request.blueprints, None]
         for name in names:
             for function in self.teardown_request_funcs[name]:
                 await self.ensure_async(function)(exc)
@@ -1161,7 +1159,7 @@ class Quart(Scaffold):
             websocket_context: The websocket context, optional as Flask
                 omits this argument.
         """
-        names = [*(websocket_context or _websocket_ctx_stack.top).websocket.blueprints, None]
+        names = [*(websocket_context or websocket_ctx).websocket.blueprints, None]
         for name in names:
             for function in self.teardown_websocket_funcs[name]:
                 await self.ensure_async(function)(exc)
@@ -1477,7 +1475,7 @@ class Quart(Scaffold):
 
     async def make_default_options_response(self) -> Response:
         """This is the default route function for OPTIONS requests."""
-        methods = _request_ctx_stack.top.url_adapter.allowed_methods()
+        methods = request_ctx.url_adapter.allowed_methods()
         return self.response_class("", headers={"Allow": ", ".join(methods)})
 
     async def make_response(
@@ -1574,7 +1572,7 @@ class Quart(Scaffold):
             request_context: The request context, optional as Flask
                 omits this argument.
         """
-        names = [None, *reversed((request_context or _request_ctx_stack.top).request.blueprints)]
+        names = [None, *reversed((request_context or request_ctx).request.blueprints)]
 
         for name in names:
             for processor in self.url_value_preprocessors[name]:
@@ -1597,7 +1595,7 @@ class Quart(Scaffold):
             request_context: The request context, optional as Flask
                 omits this argument.
         """
-        request_ = (request_context or _request_ctx_stack.top).request
+        request_ = (request_context or request_ctx).request
         if request_.routing_exception is not None:
             self.raise_routing_exception(request_)
 
@@ -1642,16 +1640,16 @@ class Quart(Scaffold):
             request_context: The request context, optional as Flask
                 omits this argument.
         """
-        names = [*(request_context or _request_ctx_stack.top).request.blueprints, None]
+        names = [*(request_context or request_ctx).request.blueprints, None]
 
-        for function in (request_context or _request_ctx_stack.top)._after_request_functions:
+        for function in (request_context or request_ctx)._after_request_functions:
             response = await self.ensure_async(function)(response)
 
         for name in names:
             for function in reversed(self.after_request_funcs[name]):
                 response = await self.ensure_async(function)(response)
 
-        session_ = (request_context or _request_ctx_stack.top).session
+        session_ = (request_context or request_ctx).session
         if not self.session_interface.is_null_session(session_):
             await self.ensure_async(self.session_interface.save_session)(self, session_, response)
         return response
@@ -1697,7 +1695,7 @@ class Quart(Scaffold):
         """
         names = [
             None,
-            *reversed((websocket_context or _websocket_ctx_stack.top).websocket.blueprints),
+            *reversed((websocket_context or websocket_ctx).websocket.blueprints),
         ]
 
         for name in names:
@@ -1721,7 +1719,7 @@ class Quart(Scaffold):
             websocket_context: The websocket context, optional to match
                 the Flask convention.
         """
-        websocket_ = (websocket_context or _websocket_ctx_stack.top).websocket
+        websocket_ = (websocket_context or websocket_ctx).websocket
         if websocket_.routing_exception is not None:
             self.raise_routing_exception(websocket_)
 
@@ -1766,16 +1764,16 @@ class Quart(Scaffold):
             websocket_context: The websocket context, optional as Flask
                 omits this argument.
         """
-        names = [*(websocket_context or _websocket_ctx_stack.top).websocket.blueprints, None]
+        names = [*(websocket_context or websocket_ctx).websocket.blueprints, None]
 
-        for function in (websocket_context or _websocket_ctx_stack.top)._after_websocket_functions:
+        for function in (websocket_context or websocket_ctx)._after_websocket_functions:
             response = await self.ensure_async(function)(response)
 
         for name in names:
             for function in reversed(self.after_websocket_funcs[name]):
                 response = await self.ensure_async(function)(response)
 
-        session_ = (websocket_context or _websocket_ctx_stack.top).session
+        session_ = (websocket_context or websocket_ctx).session
         if not self.session_interface.is_null_session(session_):
             await self.session_interface.save_session(self, session_, response)
         return response

@@ -17,8 +17,16 @@ from werkzeug.routing import BuildError
 from werkzeug.utils import redirect as werkzeug_redirect, safe_join
 from werkzeug.wrappers import Response as WerkzeugResponse
 
-from .ctx import _app_ctx_stack, _request_ctx_stack, _websocket_ctx_stack
-from .globals import current_app, request, session, websocket
+from .globals import (
+    _cv_app,
+    _cv_request,
+    _cv_websocket,
+    current_app,
+    request,
+    request_ctx,
+    session,
+    websocket,
+)
 from .signals import message_flashed
 from .typing import FilePath
 from .utils import file_path_to_path
@@ -127,11 +135,10 @@ def get_flashed_messages(
     all messages will be popped, but only those matching the filter
     returned. See :func:`~quart.helpers.flash` for message creation.
     """
-    flashes = _request_ctx_stack.top.flashes
+    flashes = request_ctx.flashes
     if flashes is None:
-        _request_ctx_stack.top.flashes = flashes = (
-            session.pop("_flashes") if "_flashes" in session else []
-        )
+        flashes = session.pop("_flashes") if "_flashes" in session else []
+        request_ctx.flashes = flashes
     if category_filter:
         flashes = [flash for flash in flashes if flash[0] in category_filter]
     if not with_categories:
@@ -190,9 +197,9 @@ def url_for(
         values: The values to build into the URL, as specified in
             the endpoint rule.
     """
-    app_context = _app_ctx_stack.top
-    request_context = _request_ctx_stack.top
-    websocket_context = _websocket_ctx_stack.top
+    app_context = _cv_app.get(None)
+    request_context = _cv_request.get(None)
+    websocket_context = _cv_websocket.get(None)
 
     if request_context is not None:
         url_adapter = request_context.url_adapter
@@ -266,7 +273,7 @@ def stream_with_context(func: Callable) -> Callable:
             return generator()
 
     """
-    request_context = _request_ctx_stack.top.copy()
+    request_context = _cv_request.get().copy()
 
     @wraps(func)
     async def generator(*args: Any, **kwargs: Any) -> Any:

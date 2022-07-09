@@ -16,7 +16,7 @@ from typing import (
 from jinja2 import BaseLoader, Environment as BaseEnvironment, Template, TemplateNotFound
 
 from .ctx import has_app_context, has_request_context
-from .globals import _app_ctx_stack, _request_ctx_stack, current_app
+from .globals import app_ctx, current_app, request_ctx
 from .helpers import stream_with_context
 from .signals import before_render_template, template_rendered
 
@@ -125,10 +125,10 @@ async def _render(template: Template, context: dict, app: "Quart") -> str:
 async def _default_template_ctx_processor() -> Dict[str, Any]:
     context = {}
     if has_app_context():
-        context["g"] = _app_ctx_stack.top.g
+        context["g"] = app_ctx.g
     if has_request_context():
-        context["request"] = _request_ctx_stack.top.request
-        context["session"] = _request_ctx_stack.top.session
+        context["request"] = request_ctx.request
+        context["session"] = request_ctx.session
     return context
 
 

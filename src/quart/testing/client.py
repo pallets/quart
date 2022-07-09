@@ -29,7 +29,7 @@ from .utils import (
     sentinel,
 )
 from ..datastructures import FileStorage
-from ..globals import _request_ctx_stack
+from ..globals import _cv_request
 from ..sessions import SessionMixin
 from ..typing import TestHTTPConnectionProtocol, TestWebsocketConnectionProtocol
 from ..wrappers import Response
@@ -133,7 +133,7 @@ class QuartClient:
                     auth,
                 )
         if self.preserve_context:
-            _request_ctx_stack.push(self.app._preserved_context)
+            _cv_request.set(self.app._preserved_context)  # type: ignore
         return response
 
     def request(
@@ -344,7 +344,7 @@ class QuartClient:
         for cookie in self.cookie_jar:
             headers.add("cookie", f"{cookie.name}={cookie.value}")
 
-        original_request_ctx = _request_ctx_stack.top
+        original_request_ctx = _cv_request.get(None)
         async with self.app.test_request_context(
             path,
             method=method,
@@ -363,11 +363,11 @@ class QuartClient:
             if session is None:
                 raise RuntimeError("Error opening the session. Check the secret_key?")
 
-            _request_ctx_stack.push(original_request_ctx)
+            token = _cv_request.set(original_request_ctx)
             try:
                 yield session
             finally:
-                _request_ctx_stack.pop()
+                _cv_request.reset(token)
 
             response = self.app.response_class(b"")
             if not session_interface.is_null_session(session):
@@ -387,7 +387,7 @@ class QuartClient:
         self.preserve_context = False
 
         while True:
-            top = _request_ctx_stack.top
+            top = _cv_request.get(None)
 
             if top is not None and top.preserved:
                 await top.pop(None)

@@ -1,38 +1,55 @@
 from __future__ import annotations
 
 from contextvars import ContextVar
-from functools import partial
-from typing import Any, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
-from werkzeug.local import ContextVar as WerkzeugContextVar, LocalProxy, LocalStack
+from werkzeug.local import LocalProxy
 
 if TYPE_CHECKING:
     from .app import Quart
-    from .ctx import _AppCtxGlobals
+    from .ctx import _AppCtxGlobals, AppContext, RequestContext, WebsocketContext
     from .sessions import SessionMixin
     from .wrappers import Request, Websocket
 
-if WerkzeugContextVar != ContextVar:
-    raise RuntimeError("Error with Werkzeug's locals, please open a Quart issue for help")
+_no_app_msg = "Not within an app context"
+_cv_app: ContextVar[AppContext] = ContextVar("quart.app_ctx")
+app_ctx: _AppCtxGlobals = LocalProxy(  # type: ignore[assignment]
+    _cv_app, unbound_message=_no_app_msg
+)
+current_app: Quart = LocalProxy(  # type: ignore[assignment]
+    _cv_app, "app", unbound_message=_no_app_msg
+)
+g: _AppCtxGlobals = LocalProxy(  # type: ignore[assignment]
+    _cv_app, "g", unbound_message=_no_app_msg
+)
+
+_no_req_msg = "Not within a request context"
+_cv_request: ContextVar[RequestContext] = ContextVar("quart.request_ctx")
+request_ctx: RequestContext = LocalProxy(  # type: ignore[assignment]
+    _cv_request, unbound_message=_no_req_msg
+)
+request: Request = LocalProxy(  # type: ignore[assignment]
+    _cv_request, "request", unbound_message=_no_req_msg
+)
+
+_no_websocket_msg = "Not within a websocket context"
+_cv_websocket: ContextVar[WebsocketContext] = ContextVar("quart.websocket_ctx")
+websocket_ctx: WebsocketContext = LocalProxy(  # type: ignore[assignment]
+    _cv_websocket, unbound_message=_no_websocket_msg
+)
+websocket: Websocket = LocalProxy(  # type: ignore[assignment]
+    _cv_websocket, "websocket", unbound_message=_no_websocket_msg
+)
 
 
-def _ctx_lookup(ctx_stacks: List[LocalStack], name: str) -> Any:
-    top = None
-    for ctx_stack in ctx_stacks:
-        top = ctx_stack.top
-        if top is not None:
-            break
-    if top is None:
-        raise RuntimeError(f"Attempt to access {name} outside of a relevant context")
-    return getattr(top, name)
+def _session_lookup() -> Union[RequestContext, WebsocketContext]:
+    try:
+        return _cv_request.get()
+    except LookupError:
+        try:
+            return _cv_websocket.get()
+        except LookupError:
+            raise RuntimeError("Not within a request nor websocket context")
 
 
-_app_ctx_stack = LocalStack()
-_request_ctx_stack = LocalStack()
-_websocket_ctx_stack = LocalStack()
-
-current_app: Quart = LocalProxy(partial(_ctx_lookup, [_app_ctx_stack], "app"))  # type: ignore
-g: _AppCtxGlobals = LocalProxy(partial(_ctx_lookup, [_app_ctx_stack], "g"))  # type: ignore
-request: Request = LocalProxy(partial(_ctx_lookup, [_request_ctx_stack], "request"))  # type: ignore
-session: SessionMixin = LocalProxy(partial(_ctx_lookup, [_request_ctx_stack, _websocket_ctx_stack], "session"))  # type: ignore  # noqa: E501
-websocket: Websocket = LocalProxy(partial(_ctx_lookup, [_websocket_ctx_stack], "websocket"))  # type: ignore  # noqa: E501
+session: SessionMixin = LocalProxy(_session_lookup, "session")  # type: ignore[assignment]

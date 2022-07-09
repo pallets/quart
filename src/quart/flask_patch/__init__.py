@@ -18,14 +18,7 @@ from flask.ctx import (  # noqa: E402
     has_app_context,
     has_request_context,
 )
-from flask.globals import (  # noqa: E402
-    _app_ctx_stack,
-    _request_ctx_stack,
-    current_app,
-    g,
-    request,
-    session,
-)
+from flask.globals import current_app, g, request, session  # noqa: E402
 from flask.helpers import (  # noqa: E402
     flash,
     get_flashed_messages,
@@ -58,8 +51,6 @@ from werkzeug.exceptions import abort  # noqa: E402
 from werkzeug.utils import redirect  # noqa: E402
 
 __all__ = (
-    "_app_ctx_stack",
-    "_request_ctx_stack",
     "abort",
     "after_this_request",
     "appcontext_popped",

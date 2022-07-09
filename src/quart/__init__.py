@@ -15,9 +15,6 @@ from .ctx import (
     has_websocket_context as has_websocket_context,
 )
 from .globals import (
-    _app_ctx_stack as _app_ctx_stack,
-    _request_ctx_stack as _request_ctx_stack,
-    _websocket_ctx_stack as _websocket_ctx_stack,
     current_app as current_app,
     g as g,
     request as request,

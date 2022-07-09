@@ -6,9 +6,9 @@ from werkzeug.datastructures import MultiDict
 from werkzeug.local import LocalProxy
 
 from quart.globals import (
-    _app_ctx_stack,
-    _ctx_lookup,
-    _request_ctx_stack,
+    _cv_app,
+    _cv_request,
+    _cv_websocket,
     current_app,
     g,
     request as quart_request,
@@ -20,43 +20,34 @@ from ._synchronise import sync_with_context
 class FlaskRequestProxy(LocalProxy):
     @property
     def data(self) -> bytes:
-        return sync_with_context(self._get_current_object().data)
+        return sync_with_context(self._get_current_object().data)  # type: ignore
 
     @property
     def form(self) -> MultiDict:
-        return sync_with_context(self._get_current_object().form)
+        return sync_with_context(self._get_current_object().form)  # type: ignore
 
     @property
     def files(self) -> MultiDict:
-        return sync_with_context(self._get_current_object().files)
+        return sync_with_context(self._get_current_object().files)  # type: ignore
 
     @property
     def json(self) -> Any:
-        return sync_with_context(self._get_current_object().json)
+        return sync_with_context(self._get_current_object().json)  # type: ignore
 
     def get_json(self, *args: Any, **kwargs: Any) -> Any:
-        return sync_with_context(self._get_current_object().get_json(*args, **kwargs))
+        return sync_with_context(self._get_current_object().get_json(*args, **kwargs))  # type: ignore # noqa: E501
 
     def get_data(self, *args: Any, **kwargs: Any) -> AnyStr:
-        return sync_with_context(self._get_current_object().get_data(*args, **kwargs))
+        return sync_with_context(self._get_current_object().get_data(*args, **kwargs))  # type: ignore # noqa: E501
 
 
 request = FlaskRequestProxy(lambda: quart_request)
 
 
-def _lookup_app_object(name: str) -> Any:
-    return _ctx_lookup([_app_ctx_stack], name)
-
-
-def _lookup_req_object(name: str) -> Any:
-    return _ctx_lookup([_request_ctx_stack], name)
-
-
 __all__ = (
-    "_app_ctx_stack",
-    "_lookup_app_object",
-    "_lookup_req_object",
-    "_request_ctx_stack",
+    "_cv_app",
+    "_cv_request",
+    "_cv_websocket",
     "current_app",
     "g",
     "request",

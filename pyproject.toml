@@ -37,7 +37,7 @@ markupsafe = "*"
 pydata_sphinx_theme = { version = "*", optional = true }
 python-dotenv = { version = "*", optional = true }
 typing_extensions = { version = "*", python = "<3.8" }
-werkzeug = ">=2.0.0"
+werkzeug = ">=2.2.0a1"
 
 [tool.poetry.dev-dependencies]
 hypothesis = "*"
