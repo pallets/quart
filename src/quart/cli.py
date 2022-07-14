@@ -1,114 +1,267 @@
 from __future__ import annotations
 
+import ast
 import asyncio
 import code
 import functools
+import inspect
 import os
+import platform
+import re
 import sys
+import traceback
 from importlib import import_module
-from pathlib import Path
-from typing import Any, Callable, List, Optional, TYPE_CHECKING
+from operator import attrgetter
+from types import ModuleType
+from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
 
 import click
+from click.core import ParameterSource
 
-from .helpers import get_debug_flag
+from .globals import current_app
+from .helpers import get_debug_flag, get_load_dotenv
 
 try:
     from importlib.metadata import version
 except ModuleNotFoundError:
     from importlib_metadata import version  # type: ignore
 
-__version__ = version("quart")
-
 if TYPE_CHECKING:
     from .app import Quart  # noqa: F401
 
 
 class NoAppException(click.UsageError):
-    def __init__(self) -> None:
-        super().__init__(
-            "Could not locate a Quart application as the QUART_APP environment "
-            "variable has either not been set or provided or does not point to "
-            "a valid application.\n"
-            "Please set it to module_name:app_name or module_name:factory_function()\n"
-            "Note `quart` is not a valid module_name."
+    pass
+
+
+def _called_with_wrong_args(f: Callable) -> bool:
+    """Check whether calling a function raised a ``TypeError`` because
+    the call failed or because something in the factory raised the
+    error.
+    :param f: The function that was called.
+    :return: ``True`` if the call failed.
+    """
+    tb = sys.exc_info()[2]
+
+    try:
+        while tb is not None:
+            if tb.tb_frame.f_code is f.__code__:
+                # In the function, it was called successfully.
+                return False
+
+            tb = tb.tb_next
+
+        # Didn't reach the function.
+        return True
+    finally:
+        # Delete tb to break a circular reference.
+        # https://docs.python.org/2/library/sys.html#sys.exc_info
+        del tb
+
+
+def find_best_app(module: ModuleType) -> Quart:
+    from .app import Quart
+
+    for attr_name in ("app", "application"):
+        app = getattr(module, attr_name, None)
+
+        if isinstance(app, Quart):
+            return app
+
+    matches = [value for value in module.__dict__.values() if isinstance(value, Quart)]
+
+    if len(matches) == 1:
+        return matches[0]
+    elif len(matches) > 1:
+        raise NoAppException(
+            "Detected multiple Quart applications in module"
+            f" '{module.__name__}'. Use '{module.__name__}:name'"
+            " to specify the correct one."
         )
+
+    for attr_name in ("create_app", "make_app"):
+        app_factory = getattr(module, attr_name, None)
+
+        if inspect.isfunction(app_factory):
+            try:
+                app = app_factory()
+
+                if isinstance(app, Quart):
+                    return app
+            except TypeError as error:
+                if not _called_with_wrong_args(app_factory):
+                    raise
+
+                raise NoAppException(
+                    f"Detected factory '{attr_name}' in module '{module.__name__}',"
+                    " but could not call it without arguments. Use"
+                    f" '{module.__name__}:{attr_name}(args)'"
+                    " to specify arguments."
+                ) from error
+
+    raise NoAppException(
+        "Failed to find Quart application or factory in module"
+        f" '{module.__name__}'. Use '{module.__name__}:name'"
+        " to specify one."
+    )
+
+
+def find_app_by_string(module: ModuleType, app_name: str) -> Quart:
+    from .app import Quart
+
+    try:
+        expr = ast.parse(app_name.strip(), mode="eval").body
+    except SyntaxError:
+        raise NoAppException(
+            f"Failed to parse {app_name!r} as an attribute name or function call."
+        ) from None
+
+    if isinstance(expr, ast.Name):
+        name = expr.id
+        args = []
+        kwargs = {}
+    elif isinstance(expr, ast.Call):
+        # Ensure the function name is an attribute name only.
+        if not isinstance(expr.func, ast.Name):
+            raise NoAppException(f"Function reference must be a simple name: {app_name!r}.")
+
+        name = expr.func.id
+
+        # Parse the positional and keyword arguments as literals.
+        try:
+            args = [ast.literal_eval(arg) for arg in expr.args]
+            kwargs = {kw.arg: ast.literal_eval(kw.value) for kw in expr.keywords}
+        except ValueError:
+            # literal_eval gives cryptic error messages, show a generic
+            # message with the full expression instead.
+            raise NoAppException(
+                f"Failed to parse arguments as literal values: {app_name!r}."
+            ) from None
+    else:
+        raise NoAppException(f"Failed to parse {app_name!r} as an attribute name or function call.")
+
+    try:
+        attr = getattr(module, name)
+    except AttributeError as e:
+        raise NoAppException(f"Failed to find attribute {name!r} in {module.__name__!r}.") from e
+
+    # If the attribute is a function, call it with any args and kwargs
+    # to get the real application.
+    if inspect.isfunction(attr):
+        try:
+            app = attr(*args, **kwargs)
+        except TypeError as e:
+            if not _called_with_wrong_args(attr):
+                raise
+
+            raise NoAppException(
+                f"The factory {app_name!r} in module"
+                f" {module.__name__!r} could not be called with the"
+                " specified arguments."
+            ) from e
+    else:
+        app = attr
+
+    if isinstance(app, Quart):
+        return app
+
+    raise NoAppException(
+        "A valid Quart application was not obtained from" f" '{module.__name__}:{app_name}'."
+    )
+
+
+def locate_app(module_name: str, app_name: str) -> Optional[Quart]:
+    try:
+        module = import_module(module_name)
+    except ImportError:
+        # Reraise the ImportError if it occurred within the imported module.
+        # Determine this by checking whether the trace has a depth > 1.
+        if sys.exc_info()[2].tb_next:
+            raise NoAppException(
+                f"While importing {module_name!r}, an ImportError was"
+                f" raised:\n\n{traceback.format_exc()}"
+            ) from None
+        else:
+            raise NoAppException(f"Could not import {module_name!r}.") from None
+    else:
+        if app_name is None:
+            return find_best_app(module)
+        else:
+            return find_app_by_string(module, app_name)
+
+
+def prepare_import(path: str) -> str:
+    """Given a filename this will try to calculate the python path, add it
+    to the search path and return the actual module name that is expected.
+    """
+    path = os.path.realpath(path)
+
+    fname, ext = os.path.splitext(path)
+    if ext == ".py":
+        path = fname
+
+    if os.path.basename(path) == "__init__":
+        path = os.path.dirname(path)
+
+    module_name = []
+
+    # move up until outside package structure (no __init__.py)
+    while True:
+        path, name = os.path.split(path)
+        module_name.append(name)
+
+        if not os.path.exists(os.path.join(path, "__init__.py")):
+            break
+
+    if sys.path[0] != path:
+        sys.path.insert(0, path)
+
+    return ".".join(module_name[::-1])
 
 
 class ScriptInfo:
     def __init__(
-        self, app_import_path: Optional[str] = None, create_app: Optional[Callable] = None
+        self,
+        app_import_path: Optional[str] = None,
+        create_app: Optional[Callable[..., Quart]] = None,
+        set_debug_flag: bool = True,
     ) -> None:
-        self.load_dotenv_if_exists()
-        self.app_import_path = app_import_path or os.environ.get("QUART_APP")
+        self.app_import_path = app_import_path
         self.create_app = create_app
-        self.data: dict = {}
-        self._app: Optional["Quart"] = None
+        self.data: Dict[Any, Any] = {}
+        self.set_debug_flag = set_debug_flag
+        self._loaded_app: Optional[Quart] = None
 
-    def load_app(self) -> "Quart":
-        if self._app is None:
-            if self.create_app is not None:
-                self._app = self.create_app()
-            else:
-                try:
-                    module_name, app_name = self.app_import_path.split(":", 1)
-                except ValueError:
-                    module_name, app_name = self.app_import_path, "app"
-                except AttributeError as error:
-                    raise NoAppException() from error
+    def load_app(self) -> Quart:
+        if self._loaded_app is not None:
+            return self._loaded_app
 
-                module_path = Path(module_name).resolve()
-                sys.path.insert(0, str(module_path.parent))
-                if module_path.is_file():
-                    import_name = module_path.with_suffix("").name
-                else:
-                    import_name = module_path.name
-                try:
-                    module = import_module(import_name)
-                except ModuleNotFoundError as error:
-                    if error.name == import_name:
-                        raise NoAppException() from error
-                    else:
-                        raise
-
-                try:
-                    self._app = eval(app_name, vars(module))
-                except NameError as error:
-                    raise NoAppException() from error
-
-                from .app import Quart
-
-                if not isinstance(self._app, Quart):
-                    self._app = None
-                    raise NoAppException()
-
-        if self._app is None:
-            raise NoAppException()
-
-        self._app.debug = get_debug_flag()
-
-        return self._app
-
-    def load_dotenv_if_exists(self) -> None:
-        if os.environ.get("QUART_SKIP_DOTENV") == "1":
-            return
-
-        try:
-            import dotenv
-        except ImportError:
-            if Path(".env").is_file() or Path(".quartenv").is_file():
-                click.echo(
-                    " * Tip: There are .env or .flaskenv files present."
-                    ' Do "pip install python-dotenv" to use them.',
-                )
-
-            return
+        if self.create_app is not None:
+            app = self.create_app()
         else:
-            for name in (".env", ".quartenv"):
-                path = dotenv.find_dotenv(name, usecwd=True)
+            if self.app_import_path:
+                path, name = (re.split(r":(?![\\/])", self.app_import_path, 1) + [None])[:2]
+                import_name = prepare_import(path)
+                app = locate_app(import_name, name)
+            else:
+                import_name = prepare_import("app.py")
+                app = locate_app(import_name, None)
 
-                if path is not None:
-                    dotenv.load_dotenv(path, encoding="utf-8")
+        if not app:
+            raise NoAppException(
+                "Could not locate a Quart application. Use the"
+                " 'quart --app' option, 'QUART_APP' environment"
+                " variable, or an 'app.py' file in the"
+                " current directory."
+            )
+
+        if self.set_debug_flag:
+            # Update the app's debug flag through the descriptor so that
+            # other values repopulate as well.
+            app.debug = get_debug_flag()
+
+        self._loaded_app = app
+        return app
 
 
 pass_script_info = click.make_pass_decorator(ScriptInfo, ensure=True)
@@ -168,8 +321,16 @@ class AppGroup(click.Group):
 def get_version(ctx: Any, param: Any, value: Any) -> None:
     if not value or ctx.resilient_parsing:
         return
-    message = f"Quart {__version__}"
-    click.echo(message, color=ctx.color)
+
+    quart_version = version("quart")
+    werkzeug_version = version("werkzeug")
+
+    click.echo(
+        f"Python {platform.python_version()}\n"
+        f"Quart {quart_version}\n"
+        f"Werkzeug {werkzeug_version}",
+        color=ctx.color,
+    )
     ctx.exit()
 
 
@@ -183,164 +344,438 @@ version_option = click.Option(
 )
 
 
+def _set_app(ctx: click.Context, param: click.Option, value: str | None) -> str | None:
+    if value is None:
+        return None
+
+    info = ctx.ensure_object(ScriptInfo)
+    info.app_import_path = value
+    return value
+
+
+# This option is eager so the app will be available if --help is given.
+# --help is also eager, so --app must be before it in the param list.
+# no_args_is_help bypasses eager processing, so this option must be
+# processed manually in that case to ensure QUART_APP gets picked up.
+_app_option = click.Option(
+    ["-A", "--app"],
+    metavar="IMPORT",
+    help=(
+        "The QUART application or factory function to load, in the form 'module:name'."
+        " Module can be a dotted import or file path. Name is not required if it is"
+        " 'app', 'application', 'create_app', or 'make_app', and can be 'name(args)' to"
+        " pass arguments."
+    ),
+    is_eager=True,
+    expose_value=False,
+    callback=_set_app,
+)
+
+
+def _set_env(ctx: click.Context, param: click.Option, value: str | None) -> str | None:
+    if value is None:
+        return None
+
+    # Set with env var instead of ScriptInfo.load so that it can be
+    # accessed early during a factory function.
+    os.environ["QUART_ENV"] = value
+    return value
+
+
+_env_option = click.Option(
+    ["-E", "--env"],
+    metavar="NAME",
+    help=(
+        "The execution environment name to set in 'app.env'. Defaults to"
+        " 'production'. 'development' will enable 'app.debug' and start the"
+        " debugger and reloader when running the server."
+    ),
+    expose_value=False,
+    callback=_set_env,
+)
+
+
+def _set_debug(ctx: click.Context, param: click.Option, value: bool) -> bool | None:
+    # If the flag isn't provided, it will default to False. Don't use
+    # that, let debug be set by env in that case.
+    source = ctx.get_parameter_source(param.name)
+
+    if source is not None and source in (
+        ParameterSource.DEFAULT,
+        ParameterSource.DEFAULT_MAP,
+    ):
+        return None
+
+    # Set with env var instead of ScriptInfo.load so that it can be
+    # accessed early during a factory function.
+    os.environ["QUART_DEBUG"] = "1" if value else "0"
+    return value
+
+
+_debug_option = click.Option(
+    ["--debug/--no-debug"],
+    help="Set 'app.debug' separately from '--env'.",
+    expose_value=False,
+    callback=_set_debug,
+)
+
+
+def _env_file_callback(ctx: click.Context, param: click.Option, value: str | None) -> str | None:
+    if value is None:
+        return None
+
+    import importlib
+
+    try:
+        importlib.import_module("dotenv")
+    except ImportError:
+        raise click.BadParameter(
+            "python-dotenv must be installed to load an env file.",
+            ctx=ctx,
+            param=param,
+        ) from None
+
+    # Don't check QUART_SKIP_DOTENV, that only disables automatically
+    # loading .env and .quartenv files.
+    load_dotenv(value)
+    return value
+
+
+# This option is eager so env vars are loaded as early as possible to be
+# used by other options.
+_env_file_option = click.Option(
+    ["-e", "--env-file"],
+    type=click.Path(exists=True, dir_okay=False),
+    help="Load environment variables from this file. python-dotenv must be installed.",
+    is_eager=True,
+    expose_value=False,
+    callback=_env_file_callback,
+)
+
+
 class QuartGroup(AppGroup):
     def __init__(
         self,
         add_default_commands: bool = True,
-        create_app: Optional[Callable] = None,
+        create_app: Callable[..., Quart] | None = None,
         add_version_option: bool = True,
-        *,
-        params: Optional[List] = None,
-        **kwargs: Any,
+        load_dotenv: bool = True,
+        set_debug_flag: bool = True,
+        **extra: Any,
     ) -> None:
-        params = params or []
+        params = list(extra.pop("params", None) or ())
+        # Processing is done with option callbacks instead of a group
+        # callback. This allows users to make a custom group callback
+        # without losing the behavior. --env-file must come first so
+        # that it is eagerly evaluated before --app.
+        params.extend((_env_file_option, _app_option, _env_option, _debug_option))
+
         if add_version_option:
             params.append(version_option)
-        super().__init__(params=params, **kwargs)
+
+        if "context_settings" not in extra:
+            extra["context_settings"] = {}
+
+        extra["context_settings"].setdefault("auto_envvar_prefix", "QUART")
+
+        super().__init__(params=params, **extra)
+
         self.create_app = create_app
+        self.load_dotenv = load_dotenv
+        self.set_debug_flag = set_debug_flag
 
         if add_default_commands:
             self.add_command(run_command)
             self.add_command(shell_command)
             self.add_command(routes_command)
 
+        self._loaded_plugin_commands = False
+
+    def _load_plugin_commands(self) -> None:
+        if self._loaded_plugin_commands:
+            return
+
+        if sys.version_info >= (3, 10):
+            from importlib.metadata import entry_points
+        else:
+            # Use a backport on Python < 3.10. We technically have
+            # importlib.metadata on 3.8+, but the API changed in 3.10,
+            # so use the backport for consistency.
+            from importlib_metadata import entry_points
+
+        for point in entry_points(group="quart.commands"):
+            self.add_command(point.load(), point.name)
+
+        self._loaded_plugin_commands = True
+
     def get_command(self, ctx: click.Context, name: str) -> click.Command:
-        """Return the relevant command given the context and name.
+        self._load_plugin_commands()
 
-        .. warning::
+        rv = super().get_command(ctx, name)
 
-            This differs substantially from Flask in that it allows
-            for the inbuilt commands to be overridden.
-        """
+        if rv is not None:
+            return rv
+
         info = ctx.ensure_object(ScriptInfo)
-        command = None
+
+        # Look up commands provided by the app, showing an error and
+        # continuing if the app couldn't be loaded.
         try:
-            command = info.load_app().cli.get_command(ctx, name)  # type: ignore
-        except NoAppException:
-            pass
-        if command is None:
-            command = super().get_command(ctx, name)
-        return command
+            app = info.load_app()
+        except NoAppException as e:
+            click.secho(f"Error: {e.format_message()}\n", err=True, fg="red")
+            return None
+
+        # Push an app context for the loaded app unless it is already
+        # active somehow. This makes the context available to parameter
+        # and command callbacks without needing @with_appcontext.
+        if not current_app or current_app._get_current_object() is not app:  # type: ignore
+            ctx.with_resource(app.app_context())  # type: ignore
+
+        return app.cli.get_command(ctx, name)  # type: ignore
 
     def list_commands(self, ctx: click.Context) -> List[str]:
-        commands = set(click.Group.list_commands(self, ctx))
+        self._load_plugin_commands()
+
+        rv = set(super().list_commands(ctx))
         info = ctx.ensure_object(ScriptInfo)
-        commands.update(info.load_app().cli.list_commands(ctx))  # type: ignore
-        return list(commands)
 
-    def main(self, *args: Any, **kwargs: Any) -> Any:
-        kwargs.setdefault("obj", ScriptInfo(create_app=self.create_app))
-        return super().main(*args, **kwargs)
+        # Add commands provided by the app, showing an error and
+        # continuing if the app couldn't be loaded.
+        try:
+            rv.update(info.load_app().cli.list_commands(ctx))  # type: ignore
+        except NoAppException as e:
+            # When an app couldn't be loaded, show the error message
+            # without the traceback.
+            click.secho(f"Error: {e.format_message()}\n", err=True, fg="red")
+        except Exception:
+            # When any other errors occurred during loading, show the
+            # full traceback.
+            click.secho(f"{traceback.format_exc()}\n", err=True, fg="red")
+
+        return sorted(rv)
+
+    def make_context(
+        self,
+        info_name: str | None,
+        args: list[str],
+        parent: click.Context | None = None,
+        **extra: Any,
+    ) -> click.Context:
+        # Attempt to load .env and .quartenv files. The --env-file
+        # option can cause another file to be loaded.
+        if get_load_dotenv(self.load_dotenv):
+            load_dotenv()
+
+        if "obj" not in extra and "obj" not in self.context_settings:
+            extra["obj"] = ScriptInfo(
+                create_app=self.create_app, set_debug_flag=self.set_debug_flag
+            )
+
+        return super().make_context(info_name, args, parent=parent, **extra)
+
+    def parse_args(self, ctx: click.Context, args: list[str]) -> list[str]:
+        if not args and self.no_args_is_help:
+            # Attempt to load --env-file and --app early in case they
+            # were given as env vars. Otherwise no_args_is_help will not
+            # see commands from app.cli.
+            _env_file_option.handle_parse_result(ctx, {}, [])
+            _app_option.handle_parse_result(ctx, {}, [])
+
+        return super().parse_args(ctx, args)
 
 
-@click.command("run", short_help="Start and run a development server.")
-@click.option("--host", "-h", default="127.0.0.1", help="The interface to serve on.")
-@click.option("--port", "-p", default=5000, help="The port to serve on.")
+def load_dotenv(path: str | os.PathLike | None = None) -> bool:
+    """Load "dotenv" files in order of precedence to set environment variables.
+    If an env var is already set it is not overwritten, so earlier files in the
+    list are preferred over later files.
+    This is a no-op if `python-dotenv`_ is not installed.
+    .. _python-dotenv: https://github.com/theskumar/python-dotenv#readme
+    :param path: Load the file at this location instead of searching.
+    :return: ``True`` if a file was loaded.
+    """
+    try:
+        import dotenv
+    except ImportError:
+        if path or os.path.isfile(".env") or os.path.isfile(".quartenv"):
+            click.secho(
+                " * Tip: There are .env or .quartenv files present."
+                ' Do "pip install python-dotenv" to use them.',
+                fg="yellow",
+                err=True,
+            )
+
+        return False
+
+    # Always return after attempting to load a given path, don't load
+    # the default files.
+    if path is not None:
+        if os.path.isfile(path):
+            return dotenv.load_dotenv(path, encoding="utf-8")
+
+        return False
+
+    loaded = False
+
+    for name in (".env", ".quartenv"):
+        path = dotenv.find_dotenv(name, usecwd=True)
+
+        if not path:
+            continue
+
+        dotenv.load_dotenv(path, encoding="utf-8")
+        loaded = True
+
+    return loaded  # True if at least one file was located and loaded.
+
+
+@click.command("run", short_help="Run a development server.")
+@click.option("--host", "-h", default="127.0.0.1", help="The interface to bind to.")
+@click.option("--port", "-p", default=5000, help="The port to bind to.")
 @click.option(
     "--certfile",
     "--cert",
     type=click.Path(exists=True, file_okay=True, dir_okay=False),
-    help="The path of the certificate",
+    help="Specify a certificate file to use HTTPS.",
 )
 @click.option(
     "--keyfile",
     "--key",
     type=click.Path(exists=True, file_okay=True, dir_okay=False),
-    help="The path of the key",
+    help="The key file to use when specifying a certificate.",
+)
+@click.option(
+    "--reload/--no-reload",
+    default=None,
+    help="Enable or disable the reloader",
 )
 @pass_script_info
-def run_command(info: ScriptInfo, host: str, port: int, certfile: str, keyfile: str) -> None:
-    debug = get_debug_flag()
+def run_command(
+    info: ScriptInfo,
+    host: str,
+    port: int,
+    reload: bool,
+    keyfile: str,
+    certfile: str,
+) -> None:
+    """Run a local development server."""
     app = info.load_app()
+    debug = get_debug_flag()
+
+    if reload is None:
+        reload = debug
+
     app.run(
-        debug=debug, host=host, port=port, certfile=certfile, keyfile=keyfile, use_reloader=True
+        debug=debug, host=host, port=port, certfile=certfile, keyfile=keyfile, use_reloader=reload
     )
 
 
-@click.command("shell", short_help="Open a shell within the app context.")
-@pass_script_info
-def shell_command(info: ScriptInfo) -> None:
-    app = info.load_app()
-    context = {}
-    context.update(app.make_shell_context())
+@click.command("shell", short_help="Run a shell in the app context.")
+@with_appcontext
+def shell_command() -> None:
+    """Run an interactive Python shell in the context of a given
+    Quart application.  The application will populate the default
+    namespace of this shell according to its configuration.
+    This is useful for executing small snippets of management code
+    without having to manually configure the application.
+    """
+    banner = (
+        f"Python {sys.version} on {sys.platform}\n"
+        f"App: {current_app.import_name} [{current_app.env}]\n"
+        f"Instance: {current_app.instance_path}"
+    )
+    ctx: dict = {}
 
-    banner = f"Python {sys.version} on {sys.platform} running {app.import_name}"
-    code.interact(banner=banner, local=context)
+    # Support the regular Python interpreter startup script if someone
+    # is using it.
+    startup = os.environ.get("PYTHONSTARTUP")
+    if startup and os.path.isfile(startup):
+        with open(startup) as f:
+            eval(compile(f.read(), startup, "exec"), ctx)
+
+    ctx.update(current_app.make_shell_context())
+
+    # Site, customize, or startup script can set a hook to call when
+    # entering interactive mode. The default one sets up readline with
+    # tab and history completion.
+    interactive_hook = getattr(sys, "__interactivehook__", None)
+
+    if interactive_hook is not None:
+        try:
+            import readline
+            from rlcompleter import Completer
+        except ImportError:
+            pass
+        else:
+            # rlcompleter uses __main__.__dict__ by default, which is
+            # quart.__main__. Use the shell context instead.
+            readline.set_completer(Completer(ctx).complete)
+
+        interactive_hook()
+
+    code.interact(banner=banner, local=ctx)
 
 
-@click.command("routes", short_help="Show this app's routes.")
+@click.command("routes", short_help="Show the routes for the app.")
 @click.option(
     "--sort",
     "-s",
-    type=click.Choice({"endpoint", "methods", "rule", "match"}),  # type: ignore
+    type=click.Choice(("endpoint", "methods", "rule", "match")),
     default="endpoint",
-    help="Order the routes by type, 'match' is the matching order when dispatching a request.",
+    help=(
+        'Method to sort routes by. "match" is the order that Quart will match '
+        "routes when dispatching a request."
+    ),
 )
 @click.option("--all-methods", is_flag=True, help="Show HEAD and OPTIONS methods.")
-@pass_script_info
-def routes_command(info: ScriptInfo, sort: str, all_methods: bool) -> None:
-    app = info.load_app()
-    rules = list(app.url_map.iter_rules())
-    if len(rules) == 0:
+@with_appcontext
+def routes_command(sort: str, all_methods: bool) -> None:
+    """Show all registered routes with endpoints and methods."""
+
+    rules = list(current_app.url_map.iter_rules())
+    if not rules:
         click.echo("No routes were registered.")
         return
 
-    ignored_methods = set() if all_methods else {"HEAD", "OPTIONS"}
+    ignored_methods = set(() if all_methods else ("HEAD", "OPTIONS"))
 
-    if sort == "endpoint":
-        rules = sorted(rules, key=lambda rule: rule.endpoint)
-    elif sort == "rule":
-        rules = sorted(rules, key=lambda rule: rule.rule)
+    if sort in ("endpoint", "rule"):
+        rules = sorted(rules, key=attrgetter(sort))
     elif sort == "methods":
         rules = sorted(rules, key=lambda rule: sorted(rule.methods))
 
-    headers = ("Endpoint", "Methods", "Websocket", "Rule")
     rule_methods = [", ".join(sorted(rule.methods - ignored_methods)) for rule in rules]
+
+    headers = ("Endpoint", "Methods", "Rule")
     widths = (
         max(len(rule.endpoint) for rule in rules),
         max(len(methods) for methods in rule_methods),
-        len("Websocket"),
         max(len(rule.rule) for rule in rules),
     )
-    widths = [max(len(header), width) for header, width in zip(headers, widths)]
-    row = "{{0:<{0}}} | {{1:<{1}}} | {{2:<{2}}} | {{3:<{3}}}".format(*widths)
+    widths = [max(len(h), w) for h, w in zip(headers, widths)]
+    row = "{{0:<{0}}}  {{1:<{1}}}  {{2:<{2}}}".format(*widths)
 
     click.echo(row.format(*headers).strip())
     click.echo(row.format(*("-" * width for width in widths)))
 
     for rule, methods in zip(rules, rule_methods):
-        click.echo(row.format(rule.endpoint, methods, str(rule.websocket), rule.rule).rstrip())
+        click.echo(row.format(rule.endpoint, methods, rule.rule).rstrip())
 
 
 cli = QuartGroup(
+    name="quart",
     help="""\
-Utility functions for Quart applications.
-
-This will load the app defined in the QUART_APP environment
-variable. The QUART_APP variable follows the Gunicorn standard of
-`module_name:application_name` e.g. `hello:app`.
-
-\b
-{prefix}{cmd} QUART_APP=hello:app
-{prefix}{cmd} QUART_DEBUG=1
-{prefix}quart run
-    """.format(
-        cmd="export" if os.name == "posix" else "set", prefix="$ " if os.name == "posix" else "> "
-    )
+A general utility script for Quart applications.
+An application to load must be given with the '--app' option,
+'QUART_APP' environment variable, or with an 'app.py' file
+in the current directory.
+""",
 )
 
 
-def main(as_module: bool = False) -> None:
-    args = sys.argv[1:]
-
-    if as_module:
-        name = "python -m quart"
-        sys.argv = ["-m", "quart"] + args
-    else:
-        name = None
-
-    cli.main(args=args, prog_name=name)
+def main() -> None:
+    cli.main()
 
 
 if __name__ == "__main__":
-    main(as_module=True)
+    main()

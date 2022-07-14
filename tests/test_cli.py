@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import code
 import os
 import tempfile
 from pathlib import Path
@@ -13,7 +12,7 @@ from click.testing import CliRunner
 
 import quart.cli
 from quart.app import Quart
-from quart.cli import __version__, AppGroup, cli, NoAppException, ScriptInfo
+from quart.cli import AppGroup, cli, ScriptInfo
 
 
 @pytest.fixture(scope="module")
@@ -71,44 +70,23 @@ def test_script_info_load_app(app: Mock) -> None:
     assert info.load_app() == app
 
 
-def test_script_info_load_app_no_app(app: Mock) -> None:
-    info = ScriptInfo(None)
-    os.environ.pop("QUART_APP", None)
-    with pytest.raises(NoAppException):
-        info.load_app()
-
-
 def test_version_command() -> None:
     runner = CliRunner()
     result = runner.invoke(cli, ["--version"])
-    assert str(__version__) in result.output
-
-
-def test_shell_command(app: Mock, monkeypatch: MonkeyPatch) -> None:
-    runner = CliRunner()
-    interact = Mock()
-    monkeypatch.setattr(code, "interact", interact)
-    app.make_shell_context.return_value = {}
-    app.import_name = "test"
-    os.environ["QUART_APP"] = "module:app"
-    runner.invoke(cli, ["shell"])
-    app.make_shell_context.assert_called_once()
-    interact.assert_called_once()
+    assert "Quart" in result.output
 
 
 def test_run_command(app: Mock) -> None:
     runner = CliRunner()
-    os.environ["QUART_APP"] = "module:app"
-    runner.invoke(cli, ["run"])
+    runner.invoke(cli, ["--app", "module:app", "run"])
     app.run.assert_called_once_with(
-        debug=False, host="127.0.0.1", port=5000, certfile=None, keyfile=None, use_reloader=True
+        debug=False, host="127.0.0.1", port=5000, certfile=None, keyfile=None, use_reloader=False
     )
 
 
 def test_run_command_development(dev_app: Mock, dev_env: None) -> None:
     runner = CliRunner()
-    os.environ["QUART_APP"] = "module:app"
-    runner.invoke(cli, ["run"])
+    runner.invoke(cli, ["--app", "module:app", "run"])
     dev_app.run.assert_called_once_with(
         debug=True, host="127.0.0.1", port=5000, certfile=None, keyfile=None, use_reloader=True
     )
@@ -118,64 +96,7 @@ def test_run_command_development_debug_disabled(
     dev_app: Mock, dev_env: None, no_debug_env: None
 ) -> None:
     runner = CliRunner()
-    os.environ["QUART_APP"] = "module:app"
-    runner.invoke(cli, ["run"])
+    runner.invoke(cli, ["--app", "module:app", "run"])
     dev_app.run.assert_called_once_with(
-        debug=False, host="127.0.0.1", port=5000, certfile=None, keyfile=None, use_reloader=True
+        debug=False, host="127.0.0.1", port=5000, certfile=None, keyfile=None, use_reloader=False
     )
-
-
-def test_load_dotenv(empty_cwd: Path) -> None:
-    value = "dotenv"
-    with open(empty_cwd / ".env", "w", encoding="utf8") as env:
-        env.write(f"TEST_ENV_VAR={value}\n")
-
-    info = ScriptInfo(None)
-    info.load_dotenv_if_exists()
-
-    assert os.environ.pop("TEST_ENV_VAR", None) == value
-
-
-def test_load_dotquartenv(empty_cwd: Path) -> None:
-    value = "dotquartenv"
-    with open(empty_cwd / ".quartenv", "w", encoding="utf8") as env:
-        env.write(f"TEST_ENV_VAR={value}\n")
-
-    info = ScriptInfo(None)
-    info.load_dotenv_if_exists()
-
-    assert os.environ.pop("TEST_ENV_VAR", None) == value
-
-
-def test_load_dotenv_beats_dotquartenv(empty_cwd: Path) -> None:
-    env_value = "dotenv"
-    quartenv_value = "dotquartenv"
-
-    with open(empty_cwd / ".env", "w", encoding="utf8") as env:
-        env.write(f"TEST_ENV_VAR={env_value}\n")
-    with open(empty_cwd / ".quartenv", "w", encoding="utf8") as env:
-        env.write(f"TEST_ENV_VAR={quartenv_value}\n")
-
-    info = ScriptInfo(None)
-    info.load_dotenv_if_exists()
-
-    assert os.environ.pop("TEST_ENV_VAR", None) == env_value
-
-
-def test_load_dotenv_inhibited_by_env_var(empty_cwd: Path) -> None:
-    env_value = "dotenv"
-    quartenv_value = "dotquartenv"
-
-    with open(empty_cwd / ".env", "w", encoding="utf8") as env:
-        env.write(f"TEST_ENV_VAR={env_value}\n")
-    with open(empty_cwd / ".quartenv", "w", encoding="utf8") as env:
-        env.write(f"TEST_ENV_VAR={quartenv_value}\n")
-
-    os.environ["QUART_SKIP_DOTENV"] = "1"
-
-    info = ScriptInfo(None)
-    info.load_dotenv_if_exists()
-
-    assert os.environ.pop("TEST_ENV_VAR", None) is None
-
-    del os.environ["QUART_SKIP_DOTENV"]

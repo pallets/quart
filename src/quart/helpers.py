@@ -40,6 +40,20 @@ def get_debug_flag() -> bool:
     return value.lower() not in {"0", "false", "no"}
 
 
+def get_load_dotenv(default: bool = True) -> bool:
+    """Get whether the user has disabled loading default dotenv files by
+    setting :envvar:`QUART_SKIP_DOTENV`. The default is ``True``, load
+    the files.
+    :param default: What to return if the env var isn't set.
+    """
+    val = os.environ.get("QUART_SKIP_DOTENV")
+
+    if not val:
+        return default
+
+    return val.lower() in ("0", "false", "no")
+
+
 def get_env(default: Optional[str] = "production") -> str:
     """Reads QUART_ENV environment variable to determine in which environment
     the app is running on. Defaults to 'production' when unset.
