@@ -128,17 +128,8 @@ First time setup
 Start coding
 ~~~~~~~~~~~~
 
--   Create a branch to identify the issue you would like to work on. If
-    you're submitting a bug or documentation fix, branch off of the
-    latest ".x" branch.
-
-    .. code-block:: text
-
-        $ git fetch origin
-        $ git checkout -b your-branch-name origin/2.0.x
-
-    If you're submitting a feature addition or change, branch off of the
-    "main" branch.
+-   Create a branch to identify the issue you would like to work
+    on. Branch off of the "main" branch.
 
     .. code-block:: text
 
