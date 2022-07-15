@@ -14,6 +14,7 @@ from typing import (
     Dict,
     Generator,
     List,
+    Mapping,
     Optional,
     Tuple,
     Type,
@@ -49,7 +50,7 @@ ResponseValue = Union[
     "Response",
     "WerkzeugResponse",
     AnyStr,
-    Dict[str, Any],  # any jsonify-able dict
+    Mapping[str, Any],  # any jsonify-able dict
     List[Any],  # any jsonify-able list
     AsyncGenerator[AnyStr, None],
     Generator[AnyStr, None, None],
