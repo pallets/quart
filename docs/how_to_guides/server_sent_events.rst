@@ -3,8 +3,8 @@
 Server Sent Events
 ==================
 
-Quart supports streaming `Server Sent
-Events<https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events>`_,
+Quart supports streaming `Server Sent Events
+<https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events>`_,
 which you may decide to use as an alternative to WebSockets -
 especially if the communication is one way.
 
