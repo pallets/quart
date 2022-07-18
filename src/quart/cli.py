@@ -526,12 +526,6 @@ class QuartGroup(AppGroup):
             click.secho(f"Error: {e.format_message()}\n", err=True, fg="red")
             return None
 
-        # Push an app context for the loaded app unless it is already
-        # active somehow. This makes the context available to parameter
-        # and command callbacks without needing @with_appcontext.
-        if not current_app or current_app._get_current_object() is not app:  # type: ignore
-            ctx.with_resource(app.app_context())  # type: ignore
-
         return app.cli.get_command(ctx, name)  # type: ignore
 
     def list_commands(self, ctx: click.Context) -> List[str]:
