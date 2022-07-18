@@ -6,6 +6,7 @@ from hypercorn.typing import WWWScope
 from werkzeug.datastructures import Headers
 from werkzeug.sansio.request import Request as SansIORequest
 
+from .. import json
 from ..globals import current_app
 
 if TYPE_CHECKING:
@@ -16,6 +17,8 @@ class BaseRequestWebsocket(SansIORequest):
     """This class is the basis for Requests and websockets..
 
     Attributes:
+        json_module: A custom json decoding/encoding module, it should
+            have `dump`, `dumps`, `load`, and `loads` methods
         routing_exception: If an exception is raised during the route
             matching it will be stored here.
         url_rule: The rule that this request has been matched too.
@@ -23,6 +26,7 @@ class BaseRequestWebsocket(SansIORequest):
             matching.
     """
 
+    json_module: json.provider.JSONProvider = json  # type: ignore
     routing_exception: Optional[Exception] = None
     url_rule: Optional["QuartRule"] = None
     view_args: Optional[Dict[str, Any]] = None

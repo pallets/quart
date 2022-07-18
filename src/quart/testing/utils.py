@@ -99,7 +99,7 @@ def make_test_body_with_headers(
         request_data = data
 
     if json is not sentinel:
-        request_data = dumps(json, app=app).encode("utf-8")
+        request_data = dumps(json).encode("utf-8")
         headers["Content-Type"] = "application/json"
     elif files is not None:
         boundary = "----QuartBoundary"

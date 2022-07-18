@@ -16,10 +16,6 @@ DEFAULT_CONFIG = {
     "BODY_TIMEOUT": 60,  # Second
     "DEBUG": None,
     "ENV": None,
-    "JSON_AS_ASCII": True,
-    "JSON_SORT_KEYS": True,
-    "JSONIFY_MIMETYPE": "application/json",
-    "JSONIFY_PRETTYPRINT_REGULAR": False,
     "MAX_CONTENT_LENGTH": 16 * 1024 * 1024,  # 16 MB Limit
     "MAX_COOKIE_SIZE": 4093,
     "PERMANENT_SESSION_LIFETIME": timedelta(days=31),

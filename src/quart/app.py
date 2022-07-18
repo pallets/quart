@@ -76,7 +76,7 @@ from .helpers import (
     get_env,
     get_flashed_messages,
 )
-from .json import dumps, JSONDecoder, JSONEncoder, jsonify
+from .json.provider import DefaultJSONProvider, JSONProvider
 from .logging import create_logger
 from .routing import QuartMap, QuartRule
 from .scaffold import _endpoint_from_view_func, Scaffold, setupmethod
@@ -178,8 +178,6 @@ class Quart(Scaffold):
         jinja_environment: The class to use for the jinja environment.
         jinja_options: The default options to set when creating the jinja
             environment.
-        json_decoder: The decoder for JSON data.
-        json_encoder: The encoder for JSON data.
         permanent_session_lifetime: Wrapper around configuration
             PERMANENT_SESSION_LIFETIME value. Specifies how long the session
             data should survive.
@@ -212,8 +210,7 @@ class Quart(Scaffold):
     env = ConfigAttribute("ENV")
     jinja_environment = Environment
     jinja_options: dict = {}
-    json_decoder = JSONDecoder
-    json_encoder = JSONEncoder
+    json_provider_class: Type[JSONProvider] = DefaultJSONProvider
     lock_class = asyncio.Lock
     permanent_session_lifetime = ConfigAttribute(
         "PERMANENT_SESSION_LIFETIME", converter=_convert_timedelta
@@ -291,6 +288,7 @@ class Quart(Scaffold):
         self.before_serving_funcs: List[Callable[[], Awaitable[None]]] = []
         self.blueprints: Dict[str, Blueprint] = OrderedDict()
         self.extensions: Dict[str, Any] = {}
+        self.json: JSONProvider = self.json_provider_class(self)
         self.shell_context_processors: List[Callable[[], Dict[str, Any]]] = []
         self.teardown_appcontext_funcs: List[TeardownCallable] = []
         self.url_build_error_handlers: List[Callable[[Exception, str, dict], str]] = []
@@ -462,7 +460,7 @@ class Quart(Scaffold):
                 "url_for": self.url_for,
             }
         )
-        jinja_env.policies["json.dumps_function"] = dumps
+        jinja_env.policies["json.dumps_function"] = self.json.dumps
         return jinja_env
 
     def create_global_jinja_loader(self) -> DispatchingJinjaLoader:
@@ -1611,7 +1609,7 @@ class Quart(Scaffold):
             ):
                 response = self.response_class(value)  # type: ignore
             elif isinstance(value, (list, dict)):
-                response = jsonify(value)
+                response = self.json.response(value)
             else:
                 raise TypeError(f"The response value type ({type(value).__name__}) is not valid")
         else:

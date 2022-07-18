@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 from collections import defaultdict
 from functools import wraps
-from json import JSONDecoder, JSONEncoder
 from pathlib import Path
 from typing import (
     Any,
@@ -77,17 +76,8 @@ def setupmethod(func: F) -> F:
 
 
 class Scaffold:
-    """Base class for Quart and Blueprint classes.
+    """Base class for Quart and Blueprint classes."""
 
-    Attributes:
-        json_decoder: The decoder to use for JSON data, if not set
-            will default to the app's decoder.
-        json_encoder: The encoder to use for JSON data, if not set
-            will default to the app's encoder.
-    """
-
-    json_decoder: Optional[Type[JSONDecoder]] = None
-    json_encoder: Optional[Type[JSONEncoder]] = None
     name: str
 
     def __init__(

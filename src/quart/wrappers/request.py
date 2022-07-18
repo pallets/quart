@@ -19,7 +19,6 @@ from werkzeug.datastructures import CombinedMultiDict, Headers, MultiDict
 from werkzeug.exceptions import BadRequest, RequestEntityTooLarge, RequestTimeout
 
 from .base import BaseRequestWebsocket
-from .. import json
 from ..formparser import FormDataParser
 from ..globals import current_app
 
@@ -139,13 +138,10 @@ class Request(BaseRequestWebsocket):
         body_class: The class to store the body data within.
         form_data_parser_class: Can be overridden to implement a
             different form data parsing.
-        json_module: A custom json decoding/encoding module, it should
-            have `dump`, `dumps`, `load`, and `loads` methods
     """
 
     body_class = Body
     form_data_parser_class = FormDataParser
-    json_module = json
     lock_class = asyncio.Lock
 
     def __init__(

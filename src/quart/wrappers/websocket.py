@@ -7,8 +7,6 @@ from hypercorn.typing import WebsocketScope
 from werkzeug.datastructures import Headers
 
 from .base import BaseRequestWebsocket
-from ..globals import current_app
-from ..json import dumps, loads
 
 
 class Websocket(BaseRequestWebsocket):
@@ -67,7 +65,7 @@ class Websocket(BaseRequestWebsocket):
 
     async def receive_json(self) -> Any:
         data = await self.receive()
-        return loads(data)
+        return self.json_module.loads(data)
 
     async def send_json(self, *args: Any, **kwargs: Any) -> None:
         if args and kwargs:
@@ -77,13 +75,7 @@ class Websocket(BaseRequestWebsocket):
         else:
             data = args or kwargs
 
-        indent = None
-        separators = (",", ":")
-        if current_app.config["JSONIFY_PRETTYPRINT_REGULAR"] or current_app.debug:
-            indent = 2
-            separators = (", ", ": ")
-
-        raw = dumps(data, indent=indent, separators=separators)
+        raw = self.json_module.dumps(data)
         await self.send(raw)
 
     async def accept(

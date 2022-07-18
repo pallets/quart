@@ -40,6 +40,7 @@ class _BaseRequestWebsocketContext:
         self.request_websocket = request_websocket
         self.url_adapter = app.create_url_adapter(self.request_websocket)
         self.request_websocket.routing_exception = None
+        self.request_websocket.json_module = app.json
         self.session = session
         self.preserved = False
         self._cv_tokens: List[Tuple[Token, Optional[AppContext]]] = []
