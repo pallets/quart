@@ -1803,7 +1803,7 @@ class Quart(Scaffold):
 
     async def dispatch_websocket(
         self, websocket_context: Optional[WebsocketContext] = None
-    ) -> None:
+    ) -> Optional[ResponseReturnValue]:
         """Dispatch the websocket to the view function.
 
         Arguments:
