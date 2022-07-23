@@ -12,7 +12,7 @@ from click.testing import CliRunner
 
 import quart.cli
 from quart.app import Quart
-from quart.cli import AppGroup, cli, ScriptInfo
+from quart.cli import AppGroup, cli, load_dotenv, ScriptInfo
 
 
 @pytest.fixture(scope="module")
@@ -100,3 +100,37 @@ def test_run_command_development_debug_disabled(
     dev_app.run.assert_called_once_with(
         debug=False, host="127.0.0.1", port=5000, certfile=None, keyfile=None, use_reloader=False
     )
+
+
+def test_load_dotenv(empty_cwd: Path) -> None:
+    value = "dotenv"
+    with open(empty_cwd / ".env", "w", encoding="utf8") as env:
+        env.write(f"TEST_ENV_VAR={value}\n")
+
+    load_dotenv()
+
+    assert os.environ.pop("TEST_ENV_VAR", None) == value
+
+
+def test_load_dotquartenv(empty_cwd: Path) -> None:
+    value = "dotquartenv"
+    with open(empty_cwd / ".quartenv", "w", encoding="utf8") as env:
+        env.write(f"TEST_ENV_VAR={value}\n")
+
+    load_dotenv()
+
+    assert os.environ.pop("TEST_ENV_VAR", None) == value
+
+
+def test_load_dotenv_beats_dotquartenv(empty_cwd: Path) -> None:
+    env_value = "dotenv"
+    quartenv_value = "dotquartenv"
+
+    with open(empty_cwd / ".env", "w", encoding="utf8") as env:
+        env.write(f"TEST_ENV_VAR={env_value}\n")
+    with open(empty_cwd / ".quartenv", "w", encoding="utf8") as env:
+        env.write(f"TEST_ENV_VAR={quartenv_value}\n")
+
+    load_dotenv()
+
+    assert os.environ.pop("TEST_ENV_VAR", None) == env_value
