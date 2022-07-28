@@ -32,6 +32,7 @@ which we desire to translate to JSON as,
 using encoders and decoders as so,
 
 .. code-block:: python
+
     from quart.json.provider import _default, DefaultJSONProvider
 
 
