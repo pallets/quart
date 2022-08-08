@@ -8,6 +8,7 @@ here,
 
 - `Quart-Auth <https://github.com/pgjones/quart-auth>`_ Secure cookie
   sessions, allows login, authentication and logout.
+- `Quart-Bcrypt <https://github.com/Quart-Addons/quart-bcrypt>`_ Provides bcrypt hashing utilities for your application.
 - `Quart-compress <https://github.com/AceFire6/quart-compress>`_
   compress your application's responses with gzip.
 - `Quart-compress2
@@ -40,7 +41,7 @@ here,
   validation and auto-generated API documentation.
 - `Quart-session <https://github.com/sanderfoobar/quart-session>`_ server
   side session support.
-
+- `Quart-Uploads <https://github.com/Quart-Addons/quart-uploads>`_ File upload handling for Quart. 
 
 Supporting sync code in a Quart Extension
 -----------------------------------------
