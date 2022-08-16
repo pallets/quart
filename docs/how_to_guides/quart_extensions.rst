@@ -8,6 +8,7 @@ here,
 
 - `Quart-Auth <https://github.com/pgjones/quart-auth>`_ Secure cookie
   sessions, allows login, authentication and logout.
+- `Quart-Babel <https://github.com/Quart-Addons/quart-babel>`_ Implements i18n and l10n support for Quart. 
 - `Quart-Bcrypt <https://github.com/Quart-Addons/quart-bcrypt>`_ Provides bcrypt hashing utilities for your application.
 - `Quart-compress <https://github.com/AceFire6/quart-compress>`_
   compress your application's responses with gzip.
