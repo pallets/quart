@@ -28,7 +28,7 @@ documentation = "https://quart.palletsprojects.com"
 python = ">=3.7"
 aiofiles = "*"
 blinker = "*"
-click = "*"
+click = ">=8.0.0"
 hypercorn = ">=0.11.2"
 importlib_metadata = { version = "*", python = "<3.10" }
 itsdangerous = "*"
