@@ -71,7 +71,7 @@ you come across an issue, or have a feature request please open an
 `issue <https://github.com/pallets/quart/issues>`_. If you want to
 contribute a fix or the feature-implementation please do (typo fixes
 welcome), by proposing a `merge request
-<https://github.com/pallets/quart/merge_requests>`_.
+<https://github.com/pallets/quart/pulls>`_.
 
 Testing
 ^^^^^^^
