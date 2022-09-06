@@ -30,6 +30,7 @@
 * Adopt the Flask JSON provider interface, use instead of JSON
   encoders and decoders.
 * Switch to being a Pallets project.
+* Requires at least v8 of click.
 
 
 0.17.0 2022-03-26
