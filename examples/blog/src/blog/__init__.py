@@ -1,4 +1,3 @@
-from pathlib import Path
 from sqlite3 import dbapi2 as sqlite3
 
 from quart import g, Quart, redirect, request, render_template, url_for
