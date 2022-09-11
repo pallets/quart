@@ -333,7 +333,7 @@ async def send_file(
 
     """
     file_body: ResponseBody
-    file_size: int
+    file_size: Optional[int] = None
     etag: Optional[str] = None
     if isinstance(filename_or_io, BytesIO):
         file_body = current_app.response_class.io_body_class(filename_or_io)
@@ -377,7 +377,7 @@ async def send_file(
         response.set_etag(etag)
 
     if conditional:
-        await response.make_conditional(request.range)
+        await response.make_conditional(request, accept_ranges=True, complete_length=file_size)
     return response
 
 

@@ -15,19 +15,25 @@ from typing import (
     Iterable,
     Optional,
     overload,
+    TYPE_CHECKING,
     Union,
 )
 
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
 from aiofiles.threadpool.binary import AsyncBufferedIOBase, AsyncBufferedReader
-from werkzeug.datastructures import ContentRange, Headers, Range
+from werkzeug.datastructures import ContentRange, Headers
 from werkzeug.exceptions import RequestedRangeNotSatisfiable
+from werkzeug.http import parse_etags
+from werkzeug.sansio.http import is_resource_modified
 from werkzeug.sansio.response import Response as SansIOResponse
 
 from .. import json
 from ..globals import current_app
 from ..utils import file_path_to_path, run_sync_iterable
+
+if TYPE_CHECKING:
+    from .request import Request
 
 try:
     from typing import Literal
@@ -57,7 +63,7 @@ class ResponseBody(ABC):
 
 
 def _raise_if_invalid_range(begin: int, end: int, size: int) -> None:
-    if begin >= end or abs(begin) > size or end > size:
+    if begin >= end or abs(begin) > size:
         raise RequestedRangeNotSatisfiable()
 
 
@@ -79,13 +85,10 @@ class DataBody(ResponseBody):
 
         return _aiter()
 
-    async def make_conditional(
-        self, begin: int, end: Optional[int], max_partial_size: Optional[int] = None
-    ) -> int:
+    async def make_conditional(self, begin: int, end: Optional[int]) -> int:
         self.begin = begin
         self.end = len(self.data) if end is None else end
-        if max_partial_size is not None:
-            self.end = min(self.begin + max_partial_size, self.end)
+        self.end = min(len(self.data), self.end)
         _raise_if_invalid_range(self.begin, self.end, len(self.data))
         return len(self.data)
 
@@ -165,13 +168,10 @@ class FileBody(ResponseBody):
         else:
             raise StopAsyncIteration()
 
-    async def make_conditional(
-        self, begin: int, end: Optional[int], max_partial_size: Optional[int] = None
-    ) -> int:
+    async def make_conditional(self, begin: int, end: Optional[int]) -> int:
         self.begin = begin
         self.end = self.size if end is None else end
-        if max_partial_size is not None:
-            self.end = min(self.begin + max_partial_size, self.end)
+        self.end = min(self.size, self.end)
         _raise_if_invalid_range(self.begin, self.end, self.size)
         return self.size
 
@@ -220,13 +220,10 @@ class IOBody(ResponseBody):
         else:
             raise StopAsyncIteration()
 
-    async def make_conditional(
-        self, begin: int, end: Optional[int], max_partial_size: Optional[int] = None
-    ) -> int:
+    async def make_conditional(self, begin: int, end: Optional[int]) -> int:
         self.begin = begin
         self.end = self.size if end is None else end
-        if max_partial_size is not None:
-            self.end = min(self.begin + max_partial_size, self.end)
+        self.end = min(self.size, self.end)
         _raise_if_invalid_range(self.begin, self.end, self.size)
         return self.size
 
@@ -374,42 +371,89 @@ class Response(SansIOResponse):
                 raise
             return None
 
-    async def make_conditional(
-        self, request_range: Optional[Range], max_partial_size: Optional[int] = None
-    ) -> None:
-        """Make the response conditional to the
+    def _is_range_request_processable(self, request: "Request") -> bool:
+        return (
+            "If-Range" not in request.headers
+            or not is_resource_modified(
+                http_range=request.headers.get("Range"),
+                http_if_range=request.headers.get("If-Range"),
+                http_if_modified_since=request.headers.get("If-Modified-Since"),
+                http_if_none_match=request.headers.get("If-None-Match"),
+                http_if_match=request.headers.get("If-Match"),
+                etag=self.headers.get("etag"),
+                data=None,
+                last_modified=self.headers.get("last-modified"),
+                ignore_if_range=False,
+            )
+        ) and "Range" in request.headers
 
-        Arguments:
-            request_range: The range as requested by the request.
-            max_partial_size: The maximum length the server is willing
-                to serve in a single response. Defaults to unlimited.
+    async def _process_range_request(
+        self,
+        request: "Request",
+        complete_length: Optional[int] = None,
+        accept_ranges: Optional[str] = None,
+    ) -> bool:
+        if (
+            accept_ranges is None
+            or complete_length is None
+            or complete_length == 0
+            or not self._is_range_request_processable(request)
+        ):
+            return False
 
-        """
-        self.accept_ranges = "bytes"  # Advertise this ability
-        if request_range is None or len(request_range.ranges) == 0:  # Not a conditional request
-            return
+        request_range = request.range
+
+        if request_range is None:
+            raise RequestedRangeNotSatisfiable(complete_length)
 
         if request_range.units != "bytes" or len(request_range.ranges) > 1:
             raise RequestedRangeNotSatisfiable()
 
         begin, end = request_range.ranges[0]
         try:
-            complete_length = await self.response.make_conditional(  # type: ignore
-                begin, end, max_partial_size
-            )
+            complete_length = await self.response.make_conditional(begin, end)  # type: ignore
         except AttributeError:
             await self.make_sequence()
-            return await self.make_conditional(request_range, max_partial_size)
-        else:
-            self.content_length = self.response.end - self.response.begin  # type: ignore
-            if self.content_length != complete_length:
-                self.content_range = ContentRange(
-                    request_range.units,
-                    self.response.begin,  # type: ignore
-                    self.response.end - 1,  # type: ignore
-                    complete_length,
-                )
-                self.status_code = 206
+            complete_length = await self.response.make_conditional(begin, end)  # type: ignore
+
+        self.content_length = self.response.end - self.response.begin  # type: ignore
+        self.headers["Accept-Ranges"] = accept_ranges
+        self.content_range = ContentRange(
+            request_range.units,
+            self.response.begin,  # type: ignore
+            self.response.end - 1,  # type: ignore
+            complete_length,
+        )
+        self.status_code = 206
+
+        return True
+
+    async def make_conditional(
+        self,
+        request: "Request",
+        accept_ranges: Union[bool, str] = False,
+        complete_length: Optional[int] = None,
+    ) -> "Response":
+        if request.method in {"GET", "HEAD"}:
+            accept_ranges = _clean_accept_ranges(accept_ranges)
+            is206 = await self._process_range_request(request, complete_length, accept_ranges)
+            if not is206 and not is_resource_modified(
+                http_range=request.headers.get("Range"),
+                http_if_range=request.headers.get("If-Range"),
+                http_if_modified_since=request.headers.get("If-Modified-Since"),
+                http_if_none_match=request.headers.get("If-None-Match"),
+                http_if_match=request.headers.get("If-Match"),
+                etag=self.headers.get("etag"),
+                data=None,
+                last_modified=self.headers.get("last-modified"),
+                ignore_if_range=True,
+            ):
+                if parse_etags(request.headers.get("If-Match")):
+                    self.status_code = 412
+                else:
+                    self.status_code = 304
+
+        return self
 
     async def make_sequence(self) -> None:
         data = b"".join([value async for value in self.iter_encode()])
@@ -436,3 +480,13 @@ class Response(SansIOResponse):
             self.headers.pop(key, None)
         else:
             self.headers[key] = value
+
+
+def _clean_accept_ranges(accept_ranges: Union[bool, str]) -> str:
+    if accept_ranges is True:
+        return "bytes"
+    elif accept_ranges is False:
+        return "none"
+    elif isinstance(accept_ranges, str):
+        return accept_ranges
+    raise ValueError("Invalid accept_ranges value")

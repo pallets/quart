@@ -9,9 +9,12 @@ from typing import Any, AsyncGenerator
 import pytest
 from hypothesis import given, strategies as strategies
 from py._path.local import LocalPath
-from werkzeug.datastructures import Range
+from werkzeug.datastructures import Headers
 from werkzeug.exceptions import RequestedRangeNotSatisfiable
 
+from quart.testing import no_op_push
+from quart.typing import HTTPScope
+from quart.wrappers import Request
 from quart.wrappers.response import DataBody, FileBody, IOBody, IterableBody, Response
 
 
@@ -76,35 +79,78 @@ async def test_response_body() -> None:
     assert b"Body" == (await response.get_data())  # type: ignore
 
 
-async def test_response_make_conditional() -> None:
+async def test_response_make_conditional(http_scope: HTTPScope) -> None:
+    request = Request(
+        "GET",
+        "https",
+        "/",
+        b"",
+        Headers([("Range", "bytes=0-3")]),
+        "",
+        "1.1",
+        http_scope,
+        send_push_promise=no_op_push,
+    )
     response = Response(b"abcdef")
-    await response.make_conditional(Range("bytes", [(0, 3)]))
-    assert b"abc" == (await response.get_data())  # type: ignore
+    await response.make_conditional(request, accept_ranges=True, complete_length=6)
+    assert b"abcd" == (await response.get_data())  # type: ignore
     assert response.status_code == 206
     assert response.accept_ranges == "bytes"
     assert response.content_range.units == "bytes"
     assert response.content_range.start == 0
-    assert response.content_range.stop == 2
+    assert response.content_range.stop == 3
     assert response.content_range.length == 6
 
 
-@pytest.mark.parametrize("range_", [Range("", []), Range("bytes", [(0, 6)])])
-async def test_response_make_conditional_no_condition(range_: Range) -> None:
+async def test_response_make_conditional_no_condition(http_scope: HTTPScope) -> None:
+    request = Request(
+        "GET", "https", "/", b"", Headers(), "", "1.1", http_scope, send_push_promise=no_op_push
+    )
     response = Response(b"abcdef")
-    await response.make_conditional(range_)
+    await response.make_conditional(request, complete_length=6)
     assert b"abcdef" == (await response.get_data())  # type: ignore
     assert response.status_code == 200
-    assert response.accept_ranges == "bytes"
+
+
+async def test_response_make_conditional_out_of_bound(http_scope: HTTPScope) -> None:
+    request = Request(
+        "GET",
+        "https",
+        "/",
+        b"",
+        Headers([("Range", "bytes=0-666")]),
+        "",
+        "1.1",
+        http_scope,
+        send_push_promise=no_op_push,
+    )
+    response = Response(b"abcdef")
+    await response.make_conditional(request, complete_length=6)
+    assert b"abcdef" == (await response.get_data())  # type: ignore
+    assert response.status_code == 206
 
 
 @pytest.mark.parametrize(
     "range_",
-    [Range("seconds", [(0, 3)]), Range("bytes", [(0, 2), (3, 5)]), Range("bytes", [(0, 8)])],
+    ["second=0-3", "bytes=0-2,3-5", "bytes=8-16"],
 )
-async def test_response_make_conditional_not_satisfiable(range_: Range) -> None:
+async def test_response_make_conditional_not_satisfiable(
+    range_: str, http_scope: HTTPScope
+) -> None:
+    request = Request(
+        "GET",
+        "https",
+        "/",
+        b"",
+        Headers([("Range", range_)]),
+        "",
+        "1.1",
+        http_scope,
+        send_push_promise=no_op_push,
+    )
     response = Response(b"abcdef")
     with pytest.raises(RequestedRangeNotSatisfiable):
-        await response.make_conditional(range_)
+        await response.make_conditional(request, complete_length=6)
 
 
 def test_response_cache_control() -> None:

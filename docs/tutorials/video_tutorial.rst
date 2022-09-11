@@ -4,7 +4,7 @@ Tutorial: Serving video
 =======================
 
 In this tutorial we will build a very basic video server. It will
-serve a video directly, and via chunked responses.
+serve a video directly.
 
 This tutorial is meant to serve as an introduction to serving large
 files with conditional responses in Quart. If you want to skip to the
@@ -93,10 +93,6 @@ to *src/video/templates/index.html*:
       <source src="/video.mp4" type="video/mp4">
     </video>
 
-    <video controls width="100%">
-      <source src="/chunked_video.mp4" type="video/mp4">
-    </video>
-
 This is a very basic UI in terms of the styling.
 
 We can now serve this template for the root path i.e. ``/`` by adding
@@ -122,7 +118,7 @@ conditional on what the request asked for. This is done via the
 Quart has in-built methods to make a response conditional on the
 request range. The first is to use the conditional argument when
 sending a file, the second is to use the response ``make_conditional``
-method. Both are shown below, which should be added to
+method. The former is shown below, which should be added to
 *src/video/__init__.py*:
 
 .. code-block:: python
@@ -131,16 +127,6 @@ method. Both are shown below, which should be added to
     @app.route("/video.mp4")
     async def auto_video():
         return await send_file("video.mp4", conditional=True)
-
-    @app.route("/chunked_video.mp4")
-    async def chunked_video():
-        response = await send_file("video.mp4")
-        await response.make_conditional(request.range, max_partial_size=100_000)
-        return response
-
-The second route forces the response to be no larger than 100,000
-bytes. Which helps ensure that the requester fetches only the data
-used.
 
 6: Testing
 ----------
@@ -163,16 +149,6 @@ following to *tests/test_video.py*:
         response = await test_client.get("/video.mp4", headers={"Range": "bytes=200-1000"})
         data = await response.get_data()
         assert len(data) == 801
-
-    async def test_chunked_video() -> None:
-        test_client = app.test_client()
-        response = await test_client.get("/chunked_video.mp4")
-        data = await response.get_data()
-        assert len(data) == 255_849
-
-        response = await test_client.get("/chunked_video.mp4", headers={"Range": "bytes=200-200000"})
-        data = await response.get_data()
-        assert len(data) == 100_000
 
 As the test is an async function we need to install `pytest-asyncio
 <https://github.com/pytest-dev/pytest-asyncio>`_ by running the
