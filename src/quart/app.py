@@ -126,7 +126,14 @@ from .typing import (
     TestClientProtocol,
     WhileServingCallable,
 )
-from .utils import file_path_to_path, is_coroutine_function, run_sync
+from .utils import (
+    file_path_to_path,
+    is_coroutine_function,
+    MustReloadError,
+    observe_changes,
+    restart,
+    run_sync,
+)
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
@@ -1386,7 +1393,6 @@ class Quart(Scaffold):
             host,
             port,
             debug,
-            use_reloader,
             ca_certs,
             certfile,
             keyfile,
@@ -1402,8 +1408,15 @@ class Quart(Scaffold):
         scheme = "https" if certfile is not None and keyfile is not None else "http"
         print(f" * Running on {scheme}://{host}:{port} (CTRL + C to quit)")  # noqa: T201
 
+        tasks = [loop.create_task(task)]
+        if use_reloader:
+            tasks.append(loop.create_task(observe_changes(asyncio.sleep, shutdown_event)))
+
+        reload_ = False
         try:
-            loop.run_until_complete(task)
+            loop.run_until_complete(asyncio.gather(*tasks))
+        except MustReloadError:
+            reload_ = True
         finally:
             try:
                 _cancel_all_tasks(loop)
@@ -1412,12 +1425,14 @@ class Quart(Scaffold):
                 asyncio.set_event_loop(None)
                 loop.close()
 
+        if reload_:
+            restart()
+
     def run_task(
         self,
         host: str = "127.0.0.1",
         port: int = 5000,
         debug: Optional[bool] = None,
-        use_reloader: bool = True,
         ca_certs: Optional[str] = None,
         certfile: Optional[str] = None,
         keyfile: Optional[str] = None,
@@ -1433,7 +1448,6 @@ class Quart(Scaffold):
                 only, use 0.0.0.0 to have the server listen externally.
             port: Port number to listen on.
             debug: If set enable (or disable) debug mode and debug output.
-            use_reloader: Automatically reload on code changes.
             ca_certs: Path to the SSL CA certificate file.
             certfile: Path to the SSL certificate file.
             keyfile: Path to the SSL key file.
@@ -1449,7 +1463,6 @@ class Quart(Scaffold):
             self.debug = debug
         config.errorlog = config.accesslog
         config.keyfile = keyfile
-        config.use_reloader = use_reloader
 
         return serve(self, config, shutdown_trigger=shutdown_trigger)
 

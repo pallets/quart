@@ -340,3 +340,8 @@ class TestAppProtocol(Protocol):
 
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
         ...
+
+
+class Event(Protocol):
+    def is_set(self) -> bool:
+        ...
