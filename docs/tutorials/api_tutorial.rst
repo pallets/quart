@@ -100,7 +100,7 @@ We can test this using curl:
 
 .. code-block:: console
 
-    curl --json '{"hello": "world}' http://localhost:5000/echo
+    curl --json '{"hello": "world"}' http://localhost:5000/echo
 
 Which gives the following result:
 
