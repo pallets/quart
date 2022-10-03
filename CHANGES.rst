@@ -1,3 +1,12 @@
+0.18.1 2022-10-03
+-----------------
+
+* Bugfix static hosting with resource path escaping the root.
+* Bugfix adopt the Werkzeug/Flask make_conditional API/functionality.
+* Bugfix restore the reloader to Quart.
+* Bugfix support subdomains when testing.
+* Bugfix the signal handling to work on Windows.
+
 0.18.0 2022-07-23
 -----------------
 
