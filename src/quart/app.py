@@ -1485,6 +1485,7 @@ class Quart(Scaffold):
         http_version: str = "1.1",
         scope_base: Optional[dict] = None,
         auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
+        subdomain: Optional[str] = None,
     ) -> RequestContext:
         """Create a request context for testing purposes.
 
@@ -1511,6 +1512,7 @@ class Quart(Scaffold):
             headers,
             query_string,
             auth,
+            subdomain,
         )
         request_body, body_headers = make_test_body_with_headers(data=data, form=form, json=json)
         headers.update(**body_headers)

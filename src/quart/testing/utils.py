@@ -29,6 +29,7 @@ def make_test_headers_path_and_query_string(
     headers: Optional[Union[dict, Headers]] = None,
     query_string: Optional[dict] = None,
     auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
+    subdomain: Optional[str] = None,
 ) -> Tuple[Headers, str, bytes]:
     """Make the headers and path with defaults for testing.
 
@@ -54,7 +55,10 @@ def make_test_headers_path_and_query_string(
         headers.setdefault("Authorization", auth.to_header())
 
     headers.setdefault("User-Agent", "Quart")
-    headers.setdefault("host", app.config["SERVER_NAME"] or "localhost")
+    host = app.config["SERVER_NAME"] or "localhost"
+    if subdomain is not None:
+        host = f"{subdomain}.{host}"
+    headers.setdefault("host", host)
     if "?" in path and query_string is not None:
         raise ValueError("Query string is defined in the path and as an argument")
     if query_string is None:

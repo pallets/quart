@@ -93,6 +93,7 @@ class QuartClient:
         http_version: str = "1.1",
         scope_base: Optional[dict] = None,
         auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
+        subdomain: Optional[str] = None,
     ) -> Response:
         self.push_promises = []
         response = await self._make_request(
@@ -109,6 +110,7 @@ class QuartClient:
             http_version,
             scope_base,
             auth,
+            subdomain,
         )
         if follow_redirects:
             while response.status_code >= 300 and response.status_code <= 399:
@@ -131,6 +133,7 @@ class QuartClient:
                     http_version,
                     scope_base,
                     auth,
+                    subdomain,
                 )
         if self.preserve_context:
             _cv_request.set(self.app._preserved_context)  # type: ignore
@@ -148,6 +151,7 @@ class QuartClient:
         http_version: str = "1.1",
         scope_base: Optional[dict] = None,
         auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
+        subdomain: Optional[str] = None,
     ) -> TestHTTPConnectionProtocol:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self.app,
@@ -155,6 +159,7 @@ class QuartClient:
             headers,
             query_string,
             auth,
+            subdomain,
         )
         if self.cookie_jar is not None:
             for cookie in self.cookie_jar:
@@ -185,6 +190,7 @@ class QuartClient:
         http_version: str = "1.1",
         scope_base: Optional[dict] = None,
         auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
+        subdomain: Optional[str] = None,
     ) -> TestWebsocketConnectionProtocol:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self.app,
@@ -192,6 +198,7 @@ class QuartClient:
             headers,
             query_string,
             auth,
+            subdomain,
         )
         if self.cookie_jar is not None:
             for cookie in self.cookie_jar:
@@ -409,9 +416,10 @@ class QuartClient:
         http_version: str,
         scope_base: Optional[dict],
         auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
+        subdomain: Optional[str] = None,
     ) -> Response:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
-            self.app, path, headers, query_string, auth
+            self.app, path, headers, query_string, auth, subdomain
         )
         request_data, body_headers = make_test_body_with_headers(
             data=data, form=form, files=files, json=json, app=self.app

@@ -36,23 +36,29 @@ async def test_methods() -> None:
 
 
 @pytest.mark.parametrize(
-    "path, query_string, expected_path, expected_query_string",
+    "path, query_string, subdomain, expected_path, expected_query_string, expected_host",
     [
-        ("/path", {"a": "b"}, "/path", b"a=b"),
-        ("/path", {"a": ["b", "c"]}, "/path", b"a=b&a=c"),
-        ("/path?b=c", None, "/path", b"b=c"),
-        ("/path%20", None, "/path ", b""),
+        ("/path", {"a": "b"}, None, "/path", b"a=b", "localhost"),
+        ("/path", {"a": ["b", "c"]}, None, "/path", b"a=b&a=c", "localhost"),
+        ("/path?b=c", None, None, "/path", b"b=c", "localhost"),
+        ("/path%20", None, None, "/path ", b"", "localhost"),
+        ("/path", None, "api", "/path", b"", "api.localhost"),
     ],
 )
 def test_build_headers_path_and_query_string(
-    path: str, query_string: Optional[dict], expected_path: str, expected_query_string: bytes
+    path: str,
+    query_string: Optional[dict],
+    subdomain: Optional[str],
+    expected_path: str,
+    expected_query_string: bytes,
+    expected_host: str,
 ) -> None:
     headers, result_path, result_qs = make_test_headers_path_and_query_string(
-        Quart(__name__), path, None, query_string
+        Quart(__name__), path, None, query_string, None, subdomain
     )
     assert result_path == expected_path
     assert headers["User-Agent"] == "Quart"
-    assert headers["host"] == "localhost"
+    assert headers["host"] == expected_host
     assert result_qs == expected_query_string
 
 
