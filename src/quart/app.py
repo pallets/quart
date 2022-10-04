@@ -1373,7 +1373,7 @@ class Quart(Scaffold):
 
         for signal_name in {"SIGINT", "SIGTERM", "SIGBREAK"}:
             if hasattr(signal, signal_name):
-                signal.signal(getattr(signal, signal_name), _signal_handler)
+                loop.add_signal_handler(getattr(signal, signal_name), _signal_handler)
 
         server_name = self.config.get("SERVER_NAME")
         sn_host = None
