@@ -1,3 +1,8 @@
+0.18.2 2022-10-04
+-----------------
+
+* Bugfix use add_signal_handler not signal.signal.
+
 0.18.1 2022-10-03
 -----------------
 
