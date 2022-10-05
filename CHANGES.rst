@@ -1,3 +1,8 @@
+0.18.3 2022-10-05
+-----------------
+
+* Bugfix use add_signal_handler for Unix signals and signal.signal for Windows signals.
+
 0.18.2 2022-10-04
 -----------------
 
