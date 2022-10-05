@@ -1371,9 +1371,13 @@ class Quart(Scaffold):
         def _signal_handler(*_: Any) -> None:
             shutdown_event.set()
 
-        for signal_name in {"SIGINT", "SIGTERM", "SIGBREAK"}:
-            if hasattr(signal, signal_name):
-                loop.add_signal_handler(getattr(signal, signal_name), _signal_handler)
+        try:
+            for signal_name in {"SIGINT", "SIGTERM"}:
+                if hasattr(signal, signal_name):
+                    loop.add_signal_handler(getattr(signal, signal_name), _signal_handler)
+        except (AttributeError, NotImplementedError):
+            pass
+        signal.signal(getattr(signal, "SIGBREAK"), _signal_handler)
 
         server_name = self.config.get("SERVER_NAME")
         sn_host = None
