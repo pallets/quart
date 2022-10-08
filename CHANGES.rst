@@ -1,3 +1,9 @@
+0.18.3 2022-10-08
+-----------------
+
+* Bugfix signal handling on Windows.
+* Bugfix add missing globals to Flask-Patch.
+
 0.18.2 2022-10-04
 -----------------
 
