@@ -9,9 +9,11 @@ from quart.globals import (
     _cv_app,
     _cv_request,
     _cv_websocket,
+    app_ctx,
     current_app,
     g,
     request as quart_request,
+    request_ctx,
     session,
 )
 from ._synchronise import sync_with_context
@@ -48,8 +50,10 @@ __all__ = (
     "_cv_app",
     "_cv_request",
     "_cv_websocket",
+    "app_ctx",
     "current_app",
     "g",
     "request",
+    "request_ctx",
     "session",
 )
