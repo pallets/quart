@@ -4,7 +4,7 @@ Installation
 ============
 
 Quart is only compatible with Python 3.7 or higher and can be installed
-using pip or your favorite python package manager::
+using pip or your favorite python package manager:
 
 .. code-block:: console
 
