@@ -389,7 +389,7 @@ def _split_blueprint_path(name: str) -> List[str]:
     return bps
 
 
-def abort(code: int, *args: Any, **kwargs: Any) -> NoReturn:  # type: ignore[misc]
+def abort(code: int | Response, *args: Any, **kwargs: Any) -> NoReturn:
     """Raise an HTTPException for the given status code."""
     if current_app:
         current_app.aborter(code, *args, **kwargs)
