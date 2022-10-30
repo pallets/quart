@@ -479,7 +479,7 @@ class Quart(Scaffold):
         """Returns True if the filename indicates that it should be escaped."""
         if filename is None:
             return True
-        return Path(filename).suffix in {".htm", ".html", ".xhtml", ".xml"}
+        return Path(filename).suffix in {".htm", ".html", ".svg", ".xhtml", ".xml"}
 
     async def update_template_context(self, context: dict) -> None:
         """Update the provided template context.
