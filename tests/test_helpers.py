@@ -216,9 +216,7 @@ async def test_send_file_as_attachment_name(tmp_path: Path) -> None:
     file_ = tmp_path / "send.img"
     file_.write_text("something")
     async with app.app_context():
-        response = await send_file(
-            Path(file_), as_attachment=True, attachment_filename="send.html"
-        )
+        response = await send_file(Path(file_), as_attachment=True, attachment_filename="send.html")
     assert response.headers["content-disposition"] == "attachment; filename=send.html"
 
 
