@@ -143,8 +143,11 @@ We can then add schemas for a Todo object by adding the following to
     from dataclasses import dataclass
     from datetime import datetime
 
+    from quart import Quart
     from quart_schema import QuartSchema, validate_request, validate_response
-
+    
+    app = Quart(__name__)
+    
     QuartSchema(app)
 
     @dataclass
