@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import AsyncGenerator
 
 import pytest
-from py._path.local import LocalPath
 from werkzeug.exceptions import NotFound
 
 from quart import Blueprint, Quart, request
@@ -179,13 +178,13 @@ async def test_send_from_directory_raises() -> None:
         await send_from_directory(str(ROOT_PATH), "no_file.no")
 
 
-async def test_send_file_path(tmpdir: LocalPath) -> None:
+async def test_send_file_path(tmp_path: Path) -> None:
     app = Quart(__name__)
-    file_ = tmpdir.join("send.img")
-    file_.write("something")
+    file_ = tmp_path / "send.img"
+    file_.write_text("something")
     async with app.app_context():
-        response = await send_file(Path(file_.realpath()))
-    assert (await response.get_data(as_text=False)) == file_.read_binary()
+        response = await send_file(Path(file_))
+    assert (await response.get_data(as_text=False)) == file_.read_bytes()
 
 
 async def test_send_file_bytes_io() -> None:
@@ -203,61 +202,61 @@ async def test_send_file_no_mimetype() -> None:
             await send_file(BytesIO(b"something"))
 
 
-async def test_send_file_as_attachment(tmpdir: LocalPath) -> None:
+async def test_send_file_as_attachment(tmp_path: Path) -> None:
     app = Quart(__name__)
-    file_ = tmpdir.join("send.img")
-    file_.write("something")
+    file_ = tmp_path / "send.img"
+    file_.write_text("something")
     async with app.app_context():
-        response = await send_file(Path(file_.realpath()), as_attachment=True)
+        response = await send_file(Path(file_), as_attachment=True)
     assert response.headers["content-disposition"] == "attachment; filename=send.img"
 
 
-async def test_send_file_as_attachment_name(tmpdir: LocalPath) -> None:
+async def test_send_file_as_attachment_name(tmp_path: Path) -> None:
     app = Quart(__name__)
-    file_ = tmpdir.join("send.img")
-    file_.write("something")
+    file_ = tmp_path / "send.img"
+    file_.write_text("something")
     async with app.app_context():
         response = await send_file(
-            Path(file_.realpath()), as_attachment=True, attachment_filename="send.html"
+            Path(file_), as_attachment=True, attachment_filename="send.html"
         )
     assert response.headers["content-disposition"] == "attachment; filename=send.html"
 
 
-async def test_send_file_mimetype(tmpdir: LocalPath) -> None:
+async def test_send_file_mimetype(tmp_path: Path) -> None:
     app = Quart(__name__)
-    file_ = tmpdir.join("send.bob")
-    file_.write("something")
+    file_ = tmp_path / "send.bob"
+    file_.write_text("something")
     async with app.app_context():
-        response = await send_file(Path(file_.realpath()), mimetype="application/bob")
-    assert (await response.get_data(as_text=False)) == file_.read_binary()
+        response = await send_file(Path(file_), mimetype="application/bob")
+    assert (await response.get_data(as_text=False)) == file_.read_bytes()
     assert response.headers["Content-Type"] == "application/bob"
 
 
-async def test_send_file_last_modified(tmpdir: LocalPath) -> None:
+async def test_send_file_last_modified(tmp_path: Path) -> None:
     app = Quart(__name__)
-    file_ = tmpdir.join("send.img")
-    file_.write("something")
+    file_ = tmp_path / "send.img"
+    file_.write_text("something")
     async with app.app_context():
-        response = await send_file(str(file_.realpath()))
-    mtime = datetime.fromtimestamp(file_.mtime(), tz=timezone.utc)
+        response = await send_file(str(file_))
+    mtime = datetime.fromtimestamp(file_.stat().st_mtime, tz=timezone.utc)
     mtime = mtime.replace(microsecond=0)
     assert response.last_modified == mtime
 
 
-async def test_send_file_last_modified_override(tmpdir: LocalPath) -> None:
+async def test_send_file_last_modified_override(tmp_path: Path) -> None:
     app = Quart(__name__)
-    file_ = tmpdir.join("send.img")
-    file_.write("something")
+    file_ = tmp_path / "send.img"
+    file_.write_text("something")
     last_modified = datetime(2015, 10, 10, tzinfo=timezone.utc)
     async with app.app_context():
-        response = await send_file(str(file_.realpath()), last_modified=last_modified)
+        response = await send_file(str(file_), last_modified=last_modified)
     assert response.last_modified == last_modified
 
 
-async def test_send_file_max_age(tmpdir: LocalPath) -> None:
+async def test_send_file_max_age(tmp_path: Path) -> None:
     app = Quart(__name__)
-    file_ = tmpdir.join("send.img")
-    file_.write("something")
+    file_ = tmp_path / "send.img"
+    file_.write_text("something")
     async with app.app_context():
-        response = await send_file(str(file_.realpath()))
+        response = await send_file(str(file_))
     assert response.cache_control.max_age == app.send_file_max_age_default.total_seconds()

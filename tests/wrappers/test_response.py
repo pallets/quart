@@ -8,7 +8,6 @@ from typing import Any, AsyncGenerator
 
 import pytest
 from hypothesis import given, strategies as strategies
-from py._path.local import LocalPath
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import RequestedRangeNotSatisfiable
 
@@ -44,10 +43,10 @@ async def test_iterable_wrapper(iterable: Any) -> None:
     assert results == [b"abc", b"def"]
 
 
-async def test_file_wrapper(tmpdir: LocalPath) -> None:
-    file_ = tmpdir.join("file_wrapper")
-    file_.write("abcdef")
-    wrapper = FileBody(Path(file_.realpath()), buffer_size=3)
+async def test_file_wrapper(tmp_path: Path) -> None:
+    file_ = tmp_path / "file_wrapper"
+    file_.write_text("abcdef")
+    wrapper = FileBody(Path(file_), buffer_size=3)
     results = []
     async with wrapper as response:
         async for data in response:
