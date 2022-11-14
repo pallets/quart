@@ -29,8 +29,8 @@ here,
   (MongoDB) support for Quart applications.
 - `Quart-OpenApi <https://github.com/factset/quart-openapi/>`_ RESTful
   API building.
-- `Quart-Session-OpenID <https://github.com/sanderfoobar/quart-session-openid>`_
-  Support for OAuth2 OpenID Connect (OIDC).
+- `Quart-Keycloak <https://github.com/kroketio/quart-keycloak>`_
+  Support for Keycloak's OAuth2 OpenID Connect (OIDC).
 - `Quart-Rapidoc <https://github.com/marirs/quart-rapidoc>`_ API
   documentation from OpenAPI Specification.
 - `Quart-Rate-Limiter
