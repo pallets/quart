@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, IO, TYPE_CHECKING
+from typing import Any, IO, TYPE_CHECKING, Union
 
 from .provider import _default
 from ..globals import current_app
@@ -20,7 +20,7 @@ def dump(object_: Any, fp: IO[str], **kwargs: Any) -> None:
     json.dump(object_, fp, **kwargs)
 
 
-def loads(object_: str, **kwargs: Any) -> Any:
+def loads(object_: Union[str, bytes], **kwargs: Any) -> Any:
     return json.loads(object_, **kwargs)
 
 
