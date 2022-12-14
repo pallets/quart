@@ -1,6 +1,7 @@
 0.18.3 2022-10-08
 -----------------
 
+* Corrected quart.json.loads type annotation.
 * Bugfix signal handling on Windows.
 * Bugfix add missing globals to Flask-Patch.
 
