@@ -52,7 +52,7 @@ or to use the ``app.run_task`` method,
     loop.run_until_complete(app.run_task())
 
 the Hypercorn (production) solution is to utilise the `Hypercorn API
-<https://pgjones.gitlab.io/hypercorn/how_to_guides/api_usage.html#api-usage>`_ to do the
+<https://hypercorn.readthedocs.io/en/latest/how_to_guides/api_usage.html>`_ to do the
 following,
 
 .. code-block:: python
