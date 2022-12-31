@@ -6,7 +6,7 @@ Deploying Quart
 It is not recommended to run Quart directly (via
 :meth:`~quart.app.Quart.run`) in production. Instead it is recommended
 that Quart be run using `Hypercorn
-<https://gitlab.com/pgjones/hypercorn>`_ or an alternative ASGI
+<https://github.com/pgjones/hypercorn>`_ or an alternative ASGI
 server. This is becuase the :meth:`~quart.app.Quart.run` enables
 features that help development yet slow production
 performance. Hypercorn is installed with Quart and will be used to
@@ -33,7 +33,7 @@ you can run with Hypercorn using,
 
     hypercorn example:app
 
-See the `Hypercorn docs <https://pgjones.gitlab.io/hypercorn/>`_.
+See the `Hypercorn docs <https://hypercorn.readthedocs.io/>`_.
 
 Alternative ASGI Servers
 ------------------------
@@ -41,7 +41,7 @@ Alternative ASGI Servers
 ==================================================== ====== ====== =========== ==================
 Server name                                          HTTP/2 HTTP/3 Server Push Websocket Response
 ==================================================== ====== ====== =========== ==================
-`Hypercorn <https://gitlab.com/pgjones/hypercorn>`_  ✓      ✓      ✓           ✓
+`Hypercorn <https://github.com/pgjones/hypercorn>`_  ✓      ✓      ✓           ✓
 `Daphne <https://github.com/django/daphne>`_         ✓      ✗      ✗           ✗
 `Uvicorn <https://github.com/encode/uvicorn>`_       ✗      ✗      ✗           ✗
 ==================================================== ====== ====== =========== ==================
