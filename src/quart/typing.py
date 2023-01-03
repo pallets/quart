@@ -36,7 +36,8 @@ except ImportError:
     from typing_extensions import Protocol  # type: ignore
 
 if TYPE_CHECKING:
-    from werkzeug.datastructures import Headers, Authorization  # noqa: F401
+    from werkzeug.datastructures import Authorization, Headers  # noqa: F401
+    from werkzeug.wrappers import Response as WerkzeugResponse
 
     from .app import Quart
     from .sessions import SessionMixin
