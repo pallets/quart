@@ -36,8 +36,7 @@ except ImportError:
     from typing_extensions import Protocol  # type: ignore
 
 if TYPE_CHECKING:
-    from werkzeug.datastructures import Headers  # noqa: F401
-    from werkzeug.wrappers import Response as WerkzeugResponse
+    from werkzeug.datastructures import Headers, Authorization  # noqa: F401
 
     from .app import Quart
     from .sessions import SessionMixin
@@ -251,6 +250,9 @@ class TestClientProtocol(Protocol):
         subprotocols: Optional[List[str]] = None,
         root_path: str = "",
         http_version: str = "1.1",
+        scope_base: Optional[dict] = None,
+        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
+        subdomain: Optional[str] = None,
     ) -> TestWebsocketConnectionProtocol:
         ...
 
