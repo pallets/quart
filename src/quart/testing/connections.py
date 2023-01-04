@@ -25,7 +25,7 @@ class WebsocketDisconnectError(Exception):
 
 class WebsocketResponseError(Exception):
     def __init__(self, response: Response) -> None:
-        super().__init__()
+        super().__init__(response)
         self.response = response
 
 
