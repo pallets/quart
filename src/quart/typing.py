@@ -30,6 +30,8 @@ from hypercorn.typing import (
     WebsocketScope,
 )
 
+from .datastructures import FileStorage
+
 try:
     from typing import Protocol
 except ImportError:
@@ -219,12 +221,16 @@ class TestClientProtocol(Protocol):
         headers: Optional[Union[dict, Headers]] = None,
         data: Optional[AnyStr] = None,
         form: Optional[dict] = None,
+        files: Optional[Dict[str, FileStorage]] = None,
         query_string: Optional[dict] = None,
-        json: Any = None,
+        json: Any,
         scheme: str = "http",
         follow_redirects: bool = False,
         root_path: str = "",
         http_version: str = "1.1",
+        scope_base: Optional[dict] = None,
+        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
+        subdomain: Optional[str] = None,
     ) -> Response:
         ...
 
@@ -238,6 +244,9 @@ class TestClientProtocol(Protocol):
         scheme: str = "http",
         root_path: str = "",
         http_version: str = "1.1",
+        scope_base: Optional[dict] = None,
+        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
+        subdomain: Optional[str] = None,
     ) -> TestHTTPConnectionProtocol:
         ...
 
