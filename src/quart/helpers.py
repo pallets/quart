@@ -248,13 +248,13 @@ def find_package(name: str) -> Tuple[Optional[Path], Path]:
         package_path = Path.cwd()
     else:
         if hasattr(loader, "get_filename"):
-            filename = loader.get_filename(module)  # type: ignore
+            filename = loader.get_filename(module)
         else:
             __import__(name)
             filename = sys.modules[name].__file__
         package_path = Path(filename).resolve().parent
         if hasattr(loader, "is_package"):
-            is_package = loader.is_package(module)  # type: ignore
+            is_package = loader.is_package(module)
             if is_package:
                 package_path = Path(package_path).resolve().parent
     sys_prefix = Path(sys.prefix).resolve()
@@ -389,7 +389,7 @@ def _split_blueprint_path(name: str) -> List[str]:
     return bps
 
 
-def abort(code: int, *args: Any, **kwargs: Any) -> NoReturn:  # type: ignore[misc]
+def abort(code: int, *args: Any, **kwargs: Any) -> NoReturn:
     """Raise an HTTPException for the given status code."""
     if current_app:
         current_app.aborter(code, *args, **kwargs)
