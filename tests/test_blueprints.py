@@ -190,6 +190,39 @@ async def test_nesting_url_prefixes(
     assert response.status_code == 200
 
 
+@pytest.mark.parametrize(
+    "parent_subdomain, child_subdomain, expected_subdomain",
+    [
+        (None, None, None),
+        ("parent", None, "parent"),
+        (None, "child", "child"),
+        ("parent", "child", "child.parent"),
+    ],
+)
+async def test_nesting_subdomains(
+    parent_subdomain: Optional[str],
+    child_subdomain: Optional[str],
+    expected_subdomain: Optional[str],
+) -> None:
+    app = Quart(__name__)
+    domain_name = "domain.tld"
+    app.config["SERVER_NAME"] = domain_name
+
+    parent = Blueprint("parent", __name__, subdomain=parent_subdomain)
+    child = Blueprint("child", __name__, subdomain=child_subdomain)
+
+    @child.route("/")
+    def index() -> ResponseReturnValue:
+        return "index"
+
+    parent.register_blueprint(child)
+    app.register_blueprint(parent)
+
+    test_client = app.test_client()
+    response = await test_client.get("/", subdomain=expected_subdomain)
+    assert response.status_code == 200
+
+
 async def test_nesting_and_sibling() -> None:
     app = Quart(__name__)
 
