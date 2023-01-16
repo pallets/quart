@@ -105,7 +105,7 @@ Quart is an asyncio reimplementation of the popular `Flask
 <http://flask.pocoo.org/>`_ microframework API. This means that if you
 understand Flask you understand Quart.
 
-Like Flask Quart has an ecosystem of extensions for more specific
+Like Flask, Quart has an ecosystem of extensions for more specific
 needs. In addition a number of the Flask extensions work with Quart.
 
 Migrating from Flask
