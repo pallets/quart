@@ -14,7 +14,7 @@ from quart.app import Quart
 from quart.globals import session, websocket
 from quart.sessions import SecureCookieSession, SessionInterface
 from quart.testing import no_op_push, WebsocketResponseError
-from quart.typing import ResponseReturnValue
+from quart.typing import ResponseReturnValue, ResponseTypes
 from quart.wrappers import Request, Response
 
 TEST_RESPONSE = Response("")
@@ -258,7 +258,7 @@ async def test_app_before_request_exception(basic_app: Quart) -> None:
 
 async def test_app_after_request_exception(basic_app: Quart) -> None:
     @basic_app.after_request
-    def after(_: Response) -> None:
+    def after(_: ResponseTypes) -> None:
         raise Exception()
 
     test_client = basic_app.test_client()
@@ -268,7 +268,7 @@ async def test_app_after_request_exception(basic_app: Quart) -> None:
 
 async def test_app_after_request_handler_exception(basic_app: Quart) -> None:
     @basic_app.after_request
-    def after(_: Response) -> None:
+    def after(_: ResponseTypes) -> None:
         raise Exception()
 
     test_client = basic_app.test_client()

@@ -9,13 +9,15 @@ from typing import (
     AnyStr,
     AsyncContextManager,
     AsyncGenerator,
+    AsyncIterator,
     Awaitable,
     Callable,
     Dict,
-    Generator,
+    Iterator,
     List,
     Mapping,
     Optional,
+    Sequence,
     Tuple,
     Type,
     TYPE_CHECKING,
@@ -51,11 +53,14 @@ FilePath = Union[bytes, str, os.PathLike]
 ResponseValue = Union[
     "Response",
     "WerkzeugResponse",
-    AnyStr,
+    bytes,
+    str,
     Mapping[str, Any],  # any jsonify-able dict
     List[Any],  # any jsonify-able list
-    AsyncGenerator[AnyStr, None],
-    Generator[AnyStr, None, None],
+    AsyncIterator[bytes],
+    AsyncIterator[str],
+    Iterator[bytes],
+    Iterator[str],
 ]
 StatusCode = int
 
@@ -64,7 +69,9 @@ HeaderName = str
 HeaderValue = Union[str, List[str], Tuple[str, ...]]
 
 # the possible types for HTTP headers
-HeadersValue = Union["Headers", Dict[HeaderName, HeaderValue], List[Tuple[HeaderName, HeaderValue]]]
+HeadersValue = Union[
+    "Headers", Mapping[HeaderName, HeaderValue], Sequence[Tuple[HeaderName, HeaderValue]]
+]
 
 # The possible types returned by a route function.
 ResponseReturnValue = Union[
@@ -74,14 +81,16 @@ ResponseReturnValue = Union[
     Tuple[ResponseValue, StatusCode, HeadersValue],
 ]
 
+ResponseTypes = Union["Response", "WerkzeugResponse"]
+
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
 AfterRequestCallable = Union[
-    Callable[["Response"], "Response"], Callable[["Response"], Awaitable["Response"]]
+    Callable[[ResponseTypes], ResponseTypes], Callable[[ResponseTypes], Awaitable[ResponseTypes]]
 ]
 AfterServingCallable = Union[Callable[[], None], Callable[[], Awaitable[None]]]
 AfterWebsocketCallable = Union[
-    Callable[["Response"], Optional["Response"]],
-    Callable[["Response"], Awaitable[Optional["Response"]]],
+    Callable[[ResponseTypes], Optional[ResponseTypes]],
+    Callable[[ResponseTypes], Awaitable[Optional[ResponseTypes]]],
 ]
 BeforeFirstRequestCallable = Union[Callable[[], None], Callable[[], Awaitable[None]]]
 BeforeRequestCallable = Union[

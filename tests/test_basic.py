@@ -44,9 +44,9 @@ def app() -> Quart:
         abort(409)
         return "OK"
 
-    @app.route("/param/<param>")
-    async def param() -> ResponseReturnValue:
-        return param
+    @app.route("/param/<value>")
+    async def param(value: str) -> ResponseReturnValue:
+        return value
 
     @app.route("/stream")
     async def stream() -> ResponseReturnValue:
@@ -141,7 +141,7 @@ async def test_generic_error(app: Quart) -> None:
 async def test_url_defaults(app: Quart) -> None:
     @app.url_defaults
     def defaults(_: str, values: dict) -> None:
-        values["param"] = "hello"
+        values["value"] = "hello"
 
     async with app.test_request_context("/"):
         assert url_for("param") == "/param/hello"
@@ -159,6 +159,7 @@ async def test_make_response_str(app: Quart) -> None:
     assert response.status_code == 200
     assert (await response.get_data()) == b"Result"  # type: ignore
 
+    response = await app.make_response(("Result", 200))
     response = await app.make_response(("Result", {"name": "value"}))
     assert response.status_code == 200
     assert (await response.get_data()) == b"Result"  # type: ignore
@@ -188,11 +189,11 @@ async def test_make_response_response(app: Quart) -> None:
 
 async def test_make_response_errors(app: Quart) -> None:
     with pytest.raises(TypeError):
-        await app.make_response(("Result", {"name": "value"}, 200))
+        await app.make_response(("Result", {"name": "value"}, 200))  # type: ignore
     with pytest.raises(TypeError):
-        await app.make_response(("Result", {"name": "value"}, 200, "a"))
+        await app.make_response(("Result", {"name": "value"}, 200, "a"))  # type: ignore
     with pytest.raises(TypeError):
-        await app.make_response(("Result",))
+        await app.make_response(("Result",))  # type: ignore
 
 
 async def test_websocket(app: Quart) -> None:

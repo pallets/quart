@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import warnings
 from functools import partial
-from typing import AnyStr, cast, List, Optional, Set, TYPE_CHECKING, Union
+from typing import AnyStr, cast, List, Optional, Set, TYPE_CHECKING
 from urllib.parse import urlparse
 
 from hypercorn.typing import (
@@ -28,6 +28,7 @@ from werkzeug.wrappers import Response as WerkzeugResponse
 
 from .debug import traceback_response
 from .signals import websocket_received, websocket_sent
+from .typing import ResponseTypes
 from .utils import encode_headers
 from .wrappers import Request, Response, Websocket  # noqa: F401
 
@@ -103,9 +104,7 @@ class ASGIHTTPConnection:
         except asyncio.TimeoutError:
             pass
 
-    async def _send_response(
-        self, send: ASGISendCallable, response: Union[Response, WerkzeugResponse]
-    ) -> None:
+    async def _send_response(self, send: ASGISendCallable, response: ResponseTypes) -> None:
         await send(
             cast(
                 HTTPResponseStartEvent,

@@ -65,7 +65,7 @@ class View:
             self = cls(*class_args, **class_kwargs)
 
             async def view(**kwargs: Any) -> ResponseReturnValue:
-                return current_app.ensure_async(self.dispatch_request)(**kwargs)
+                return await current_app.ensure_async(self.dispatch_request)(**kwargs)
 
         if cls.decorators:
             view.__name__ = name

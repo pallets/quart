@@ -117,6 +117,7 @@ from .typing import (
     FilePath,
     HeadersValue,
     ResponseReturnValue,
+    ResponseTypes,
     ShellContextProcessorCallable,
     StatusCode,
     TeardownCallable,
@@ -137,6 +138,11 @@ from .utils import (
 )
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 
+try:
+    from typing import ParamSpec
+except ImportError:
+    from typing_extensions import ParamSpec  # type: ignore
+
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
 T_after_serving = TypeVar("T_after_serving", bound=AfterServingCallable)
 T_before_first_request = TypeVar("T_before_first_request", bound=BeforeFirstRequestCallable)
@@ -149,6 +155,9 @@ T_template_filter = TypeVar("T_template_filter", bound=TemplateFilterCallable)
 T_template_global = TypeVar("T_template_global", bound=TemplateGlobalCallable)
 T_template_test = TypeVar("T_template_test", bound=TemplateTestCallable)
 T_while_serving = TypeVar("T_while_serving", bound=WhileServingCallable)
+
+T = TypeVar("T")
+P = ParamSpec("P")
 
 
 def _convert_timedelta(value: Union[float, timedelta]) -> timedelta:
@@ -1076,7 +1085,7 @@ class Quart(Scaffold):
 
         handler = self._find_error_handler(error)
         if handler is None:
-            return error.get_response()
+            return cast(ResponseTypes, error.get_response())
         else:
             return await self.ensure_async(handler)(error)
 
@@ -1107,7 +1116,7 @@ class Quart(Scaffold):
             raise error
         return await self.ensure_async(handler)(error)
 
-    async def handle_exception(self, error: Exception) -> Union[Response, WerkzeugResponse]:
+    async def handle_exception(self, error: Exception) -> ResponseTypes:
         """Handle an uncaught exception.
 
         By default this switches the error response to a 500 internal
@@ -1131,9 +1140,7 @@ class Quart(Scaffold):
 
         return await self.finalize_request(response, from_error_handler=True)
 
-    async def handle_websocket_exception(
-        self, error: Exception
-    ) -> Optional[Union[Response, WerkzeugResponse]]:
+    async def handle_websocket_exception(self, error: Exception) -> Optional[ResponseTypes]:
         """Handle an uncaught exception.
 
         By default this logs the exception and then re-raises it.
@@ -1203,7 +1210,7 @@ class Quart(Scaffold):
         self.teardown_appcontext_funcs.append(func)
         return func
 
-    def ensure_async(self, func: Callable[..., Any]) -> Callable[..., Awaitable[Any]]:
+    def ensure_async(self, func: Callable[P, Any]) -> Callable[P, Awaitable[Any]]:
         """Ensure that the returned func is async and calls the func.
 
         .. versionadded:: 0.11
@@ -1217,7 +1224,7 @@ class Quart(Scaffold):
         else:
             return self.sync_to_async(func)
 
-    def sync_to_async(self, func: Callable[..., Any]) -> Callable[..., Awaitable[Any]]:
+    def sync_to_async(self, func: Callable[P, T]) -> Callable[P, Awaitable[T]]:
         """Return a async function that will run the synchronous function *func*.
 
         This can be used as so,::
@@ -1592,7 +1599,7 @@ class Quart(Scaffold):
 
     async def make_response(
         self, result: Union[ResponseReturnValue, HTTPException]
-    ) -> Union[Response, WerkzeugResponse]:
+    ) -> ResponseTypes:
         """Make a Response from the result of the route handler.
 
         The result itself can either be:
@@ -1606,15 +1613,15 @@ class Quart(Scaffold):
         status: Optional[StatusCode] = None
         if isinstance(result, tuple):
             if len(result) == 3:
-                value, status, headers = result
+                value, status, headers = result  # type: ignore[misc]
             elif len(result) == 2:
-                value, status_or_headers = result
+                value, status_or_headers = result  # type: ignore[misc]
 
                 if isinstance(status_or_headers, (Headers, dict, list)):
                     headers = status_or_headers
                     status = None
                 elif status_or_headers is not None:
-                    status = status_or_headers
+                    status = status_or_headers  # type: ignore[assignment]
             else:
                 raise TypeError(
                     """The response value returned must be either (body, status), (body,
@@ -1626,7 +1633,7 @@ class Quart(Scaffold):
         if value is None:
             raise TypeError("The response value returned by the view function cannot be None")
 
-        response: Union[Response, WerkzeugResponse]
+        response: ResponseTypes
         if isinstance(value, HTTPException):
             response = value.get_response()  # type: ignore
         elif not isinstance(value, (Response, WerkzeugResponse)):
@@ -1651,7 +1658,7 @@ class Quart(Scaffold):
 
         return response
 
-    async def handle_request(self, request: Request) -> Union[Response, WerkzeugResponse]:
+    async def handle_request(self, request: Request) -> ResponseTypes:
         async with self.request_context(request) as request_context:
             try:
                 return await self.full_dispatch_request(request_context)
@@ -1665,7 +1672,7 @@ class Quart(Scaffold):
 
     async def full_dispatch_request(
         self, request_context: Optional[RequestContext] = None
-    ) -> Union[Response, WerkzeugResponse]:
+    ) -> ResponseTypes:
         """Adds pre and post processing to the request dispatching.
 
         Arguments:
@@ -1674,6 +1681,8 @@ class Quart(Scaffold):
         """
         await self.try_trigger_before_first_request_functions()
         await request_started.send(self)
+
+        result: Optional[Union[ResponseReturnValue, HTTPException]]
         try:
             result = await self.preprocess_request(request_context)
             if result is None:
@@ -1729,7 +1738,7 @@ class Quart(Scaffold):
         result: Union[ResponseReturnValue, HTTPException],
         request_context: Optional[RequestContext] = None,
         from_error_handler: bool = False,
-    ) -> Union[Response, WerkzeugResponse]:
+    ) -> ResponseTypes:
         """Turns the view response return value into a response.
 
         Arguments:
@@ -1749,9 +1758,9 @@ class Quart(Scaffold):
 
     async def process_response(
         self,
-        response: Union[Response, WerkzeugResponse],
+        response: ResponseTypes,
         request_context: Optional[RequestContext] = None,
-    ) -> Union[Response, WerkzeugResponse]:
+    ) -> ResponseTypes:
         """Postprocess the request acting on the response.
 
         Arguments:
@@ -1773,9 +1782,7 @@ class Quart(Scaffold):
             await self.ensure_async(self.session_interface.save_session)(self, session_, response)
         return response
 
-    async def handle_websocket(
-        self, websocket: Websocket
-    ) -> Optional[Union[Response, WerkzeugResponse]]:
+    async def handle_websocket(self, websocket: Websocket) -> Optional[ResponseTypes]:
         async with self.websocket_context(websocket) as websocket_context:
             try:
                 return await self.full_dispatch_websocket(websocket_context)
@@ -1786,7 +1793,7 @@ class Quart(Scaffold):
 
     async def full_dispatch_websocket(
         self, websocket_context: Optional[WebsocketContext] = None
-    ) -> Optional[Union[Response, WerkzeugResponse]]:
+    ) -> Optional[ResponseTypes]:
         """Adds pre and post processing to the websocket dispatching.
 
         Arguments:
@@ -1795,6 +1802,8 @@ class Quart(Scaffold):
         """
         await self.try_trigger_before_first_request_functions()
         await websocket_started.send(self)
+
+        result: Optional[Union[ResponseReturnValue, HTTPException]]
         try:
             result = await self.preprocess_websocket(websocket_context)
             if result is None:
@@ -1847,10 +1856,10 @@ class Quart(Scaffold):
 
     async def finalize_websocket(
         self,
-        result: ResponseReturnValue,
+        result: Union[ResponseReturnValue, HTTPException],
         websocket_context: Optional[WebsocketContext] = None,
         from_error_handler: bool = False,
-    ) -> Optional[Union[Response, WerkzeugResponse]]:
+    ) -> Optional[ResponseTypes]:
         """Turns the view response return value into a response.
 
         Arguments:
@@ -1873,9 +1882,9 @@ class Quart(Scaffold):
 
     async def postprocess_websocket(
         self,
-        response: Optional[Union[Response, WerkzeugResponse]],
+        response: Optional[ResponseTypes],
         websocket_context: Optional[WebsocketContext] = None,
-    ) -> Union[Response, WerkzeugResponse]:
+    ) -> ResponseTypes:
         """Postprocess the websocket acting on the response.
 
         Arguments:
