@@ -186,6 +186,15 @@ async def test_make_response_response(app: Quart) -> None:
     assert response.headers["name"] == "value"
 
 
+async def test_make_response_errors(app: Quart) -> None:
+    with pytest.raises(TypeError):
+        await app.make_response(("Result", {"name": "value"}, 200))
+    with pytest.raises(TypeError):
+        await app.make_response(("Result", {"name": "value"}, 200, "a"))
+    with pytest.raises(TypeError):
+        await app.make_response(("Result",))
+
+
 async def test_websocket(app: Quart) -> None:
     test_client = app.test_client()
     data = b"bob"

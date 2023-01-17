@@ -1602,22 +1602,29 @@ class Quart(Scaffold):
 
         A ResponseValue is either a Response object (or subclass) or a str.
         """
-        status_or_headers: Optional[Union[StatusCode, HeadersValue]] = None
         headers: Optional[HeadersValue] = None
         status: Optional[StatusCode] = None
         if isinstance(result, tuple):
-            value, status_or_headers, headers = result + (None,) * (3 - len(result))
+            if len(result) == 3:
+                value, status, headers = result
+            elif len(result) == 2:
+                value, status_or_headers = result
+
+                if isinstance(status_or_headers, (Headers, dict, list)):
+                    headers = status_or_headers
+                    status = None
+                elif status_or_headers is not None:
+                    status = status_or_headers
+            else:
+                raise TypeError(
+                    """The response value returned must be either (body, status), (body,
+                    headers), or (body, status, headers)"""
+                )
         else:
             value = result
 
         if value is None:
             raise TypeError("The response value returned by the view function cannot be None")
-
-        if isinstance(status_or_headers, (Headers, dict, list)):
-            headers = status_or_headers
-            status = None
-        elif status_or_headers is not None:
-            status = status_or_headers
 
         response: Union[Response, WerkzeugResponse]
         if isinstance(value, HTTPException):
