@@ -2,13 +2,19 @@ from __future__ import annotations
 
 import asyncio
 from typing import Optional
+from unittest.mock import Mock
 
 import pytest
 from hypercorn.typing import ASGIReceiveEvent, ASGISendEvent, HTTPScope, WebsocketScope
 from werkzeug.datastructures import Headers
 
 from quart import Quart
-from quart.asgi import _convert_version, ASGIHTTPConnection, ASGIWebsocketConnection
+from quart.asgi import (
+    _convert_version,
+    _handle_exception,
+    ASGIHTTPConnection,
+    ASGIWebsocketConnection,
+)
 from quart.utils import encode_headers
 
 try:
@@ -255,3 +261,24 @@ def test_http_asgi_scope_from_request() -> None:
     connection = ASGIHTTPConnection(app, scope)  # type: ignore
     request = connection._create_request_from_scope(lambda: None)  # type: ignore
     assert request.scope["test_result"] == "PASSED"  # type: ignore
+
+
+@pytest.mark.parametrize(
+    "propagate_exceptions, testing, raises",
+    [
+        (True, False, False),
+        (True, True, True),
+        (False, True, True),
+        (False, False, True),
+    ],
+)
+async def test__handle_exception(propagate_exceptions: bool, testing: bool, raises: bool) -> None:
+    app = Mock()
+    app.propagate_exceptions = propagate_exceptions
+    app.testing = testing
+
+    if raises:
+        with pytest.raises(ValueError):
+            await _handle_exception(app, ValueError())
+    else:
+        await _handle_exception(app, ValueError())

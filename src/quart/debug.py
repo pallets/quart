@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import inspect
-import sys
 
 from jinja2 import Template
 
@@ -87,8 +86,9 @@ h1>span {
 """
 
 
-async def traceback_response() -> Response:
-    type_, value, tb = sys.exc_info()
+async def traceback_response(error: Exception) -> Response:
+    type_ = type(error)
+    tb = error.__traceback__
     frames = []
     while tb:
         frame = tb.tb_frame
@@ -109,5 +109,5 @@ async def traceback_response() -> Response:
 
     name = type_.__name__
     template = Template(TEMPLATE)
-    html = template.render(frames=reversed(frames), name=name, value=value)
+    html = template.render(frames=reversed(frames), name=name, value=error)
     return Response(html, 500)
