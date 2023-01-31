@@ -1124,10 +1124,10 @@ class Quart(Scaffold):
         """
         await got_request_exception.send(self, exception=error)
 
-        self.log_exception(sys.exc_info())
-
         if self.propagate_exceptions:
             raise error
+
+        self.log_exception(sys.exc_info())
 
         internal_server_error = InternalServerError(original_exception=error)
         handler = self._find_error_handler(internal_server_error)
@@ -1147,10 +1147,10 @@ class Quart(Scaffold):
         """
         await got_websocket_exception.send(self, exception=error)
 
-        self.log_exception(sys.exc_info())
-
         if self.propagate_exceptions:
             raise error
+
+        self.log_exception(sys.exc_info())
 
         internal_server_error = InternalServerError(original_exception=error)
         handler = self._find_error_handler(internal_server_error)
