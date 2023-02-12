@@ -1,3 +1,5 @@
+* Fixed Issue #219. Use only CR in SSE documentation.
+
 0.18.3 2022-10-08
 -----------------
 
