@@ -30,7 +30,7 @@ helper class:
                 message = f"{message}\nid: {self.id}"
             if self.retry is not None:
                 message = f"{message}\nretry: {self.retry}"
-            message = f"{message}\r\n\r\n"
+            message = f"{message}\n\n"
             return message.encode('utf-8')
 
 To use a GET route that returns a streaming generator is
