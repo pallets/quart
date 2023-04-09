@@ -1,3 +1,9 @@
+0.18.4 2023-04-09
+-----------------
+
+* Restrict blinker to < 1.6 for 0.18.x versions to ensure it works
+  with Quart's implementation.
+
 0.18.3 2022-10-08
 -----------------
 
