@@ -113,8 +113,9 @@ async def flash(message: str, category: str = "message") -> None:
     flashes = session.get("_flashes", [])
     flashes.append((category, message))
     session["_flashes"] = flashes
-    await message_flashed.send(
-        current_app._get_current_object(), message=message, category=category  # type: ignore
+    app = current_app._get_current_object()  # type: ignore
+    await message_flashed.send_async(
+        app, _sync_wrapper=app.ensure_async, message=message, category=category
     )
 
 

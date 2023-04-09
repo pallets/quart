@@ -240,7 +240,7 @@ class AppContext:
 
     async def push(self) -> None:
         self._cv_tokens.append(_cv_app.set(self))
-        await appcontext_pushed.send(self.app)
+        await appcontext_pushed.send_async(self.app, _sync_wrapper=self.app.ensure_async)
 
     async def pop(self, exc: Optional[BaseException] = _sentinel) -> None:  # type: ignore
         try:
@@ -255,7 +255,7 @@ class AppContext:
             if ctx is not self:
                 raise AssertionError(f"Popped wrong app context. ({ctx!r} instead of {self!r})")
 
-        await appcontext_popped.send(self.app)
+        await appcontext_popped.send_async(self.app, _sync_wrapper=self.app.ensure_async)
 
     async def __aenter__(self) -> "AppContext":
         await self.push()

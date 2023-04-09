@@ -169,7 +169,7 @@ class ASGIWebsocketConnection:
             event = await receive()
             if event["type"] == "websocket.receive":
                 message = event.get("bytes") or event["text"]
-                await websocket_received.send(message)
+                await websocket_received.send_async(message)
                 await self.queue.put(message)
             elif event["type"] == "websocket.disconnect":
                 return
@@ -261,7 +261,7 @@ class ASGIWebsocketConnection:
             await send({"type": "websocket.send", "bytes": None, "text": data})
         else:
             await send({"type": "websocket.send", "bytes": data, "text": None})
-        await websocket_sent.send(data)
+        await websocket_sent.send_async(data)
 
     async def accept_connection(
         self, send: ASGISendCallable, headers: Headers, subprotocol: Optional[str]

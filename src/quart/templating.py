@@ -116,9 +116,13 @@ async def render_template_string(source: str, **context: Any) -> str:
 
 
 async def _render(template: Template, context: dict, app: "Quart") -> str:
-    await before_render_template.send(app, template=template, context=context)
+    await before_render_template.send_async(
+        app, _sync_wrapper=app.ensure_async, template=template, context=context
+    )
     rendered_template = await template.render_async(context)
-    await template_rendered.send(app, template=template, context=context)
+    await template_rendered.send_async(
+        app, _sync_wrapper=app.ensure_async, template=template, context=context
+    )
     return rendered_template
 
 
@@ -166,12 +170,16 @@ async def stream_template_string(source: str, **context: Any) -> AsyncIterator[s
 
 
 async def _stream(app: "Quart", template: Template, context: Dict[str, Any]) -> AsyncIterator[str]:
-    await before_render_template.send(app, template=template, context=context)
+    await before_render_template.send_async(
+        app, _sync_wrapper=app.ensure_async, template=template, context=context
+    )
 
     async def generate() -> AsyncIterator[str]:
         async for chunk in template.generate_async(context):
             yield chunk
-        await template_rendered.send(app, template=template, context=context)
+        await template_rendered.send_async(
+            app, _sync_wrapper=app.ensure_async, template=template, context=context
+        )
 
     # If a request context is active, keep it while generating.
     if has_request_context():

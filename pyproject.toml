@@ -27,7 +27,7 @@ documentation = "https://quart.palletsprojects.com"
 [tool.poetry.dependencies]
 python = ">=3.7"
 aiofiles = "*"
-blinker = "*"
+blinker = ">=1.6"
 click = ">=8.0.0"
 hypercorn = ">=0.11.2"
 importlib_metadata = { version = "*", python = "<3.10" }

@@ -1122,7 +1122,9 @@ class Quart(Scaffold):
         By default this switches the error response to a 500 internal
         server error.
         """
-        await got_request_exception.send(self, exception=error)
+        await got_request_exception.send_async(
+            self, _sync_wrapper=self.ensure_async, exception=error
+        )
 
         if self.propagate_exceptions:
             raise error
@@ -1145,7 +1147,9 @@ class Quart(Scaffold):
 
         By default this logs the exception and then re-raises it.
         """
-        await got_websocket_exception.send(self, exception=error)
+        await got_websocket_exception.send_async(
+            self, _sync_wrapper=self.ensure_async, exception=error
+        )
 
         if self.propagate_exceptions:
             raise error
@@ -1252,7 +1256,7 @@ class Quart(Scaffold):
             for function in self.teardown_request_funcs[name]:
                 await self.ensure_async(function)(exc)
 
-        await request_tearing_down.send(self, exc=exc)
+        await request_tearing_down.send_async(self, _sync_wrapper=self.ensure_async, exc=exc)
 
     async def do_teardown_websocket(
         self, exc: Optional[BaseException], websocket_context: Optional[WebsocketContext] = None
@@ -1270,13 +1274,13 @@ class Quart(Scaffold):
             for function in self.teardown_websocket_funcs[name]:
                 await self.ensure_async(function)(exc)
 
-        await websocket_tearing_down.send(self, exc=exc)
+        await websocket_tearing_down.send_async(self, _sync_wrapper=self.ensure_async, exc=exc)
 
     async def do_teardown_appcontext(self, exc: Optional[BaseException]) -> None:
         """Teardown the app (context), calling the teardown functions."""
         for function in self.teardown_appcontext_funcs:
             await self.ensure_async(function)(exc)
-        await appcontext_tearing_down.send(self, exc=exc)
+        await appcontext_tearing_down.send_async(self, _sync_wrapper=self.ensure_async, exc=exc)
 
     def app_context(self) -> AppContext:
         """Create and return an app context.
@@ -1565,7 +1569,9 @@ class Quart(Scaffold):
         self.background_tasks.add(task)
 
     async def handle_background_exception(self, error: Exception) -> None:
-        await got_background_exception.send(self, exception=error)
+        await got_background_exception.send_async(
+            self, _sync_wrapper=self.ensure_async, exception=error
+        )
 
         self.log_exception(sys.exc_info())
 
@@ -1680,7 +1686,7 @@ class Quart(Scaffold):
                 omits this argument.
         """
         await self.try_trigger_before_first_request_functions()
-        await request_started.send(self)
+        await request_started.send_async(self, _sync_wrapper=self.ensure_async)
 
         result: Optional[Union[ResponseReturnValue, HTTPException]]
         try:
@@ -1749,7 +1755,9 @@ class Quart(Scaffold):
         response = await self.make_response(result)
         try:
             response = await self.process_response(response, request_context)
-            await request_finished.send(self, response=response)
+            await request_finished.send_async(
+                self, _sync_wrapper=self.ensure_async, response=response
+            )
         except Exception:
             if not from_error_handler:
                 raise
@@ -1801,7 +1809,7 @@ class Quart(Scaffold):
                 the Flask convention.
         """
         await self.try_trigger_before_first_request_functions()
-        await websocket_started.send(self)
+        await websocket_started.send_async(self, _sync_wrapper=self.ensure_async)
 
         result: Optional[Union[ResponseReturnValue, HTTPException]]
         try:
@@ -1873,7 +1881,9 @@ class Quart(Scaffold):
             response = None
         try:
             response = await self.postprocess_websocket(response, websocket_context)
-            await websocket_finished.send(self, response=response)
+            await websocket_finished.send_async(
+                self, _sync_wrapper=self.ensure_async, response=response
+            )
         except Exception:
             if not from_error_handler:
                 raise
@@ -1953,7 +1963,9 @@ class Quart(Scaffold):
                 for gen in self.while_serving_gens:
                     await gen.__anext__()
         except Exception as error:
-            await got_serving_exception.send(self, exception=error)
+            await got_serving_exception.send_async(
+                self, _sync_wrapper=self.ensure_async, exception=error
+            )
             self.log_exception(sys.exc_info())
             raise
 
@@ -1970,7 +1982,9 @@ class Quart(Scaffold):
                     else:
                         raise RuntimeError("While serving generator didn't terminate")
         except Exception as error:
-            await got_serving_exception.send(self, exception=error)
+            await got_serving_exception.send_async(
+                self, _sync_wrapper=self.ensure_async, exception=error
+            )
             self.log_exception(sys.exc_info())
             raise
 
