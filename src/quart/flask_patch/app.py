@@ -34,7 +34,6 @@ Quart.full_dispatch_request = new_full_dispatch_request  # type: ignore
 def new_ensure_async(  # type: ignore
     self, func: Callable[..., Any]
 ) -> Callable[..., Awaitable[Any]]:
-
     if is_coroutine_function(func):
         return func
     else:

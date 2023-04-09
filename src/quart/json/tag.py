@@ -142,7 +142,6 @@ class TagDateTime(JSONTag):
 
 
 class TaggedJSONSerializer:
-
     default_tags = [
         TagDict,
         PassDict,
