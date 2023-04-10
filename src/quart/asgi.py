@@ -140,7 +140,8 @@ class ASGIHTTPConnection:
         )
 
     async def _send_push_promise(self, send: ASGISendCallable, path: str, headers: Headers) -> None:
-        if "http.response.push" in self.scope.get("extensions", {}):
+        extensions = self.scope.get("extensions", {}) or {}
+        if "http.response.push" in extensions:
             await send(
                 {"type": "http.response.push", "path": path, "headers": encode_headers(headers)}
             )
@@ -205,7 +206,8 @@ class ASGIWebsocketConnection:
             response = await _handle_exception(self.app, error)
 
         if response is not None and not self._accepted:
-            if "websocket.http.response" in self.scope.get("extensions", {}):
+            extensions = self.scope.get("extensions", {}) or {}
+            if "websocket.http.response" in extensions:
                 headers = [
                     (key.lower().encode(), value.encode())
                     for key, value in response.headers.items()
