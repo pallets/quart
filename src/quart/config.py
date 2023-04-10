@@ -246,7 +246,11 @@ class Config(dict):
                 self[key] = getattr(instance, key)
 
     def from_file(
-        self, filename: str, load: Callable[[IO[Any]], Mapping], silent: bool = False
+        self,
+        filename: str,
+        load: Callable[[IO[Any]], Mapping],
+        silent: bool = False,
+        text: bool = True,
     ) -> bool:
         """Load the configuration from a data file.
 
@@ -266,7 +270,7 @@ class Config(dict):
         """
         file_path = self.root_path / filename
         try:
-            with open(file_path) as file_:
+            with open(file_path, "r" if text else "rb") as file_:
                 data = load(file_)
         except (FileNotFoundError, IsADirectoryError):
             if not silent:
