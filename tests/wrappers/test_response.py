@@ -129,6 +129,26 @@ async def test_response_make_conditional_out_of_bound(http_scope: HTTPScope) -> 
     assert response.status_code == 206
 
 
+async def test_response_make_conditional_not_modified(http_scope: HTTPScope) -> None:
+    response = Response(b"abcdef")
+    await response.add_etag()
+    request = Request(
+        "GET",
+        "https",
+        "/",
+        b"",
+        Headers([("If-None-Match", response.get_etag()[0])]),
+        "",
+        "1.1",
+        http_scope,
+        send_push_promise=no_op_push,
+    )
+    await response.make_conditional(request)
+    assert response.status_code == 304
+    assert b"" == (await response.get_data())  # type: ignore
+    assert "content-length" not in response.headers
+
+
 @pytest.mark.parametrize(
     "range_",
     ["second=0-3", "bytes=0-2,3-5", "bytes=8-16"],

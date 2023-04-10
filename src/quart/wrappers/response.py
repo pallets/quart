@@ -452,6 +452,8 @@ class Response(SansIOResponse):
                     self.status_code = 412
                 else:
                     self.status_code = 304
+                    self.set_data(b"")
+                    del self.content_length
 
         return self
 
