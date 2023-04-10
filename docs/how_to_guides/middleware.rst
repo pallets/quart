@@ -19,7 +19,7 @@ the presence of a header,
                 return await self.app(scope, receive, send)
 
             for header, value in scope['headers']:
-                if header == 'X-Secret' and value == 'very-secret':
+                if header.lower() == b'x-secret' and value == b'very-secret':
                     return await self.app(scope, receive, send)
 
             return await self.error_response(receive, send)
