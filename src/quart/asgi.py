@@ -112,30 +112,47 @@ class ASGIHTTPConnection:
                 },
             )
         )
+        prev_body = b""
 
         if isinstance(response, WerkzeugResponse):
             for data in response.response:
                 body = data.encode(response.charset) if isinstance(data, str) else data
+                if body == b"":
+                    continue
+
+                if not prev_body:
+                    prev_body = body
+                    continue
+
                 await send(
                     cast(
                         HTTPResponseBodyEvent,
-                        {"type": "http.response.body", "body": body, "more_body": True},
+                        {"type": "http.response.body", "body": prev_body, "more_body": True},
                     )
                 )
+                prev_body = body
         else:
             async with response.response as response_body:
                 async for data in response_body:
                     body = data.encode(response.charset) if isinstance(data, str) else data
+                    if body == b"":
+                        continue
+
+                    if not prev_body:
+                        prev_body = body
+                        continue
+
                     await send(
                         cast(
                             HTTPResponseBodyEvent,
-                            {"type": "http.response.body", "body": body, "more_body": True},
+                            {"type": "http.response.body", "body": prev_body, "more_body": True},
                         )
                     )
+                    prev_body = body
         await send(
             cast(
                 HTTPResponseBodyEvent,
-                {"type": "http.response.body", "body": b"", "more_body": False},
+                {"type": "http.response.body", "body": prev_body, "more_body": False},
             )
         )
 
