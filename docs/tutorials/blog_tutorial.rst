@@ -165,7 +165,7 @@ and should be added to *src/blog/templates/posts.html*:
       {% endfor %}
     </main>
 
-Now we need a route to to query the database, retrieve the messages,
+Now we need a route to query the database, retrieve the messages,
 and render the template. As done with the following code which should
 be added to *src/blog/__init__.py*:
 
