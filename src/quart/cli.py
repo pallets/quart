@@ -714,7 +714,7 @@ def shell_command() -> None:
 @click.option(
     "--sort",
     "-s",
-    type=click.Choice(("endpoint", "methods", "rule", "match")),
+    type=click.Choice(("endpoint", "methods", "domain", "rule", "match")),
     default="endpoint",
     help=(
         'Method to sort routes by. "match" is the order that Quart will match '
@@ -731,29 +731,35 @@ def routes_command(sort: str, all_methods: bool) -> None:
         click.echo("No routes were registered.")
         return
 
-    ignored_methods = set(() if all_methods else ("HEAD", "OPTIONS"))
+    ignored_methods = set() if all_methods else {"HEAD", "OPTIONS"}
+    host_matching = current_app.url_map.host_matching
+    has_domain = any(rule.host if host_matching else rule.subdomain for rule in rules)
 
-    if sort in ("endpoint", "rule"):
+    if sort in ("endpoint", "rule", "domain"):
         rules = sorted(rules, key=attrgetter(sort))
     elif sort == "methods":
         rules = sorted(rules, key=lambda rule: sorted(rule.methods))
 
-    rule_methods = [", ".join(sorted(rule.methods - ignored_methods)) for rule in rules]
+    headers = ["Endpoint", "Methods"]
+    if has_domain:
+        headers.append("Host" if host_matching else "Subdomain")
+    headers.append("Rule")
 
-    headers = ("Endpoint", "Methods", "Rule")
-    widths = (
-        max(len(rule.endpoint) for rule in rules),
-        max(len(methods) for methods in rule_methods),
-        max(len(rule.rule) for rule in rules),
-    )
-    widths = [max(len(h), w) for h, w in zip(headers, widths)]
-    row = "{{0:<{0}}}  {{1:<{1}}}  {{2:<{2}}}".format(*widths)
+    rows = []
+    for rule in rules:
+        row = [rule.endpoint, ", ".join(sorted(rule.methods - ignored_methods))]
+        if has_domain:
+            row.append((rule.host if host_matching else rule.subdomain) or "")
+        row.append(rule.rule)
+        rows.append(row)
 
-    click.echo(row.format(*headers).strip())
-    click.echo(row.format(*("-" * width for width in widths)))
+    rows.insert(0, headers)
+    widths = [max(len(row[i]) for row in rows) for i in range(len(headers))]
+    rows.insert(1, ["-" * w for w in widths])
+    template = "  ".join(f"{{{i}:<{w}}}" for i, w in enumerate(widths))
 
-    for rule, methods in zip(rules, rule_methods):
-        click.echo(row.format(rule.endpoint, methods, rule.rule).rstrip())
+    for row in rows:
+        click.echo(template.format(*row))
 
 
 cli = QuartGroup(
