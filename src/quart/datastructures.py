@@ -22,7 +22,7 @@ class FileStorage(WerkzeugFileStorage):
     ) -> None:
         super().__init__(stream, filename, name, content_type, content_length, headers)
 
-    async def save(self, destination: PathLike, buffer_size: int = 16384) -> None:  # type: ignore
+    async def save(self, destination: PathLike, buffer_size: int = 16384) -> None:
         """Save the file to the destination.
 
         Arguments:
