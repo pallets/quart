@@ -31,7 +31,7 @@ If you are,
  * looking for a cheatsheet then look :ref:`here<cheatsheet>`.
 
 Quart is an asyncio reimplementation of the popular `Flask
-<http://flask.pocoo.org/>`_ microframework API. This means that if you
+<https://flask.palletsprojects.com>`_ microframework API. This means that if you
 understand Flask you understand Quart. See :ref:`flask_evolution` to
 learn more about how Quart builds on Flask.
 
@@ -52,10 +52,10 @@ ask for help try `on discord <https://discord.gg/pallets>`_.
 
     If you can't find documentation for what you are looking for here,
     remember that Quart is an implementation of the Flask API and
-    hence the `Flask documentation <http://flask.pocoo.org/docs/>`_ is
+    hence the `Flask documentation <https://flask.palletsprojects.com>`_ is
     a great source of help. Quart is also built on the `Jinja
-    <http://jinja.pocoo.org/docs>`_ template engine and the `Wekzeug
-    <https://werkzeug.palletsprojects.com/>`_ toolkit.
+    <https://flask.palletsprojects.com>`_ template engine and the `Werkzeug
+    <https://werkzeug.palletsprojects.com>`_ toolkit.
 
     The Flask documentation is so good that you may be better placed
     consulting it first then returning here to check how Quart

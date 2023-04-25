@@ -9,7 +9,7 @@ HTML directly to the user.
 
 This tutorial is meant to serve as an introduction to building server
 rendered websites in Quart. If you want to skip to the end the code is
-on `Github <https://github.com/pgjones/quart/example/blog>`_.
+on `Github <https://github.com/pallets/quart/tree/main/examples/blog>`_.
 
 1: Creating the project
 -----------------------

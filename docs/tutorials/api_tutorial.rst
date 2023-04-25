@@ -9,7 +9,7 @@ response data.
 
 This tutorial is meant to serve as an introduction to building APIs in
 Quart. If you want to skip to the end the code is on `Github
-<https://github.com/pgjones/quart/example/api>`_.
+<https://github.com/pallets/quart/tree/main/examples/api>`_.
 
 1: Creating the project
 -----------------------
