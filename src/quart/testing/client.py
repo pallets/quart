@@ -424,7 +424,7 @@ class QuartClient:
         request_data, body_headers = make_test_body_with_headers(
             data=data, form=form, files=files, json=json, app=self.app
         )
-        headers.update(**body_headers)
+        headers.update(**body_headers)  # type: ignore[arg-type]
 
         if self.cookie_jar is not None:
             for cookie in self.cookie_jar:
