@@ -290,7 +290,7 @@ class Config(dict):
 
             config = {'FOO': 'bar'}
             app.config.from_mapping(config)
-            app.config.form_mapping(FOO='bar')
+            app.config.from_mapping(FOO='bar')
 
         Arguments:
             mapping: Optionally a mapping object.
