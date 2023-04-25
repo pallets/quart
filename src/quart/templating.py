@@ -25,18 +25,18 @@ if TYPE_CHECKING:
 
 
 class Environment(BaseEnvironment):
-    """Quart specific Jinja2 Environment.
+    """Quart specific Jinja Environment.
 
-    This changes the default Jinja2 loader to use the
+    This changes the default Jinja loader to use the
     DispatchingJinjaLoader, and enables async Jinja by default.
     """
 
     def __init__(self, app: "Quart", **options: Any) -> None:
-        """Create a Quart specific Jinja2 Environment.
+        """Create a Quart specific Jinja Environment.
 
         Arguments:
             app: The Quart app to bind to.
-            options: The standard Jinja2 Environment options.
+            options: The standard Jinja Environment options.
         """
         if "loader" not in options:
             options["loader"] = app.create_global_jinja_loader()
@@ -45,7 +45,7 @@ class Environment(BaseEnvironment):
 
 
 class DispatchingJinjaLoader(BaseLoader):
-    """Quart specific Jinja2 Loader.
+    """Quart specific Jinja Loader.
 
     This changes the default sourcing to consider the app
     and blueprints.

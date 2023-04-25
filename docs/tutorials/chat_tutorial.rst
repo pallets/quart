@@ -9,7 +9,7 @@ server.
 
 This tutorial is meant to serve as an introduction to WebSockets in
 Quart. If you want to skip to the end the code is on `Github
-<https://github.com/pgjones/quart/example/chat>`_.
+<https://github.com/pallets/quart/tree/main/examples/chat>`_.
 
 1: Creating the project
 -----------------------

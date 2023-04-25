@@ -9,7 +9,7 @@ serve a video directly.
 This tutorial is meant to serve as an introduction to serving large
 files with conditional responses in Quart. If you want to skip to the
 end the code is on `Github
-<https://github.com/pgjones/quart/example/video>`_.
+<https://github.com/pallets/quart/tree/main/examples/video>`_.
 
 1: Creating the project
 -----------------------
@@ -126,7 +126,7 @@ method. The former is shown below, which should be added to
 
     @app.route("/video.mp4")
     async def auto_video():
-        return await send_file("video.mp4", conditional=True)
+        return await send_file(app.static_folder / "video.mp4", conditional=True)
 
 6: Testing
 ----------

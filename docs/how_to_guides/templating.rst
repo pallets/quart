@@ -3,10 +3,10 @@
 Templates
 =========
 
-Quart uses the `Jinja2 <http://jinja.pocoo.org>`_ templating engine,
+Quart uses the `Jinja <https://jinja.palletsprojects.com>`_ templating engine,
 which is well `documented
-<http://jinja.pocoo.org/docs/templates>`_. Quart adds a standard
-context, and some standard filters to the Jinja2 defaults. Quart also
+<https://jinja.palletsprojects.com/templates/>`_. Quart adds a standard
+context, and some standard filters to the Jinja defaults. Quart also
 adds the ability to define custom filters, tests and contexts at an
 app and blueprint level.
 

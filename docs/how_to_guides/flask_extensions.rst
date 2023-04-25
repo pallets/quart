@@ -49,23 +49,20 @@ work.
 Supported extensions
 --------------------
 
-A list of officially supported flask extensions exist `here
-<http://flask.pocoo.org/extensions/>`_ of those a few have been tested
-against Quart (the extensions tested are still supported and don't
-require external services). The following flask extensions are tested
+The following flask extensions are tested
 and known to work with quart,
 
-- `Flask-BCrypt <http://pythonhosted.org/Flask-Bcrypt/>`_
-- `Flask-Caching <https://flask-caching.readthedocs.io/en/latest/>`_
+- `Flask-BCrypt <https://flask-bcrypt.readthedocs.io>`_
+- `Flask-Caching <https://flask-caching.readthedocs.io>`_
 - `Flask-KVSession <https://github.com/mbr/flask-kvsession>`_
-- `Flask-Limiter <http://github.com/alisaifee/flask-limiter/>`_
-- `Flask-Login <http://github.com/maxcountryman/flask-login/>`_ See
+- `Flask-Limiter <https://github.com/alisaifee/flask-limiter/>`_
+- `Flask-Login <https://github.com/maxcountryman/flask-login/>`_ See
   also `Quart-Login <https://github.com/0000matteo0000/quart-login>`_
-- `Flask-Mail <https://github.com/mattupstate/flask-mail>`_
-- `Flask-Mako <http://github.com/benselme/flask-mako/>`_
+- `Flask-Mail <https://pythonhosted.org/Flask-Mail/>`_
+- `Flask-Mako <https://pythonhosted.org/Flask-Mako/>`_
 - `Flask-Seasurf <https://github.com/maxcountryman/flask-seasurf/>`_
-- `Flask-SQLAlchemy <https://github.com/mitsuhiko/flask-sqlalchemy/>`_
-- `Flask-WTF <https://github.com/lepture/flask-wtf>`_
+- `Flask-SQLAlchemy <https://flask-sqlalchemy.palletsprojects.com>`_
+- `Flask-WTF <https://flask-wtf.readthedocs.io>`_
 
 Broken extensions
 -----------------
@@ -76,8 +73,15 @@ with quart,
 - `Flask-CORS <https://github.com/corydolphin/flask-cors>`_, as it
   uses ``app.make_response`` which must be awaited. Try `Quart-CORS
   <https://github.com/pgjones/quart-cors>`_ instead.
-- `Flask-Restful <https://github.com/flask-restful/flask-restful/>`_
+- `Flask-Restful <https://flask-restful.readthedocs.io>`_
   as it subclasses the Quart (app) class with synchronous methods
   overriding asynchronous methods. Try `Quart-OpenApi
   <https://github.com/factset/quart-openapi/>`_ or `Quart-Schema
   <https://github.com/pgjones/quart-schema>`_ instead.
+
+
+Reference
+---------
+
+More information about Flask extensions can be found
+`here <https://flask.palletsprojects.com/extensions>`_.
