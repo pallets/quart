@@ -33,6 +33,10 @@ class FlaskRequestProxy(LocalProxy):
         return sync_with_context(self._get_current_object().files)
 
     @property
+    def values(self) -> MultiDict:
+        return sync_with_context(self._get_current_object().values)
+
+    @property
     def json(self) -> Any:
         return sync_with_context(self._get_current_object().json)
 

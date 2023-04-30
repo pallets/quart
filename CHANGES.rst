@@ -1,3 +1,4 @@
+* Fixed Issue #236. Add cli.click and globals request.values.
 * Fixed Issue #219. Use only CR in SSE documentation.
 
 0.18.4 2023-04-09
