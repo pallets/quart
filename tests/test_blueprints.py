@@ -73,6 +73,22 @@ async def test_blueprint_url_prefix() -> None:
         assert request.blueprint == "blueprint"
 
 
+async def test_empty_path_with_url_prefix() -> None:
+    app = Quart(__name__)
+    prefix = Blueprint("prefix", __name__, url_prefix="/prefix")
+
+    @prefix.route("")
+    async def empty_path_route() -> ResponseReturnValue:
+        return "OK"
+
+    app.register_blueprint(prefix)
+
+    test_client = app.test_client()
+    response = await test_client.get("/prefix")
+    assert response.status_code == 200
+    assert await response.get_data() == b"OK"
+
+
 async def test_blueprint_template_filter() -> None:
     app = Quart(__name__)
     blueprint = Blueprint("blueprint", __name__)
