@@ -1,3 +1,4 @@
+* Fixed trailing slash issue in URL concatenation for empty 'path'
 * Fixed Issue #219. Use only CR in SSE documentation.
 
 0.18.4 2023-04-09

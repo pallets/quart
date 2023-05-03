@@ -767,7 +767,10 @@ class BlueprintSetupState:
         merge_slashes: Optional[bool] = None,
     ) -> None:
         if self.url_prefix is not None:
-            path = f"{self.url_prefix.rstrip('/')}/{path.lstrip('/')}"
+            if path:
+                path = f"{self.url_prefix.rstrip('/')}/{path.lstrip('/')}"
+            else:
+                path = self.url_prefix.rstrip("/")
         if subdomain is None:
             subdomain = self.subdomain
         endpoint = f"{self.name_prefix}.{self.name}.{endpoint}".lstrip(".")
