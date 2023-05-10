@@ -38,6 +38,8 @@ here,
   support.
 - `Webargs-Quart <https://github.com/esfoobar/webargs-quart>`_ Webargs
   parsing for Quart.
+- `Quart-WTF <https://github.com/Quart-Addons/quart-wtf`_ Simple integration of Quart
+  and WTForms. Including CSRF and file uploading.
 - `Quart-Schema <https://github.com/pgjones/quart-schema>`_ Schema
   validation and auto-generated API documentation.
 - `Quart-session <https://github.com/sanderfoobar/quart-session>`_ server
