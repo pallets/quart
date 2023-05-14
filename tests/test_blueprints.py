@@ -86,7 +86,7 @@ async def test_empty_path_with_url_prefix() -> None:
     test_client = app.test_client()
     response = await test_client.get("/prefix")
     assert response.status_code == 200
-    assert await response.get_data() == b"OK"
+    assert await response.get_data() == b"OK"  # type: ignore
 
 
 async def test_blueprint_template_filter() -> None:
