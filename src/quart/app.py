@@ -1532,7 +1532,7 @@ class Quart(Scaffold):
             subdomain,
         )
         request_body, body_headers = make_test_body_with_headers(data=data, form=form, json=json)
-        headers.update(**body_headers)  # type: ignore[arg-type]
+        headers.update(**body_headers)
         scope = make_test_scope(
             "http",
             path,
@@ -1660,7 +1660,7 @@ class Quart(Scaffold):
             response.status_code = int(status)
 
         if headers is not None:
-            response.headers.update(headers)
+            response.headers.update(headers)  # type: ignore[arg-type]
 
         return response
 
