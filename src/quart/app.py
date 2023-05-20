@@ -305,7 +305,7 @@ class Quart(Scaffold):
         self.before_serving_funcs: List[Callable[[], Awaitable[None]]] = []
         self.blueprints: Dict[str, Blueprint] = OrderedDict()
         self.extensions: Dict[str, Any] = {}
-        self.json: JSONProvider = self.json_provider_class(self)
+        self.json: JSONProvider = self.json_provider_class(self)  # type: ignore[arg-type]
         self.shell_context_processors: List[Callable[[], Dict[str, Any]]] = []
         self.teardown_appcontext_funcs: List[TeardownCallable] = []
         self.url_build_error_handlers: List[Callable[[Exception, str, dict], str]] = []
