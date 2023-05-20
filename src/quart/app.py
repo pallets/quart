@@ -230,13 +230,13 @@ class Quart(Scaffold):
     json_provider_class: Type[JSONProvider] = DefaultJSONProvider
     lock_class = asyncio.Lock
     permanent_session_lifetime = ConfigAttribute(
-        "PERMANENT_SESSION_LIFETIME", converter=_convert_timedelta
+        "PERMANENT_SESSION_LIFETIME", get_converter=_convert_timedelta
     )
     request_class = Request
     response_class = Response
     secret_key = ConfigAttribute("SECRET_KEY")
     send_file_max_age_default = ConfigAttribute(
-        "SEND_FILE_MAX_AGE_DEFAULT", converter=_convert_timedelta
+        "SEND_FILE_MAX_AGE_DEFAULT", get_converter=_convert_timedelta
     )
     session_cookie_name = ConfigAttribute("SESSION_COOKIE_NAME")
     session_interface = SecureCookieSessionInterface()
@@ -414,7 +414,7 @@ class Quart(Scaffold):
     def make_config(self, instance_relative: bool = False) -> Config:
         """Create and return the configuration with appropriate defaults."""
         config = self.config_class(
-            self.instance_path if instance_relative else self.root_path, DEFAULT_CONFIG
+            self.instance_path if instance_relative else self.root_path, DEFAULT_CONFIG  # type: ignore[arg-type]  # noqa: E501
         )
         config["ENV"] = get_env()
         config["DEBUG"] = get_debug_flag()
