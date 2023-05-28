@@ -1,19 +1,9 @@
 from __future__ import annotations
 
-from typing import (
-    Any,
-    AsyncIterator,
-    Callable,
-    Dict,
-    Generator,
-    List,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import Any, AsyncIterator, Dict, List, TYPE_CHECKING, Union
 
-from jinja2 import BaseLoader, Environment as BaseEnvironment, Template, TemplateNotFound
+from flask.templating import DispatchingJinjaLoader as DispatchingJinjaLoader  # noqa: F401
+from jinja2 import Environment as BaseEnvironment, Template
 
 from .ctx import has_app_context, has_request_context
 from .globals import app_ctx, current_app, request_ctx
@@ -42,52 +32,6 @@ class Environment(BaseEnvironment):
             options["loader"] = app.create_global_jinja_loader()
         options["enable_async"] = True
         super().__init__(**options)
-
-
-class DispatchingJinjaLoader(BaseLoader):
-    """Quart specific Jinja Loader.
-
-    This changes the default sourcing to consider the app
-    and blueprints.
-    """
-
-    def __init__(self, app: "Quart") -> None:
-        self.app = app
-
-    def get_source(
-        self, environment: BaseEnvironment, template: str
-    ) -> Tuple[str, Optional[str], Optional[Callable[[], bool]]]:
-        """Returns the template source from the environment.
-
-        This considers the loaders on the :attr:`app` and blueprints.
-        """
-        for loader in self._loaders():
-            try:
-                return loader.get_source(environment, template)
-            except TemplateNotFound:
-                continue
-        raise TemplateNotFound(template)
-
-    def _loaders(self) -> Generator[BaseLoader, None, None]:
-        loader = self.app.jinja_loader
-        if loader is not None:
-            yield loader
-
-        for blueprint in self.app.iter_blueprints():
-            loader = blueprint.jinja_loader
-            if loader is not None:
-                yield loader
-
-    def list_templates(self) -> List[str]:
-        """Returns a list of all available templates in environment.
-
-        This considers the loaders on the :attr:`app` and blueprints.
-        """
-        result = set()
-        for loader in self._loaders():
-            for template in loader.list_templates():
-                result.add(str(template))
-        return list(result)
 
 
 async def render_template(template_name_or_list: Union[str, List[str]], **context: Any) -> str:

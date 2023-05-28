@@ -6,6 +6,7 @@ from functools import wraps
 from types import TracebackType
 from typing import Any, Callable, cast, Iterator, List, Optional, Tuple, TYPE_CHECKING  # noqa: F401
 
+from flask.ctx import _AppCtxGlobals as _AppCtxGlobals  # noqa: F401
 from werkzeug.exceptions import HTTPException
 
 from .globals import _cv_app, _cv_request, _cv_websocket
@@ -447,49 +448,3 @@ def has_websocket_context() -> bool:
     See also :func:`has_app_context`.
     """
     return _cv_websocket.get(None) is not None
-
-
-class _AppCtxGlobals:
-    """The g class, a plain object with some mapping methods."""
-
-    def get(self, name: str, default: Optional[Any] = None) -> Any:
-        """Get a named attribute of this instance, or return the default."""
-        return self.__dict__.get(name, default)
-
-    def pop(self, name: str, default: Any = _sentinel) -> Any:
-        """Pop, get and remove the named attribute of this instance."""
-        if default is _sentinel:
-            return self.__dict__.pop(name)
-        else:
-            return self.__dict__.pop(name, default)
-
-    def setdefault(self, name: str, default: Any = None) -> Any:
-        """Set an attribute with a default value."""
-        return self.__dict__.setdefault(name, default)
-
-    def __contains__(self, item: Any) -> bool:
-        return item in self.__dict__
-
-    def __iter__(self) -> Iterator:
-        return iter(self.__dict__)
-
-    def __repr__(self) -> str:
-        ctx = _cv_app.get(None)
-        if ctx is not None:
-            return f"<quart.g of '{ctx.app.name}'>"
-        return object.__repr__(self)
-
-    def __getattr__(self, name: str) -> Any:
-        try:
-            return self.__dict__[name]
-        except KeyError:
-            raise AttributeError(name) from None
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        self.__dict__[name] = value
-
-    def __delattr__(self, name: str) -> None:
-        try:
-            del self.__dict__[name]
-        except KeyError:
-            raise AttributeError(name) from None
