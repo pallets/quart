@@ -482,7 +482,7 @@ class Quart(Scaffold):
 
     def create_global_jinja_loader(self) -> DispatchingJinjaLoader:
         """Create and return a global (not blueprint specific) Jinja loader."""
-        return DispatchingJinjaLoader(self)
+        return DispatchingJinjaLoader(self)  # type: ignore
 
     def select_jinja_autoescape(self, filename: str) -> bool:
         """Returns True if the filename indicates that it should be escaped."""

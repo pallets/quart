@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Callable, cast, Iterable, List, NoReturn, Optional, Tuple, Union
 from zlib import adler32
 
+from flask.helpers import get_root_path as get_root_path  # noqa: F401
 from werkzeug.exceptions import abort as werkzeug_abort, NotFound
 from werkzeug.utils import redirect as werkzeug_redirect, safe_join
 from werkzeug.wrappers import Response as WerkzeugResponse
@@ -148,20 +149,6 @@ def get_flashed_messages(
     if not with_categories:
         flashes = [flash[1] for flash in flashes]
     return flashes
-
-
-def get_root_path(import_name: str) -> str:
-    """Find the root path of the *import_name*"""
-    module = sys.modules.get(import_name)
-    if module is not None and hasattr(module, "__file__"):
-        file_path = module.__file__
-    else:
-        loader = pkgutil.get_loader(import_name)
-        if loader is None or import_name == "__main__":
-            return str(Path.cwd())
-        else:
-            file_path = loader.get_filename(import_name)  # type: ignore
-    return str(Path(file_path).resolve().parent)
 
 
 def get_template_attribute(template_name: str, attribute: str) -> Any:

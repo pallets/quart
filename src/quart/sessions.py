@@ -1,108 +1,22 @@
 from __future__ import annotations
 
 import hashlib
-from collections.abc import MutableMapping
 from datetime import datetime
-from functools import wraps
-from typing import Any, Callable, Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
+from flask.sessions import (  # noqa: F401
+    NullSession as NullSession,
+    SecureCookieSession as SecureCookieSession,
+    session_json_serializer as session_json_serializer,
+    SessionMixin as SessionMixin,
+)
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 from werkzeug.wrappers import Response as WerkzeugResponse
 
-from .json.tag import TaggedJSONSerializer
 from .wrappers import BaseRequestWebsocket, Response
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa
-
-
-class SessionMixin(MutableMapping):
-    """Use to extend a dict with Session attributes.
-
-    The attributes add standard and expected Session modification flags.
-
-    Attributes:
-        accessed: Indicates if the Session has been accessed during
-            the request, thereby allowing the Vary: Cookie header.
-        modified: Indicates if the Session has been modified during
-            the request handling.
-        new: Indicates if the Session is new.
-    """
-
-    accessed = True
-    modified = True
-    new = False
-
-    @property
-    def permanent(self) -> bool:
-        return self.get("_permanent", False)
-
-    @permanent.setter
-    def permanent(self, value: bool) -> None:
-        self["_permanent"] = value
-
-
-def _wrap_modified(method: Callable) -> Callable:
-    @wraps(method)
-    def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
-        self.accessed = True
-        self.modified = True
-        return method(self, *args, **kwargs)
-
-    return wrapper
-
-
-def _wrap_accessed(method: Callable) -> Callable:
-    @wraps(method)
-    def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
-        self.accessed = True
-        return method(self, *args, **kwargs)
-
-    return wrapper
-
-
-class SecureCookieSession(dict, SessionMixin):
-    """A session implementation using cookies.
-
-    Note that the intention is for this session to use cookies, this
-    class does not implement anything bar modification and accessed
-    flags.
-    """
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.accessed = False
-        self.modified = False
-
-    __delitem__ = _wrap_modified(dict.__delitem__)
-    __getitem__ = _wrap_accessed(dict.__getitem__)
-    __setitem__ = _wrap_modified(dict.__setitem__)
-    clear = _wrap_modified(dict.clear)
-    get = _wrap_accessed(dict.get)
-    pop = _wrap_modified(dict.pop)
-    popitem = _wrap_modified(dict.popitem)
-    setdefault = _wrap_modified(dict.setdefault)
-    update = _wrap_modified(dict.update)
-
-
-def _wrap_no_modification(method: Callable) -> Callable:
-    @wraps(method)
-    def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
-        raise RuntimeError("Cannot create session, ensure there is a app secret key.")
-
-    return wrapper
-
-
-class NullSession(SecureCookieSession):
-    """A session implementation for sessions without storage."""
-
-    __delitem__ = _wrap_no_modification(dict.__delitem__)
-    __setitem__ = _wrap_no_modification(dict.__setitem__)
-    clear = _wrap_no_modification(dict.clear)
-    pop = _wrap_no_modification(dict.pop)
-    popitem = _wrap_no_modification(dict.popitem)
-    setdefault = _wrap_no_modification(dict.setdefault)
-    update = _wrap_no_modification(dict.update)
 
 
 class SessionInterface:
@@ -135,12 +49,8 @@ class SessionInterface:
 
     def get_cookie_domain(self, app: "Quart") -> Optional[str]:
         """Helper method to return the Cookie Domain for the App."""
-        if app.config["SESSION_COOKIE_DOMAIN"] is not None:
-            return app.config["SESSION_COOKIE_DOMAIN"]
-        elif app.config["SERVER_NAME"] is not None:
-            return "." + app.config["SERVER_NAME"].rsplit(":", 1)[0]
-        else:
-            return None
+        rv = app.config["SESSION_COOKIE_DOMAIN"]
+        return rv if rv else None
 
     def get_cookie_path(self, app: "Quart") -> str:
         """Helper method to return the Cookie path for the App."""
@@ -218,7 +128,7 @@ class SecureCookieSessionInterface(SessionInterface):
     digest_method = staticmethod(hashlib.sha1)
     key_derivation = "hmac"
     salt = "cookie-session"
-    serializer = TaggedJSONSerializer()
+    serializer = session_json_serializer
     session_class = SecureCookieSession
 
     def get_signing_serializer(self, app: "Quart") -> Optional[URLSafeTimedSerializer]:
@@ -251,7 +161,7 @@ class SecureCookieSessionInterface(SessionInterface):
             return self.session_class()
         try:
             data = signer.loads(cookie, max_age=app.permanent_session_lifetime.total_seconds())
-            return self.session_class(**data)
+            return self.session_class(data)
         except BadSignature:
             return self.session_class()
 
@@ -273,25 +183,43 @@ class SecureCookieSessionInterface(SessionInterface):
         name = self.get_cookie_name(app)
         domain = self.get_cookie_domain(app)
         path = self.get_cookie_path(app)
-        if not session:
-            if session.modified:
-                response.delete_cookie(name, domain=domain, path=path)
-            return
+        secure = self.get_cookie_secure(app)
+        samesite = self.get_cookie_samesite(app)
+        httponly = self.get_cookie_httponly(app)
 
+        # Add a "Vary: Cookie" header if the session was accessed at all.
         if session.accessed:
             response.vary.add("Cookie")
+
+        # If the session is modified to be empty, remove the cookie.
+        # If the session is empty, return without setting the cookie.
+        if not session:
+            if session.modified:
+                response.delete_cookie(
+                    name,
+                    domain=domain,
+                    path=path,
+                    secure=secure,
+                    samesite=samesite,
+                    httponly=httponly,
+                )
+                response.vary.add("Cookie")
+
+            return
 
         if not self.should_set_cookie(app, session):
             return
 
-        data = self.get_signing_serializer(app).dumps(dict(session))
+        expires = self.get_expiration_time(app, session)
+        val = self.get_signing_serializer(app).dumps(dict(session))
         response.set_cookie(
             name,
-            data,  # type: ignore
-            expires=self.get_expiration_time(app, session),
-            httponly=self.get_cookie_httponly(app),
+            val,  # type: ignore
+            expires=expires,
+            httponly=httponly,
             domain=domain,
             path=path,
-            secure=self.get_cookie_secure(app),
-            samesite=self.get_cookie_samesite(app),
+            secure=secure,
+            samesite=samesite,
         )
+        response.vary.add("Cookie")
