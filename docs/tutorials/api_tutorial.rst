@@ -162,7 +162,7 @@ We can then add schemas for a Todo object by adding the following to
     @app.post("/todos/")
     @validate_request(TodoIn)
     @validate_response(Todo)
-    async def create_todo(data: Todo) -> Todo:
+    async def create_todo(data: TodoIn) -> Todo:
         return Todo(id=1, task=data.task, due=data.due)
 
 The OpenAPI schema is then available at
