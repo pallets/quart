@@ -303,7 +303,7 @@ If you are running this in the Quart example folder you'll need to add
 a ``-c pyproject.toml`` option to prevent pytest from using the Quart
 pytest configuration.
 
-7: Summary
+8: Summary
 ----------
 
 We've built a simple database backed blog server. This should be a
