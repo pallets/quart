@@ -84,7 +84,7 @@ Which allows the following command to start the app:
 
 When users visit our chat website we will need to show them a UI which
 they can use to enter and receive messages. The following HTML
-template should be added to *src/chat/templatest/index.html*:
+template should be added to *src/chat/templates/index.html*:
 
 .. code-block:: html
     :caption: src/chat/templates/index.html

@@ -25,6 +25,8 @@ here,
   port of Flask-Login to work natively with Quart.
 - `Quart-minify <https://github.com/AceFire6/quart_minify/>`_ minify
   quart response for HTML, JS, CSS and less.
+- `Quart-Mongo <https://github.com/Quart-Addons/quart-mongo>`_  Bridges Quart, Motor, and Odmantic to create a powerful MongoDB   
+  extension. 
 - `Quart-Motor <https://github.com/marirs/quart-motor>`_ Motor
   (MongoDB) support for Quart applications.
 - `Quart-OpenApi <https://github.com/factset/quart-openapi/>`_ RESTful
