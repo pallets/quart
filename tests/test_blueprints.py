@@ -266,9 +266,13 @@ def test_unique_blueprint_names() -> None:
     bp2 = Blueprint("bp", __name__)
 
     app.register_blueprint(bp)
-    app.register_blueprint(bp)  # Should not error
+
+    with pytest.raises(ValueError):
+        app.register_blueprint(bp)
+
     with pytest.raises(ValueError):
         app.register_blueprint(bp2, url_prefix="/a")
+
     app.register_blueprint(bp, name="alt")
 
 

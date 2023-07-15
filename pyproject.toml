@@ -29,7 +29,7 @@ python = ">=3.8"
 aiofiles = "*"
 blinker = ">=1.6"
 click = ">=8.0.0"
-flask = ">=2.3.0"
+flask = { git = "https://github.com/pallets/flask.git", branch = "main" }
 hypercorn = ">=0.11.2"
 importlib_metadata = { version = "*", python = "<3.10" }
 itsdangerous = "*"

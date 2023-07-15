@@ -414,7 +414,7 @@ class Quart(Scaffold):
     def make_config(self, instance_relative: bool = False) -> Config:
         """Create and return the configuration with appropriate defaults."""
         config = self.config_class(
-            self.instance_path if instance_relative else self.root_path, DEFAULT_CONFIG  # type: ignore[arg-type]  # noqa: E501
+            self.instance_path if instance_relative else self.root_path, DEFAULT_CONFIG
         )
         config["ENV"] = get_env()
         config["DEBUG"] = get_debug_flag()
