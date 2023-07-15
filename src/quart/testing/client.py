@@ -293,7 +293,6 @@ class QuartClient:
         secure: bool = False,
         httponly: bool = False,
         samesite: str = None,
-        charset: str = "utf-8",
     ) -> None:
         """Set a cookie in the cookie jar.
 
@@ -309,7 +308,6 @@ class QuartClient:
             domain=domain,
             secure=secure,
             httponly=httponly,
-            charset=charset,
             samesite=samesite,
         )
         self.cookie_jar.extract_cookies(

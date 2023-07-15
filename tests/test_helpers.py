@@ -129,8 +129,8 @@ async def test_url_for_scheme(app: Quart) -> None:
 
 async def test_url_for_anchor(app: Quart) -> None:
     async with app.test_request_context("/"):
-        assert url_for("index", _anchor="&foo") == "/#%26foo"
-        assert url_for("resource", id=5, _anchor="&foo") == "/resource/5#%26foo"
+        assert url_for("index", _anchor="&foo") == "/#&foo"
+        assert url_for("resource", id=5, _anchor="&foo") == "/resource/5#&foo"
 
 
 async def test_url_for_blueprint_relative(app: Quart) -> None:

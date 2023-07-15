@@ -15,12 +15,12 @@ from typing import (
     TYPE_CHECKING,
     Union,
 )
+from urllib.parse import parse_qsl
 
 from werkzeug.datastructures import Headers, MultiDict
 from werkzeug.formparser import default_stream_factory
 from werkzeug.http import parse_options_header
 from werkzeug.sansio.multipart import Data, Epilogue, Field, File, MultipartDecoder, NeedData
-from werkzeug.urls import url_decode
 
 from .datastructures import FileStorage
 
@@ -109,8 +109,13 @@ class FormDataParser:
         content_length: Optional[int],
         options: Dict[str, str],
     ) -> Tuple[MultiDict, MultiDict]:
-        form = url_decode(await body, self.charset, errors=self.errors, cls=self.cls)
-        return form, self.cls()
+        form = parse_qsl(
+            (await body).decode(),
+            keep_blank_values=True,
+            encoding=self.charset,
+            errors=self.errors,
+        )
+        return self.cls(form), self.cls()
 
     parse_functions: Dict[str, ParserFunc] = {
         "multipart/form-data": _parse_multipart,

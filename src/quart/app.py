@@ -32,6 +32,7 @@ from typing import (
     Union,
     ValuesView,
 )
+from urllib.parse import quote
 from weakref import WeakSet
 
 from aiofiles import open as async_open
@@ -43,7 +44,6 @@ from hypercorn.typing import ASGIReceiveCallable, ASGISendCallable, Scope
 from werkzeug.datastructures import Authorization, Headers
 from werkzeug.exceptions import Aborter, HTTPException, InternalServerError
 from werkzeug.routing import BuildError, MapAdapter, RoutingException
-from werkzeug.urls import url_quote
 from werkzeug.utils import redirect as werkzeug_redirect
 from werkzeug.wrappers import Response as WerkzeugResponse
 
@@ -1029,7 +1029,7 @@ class Quart(Scaffold):
                 url_adapter.url_scheme = old_scheme
 
         if _anchor is not None:
-            quoted_anchor = url_quote(_anchor)
+            quoted_anchor = quote(_anchor, safe="%!#$&'()*+,/:;=?@")
             url = f"{url}#{quoted_anchor}"
         return url
 
