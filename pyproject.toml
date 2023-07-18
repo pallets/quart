@@ -45,6 +45,7 @@ hypothesis = "*"
 mock = "*"
 pytest = "*"
 pytest-asyncio = "*"
+toml = "^0.10.2"
 
 [tool.poetry.scripts]
 quart = "quart.cli:main"
