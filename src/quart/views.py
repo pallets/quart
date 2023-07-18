@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, ClassVar, Collection, List, Optional, Type
+from typing import Any, Callable, ClassVar, Collection
 
 from .globals import current_app, request
 from .typing import ResponseReturnValue, RouteCallable
@@ -40,9 +40,9 @@ class View:
             for every request.
     """
 
-    decorators: ClassVar[List[Callable]] = []
-    methods: ClassVar[Optional[Collection[str]]] = None
-    provide_automatic_options: ClassVar[Optional[bool]] = None
+    decorators: ClassVar[list[Callable]] = []
+    methods: ClassVar[Collection[str] | None] = None
+    provide_automatic_options: ClassVar[bool | None] = None
     init_every_request: ClassVar[bool] = True
 
     async def dispatch_request(self, **kwargs: Any) -> ResponseReturnValue:
@@ -73,7 +73,7 @@ class View:
             for decorator in cls.decorators:
                 view = decorator(view)
 
-        view.view_class: Type[View] = cls  # type: ignore
+        view.view_class: type[View] = cls  # type: ignore
         view.__name__ = name
         view.__doc__ = cls.__doc__
         view.__module__ = cls.__module__

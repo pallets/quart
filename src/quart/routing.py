@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Iterable, Optional
+from typing import Iterable
 
 from werkzeug.routing import Map, MapAdapter, Rule
 
@@ -12,13 +12,13 @@ class QuartRule(Rule):
     def __init__(
         self,
         string: str,
-        defaults: Optional[dict] = None,
-        subdomain: Optional[str] = None,
-        methods: Optional[Iterable[str]] = None,
-        endpoint: Optional[str] = None,
-        strict_slashes: Optional[bool] = None,
-        merge_slashes: Optional[bool] = None,
-        host: Optional[str] = None,
+        defaults: dict | None = None,
+        subdomain: str | None = None,
+        methods: Iterable[str] | None = None,
+        endpoint: str | None = None,
+        strict_slashes: bool | None = None,
+        merge_slashes: bool | None = None,
+        host: str | None = None,
         websocket: bool = False,
         provide_automatic_options: bool = False,
     ) -> None:
@@ -38,7 +38,7 @@ class QuartRule(Rule):
 
 class QuartMap(Map):
     def bind_to_request(
-        self, request: BaseRequestWebsocket, subdomain: Optional[str], server_name: Optional[str]
+        self, request: BaseRequestWebsocket, subdomain: str | None, server_name: str | None
     ) -> MapAdapter:
         host: str
         if server_name is None:

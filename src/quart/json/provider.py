@@ -5,7 +5,7 @@ import weakref
 from dataclasses import asdict, is_dataclass
 from datetime import date
 from decimal import Decimal
-from typing import Any, AnyStr, Callable, Dict, IO, Tuple, TYPE_CHECKING
+from typing import Any, AnyStr, Callable, IO, TYPE_CHECKING
 from uuid import UUID
 
 from werkzeug.http import http_date
@@ -70,7 +70,7 @@ class JSONProvider:
         """
         return self.loads(fp.read(), **kwargs)
 
-    def _prepare_response_obj(self, args: Tuple[Any, ...], kwargs: Dict[str, Any]) -> Any:
+    def _prepare_response_obj(self, args: tuple[Any, ...], kwargs: dict[str, Any]) -> Any:
         if args and kwargs:
             raise TypeError("app.json.response() takes either args or kwargs, not both")
 
@@ -195,7 +195,7 @@ class DefaultJSONProvider(JSONProvider):
             kwargs: Treat as a dict to serialize.
         """
         object_ = self._prepare_response_obj(args, kwargs)
-        dump_args: Dict[str, Any] = {}
+        dump_args: dict[str, Any] = {}
 
         if (self.compact is None and self._app.debug) or self.compact is False:
             dump_args.setdefault("indent", 2)

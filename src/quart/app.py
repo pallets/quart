@@ -20,16 +20,11 @@ from typing import (
     Callable,
     cast,
     Coroutine,
-    Dict,
     Iterable,
-    List,
     NoReturn,
     Optional,
     Set,
-    Tuple,
-    Type,
     TypeVar,
-    Union,
     ValuesView,
 )
 from urllib.parse import quote
@@ -160,7 +155,7 @@ T = TypeVar("T")
 P = ParamSpec("P")
 
 
-def _convert_timedelta(value: Union[float, timedelta]) -> timedelta:
+def _convert_timedelta(value: float | timedelta) -> timedelta:
     if not isinstance(value, timedelta):
         return timedelta(seconds=value)
     return value
@@ -212,11 +207,11 @@ class Quart(Scaffold):
 
     """
 
-    asgi_http_class: Type[ASGIHTTPProtocol]
-    asgi_lifespan_class: Type[ASGILifespanProtocol]
-    asgi_websocket_class: Type[ASGIWebsocketProtocol]
-    test_app_class: Type[TestAppProtocol]
-    test_client_class: Type[TestClientProtocol]
+    asgi_http_class: type[ASGIHTTPProtocol]
+    asgi_lifespan_class: type[ASGILifespanProtocol]
+    asgi_websocket_class: type[ASGIWebsocketProtocol]
+    test_app_class: type[TestAppProtocol]
+    test_client_class: type[TestClientProtocol]
 
     aborter_class = Aborter
     app_ctx_globals_class = _AppCtxGlobals
@@ -227,7 +222,7 @@ class Quart(Scaffold):
     env = ConfigAttribute("ENV")
     jinja_environment = Environment
     jinja_options: dict = {}
-    json_provider_class: Type[JSONProvider] = DefaultJSONProvider
+    json_provider_class: type[JSONProvider] = DefaultJSONProvider
     lock_class = asyncio.Lock
     permanent_session_lifetime = ConfigAttribute(
         "PERMANENT_SESSION_LIFETIME", converter=_convert_timedelta
@@ -251,15 +246,15 @@ class Quart(Scaffold):
     def __init__(
         self,
         import_name: str,
-        static_url_path: Optional[str] = None,
-        static_folder: Optional[str] = "static",
-        static_host: Optional[str] = None,
+        static_url_path: str | None = None,
+        static_folder: str | None = "static",
+        static_host: str | None = None,
         host_matching: bool = False,
         subdomain_matching: bool = False,
-        template_folder: Optional[str] = "templates",
-        instance_path: Optional[str] = None,
+        template_folder: str | None = "templates",
+        instance_path: str | None = None,
         instance_relative_config: bool = False,
-        root_path: Optional[str] = None,
+        root_path: str | None = None,
     ) -> None:
         """Construct a Quart web application.
 
@@ -299,24 +294,24 @@ class Quart(Scaffold):
         self.aborter = self.make_aborter()
         self.config = self.make_config(instance_relative_config)
 
-        self.after_serving_funcs: List[Callable[[], Awaitable[None]]] = []
+        self.after_serving_funcs: list[Callable[[], Awaitable[None]]] = []
         self.background_tasks: WeakSet[asyncio.Task] = WeakSet()
-        self.before_first_request_funcs: List[BeforeFirstRequestCallable] = []
-        self.before_serving_funcs: List[Callable[[], Awaitable[None]]] = []
-        self.blueprints: Dict[str, Blueprint] = OrderedDict()
-        self.extensions: Dict[str, Any] = {}
+        self.before_first_request_funcs: list[BeforeFirstRequestCallable] = []
+        self.before_serving_funcs: list[Callable[[], Awaitable[None]]] = []
+        self.blueprints: dict[str, Blueprint] = OrderedDict()
+        self.extensions: dict[str, Any] = {}
         self.json: JSONProvider = self.json_provider_class(self)
-        self.shell_context_processors: List[Callable[[], Dict[str, Any]]] = []
-        self.teardown_appcontext_funcs: List[TeardownCallable] = []
-        self.url_build_error_handlers: List[Callable[[Exception, str, dict], str]] = []
+        self.shell_context_processors: list[Callable[[], dict[str, Any]]] = []
+        self.teardown_appcontext_funcs: list[TeardownCallable] = []
+        self.url_build_error_handlers: list[Callable[[Exception, str, dict], str]] = []
         self.url_map = self.url_map_class(host_matching=host_matching)
         self.subdomain_matching = subdomain_matching
-        self.while_serving_gens: List[AsyncGenerator[None, None]] = []
+        self.while_serving_gens: list[AsyncGenerator[None, None]] = []
 
         self._got_first_request = False
         self._first_request_lock = self.lock_class()
-        self._jinja_env: Optional[Environment] = None
-        self._logger: Optional[Logger] = None
+        self._jinja_env: Environment | None = None
+        self._logger: Logger | None = None
 
         if self.has_static_folder:
             if bool(static_host) != host_matching:
@@ -451,7 +446,7 @@ class Quart(Scaffold):
             return result
 
     @templates_auto_reload.setter
-    def templates_auto_reload(self, value: Optional[bool]) -> None:
+    def templates_auto_reload(self, value: bool | None) -> None:
         self.config["TEMPLATES_AUTO_RELOAD"] = value
 
     def create_jinja_environment(self) -> Environment:
@@ -573,17 +568,17 @@ class Quart(Scaffold):
     def add_url_rule(
         self,
         rule: str,
-        endpoint: Optional[str] = None,
-        view_func: Optional[Callable] = None,
-        provide_automatic_options: Optional[bool] = None,
+        endpoint: str | None = None,
+        view_func: Callable | None = None,
+        provide_automatic_options: bool | None = None,
         *,
-        methods: Optional[Iterable[str]] = None,
-        defaults: Optional[dict] = None,
-        host: Optional[str] = None,
-        subdomain: Optional[str] = None,
+        methods: Iterable[str] | None = None,
+        defaults: dict | None = None,
+        host: str | None = None,
+        subdomain: str | None = None,
         is_websocket: bool = False,
-        strict_slashes: Optional[bool] = None,
-        merge_slashes: Optional[bool] = None,
+        strict_slashes: bool | None = None,
+        merge_slashes: bool | None = None,
     ) -> None:
         """Add a route/url rule to the application.
 
@@ -667,7 +662,7 @@ class Quart(Scaffold):
 
     @setupmethod
     def template_filter(
-        self, name: Optional[str] = None
+        self, name: str | None = None
     ) -> Callable[[T_template_filter], T_template_filter]:
         """Add a template filter.
 
@@ -690,7 +685,7 @@ class Quart(Scaffold):
         return decorator
 
     @setupmethod
-    def add_template_filter(self, func: TemplateFilterCallable, name: Optional[str] = None) -> None:
+    def add_template_filter(self, func: TemplateFilterCallable, name: str | None = None) -> None:
         """Add a template filter.
 
         This is designed to be used on the application directly. An
@@ -711,7 +706,7 @@ class Quart(Scaffold):
 
     @setupmethod
     def template_test(
-        self, name: Optional[str] = None
+        self, name: str | None = None
     ) -> Callable[[T_template_test], T_template_test]:
         """Add a template test.
 
@@ -734,7 +729,7 @@ class Quart(Scaffold):
         return decorator
 
     @setupmethod
-    def add_template_test(self, func: TemplateTestCallable, name: Optional[str] = None) -> None:
+    def add_template_test(self, func: TemplateTestCallable, name: str | None = None) -> None:
         """Add a template test.
 
         This is designed to be used on the application directly. An
@@ -755,7 +750,7 @@ class Quart(Scaffold):
 
     @setupmethod
     def template_global(
-        self, name: Optional[str] = None
+        self, name: str | None = None
     ) -> Callable[[T_template_global], T_template_global]:
         """Add a template global.
 
@@ -778,7 +773,7 @@ class Quart(Scaffold):
         return decorator
 
     @setupmethod
-    def add_template_global(self, func: TemplateGlobalCallable, name: Optional[str] = None) -> None:
+    def add_template_global(self, func: TemplateGlobalCallable, name: str | None = None) -> None:
         """Add a template global.
 
         This is designed to be used on the application directly. An
@@ -902,7 +897,7 @@ class Quart(Scaffold):
         self.after_serving_funcs.append(func)
         return func
 
-    def create_url_adapter(self, request: Optional[BaseRequestWebsocket]) -> Optional[MapAdapter]:
+    def create_url_adapter(self, request: BaseRequestWebsocket | None) -> MapAdapter | None:
         """Create and return a URL adapter.
 
         This will create the adapter based on the request if present
@@ -941,7 +936,7 @@ class Quart(Scaffold):
 
         This is used to assist when building urls, see `url_for`.
         """
-        names: List[Optional[str]] = [None]
+        names: list[str | None] = [None]
         if "." in endpoint:
             names.extend(reversed(_split_blueprint_path(endpoint.rsplit(".", 1)[0])))
 
@@ -953,10 +948,10 @@ class Quart(Scaffold):
         self,
         endpoint: str,
         *,
-        _anchor: Optional[str] = None,
-        _external: Optional[bool] = None,
-        _method: Optional[str] = None,
-        _scheme: Optional[str] = None,
+        _anchor: str | None = None,
+        _external: bool | None = None,
+        _method: str | None = None,
+        _scheme: str | None = None,
         **values: Any,
     ) -> str:
         """Return the url for a specific endpoint.
@@ -1045,7 +1040,7 @@ class Quart(Scaffold):
                 return result
         raise error
 
-    def _find_error_handler(self, error: Exception) -> Optional[ErrorHandlerCallable]:
+    def _find_error_handler(self, error: Exception) -> ErrorHandlerCallable | None:
         error_type, error_code = self._get_error_type_and_code(type(error))
 
         names = []
@@ -1071,7 +1066,7 @@ class Quart(Scaffold):
 
     async def handle_http_exception(
         self, error: HTTPException
-    ) -> Union[HTTPException, ResponseReturnValue]:
+    ) -> HTTPException | ResponseReturnValue:
         """Handle a HTTPException subclass error.
 
         This will attempt to find a handler for the error and if fails
@@ -1099,9 +1094,7 @@ class Quart(Scaffold):
         """
         return self.config["TRAP_HTTP_EXCEPTIONS"]
 
-    async def handle_user_exception(
-        self, error: Exception
-    ) -> Union[HTTPException, ResponseReturnValue]:
+    async def handle_user_exception(self, error: Exception) -> HTTPException | ResponseReturnValue:
         """Handle an exception that has been raised.
 
         This should forward :class:`~quart.exception.HTTPException` to
@@ -1134,7 +1127,7 @@ class Quart(Scaffold):
         internal_server_error = InternalServerError(original_exception=error)
         handler = self._find_error_handler(internal_server_error)
 
-        response: Union[Response, WerkzeugResponse, InternalServerError]
+        response: Response | WerkzeugResponse | InternalServerError
         if handler is not None:
             response = await self.ensure_async(handler)(internal_server_error)
         else:
@@ -1142,7 +1135,7 @@ class Quart(Scaffold):
 
         return await self.finalize_request(response, from_error_handler=True)
 
-    async def handle_websocket_exception(self, error: Exception) -> Optional[ResponseTypes]:
+    async def handle_websocket_exception(self, error: Exception) -> ResponseTypes | None:
         """Handle an uncaught exception.
 
         By default this logs the exception and then re-raises it.
@@ -1159,7 +1152,7 @@ class Quart(Scaffold):
         internal_server_error = InternalServerError(original_exception=error)
         handler = self._find_error_handler(internal_server_error)
 
-        response: Union[Response, WerkzeugResponse, InternalServerError]
+        response: Response | WerkzeugResponse | InternalServerError
         if handler is not None:
             response = await self.ensure_async(handler)(internal_server_error)
         else:
@@ -1169,7 +1162,7 @@ class Quart(Scaffold):
 
     def log_exception(
         self,
-        exception_info: Union[Tuple[type, BaseException, TracebackType], Tuple[None, None, None]],
+        exception_info: tuple[type, BaseException, TracebackType] | tuple[None, None, None],
     ) -> None:
         """Log a exception to the :attr:`logger`.
 
@@ -1241,7 +1234,7 @@ class Quart(Scaffold):
         return run_sync(func)
 
     async def do_teardown_request(
-        self, exc: Optional[BaseException], request_context: Optional[RequestContext] = None
+        self, exc: BaseException | None, request_context: RequestContext | None = None
     ) -> None:
         """Teardown the request, calling the teardown functions.
 
@@ -1259,7 +1252,7 @@ class Quart(Scaffold):
         await request_tearing_down.send_async(self, _sync_wrapper=self.ensure_async, exc=exc)
 
     async def do_teardown_websocket(
-        self, exc: Optional[BaseException], websocket_context: Optional[WebsocketContext] = None
+        self, exc: BaseException | None, websocket_context: WebsocketContext | None = None
     ) -> None:
         """Teardown the websocket, calling the teardown functions.
 
@@ -1276,7 +1269,7 @@ class Quart(Scaffold):
 
         await websocket_tearing_down.send_async(self, _sync_wrapper=self.ensure_async, exc=exc)
 
-    async def do_teardown_appcontext(self, exc: Optional[BaseException]) -> None:
+    async def do_teardown_appcontext(self, exc: BaseException | None) -> None:
         """Teardown the app (context), calling the teardown functions."""
         for function in self.teardown_appcontext_funcs:
             await self.ensure_async(function)(exc)
@@ -1328,14 +1321,14 @@ class Quart(Scaffold):
 
     def run(
         self,
-        host: Optional[str] = None,
-        port: Optional[int] = None,
-        debug: Optional[bool] = None,
+        host: str | None = None,
+        port: int | None = None,
+        debug: bool | None = None,
         use_reloader: bool = True,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
-        ca_certs: Optional[str] = None,
-        certfile: Optional[str] = None,
-        keyfile: Optional[str] = None,
+        loop: asyncio.AbstractEventLoop | None = None,
+        ca_certs: str | None = None,
+        certfile: str | None = None,
+        keyfile: str | None = None,
         **kwargs: Any,
     ) -> None:
         """Run this application.
@@ -1360,7 +1353,8 @@ class Quart(Scaffold):
             warnings.warn(
                 f"Additional arguments, {','.join(kwargs.keys())}, are not supported.\n"
                 "They may be supported by Hypercorn, which is the ASGI server Quart "
-                "uses by default. This method is meant for development and debugging."
+                "uses by default. This method is meant for development and debugging.",
+                stacklevel=2,
             )
 
         if loop is None:
@@ -1449,11 +1443,11 @@ class Quart(Scaffold):
         self,
         host: str = "127.0.0.1",
         port: int = 5000,
-        debug: Optional[bool] = None,
-        ca_certs: Optional[str] = None,
-        certfile: Optional[str] = None,
-        keyfile: Optional[str] = None,
-        shutdown_trigger: Optional[Callable[..., Awaitable[None]]] = None,
+        debug: bool | None = None,
+        ca_certs: str | None = None,
+        certfile: str | None = None,
+        keyfile: str | None = None,
+        shutdown_trigger: Callable[..., Awaitable[None]] | None = None,
     ) -> Coroutine[None, None, None]:
         """Return a task that when awaited runs this application.
 
@@ -1491,18 +1485,18 @@ class Quart(Scaffold):
         path: str,
         *,
         method: str = "GET",
-        headers: Optional[Union[dict, Headers]] = None,
-        query_string: Optional[dict] = None,
+        headers: dict | Headers | None = None,
+        query_string: dict | None = None,
         scheme: str = "http",
         send_push_promise: Callable[[str, Headers], Awaitable[None]] = no_op_push,
-        data: Optional[AnyStr] = None,
-        form: Optional[dict] = None,
+        data: AnyStr | None = None,
+        form: dict | None = None,
         json: Any = sentinel,
         root_path: str = "",
         http_version: str = "1.1",
-        scope_base: Optional[dict] = None,
-        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
-        subdomain: Optional[str] = None,
+        scope_base: dict | None = None,
+        auth: Authorization | tuple[str, str] | None = None,
+        subdomain: str | None = None,
     ) -> RequestContext:
         """Create a request context for testing purposes.
 
@@ -1603,9 +1597,7 @@ class Quart(Scaffold):
         methods = request_ctx.url_adapter.allowed_methods()
         return self.response_class("", headers={"Allow": ", ".join(methods)})
 
-    async def make_response(
-        self, result: Union[ResponseReturnValue, HTTPException]
-    ) -> ResponseTypes:
+    async def make_response(self, result: ResponseReturnValue | HTTPException) -> ResponseTypes:
         """Make a Response from the result of the route handler.
 
         The result itself can either be:
@@ -1615,8 +1607,8 @@ class Quart(Scaffold):
 
         A ResponseValue is either a Response object (or subclass) or a str.
         """
-        headers: Optional[HeadersValue] = None
-        status: Optional[StatusCode] = None
+        headers: HeadersValue | None = None
+        status: StatusCode | None = None
         if isinstance(result, tuple):
             if len(result) == 3:
                 value, status, headers = result  # type: ignore[misc]
@@ -1677,7 +1669,7 @@ class Quart(Scaffold):
                     self._preserved_context = request_context.copy()
 
     async def full_dispatch_request(
-        self, request_context: Optional[RequestContext] = None
+        self, request_context: RequestContext | None = None
     ) -> ResponseTypes:
         """Adds pre and post processing to the request dispatching.
 
@@ -1688,7 +1680,7 @@ class Quart(Scaffold):
         await self.try_trigger_before_first_request_functions()
         await request_started.send_async(self, _sync_wrapper=self.ensure_async)
 
-        result: Optional[Union[ResponseReturnValue, HTTPException]]
+        result: ResponseReturnValue | HTTPException | None
         try:
             result = await self.preprocess_request(request_context)
             if result is None:
@@ -1698,8 +1690,8 @@ class Quart(Scaffold):
         return await self.finalize_request(result, request_context)
 
     async def preprocess_request(
-        self, request_context: Optional[RequestContext] = None
-    ) -> Optional[ResponseReturnValue]:
+        self, request_context: RequestContext | None = None
+    ) -> ResponseReturnValue | None:
         """Preprocess the request i.e. call before_request functions.
 
         Arguments:
@@ -1721,7 +1713,7 @@ class Quart(Scaffold):
         return None
 
     async def dispatch_request(
-        self, request_context: Optional[RequestContext] = None
+        self, request_context: RequestContext | None = None
     ) -> ResponseReturnValue:
         """Dispatch the request to the view function.
 
@@ -1741,8 +1733,8 @@ class Quart(Scaffold):
 
     async def finalize_request(
         self,
-        result: Union[ResponseReturnValue, HTTPException],
-        request_context: Optional[RequestContext] = None,
+        result: ResponseReturnValue | HTTPException,
+        request_context: RequestContext | None = None,
         from_error_handler: bool = False,
     ) -> ResponseTypes:
         """Turns the view response return value into a response.
@@ -1767,7 +1759,7 @@ class Quart(Scaffold):
     async def process_response(
         self,
         response: ResponseTypes,
-        request_context: Optional[RequestContext] = None,
+        request_context: RequestContext | None = None,
     ) -> ResponseTypes:
         """Postprocess the request acting on the response.
 
@@ -1790,7 +1782,7 @@ class Quart(Scaffold):
             await self.ensure_async(self.session_interface.save_session)(self, session_, response)
         return response
 
-    async def handle_websocket(self, websocket: Websocket) -> Optional[ResponseTypes]:
+    async def handle_websocket(self, websocket: Websocket) -> ResponseTypes | None:
         async with self.websocket_context(websocket) as websocket_context:
             try:
                 return await self.full_dispatch_websocket(websocket_context)
@@ -1800,8 +1792,8 @@ class Quart(Scaffold):
                 return await self.handle_websocket_exception(error)
 
     async def full_dispatch_websocket(
-        self, websocket_context: Optional[WebsocketContext] = None
-    ) -> Optional[ResponseTypes]:
+        self, websocket_context: WebsocketContext | None = None
+    ) -> ResponseTypes | None:
         """Adds pre and post processing to the websocket dispatching.
 
         Arguments:
@@ -1811,7 +1803,7 @@ class Quart(Scaffold):
         await self.try_trigger_before_first_request_functions()
         await websocket_started.send_async(self, _sync_wrapper=self.ensure_async)
 
-        result: Optional[Union[ResponseReturnValue, HTTPException]]
+        result: ResponseReturnValue | HTTPException | None
         try:
             result = await self.preprocess_websocket(websocket_context)
             if result is None:
@@ -1821,8 +1813,8 @@ class Quart(Scaffold):
         return await self.finalize_websocket(result, websocket_context)
 
     async def preprocess_websocket(
-        self, websocket_context: Optional[WebsocketContext] = None
-    ) -> Optional[ResponseReturnValue]:
+        self, websocket_context: WebsocketContext | None = None
+    ) -> ResponseReturnValue | None:
         """Preprocess the websocket i.e. call before_websocket functions.
 
         Arguments:
@@ -1847,8 +1839,8 @@ class Quart(Scaffold):
         return None
 
     async def dispatch_websocket(
-        self, websocket_context: Optional[WebsocketContext] = None
-    ) -> Optional[ResponseReturnValue]:
+        self, websocket_context: WebsocketContext | None = None
+    ) -> ResponseReturnValue | None:
         """Dispatch the websocket to the view function.
 
         Arguments:
@@ -1864,10 +1856,10 @@ class Quart(Scaffold):
 
     async def finalize_websocket(
         self,
-        result: Union[ResponseReturnValue, HTTPException],
-        websocket_context: Optional[WebsocketContext] = None,
+        result: ResponseReturnValue | HTTPException,
+        websocket_context: WebsocketContext | None = None,
         from_error_handler: bool = False,
-    ) -> Optional[ResponseTypes]:
+    ) -> ResponseTypes | None:
         """Turns the view response return value into a response.
 
         Arguments:
@@ -1892,8 +1884,8 @@ class Quart(Scaffold):
 
     async def postprocess_websocket(
         self,
-        response: Optional[ResponseTypes],
-        websocket_context: Optional[WebsocketContext] = None,
+        response: ResponseTypes | None,
+        websocket_context: WebsocketContext | None = None,
     ) -> ResponseTypes:
         """Postprocess the websocket acting on the response.
 
@@ -1942,7 +1934,7 @@ class Quart(Scaffold):
             app.asgi_app = middleware(app.asgi_app)
 
         """
-        asgi_handler: Union[ASGIHTTPProtocol, ASGILifespanProtocol, ASGIWebsocketProtocol]
+        asgi_handler: ASGIHTTPProtocol | ASGILifespanProtocol | ASGIWebsocketProtocol
         if scope["type"] == "http":
             asgi_handler = self.asgi_http_class(self, scope)
         elif scope["type"] == "websocket":

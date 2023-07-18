@@ -7,13 +7,10 @@ from typing import (
     cast,
     Dict,
     IO,
-    List,
     NoReturn,
     Optional,
     Tuple,
-    Type,
     TYPE_CHECKING,
-    Union,
 )
 from urllib.parse import parse_qsl
 
@@ -46,9 +43,9 @@ class FormDataParser:
         stream_factory: StreamFactory = default_stream_factory,
         charset: str = "utf-8",
         errors: str = "replace",
-        max_form_memory_size: Optional[int] = None,
-        max_content_length: Optional[int] = None,
-        cls: Optional[Type[MultiDict]] = MultiDict,
+        max_form_memory_size: int | None = None,
+        max_content_length: int | None = None,
+        cls: type[MultiDict] | None = MultiDict,
         silent: bool = True,
     ) -> None:
         self.stream_factory = stream_factory
@@ -57,16 +54,16 @@ class FormDataParser:
         self.cls = cls
         self.silent = silent
 
-    def get_parse_func(self, mimetype: str, options: Dict[str, str]) -> Optional[ParserFunc]:
+    def get_parse_func(self, mimetype: str, options: dict[str, str]) -> ParserFunc | None:
         return self.parse_functions.get(mimetype)
 
     async def parse(
         self,
-        body: "Body",
+        body: Body,
         mimetype: str,
-        content_length: Optional[int],
-        options: Optional[Dict[str, str]] = None,
-    ) -> Tuple[MultiDict, MultiDict]:
+        content_length: int | None,
+        options: dict[str, str] | None = None,
+    ) -> tuple[MultiDict, MultiDict]:
         if options is None:
             options = {}
 
@@ -83,11 +80,11 @@ class FormDataParser:
 
     async def _parse_multipart(
         self,
-        body: "Body",
+        body: Body,
         mimetype: str,
-        content_length: Optional[int],
-        options: Dict[str, str],
-    ) -> Tuple[MultiDict, MultiDict]:
+        content_length: int | None,
+        options: dict[str, str],
+    ) -> tuple[MultiDict, MultiDict]:
         parser = MultiPartParser(
             self.stream_factory,
             self.charset,
@@ -104,11 +101,11 @@ class FormDataParser:
 
     async def _parse_urlencoded(
         self,
-        body: "Body",
+        body: Body,
         mimetype: str,
-        content_length: Optional[int],
-        options: Dict[str, str],
-    ) -> Tuple[MultiDict, MultiDict]:
+        content_length: int | None,
+        options: dict[str, str],
+    ) -> tuple[MultiDict, MultiDict]:
         form = parse_qsl(
             (await body).decode(),
             keep_blank_values=True,
@@ -117,7 +114,7 @@ class FormDataParser:
         )
         return self.cls(form), self.cls()
 
-    parse_functions: Dict[str, ParserFunc] = {
+    parse_functions: dict[str, ParserFunc] = {
         "multipart/form-data": _parse_multipart,
         "application/x-www-form-urlencoded": _parse_urlencoded,
         "application/x-url-encoded": _parse_urlencoded,
@@ -130,10 +127,10 @@ class MultiPartParser:
         stream_factory: StreamFactory = default_stream_factory,
         charset: str = "utf-8",
         errors: str = "replace",
-        max_form_memory_size: Optional[int] = None,
-        cls: Type[MultiDict] = MultiDict,
+        max_form_memory_size: int | None = None,
+        cls: type[MultiDict] = MultiDict,
         buffer_size: int = 64 * 1024,
-        file_storage_cls: Type[FileStorage] = FileStorage,
+        file_storage_cls: type[FileStorage] = FileStorage,
     ) -> None:
         self.charset = charset
         self.errors = errors
@@ -172,9 +169,9 @@ class MultiPartParser:
         return container
 
     async def parse(
-        self, body: "Body", boundary: bytes, content_length: int
-    ) -> Tuple[MultiDict, MultiDict]:
-        container: Union[IO[bytes], List[bytes]]
+        self, body: Body, boundary: bytes, content_length: int
+    ) -> tuple[MultiDict, MultiDict]:
+        container: IO[bytes] | list[bytes]
         _write: Callable[[bytes], Any]
 
         parser = MultipartDecoder(boundary, self.max_form_memory_size)
@@ -182,7 +179,7 @@ class MultiPartParser:
         fields = []
         files = []
 
-        current_part: Union[Field, File]
+        current_part: Field | File
         async for data in body:
             parser.receive_data(data)
             event = parser.next_event()

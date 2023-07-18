@@ -52,7 +52,7 @@ def has_level_handler(logger: Logger) -> bool:
     return False
 
 
-def create_logger(app: "Quart") -> Logger:
+def create_logger(app: Quart) -> Logger:
     """Create a logger for the app based on the app settings.
 
     This creates a logger named quart.app that has a log level based

@@ -2,18 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from functools import update_wrapper
-from typing import (
-    Any,
-    Callable,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    TYPE_CHECKING,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Iterable, TYPE_CHECKING, TypeVar
 
 from .scaffold import _endpoint_from_view_func, Scaffold, setupmethod
 from .typing import (
@@ -82,14 +71,14 @@ class Blueprint(Scaffold):
         self,
         name: str,
         import_name: str,
-        static_folder: Optional[str] = None,
-        static_url_path: Optional[str] = None,
-        template_folder: Optional[str] = None,
-        url_prefix: Optional[str] = None,
-        subdomain: Optional[str] = None,
-        url_defaults: Optional[dict] = None,
-        root_path: Optional[str] = None,
-        cli_group: Optional[str] = Ellipsis,  # type: ignore
+        static_folder: str | None = None,
+        static_url_path: str | None = None,
+        template_folder: str | None = None,
+        url_prefix: str | None = None,
+        subdomain: str | None = None,
+        url_defaults: dict | None = None,
+        root_path: str | None = None,
+        cli_group: str | None = Ellipsis,  # type: ignore
     ) -> None:
         super().__init__(import_name, static_folder, static_url_path, template_folder, root_path)
 
@@ -98,13 +87,13 @@ class Blueprint(Scaffold):
 
         self.name = name
         self.url_prefix = url_prefix
-        self.deferred_functions: List[DeferredSetupFunction] = []
+        self.deferred_functions: list[DeferredSetupFunction] = []
         self.subdomain = subdomain
         if url_defaults is None:
             url_defaults = {}
         self.url_values_defaults = url_defaults
         self.cli_group = cli_group
-        self._blueprints: List[Tuple["Blueprint", dict]] = []
+        self._blueprints: list[tuple[Blueprint, dict]] = []
 
     def _check_setup_finished(self, f_name: str) -> None:
         if self._got_registered_once:
@@ -122,17 +111,17 @@ class Blueprint(Scaffold):
     def add_url_rule(
         self,
         rule: str,
-        endpoint: Optional[str] = None,
-        view_func: Optional[Union[RouteCallable, WebsocketCallable]] = None,
-        provide_automatic_options: Optional[bool] = None,
+        endpoint: str | None = None,
+        view_func: RouteCallable | WebsocketCallable | None = None,
+        provide_automatic_options: bool | None = None,
         *,
-        methods: Optional[Iterable[str]] = None,
-        defaults: Optional[dict] = None,
-        host: Optional[str] = None,
-        subdomain: Optional[str] = None,
+        methods: Iterable[str] | None = None,
+        defaults: dict | None = None,
+        host: str | None = None,
+        subdomain: str | None = None,
         is_websocket: bool = False,
-        strict_slashes: Optional[bool] = None,
-        merge_slashes: Optional[bool] = None,
+        strict_slashes: bool | None = None,
+        merge_slashes: bool | None = None,
     ) -> None:
         """Add a route/url rule to the blueprint.
 
@@ -169,7 +158,7 @@ class Blueprint(Scaffold):
 
     @setupmethod
     def app_template_filter(
-        self, name: Optional[str] = None
+        self, name: str | None = None
     ) -> Callable[[T_template_filter], T_template_filter]:
         """Add an application wide template filter.
 
@@ -192,7 +181,7 @@ class Blueprint(Scaffold):
 
     @setupmethod
     def add_app_template_filter(
-        self, func: TemplateFilterCallable, name: Optional[str] = None
+        self, func: TemplateFilterCallable, name: str | None = None
     ) -> None:
         """Add an application wide template filter.
 
@@ -212,7 +201,7 @@ class Blueprint(Scaffold):
 
     @setupmethod
     def app_template_test(
-        self, name: Optional[str] = None
+        self, name: str | None = None
     ) -> Callable[[T_template_test], T_template_test]:
         """Add an application wide template test.
 
@@ -234,7 +223,7 @@ class Blueprint(Scaffold):
         return decorator
 
     @setupmethod
-    def add_app_template_test(self, func: TemplateTestCallable, name: Optional[str] = None) -> None:
+    def add_app_template_test(self, func: TemplateTestCallable, name: str | None = None) -> None:
         """Add an application wide template test.
 
         This is designed to be used on the blueprint directly, and
@@ -253,7 +242,7 @@ class Blueprint(Scaffold):
 
     @setupmethod
     def app_template_global(
-        self, name: Optional[str] = None
+        self, name: str | None = None
     ) -> Callable[[T_template_global], T_template_global]:
         """Add an application wide template global.
 
@@ -276,7 +265,7 @@ class Blueprint(Scaffold):
 
     @setupmethod
     def add_app_template_global(
-        self, func: TemplateGlobalCallable, name: Optional[str] = None
+        self, func: TemplateGlobalCallable, name: str | None = None
     ) -> None:
         """Add an application wide template global.
 
@@ -481,7 +470,7 @@ class Blueprint(Scaffold):
 
     @setupmethod
     def app_errorhandler(
-        self, error: Union[Type[Exception], int]
+        self, error: type[Exception] | int
     ) -> Callable[[T_error_handler], T_error_handler]:
         """Add an error handler function to the App.
 
@@ -574,14 +563,14 @@ class Blueprint(Scaffold):
     def record_once(self, func: DeferredSetupFunction) -> None:
         """Used to register a deferred action that happens only once."""
 
-        def wrapper(state: "BlueprintSetupState") -> None:
+        def wrapper(state: BlueprintSetupState) -> None:
             if state.first_registration:
                 func(state)
 
         self.record(update_wrapper(wrapper, func))
 
     @setupmethod
-    def register_blueprint(self, blueprint: "Blueprint", **options: Any) -> None:
+    def register_blueprint(self, blueprint: Blueprint, **options: Any) -> None:
         """Register a :class:`~quart.Blueprint` on this blueprint.
 
         Keyword arguments passed to this method will override the
@@ -591,7 +580,7 @@ class Blueprint(Scaffold):
             raise ValueError("Cannot register a blueprint on itself")
         self._blueprints.append((blueprint, options))
 
-    def register(self, app: "Quart", options: dict) -> None:
+    def register(self, app: Quart, options: dict) -> None:
         """Register this blueprint on the app given.
 
         Arguments:
@@ -710,8 +699,8 @@ class Blueprint(Scaffold):
             blueprint.register(app, bp_options)
 
     def make_setup_state(
-        self, app: "Quart", options: dict, first_registration: bool = False
-    ) -> "BlueprintSetupState":
+        self, app: Quart, options: dict, first_registration: bool = False
+    ) -> BlueprintSetupState:
         """Return a blueprint setup state instance.
 
         Arguments:
@@ -738,7 +727,7 @@ class BlueprintSetupState:
     """
 
     def __init__(
-        self, blueprint: Blueprint, app: "Quart", options: dict, first_registration: bool
+        self, blueprint: Blueprint, app: Quart, options: dict, first_registration: bool
     ) -> None:
         self.blueprint = blueprint
         self.app = app
@@ -754,17 +743,17 @@ class BlueprintSetupState:
     def add_url_rule(
         self,
         path: str,
-        endpoint: Optional[str] = None,
-        view_func: Optional[Callable] = None,
+        endpoint: str | None = None,
+        view_func: Callable | None = None,
         *,
-        methods: Optional[Iterable[str]] = None,
-        defaults: Optional[dict] = None,
-        host: Optional[str] = None,
-        subdomain: Optional[str] = None,
-        provide_automatic_options: Optional[bool] = None,
+        methods: Iterable[str] | None = None,
+        defaults: dict | None = None,
+        host: str | None = None,
+        subdomain: str | None = None,
+        provide_automatic_options: bool | None = None,
         is_websocket: bool = False,
-        strict_slashes: Optional[bool] = None,
-        merge_slashes: Optional[bool] = None,
+        strict_slashes: bool | None = None,
+        merge_slashes: bool | None = None,
     ) -> None:
         if self.url_prefix is not None:
             if path:
@@ -791,13 +780,13 @@ class BlueprintSetupState:
             merge_slashes=merge_slashes,
         )
 
-    def register_template_filter(self, func: TemplateFilterCallable, name: Optional[str]) -> None:
+    def register_template_filter(self, func: TemplateFilterCallable, name: str | None) -> None:
         self.app.add_template_filter(func, name)
 
-    def register_template_test(self, func: Callable, name: Optional[str]) -> None:
+    def register_template_test(self, func: Callable, name: str | None) -> None:
         self.app.add_template_test(func, name)
 
-    def register_template_global(self, func: Callable, name: Optional[str]) -> None:
+    def register_template_global(self, func: Callable, name: str | None) -> None:
         self.app.add_template_global(func, name)
 
 

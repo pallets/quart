@@ -4,7 +4,7 @@ import sys
 from contextvars import Token
 from functools import wraps
 from types import TracebackType
-from typing import Any, Callable, cast, Iterator, List, Optional, Tuple, TYPE_CHECKING  # noqa: F401
+from typing import Any, Callable, cast, Iterator, TYPE_CHECKING
 
 from werkzeug.exceptions import HTTPException
 
@@ -32,9 +32,9 @@ class _BaseRequestWebsocketContext:
 
     def __init__(
         self,
-        app: "Quart",
+        app: Quart,
         request_websocket: BaseRequestWebsocket,
-        session: Optional[SessionMixin] = None,
+        session: SessionMixin | None = None,
     ) -> None:
         self.app = app
         self.request_websocket = request_websocket
@@ -43,9 +43,9 @@ class _BaseRequestWebsocketContext:
         self.request_websocket.json_module = app.json
         self.session = session
         self.preserved = False
-        self._cv_tokens: List[Tuple[Token, Optional[AppContext]]] = []
+        self._cv_tokens: list[tuple[Token, AppContext | None]] = []
 
-    def copy(self) -> "_BaseRequestWebsocketContext":
+    def copy(self) -> _BaseRequestWebsocketContext:
         return self.__class__(self.app, self.request_websocket, self.session)
 
     def match_request(self) -> None:
@@ -68,10 +68,10 @@ class _BaseRequestWebsocketContext:
     async def push(self) -> None:
         raise NotImplementedError()
 
-    async def pop(self, exc: Optional[BaseException]) -> None:
+    async def pop(self, exc: BaseException | None) -> None:
         raise NotImplementedError()
 
-    async def auto_pop(self, exc: Optional[BaseException]) -> None:
+    async def auto_pop(self, exc: BaseException | None) -> None:
         if self.request_websocket.scope.get("_quart._preserve_context", False) or (
             exc is not None and self.app.preserve_context_on_exception
         ):
@@ -79,7 +79,7 @@ class _BaseRequestWebsocketContext:
         else:
             await self.pop(exc)
 
-    async def __aenter__(self) -> "_BaseRequestWebsocketContext":
+    async def __aenter__(self) -> _BaseRequestWebsocketContext:
         await self.push()
         return self
 
@@ -124,13 +124,13 @@ class RequestContext(_BaseRequestWebsocketContext):
 
     def __init__(
         self,
-        app: "Quart",
+        app: Quart,
         request: Request,
-        session: Optional[SessionMixin] = None,
+        session: SessionMixin | None = None,
     ) -> None:
         super().__init__(app, request, session)
         self.flashes = None
-        self._after_request_functions: List[AfterRequestCallable] = []
+        self._after_request_functions: list[AfterRequestCallable] = []
 
     @property
     def request(self) -> Request:
@@ -140,7 +140,7 @@ class RequestContext(_BaseRequestWebsocketContext):
         await super()._push_appctx(_cv_request.set(self))
         await super()._push()
 
-    async def pop(self, exc: Optional[BaseException] = _sentinel) -> None:  # type: ignore
+    async def pop(self, exc: BaseException | None = _sentinel) -> None:  # type: ignore
         try:
             if len(self._cv_tokens) == 1:
                 if exc is _sentinel:
@@ -157,7 +157,7 @@ class RequestContext(_BaseRequestWebsocketContext):
             if ctx is not self:
                 raise AssertionError(f"Popped wrong request context. ({ctx!r} instead of {self!r})")
 
-    async def __aenter__(self) -> "RequestContext":
+    async def __aenter__(self) -> RequestContext:
         await self.push()
         return self
 
@@ -176,12 +176,12 @@ class WebsocketContext(_BaseRequestWebsocketContext):
 
     def __init__(
         self,
-        app: "Quart",
+        app: Quart,
         request: Websocket,
-        session: Optional[SessionMixin] = None,
+        session: SessionMixin | None = None,
     ) -> None:
         super().__init__(app, request, session)
-        self._after_websocket_functions: List[AfterWebsocketCallable] = []
+        self._after_websocket_functions: list[AfterWebsocketCallable] = []
 
     @property
     def websocket(self) -> Websocket:
@@ -191,7 +191,7 @@ class WebsocketContext(_BaseRequestWebsocketContext):
         await super()._push_appctx(_cv_websocket.set(self))
         await super()._push()
 
-    async def pop(self, exc: Optional[BaseException] = _sentinel) -> None:  # type: ignore
+    async def pop(self, exc: BaseException | None = _sentinel) -> None:  # type: ignore
         try:
             if len(self._cv_tokens) == 1:
                 if exc is _sentinel:
@@ -208,7 +208,7 @@ class WebsocketContext(_BaseRequestWebsocketContext):
             if ctx is not self:
                 raise AssertionError(f"Popped wrong request context. ({ctx!r} instead of {self!r})")
 
-    async def __aenter__(self) -> "WebsocketContext":
+    async def __aenter__(self) -> WebsocketContext:
         await self.push()
         return self
 
@@ -227,13 +227,13 @@ class AppContext:
         g: An instance of the ctx globals class.
     """
 
-    def __init__(self, app: "Quart") -> None:
+    def __init__(self, app: Quart) -> None:
         self.app = app
         self.url_adapter = app.create_url_adapter(None)
         self.g = app.app_ctx_globals_class()
-        self._cv_tokens: List[Token] = []
+        self._cv_tokens: list[Token] = []
 
-    def copy(self) -> "AppContext":
+    def copy(self) -> AppContext:
         app_context = self.__class__(self.app)
         app_context.g = self.g
         return app_context
@@ -242,7 +242,7 @@ class AppContext:
         self._cv_tokens.append(_cv_app.set(self))
         await appcontext_pushed.send_async(self.app, _sync_wrapper=self.app.ensure_async)
 
-    async def pop(self, exc: Optional[BaseException] = _sentinel) -> None:  # type: ignore
+    async def pop(self, exc: BaseException | None = _sentinel) -> None:  # type: ignore
         try:
             if len(self._cv_tokens) == 1:
                 if exc is _sentinel:
@@ -257,7 +257,7 @@ class AppContext:
 
         await appcontext_popped.send_async(self.app, _sync_wrapper=self.app.ensure_async)
 
-    async def __aenter__(self) -> "AppContext":
+    async def __aenter__(self) -> AppContext:
         await self.push()
         return self
 
@@ -452,7 +452,7 @@ def has_websocket_context() -> bool:
 class _AppCtxGlobals:
     """The g class, a plain object with some mapping methods."""
 
-    def get(self, name: str, default: Optional[Any] = None) -> Any:
+    def get(self, name: str, default: Any | None = None) -> Any:
         """Get a named attribute of this instance, or return the default."""
         return self.__dict__.get(name, default)
 

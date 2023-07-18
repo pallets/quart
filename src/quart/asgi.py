@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import warnings
 from functools import partial
-from typing import AnyStr, cast, List, Optional, Set, TYPE_CHECKING
+from typing import AnyStr, cast, Optional, TYPE_CHECKING
 from urllib.parse import urlparse
 
 from hypercorn.typing import (
@@ -30,14 +30,14 @@ from .debug import traceback_response
 from .signals import websocket_received, websocket_sent
 from .typing import ResponseTypes
 from .utils import encode_headers
-from .wrappers import Request, Response, Websocket  # noqa: F401
+from .wrappers import Request, Response, Websocket
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa: F401
 
 
 class ASGIHTTPConnection:
-    def __init__(self, app: "Quart", scope: HTTPScope) -> None:
+    def __init__(self, app: Quart, scope: HTTPScope) -> None:
         self.app = app
         self.scope = scope
 
@@ -148,7 +148,7 @@ class ASGIHTTPConnection:
 
 
 class ASGIWebsocketConnection:
-    def __init__(self, app: "Quart", scope: WebsocketScope) -> None:
+    def __init__(self, app: Quart, scope: WebsocketScope) -> None:
         self.app = app
         self.scope = scope
         self.queue: asyncio.Queue = asyncio.Queue()
@@ -266,7 +266,7 @@ class ASGIWebsocketConnection:
         await websocket_sent.send_async(data)
 
     async def accept_connection(
-        self, send: ASGISendCallable, headers: Headers, subprotocol: Optional[str]
+        self, send: ASGISendCallable, headers: Headers, subprotocol: str | None
     ) -> None:
         if not self._accepted:
             message: WebsocketAcceptEvent = {
@@ -278,7 +278,10 @@ class ASGIWebsocketConnection:
             if spec_version > [2, 0]:
                 message["headers"] = encode_headers(headers)
             elif headers:
-                warnings.warn("The ASGI Server does not support accept headers, headers not sent")
+                warnings.warn(
+                    "The ASGI Server does not support accept headers, headers not sent",
+                    stacklevel=2,
+                )
             self._accepted = True
             await send(message)
 
@@ -295,7 +298,7 @@ class ASGIWebsocketConnection:
 
 
 class ASGILifespan:
-    def __init__(self, app: "Quart", scope: LifespanScope) -> None:
+    def __init__(self, app: Quart, scope: LifespanScope) -> None:
         self.app = app
 
     async def __call__(self, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None:
@@ -332,7 +335,7 @@ class ASGILifespan:
                 break
 
 
-async def _cancel_tasks(tasks: Set[asyncio.Task]) -> None:
+async def _cancel_tasks(tasks: set[asyncio.Task]) -> None:
     # Cancel any pending, and wait for the cancellation to
     # complete i.e. finish any remaining work.
     for task in tasks:
@@ -341,18 +344,18 @@ async def _cancel_tasks(tasks: Set[asyncio.Task]) -> None:
     _raise_exceptions(tasks)
 
 
-def _raise_exceptions(tasks: Set[asyncio.Task]) -> None:
+def _raise_exceptions(tasks: set[asyncio.Task]) -> None:
     # Raise any unexpected exceptions
     for task in tasks:
         if not task.cancelled() and task.exception() is not None:
             raise task.exception()
 
 
-def _convert_version(raw: str) -> List[int]:
+def _convert_version(raw: str) -> list[int]:
     return list(map(int, raw.split(".")))
 
 
-async def _handle_exception(app: "Quart", error: Exception) -> Response:
+async def _handle_exception(app: Quart, error: Exception) -> Response:
     if not app.testing and app.propagate_exceptions:
         return await traceback_response(error)
     else:

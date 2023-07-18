@@ -4,20 +4,7 @@ import os
 from collections import defaultdict
 from functools import wraps
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    cast,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    TYPE_CHECKING,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, cast, Iterable, TYPE_CHECKING, TypeVar
 
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
@@ -68,7 +55,7 @@ T_websocket = TypeVar("T_websocket", bound=WebsocketCallable)
 
 def setupmethod(func: F) -> F:
     @wraps(func)
-    def wrapper(self: "Scaffold", *args: Any, **kwargs: Any) -> Any:
+    def wrapper(self: Scaffold, *args: Any, **kwargs: Any) -> Any:
         self._check_setup_finished(func.__name__)
         return func(self, *args, **kwargs)
 
@@ -83,10 +70,10 @@ class Scaffold:
     def __init__(
         self,
         import_name: str,
-        static_folder: Optional[str] = None,
-        static_url_path: Optional[str] = None,
-        template_folder: Optional[str] = None,
-        root_path: Optional[str] = None,
+        static_folder: str | None = None,
+        static_url_path: str | None = None,
+        template_folder: str | None = None,
+        root_path: str | None = None,
     ) -> None:
         self.import_name = import_name
         self.template_folder = Path(template_folder) if template_folder is not None else None
@@ -96,8 +83,8 @@ class Scaffold:
         else:
             self.root_path = Path(root_path)
 
-        self._static_folder: Optional[Path] = None
-        self._static_url_path: Optional[str] = None
+        self._static_folder: Path | None = None
+        self._static_url_path: str | None = None
         self.static_folder = static_folder  # type: ignore
         self.static_url_path = static_url_path
 
@@ -105,66 +92,66 @@ class Scaffold:
 
         # Functions that are called after a HTTP view function has
         # handled a request and returned a response.
-        self.after_request_funcs: Dict[AppOrBlueprintKey, List[AfterRequestCallable]] = defaultdict(
+        self.after_request_funcs: dict[AppOrBlueprintKey, list[AfterRequestCallable]] = defaultdict(
             list
         )
 
         # Functions that are called after a WebSocket view function
         # handled a websocket request and has returned (possibly
         # returning a response).
-        self.after_websocket_funcs: Dict[
-            AppOrBlueprintKey, List[AfterWebsocketCallable]
+        self.after_websocket_funcs: dict[
+            AppOrBlueprintKey, list[AfterWebsocketCallable]
         ] = defaultdict(list)
 
         # Called before a HTTP view function handles a request.
-        self.before_request_funcs: Dict[
-            AppOrBlueprintKey, List[BeforeRequestCallable]
+        self.before_request_funcs: dict[
+            AppOrBlueprintKey, list[BeforeRequestCallable]
         ] = defaultdict(list)
 
         # Called before a WebSocket view function handles a websocket
         # request.
-        self.before_websocket_funcs: Dict[
-            AppOrBlueprintKey, List[BeforeWebsocketCallable]
+        self.before_websocket_funcs: dict[
+            AppOrBlueprintKey, list[BeforeWebsocketCallable]
         ] = defaultdict(list)
 
         # The registered error handlers, keyed by blueprint (None for
         # app) then by Exception type.
-        self.error_handler_spec: Dict[
+        self.error_handler_spec: dict[
             AppOrBlueprintKey,
-            Dict[Optional[int], Dict[Type[Exception], ErrorHandlerCallable]],
+            dict[int | None, dict[type[Exception], ErrorHandlerCallable]],
         ] = defaultdict(lambda: defaultdict(dict))
 
         # Called after a HTTP request has been handled, even if the
         # handling results in an exception.
-        self.teardown_request_funcs: Dict[AppOrBlueprintKey, List[TeardownCallable]] = defaultdict(
+        self.teardown_request_funcs: dict[AppOrBlueprintKey, list[TeardownCallable]] = defaultdict(
             list
         )
 
         # Called after a WebSocket request has been handled, even if
         # the handling results in an exception.
-        self.teardown_websocket_funcs: Dict[
-            AppOrBlueprintKey, List[TeardownCallable]
+        self.teardown_websocket_funcs: dict[
+            AppOrBlueprintKey, list[TeardownCallable]
         ] = defaultdict(list)
 
         # Template context processors keyed by blueprint (None for
         # app).
-        self.template_context_processors: Dict[
-            AppOrBlueprintKey, List[TemplateContextProcessorCallable]
+        self.template_context_processors: dict[
+            AppOrBlueprintKey, list[TemplateContextProcessorCallable]
         ] = defaultdict(list, {None: [_default_template_ctx_processor]})
 
         # View functions keyed by endpoint.
-        self.view_functions: Dict[str, Callable] = {}
+        self.view_functions: dict[str, Callable] = {}
 
         # The URL value preprocessor functions keyed by blueprint
         # (None for app) as used when matching
-        self.url_value_preprocessors: Dict[
+        self.url_value_preprocessors: dict[
             AppOrBlueprintKey,
-            List[URLValuePreprocessorCallable],
+            list[URLValuePreprocessorCallable],
         ] = defaultdict(list)
 
         # The URL value default injector functions keyed by blueprint
         # (None for app) as used when building urls.
-        self.url_default_functions: Dict[AppOrBlueprintKey, List[URLDefaultCallable]] = defaultdict(
+        self.url_default_functions: dict[AppOrBlueprintKey, list[URLDefaultCallable]] = defaultdict(
             list
         )
 
@@ -172,21 +159,21 @@ class Scaffold:
         return f"<{type(self).__name__} {self.name!r}>"
 
     @property
-    def static_folder(self) -> Optional[Path]:
+    def static_folder(self) -> Path | None:
         if self._static_folder is not None:
             return self.root_path / self._static_folder
         else:
             return None
 
     @static_folder.setter
-    def static_folder(self, static_folder: Optional[FilePath]) -> None:
+    def static_folder(self, static_folder: FilePath | None) -> None:
         if static_folder is not None:
             self._static_folder = file_path_to_path(static_folder)
         else:
             self._static_folder = None
 
     @property
-    def static_url_path(self) -> Optional[str]:
+    def static_url_path(self) -> str | None:
         if self._static_url_path is not None:
             return self._static_url_path
         if self.static_folder is not None:
@@ -202,7 +189,7 @@ class Scaffold:
     def has_static_folder(self) -> bool:
         return self.static_folder is not None
 
-    def get_send_file_max_age(self, filename: str) -> Optional[int]:
+    def get_send_file_max_age(self, filename: str) -> int | None:
         if current_app.send_file_max_age_default is not None:
             return int(current_app.send_file_max_age_default.total_seconds())
         return None
@@ -213,7 +200,7 @@ class Scaffold:
         return await send_from_directory(self.static_folder, filename)
 
     @property
-    def jinja_loader(self) -> Optional[FileSystemLoader]:
+    def jinja_loader(self) -> FileSystemLoader | None:
         if self.template_folder is not None:
             return FileSystemLoader(os.fspath(self.root_path / self.template_folder))
         else:
@@ -272,14 +259,14 @@ class Scaffold:
     def route(
         self,
         rule: str,
-        methods: Optional[List[str]] = None,
-        endpoint: Optional[str] = None,
-        defaults: Optional[dict] = None,
-        host: Optional[str] = None,
-        subdomain: Optional[str] = None,
+        methods: list[str] | None = None,
+        endpoint: str | None = None,
+        defaults: dict | None = None,
+        host: str | None = None,
+        subdomain: str | None = None,
         *,
-        provide_automatic_options: Optional[bool] = None,
-        strict_slashes: Optional[bool] = None,
+        provide_automatic_options: bool | None = None,
+        strict_slashes: bool | None = None,
     ) -> Callable[[T_route], T_route]:
         """Add a HTTP request handling route.
 
@@ -339,17 +326,17 @@ class Scaffold:
     def add_url_rule(
         self,
         rule: str,
-        endpoint: Optional[str] = None,
-        view_func: Optional[RouteCallable] = None,
-        provide_automatic_options: Optional[bool] = None,
+        endpoint: str | None = None,
+        view_func: RouteCallable | None = None,
+        provide_automatic_options: bool | None = None,
         *,
-        methods: Optional[Iterable[str]] = None,
-        defaults: Optional[dict] = None,
-        host: Optional[str] = None,
-        subdomain: Optional[str] = None,
+        methods: Iterable[str] | None = None,
+        defaults: dict | None = None,
+        host: str | None = None,
+        subdomain: str | None = None,
         is_websocket: bool = False,
-        strict_slashes: Optional[bool] = None,
-        merge_slashes: Optional[bool] = None,
+        strict_slashes: bool | None = None,
+        merge_slashes: bool | None = None,
     ) -> None:
         """Add a route/url rule to the application.
 
@@ -396,12 +383,12 @@ class Scaffold:
     def websocket(
         self,
         rule: str,
-        endpoint: Optional[str] = None,
-        defaults: Optional[dict] = None,
-        host: Optional[str] = None,
-        subdomain: Optional[str] = None,
+        endpoint: str | None = None,
+        defaults: dict | None = None,
+        host: str | None = None,
+        subdomain: str | None = None,
         *,
-        strict_slashes: Optional[bool] = None,
+        strict_slashes: bool | None = None,
     ) -> Callable[[T_websocket], T_websocket]:
         """Add a websocket to the application.
 
@@ -455,13 +442,13 @@ class Scaffold:
     def add_websocket(
         self,
         rule: str,
-        endpoint: Optional[str] = None,
-        view_func: Optional[WebsocketCallable] = None,
-        defaults: Optional[dict] = None,
-        host: Optional[str] = None,
-        subdomain: Optional[str] = None,
+        endpoint: str | None = None,
+        view_func: WebsocketCallable | None = None,
+        defaults: dict | None = None,
+        host: str | None = None,
+        subdomain: str | None = None,
         *,
-        strict_slashes: Optional[bool] = None,
+        strict_slashes: bool | None = None,
     ) -> None:
         """Add a websocket url rule to the application.
 
@@ -737,7 +724,7 @@ class Scaffold:
 
     @setupmethod
     def errorhandler(
-        self, error: Union[Type[Exception], int]
+        self, error: type[Exception] | int
     ) -> Callable[[T_error_handler], T_error_handler]:
         """Register a function as an error handler.
 
@@ -762,7 +749,7 @@ class Scaffold:
     @setupmethod
     def register_error_handler(
         self,
-        error: Union[Type[Exception], int],
+        error: type[Exception] | int,
         func: ErrorHandlerCallable,
     ) -> None:
         """Register a function as an error handler.
@@ -795,9 +782,9 @@ class Scaffold:
         handlers[error_type] = func
 
     def _get_error_type_and_code(
-        self, error: Union[Type[Exception], int]
-    ) -> Tuple[Type[Exception], Optional[int]]:
-        error_type: Type[Exception]
+        self, error: type[Exception] | int
+    ) -> tuple[type[Exception], int | None]:
+        error_type: type[Exception]
         if isinstance(error, int):
             error_type = default_exceptions[error]
         else:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from werkzeug.local import LocalProxy
 
@@ -42,7 +42,7 @@ websocket: Websocket = LocalProxy(  # type: ignore[assignment]
 )
 
 
-def _session_lookup() -> Union[RequestContext, WebsocketContext]:
+def _session_lookup() -> RequestContext | WebsocketContext:
     try:
         return _cv_request.get()
     except LookupError:

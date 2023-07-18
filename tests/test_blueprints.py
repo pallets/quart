@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import cast, List, Optional
+from typing import cast
 
 import click
 import pytest
@@ -157,7 +157,7 @@ async def test_blueprint_method_view() -> None:
         (Ellipsis, ["blueprint", "cmd"]),
     ],
 )
-def test_cli_blueprints(cli_group: Optional[str], args: List[str]) -> None:
+def test_cli_blueprints(cli_group: str | None, args: list[str]) -> None:
     app = Quart(__name__)
 
     blueprint = Blueprint("blueprint", __name__, cli_group=cli_group)
@@ -184,10 +184,10 @@ def test_cli_blueprints(cli_group: Optional[str], args: List[str]) -> None:
     ],
 )
 async def test_nesting_url_prefixes(
-    parent_init: Optional[str],
-    child_init: Optional[str],
-    parent_registration: Optional[str],
-    child_registration: Optional[str],
+    parent_init: str | None,
+    child_init: str | None,
+    parent_registration: str | None,
+    child_registration: str | None,
 ) -> None:
     app = Quart(__name__)
 
@@ -216,9 +216,9 @@ async def test_nesting_url_prefixes(
     ],
 )
 async def test_nesting_subdomains(
-    parent_subdomain: Optional[str],
-    child_subdomain: Optional[str],
-    expected_subdomain: Optional[str],
+    parent_subdomain: str | None,
+    child_subdomain: str | None,
+    expected_subdomain: str | None,
 ) -> None:
     app = Quart(__name__)
     domain_name = "domain.tld"
@@ -388,7 +388,7 @@ async def test_nested_callback_order() -> None:
         g.setdefault("seen", []).append("app_1")
 
     @app.teardown_request
-    async def app_teardown1(exc: Optional[BaseException] = None) -> None:
+    async def app_teardown1(exc: BaseException | None = None) -> None:
         assert g.seen.pop() == "app_1"
 
     @app.before_request
@@ -396,7 +396,7 @@ async def test_nested_callback_order() -> None:
         g.setdefault("seen", []).append("app_2")
 
     @app.teardown_request
-    async def app_teardown2(exc: Optional[BaseException] = None) -> None:
+    async def app_teardown2(exc: BaseException | None = None) -> None:
         assert g.seen.pop() == "app_2"
 
     @app.context_processor
@@ -408,7 +408,7 @@ async def test_nested_callback_order() -> None:
         g.setdefault("seen", []).append("parent_1")
 
     @parent.teardown_request
-    async def parent_teardown1(exc: Optional[BaseException] = None) -> None:
+    async def parent_teardown1(exc: BaseException | None = None) -> None:
         assert g.seen.pop() == "parent_1"
 
     @parent.before_request
@@ -416,7 +416,7 @@ async def test_nested_callback_order() -> None:
         g.setdefault("seen", []).append("parent_2")
 
     @parent.teardown_request
-    async def parent_teardown2(exc: Optional[BaseException] = None) -> None:
+    async def parent_teardown2(exc: BaseException | None = None) -> None:
         assert g.seen.pop() == "parent_2"
 
     @parent.context_processor
@@ -428,7 +428,7 @@ async def test_nested_callback_order() -> None:
         g.setdefault("seen", []).append("child_1")
 
     @child.teardown_request
-    async def child_teardown1(exc: Optional[BaseException] = None) -> None:
+    async def child_teardown1(exc: BaseException | None = None) -> None:
         assert g.seen.pop() == "child_1"
 
     @child.before_request
@@ -436,7 +436,7 @@ async def test_nested_callback_order() -> None:
         g.setdefault("seen", []).append("child_2")
 
     @child.teardown_request
-    async def child_teardown2(exc: Optional[BaseException] = None) -> None:
+    async def child_teardown2(exc: BaseException | None = None) -> None:
         assert g.seen.pop() == "child_2"
 
     @child.context_processor

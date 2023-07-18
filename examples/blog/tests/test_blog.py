@@ -1,5 +1,6 @@
 from blog import app
 
+
 async def test_create_post():
     test_client = app.test_client()
     response = await test_client.post("/create/", form={"title": "Post", "text": "Text"})

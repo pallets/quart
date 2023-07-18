@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, AnyStr, Callable, List, Optional, Union
+from typing import Any, AnyStr, Callable
 
 from hypercorn.typing import WebsocketScope
 from werkzeug.datastructures import Headers
@@ -18,7 +18,7 @@ class Websocket(BaseRequestWebsocket):
         headers: Headers,
         root_path: str,
         http_version: str,
-        subprotocols: List[str],
+        subprotocols: list[str],
         receive: Callable,
         send: Callable,
         accept: Callable,
@@ -48,7 +48,7 @@ class Websocket(BaseRequestWebsocket):
         self._subprotocols = subprotocols
 
     @property
-    def requested_subprotocols(self) -> List[str]:
+    def requested_subprotocols(self) -> list[str]:
         return self._subprotocols
 
     async def receive(self) -> AnyStr:
@@ -79,7 +79,7 @@ class Websocket(BaseRequestWebsocket):
         await self.send(raw)
 
     async def accept(
-        self, headers: Optional[Union[dict, Headers]] = None, subprotocol: Optional[str] = None
+        self, headers: dict | Headers | None = None, subprotocol: str | None = None
     ) -> None:
         """Manually chose to accept the websocket connection.
 

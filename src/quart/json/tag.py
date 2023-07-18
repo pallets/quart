@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from base64 import b64decode, b64encode
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any
 from uuid import UUID
 
 from markupsafe import Markup
@@ -12,9 +12,9 @@ from quart.json import dumps, loads
 
 
 class JSONTag:
-    key: Optional[str] = None
+    key: str | None = None
 
-    def __init__(self, serializer: "TaggedJSONSerializer") -> None:
+    def __init__(self, serializer: TaggedJSONSerializer) -> None:
         self.serializer = serializer
 
     def check(self, value: Any) -> bool:
@@ -40,11 +40,11 @@ class TagDict(JSONTag):
             and next(iter(value)) in self.serializer.tags
         )
 
-    def to_json(self, value: Any) -> Dict[str, Any]:
+    def to_json(self, value: Any) -> dict[str, Any]:
         key = next(iter(value))
         return {key + "__": self.serializer.tag(value[key])}
 
-    def to_python(self, value: str) -> Dict[str, Any]:
+    def to_python(self, value: str) -> dict[str, Any]:
         key, item = next(iter(value))  # type: ignore
         return {key[:-2]: item}  # type: ignore
 
@@ -53,7 +53,7 @@ class PassDict(JSONTag):
     def check(self, value: Any) -> bool:
         return isinstance(value, dict)
 
-    def to_json(self, value: Any) -> Dict[str, Any]:
+    def to_json(self, value: Any) -> dict[str, Any]:
         return {key: self.serializer.tag(item) for key, item in value.items()}
 
     tag = to_json
@@ -65,10 +65,10 @@ class TagTuple(JSONTag):
     def check(self, value: Any) -> bool:
         return isinstance(value, tuple)
 
-    def to_json(self, value: Tuple[Any]) -> List[Any]:
+    def to_json(self, value: tuple[Any]) -> list[Any]:
         return [self.serializer.tag(item) for item in value]
 
-    def to_python(self, value: Any) -> Tuple[Any, ...]:
+    def to_python(self, value: Any) -> tuple[Any, ...]:
         return tuple(value)
 
 
@@ -76,7 +76,7 @@ class PassList(JSONTag):
     def check(self, value: Any) -> bool:
         return isinstance(value, list)
 
-    def to_json(self, value: List[Any]) -> List[Any]:
+    def to_json(self, value: list[Any]) -> list[Any]:
         return [self.serializer.tag(item) for item in value]
 
     tag = to_json
@@ -154,14 +154,14 @@ class TaggedJSONSerializer:
     ]
 
     def __init__(self) -> None:
-        self.tags: Dict[str, JSONTag] = {}
-        self.order: List[JSONTag] = []
+        self.tags: dict[str, JSONTag] = {}
+        self.order: list[JSONTag] = []
 
         for tag_class in self.default_tags:
             self.register(tag_class)
 
     def register(
-        self, tag_class: Type[JSONTag], force: bool = False, index: Optional[int] = None
+        self, tag_class: type[JSONTag], force: bool = False, index: int | None = None
     ) -> None:
         tag = tag_class(self)
         key = tag.key
@@ -177,14 +177,14 @@ class TaggedJSONSerializer:
         else:
             self.order.insert(index, tag)
 
-    def tag(self, value: Any) -> Dict[str, Any]:
+    def tag(self, value: Any) -> dict[str, Any]:
         for tag in self.order:
             if tag.check(value):
                 return tag.tag(value)
 
         return value
 
-    def untag(self, value: Dict[str, Any]) -> Any:
+    def untag(self, value: dict[str, Any]) -> Any:
         if len(value) != 1:
             return value
 

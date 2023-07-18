@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import importlib
 import importlib.util
 import json
 import os
 from configparser import ConfigParser
 from datetime import timedelta
-from typing import Any, Callable, Dict, IO, Mapping, Optional, Union
+from typing import Any, Callable, IO, Mapping
 
 from .typing import FilePath
 from .utils import file_path_to_path
@@ -56,7 +55,7 @@ class ConfigAttribute:
         assert obj.foo == obj.config['foo']
     """
 
-    def __init__(self, key: str, converter: Optional[Callable] = None) -> None:
+    def __init__(self, key: str, converter: Callable | None = None) -> None:
         self.key = key
         self.converter = converter
 
@@ -81,7 +80,7 @@ class Config(dict):
     keys it is not recommended.
     """
 
-    def __init__(self, root_path: FilePath, defaults: Optional[dict] = None) -> None:
+    def __init__(self, root_path: FilePath, defaults: dict | None = None) -> None:
         super().__init__(defaults or {})
         self.root_path = file_path_to_path(root_path)
 
@@ -211,7 +210,7 @@ class Config(dict):
                 raise
         return True
 
-    def from_object(self, instance: Union[object, str]) -> None:
+    def from_object(self, instance: object | str) -> None:
         """Load the configuration from a Python object.
 
         This can be used to reference modules or objects within
@@ -280,7 +279,7 @@ class Config(dict):
         else:
             return self.from_mapping(data)
 
-    def from_mapping(self, mapping: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> bool:
+    def from_mapping(self, mapping: Mapping[str, Any] | None = None, **kwargs: Any) -> bool:
         """Load the configuration values from a mapping.
 
         This allows either a mapping to be directly passed or as
@@ -297,7 +296,7 @@ class Config(dict):
             kwargs: Optionally a collection of keyword arguments to
                 form a mapping.
         """
-        mappings: Dict[str, Any] = {}
+        mappings: dict[str, Any] = {}
         if mapping is not None:
             mappings.update(mapping)
         mappings.update(kwargs)
@@ -308,7 +307,7 @@ class Config(dict):
 
     def get_namespace(
         self, namespace: str, lowercase: bool = True, trim_namespace: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Return a dictionary of keys within a namespace.
 
         A namespace is considered to be a key prefix, for example the

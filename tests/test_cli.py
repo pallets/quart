@@ -33,7 +33,7 @@ def loadable_app(monkeypatch: MonkeyPatch) -> Mock:
 
 @pytest.fixture(name="dev_app")
 def loadable_dev_app(app: Mock) -> Mock:
-    app.env == "development"
+    app.env = "development"
     app.debug = True
     return app
 

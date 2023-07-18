@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Optional
 from unittest.mock import Mock
 
 import pytest
@@ -21,7 +20,7 @@ try:
     from unittest.mock import AsyncMock
 except ImportError:
     # Python < 3.8
-    from mock import AsyncMock  # type: ignore
+    from unittest.mock import AsyncMock  # type: ignore
 
 
 @pytest.mark.parametrize("headers, expected", [([(b"host", b"quart")], "quart"), ([], "")])
@@ -213,7 +212,7 @@ def test_websocket_path_from_absolute_target() -> None:
     ],
 )
 async def test_websocket_accept_connection(
-    scope: dict, headers: Headers, subprotocol: Optional[str], has_headers: bool
+    scope: dict, headers: Headers, subprotocol: str | None, has_headers: bool
 ) -> None:
     connection = ASGIWebsocketConnection(Quart(__name__), scope)  # type: ignore
     mock_send = AsyncMock()

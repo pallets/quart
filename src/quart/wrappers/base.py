@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from hypercorn.typing import WWWScope
 from werkzeug.datastructures import Headers
@@ -27,9 +27,9 @@ class BaseRequestWebsocket(SansIORequest):
     """
 
     json_module: json.provider.JSONProvider = json  # type: ignore
-    routing_exception: Optional[Exception] = None
-    url_rule: Optional["QuartRule"] = None
-    view_args: Optional[Dict[str, Any]] = None
+    routing_exception: Exception | None = None
+    url_rule: QuartRule | None = None
+    view_args: dict[str, Any] | None = None
 
     def __init__(
         self,
@@ -73,7 +73,7 @@ class BaseRequestWebsocket(SansIORequest):
         self.scope = scope
 
     @property
-    def max_content_length(self) -> Optional[int]:
+    def max_content_length(self) -> int | None:
         """Read-only view of the ``MAX_CONTENT_LENGTH`` config key."""
         if current_app:
             return current_app.config["MAX_CONTENT_LENGTH"]
@@ -81,7 +81,7 @@ class BaseRequestWebsocket(SansIORequest):
             return None
 
     @property
-    def endpoint(self) -> Optional[str]:
+    def endpoint(self) -> str | None:
         """Returns the corresponding endpoint matched for this request.
 
         This can be None if the request has not been matched with a
@@ -93,7 +93,7 @@ class BaseRequestWebsocket(SansIORequest):
             return None
 
     @property
-    def blueprint(self) -> Optional[str]:
+    def blueprint(self) -> str | None:
         """Returns the blueprint the matched endpoint belongs to.
 
         This can be None if the request has not been matched or the
@@ -105,7 +105,7 @@ class BaseRequestWebsocket(SansIORequest):
             return None
 
     @property
-    def blueprints(self) -> List[str]:
+    def blueprints(self) -> list[str]:
         """Return the names of the current blueprints.
         The returned list is ordered from the current blueprint,
         upwards through parent blueprints.
