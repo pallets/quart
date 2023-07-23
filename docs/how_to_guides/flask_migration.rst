@@ -68,6 +68,8 @@ function/method is a syntax error.
 .. code-block:: python
 
     await request.data
+    await request.get_data()
+    await request.json
     await request.get_json()
     await request.form
     await request.files
