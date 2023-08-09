@@ -291,10 +291,12 @@ class Quart(Scaffold):
         """
         super().__init__(import_name, static_folder, static_url_path, template_folder, root_path)
 
-        instance_path = Path(instance_path) if instance_path else self.auto_find_instance_path()
-        if not instance_path.is_absolute():
+        actual_instance_path = (
+            Path(instance_path) if instance_path else self.auto_find_instance_path()
+        )
+        if not actual_instance_path.is_absolute():
             raise ValueError("The instance_path must be an absolute path.")
-        self.instance_path = instance_path
+        self.instance_path = actual_instance_path
 
         self.aborter = self.make_aborter()
         self.config = self.make_config(instance_relative_config)
