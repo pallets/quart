@@ -38,6 +38,8 @@ here,
 - `Quart-Rate-Limiter
   <https://github.com/pgjones/quart-rate-limiter>`_ Rate limiting
   support.
+- `Quart-Redis
+  <https://github.com/enchant97/quart-redis>`_ Redis connection handling
 - `Webargs-Quart <https://github.com/esfoobar/webargs-quart>`_ Webargs
   parsing for Quart.
 - `Quart-WTF <https://github.com/Quart-Addons/quart-wtf>`_ Simple integration of Quart
