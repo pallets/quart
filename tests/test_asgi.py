@@ -274,7 +274,8 @@ def test_http_asgi_scope_from_request() -> None:
 )
 async def test__handle_exception(propagate_exceptions: bool, testing: bool, raises: bool) -> None:
     app = Mock()
-    app.propagate_exceptions = propagate_exceptions
+    app.config = {}
+    app.config["PROPAGATE_EXCEPTIONS"] = propagate_exceptions
     app.testing = testing
 
     if raises:

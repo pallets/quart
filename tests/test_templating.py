@@ -143,7 +143,7 @@ async def test_template_tests(app: Quart, blueprint: Blueprint) -> None:
 async def test_simple_stream(app: Quart) -> None:
     @app.get("/")
     async def index() -> ResponseReturnValue:
-        return await stream_template_string("{{ config }}", config=42)
+        return await stream_template_string("{{ config }}", config=42)  # type: ignore
 
     test_client = app.test_client()
     response = await test_client.get("/")

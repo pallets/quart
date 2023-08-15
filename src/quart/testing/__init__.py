@@ -27,7 +27,7 @@ class QuartCliRunner(CliRunner):
 
     def invoke(self, cli: Any = None, args: Any = None, **kwargs: Any) -> Any:  # type: ignore
         if cli is None:
-            cli = self.app.cli  # type: ignore
+            cli = self.app.cli
 
         if "obj" not in kwargs:
             kwargs["obj"] = ScriptInfo(create_app=lambda: self.app)

@@ -157,7 +157,7 @@ async def test_url_for_root_path(app: Quart) -> None:
 async def test_stream_with_context() -> None:
     app = Quart(__name__)
 
-    @app.route("/")
+    @app.route("/")  # type: ignore
     async def index() -> AsyncGenerator[bytes, None]:
         @stream_with_context
         async def generator() -> AsyncGenerator[bytes, None]:
@@ -257,4 +257,4 @@ async def test_send_file_max_age(tmp_path: Path) -> None:
     file_.write_text("something")
     async with app.app_context():
         response = await send_file(str(file_))
-    assert response.cache_control.max_age == app.send_file_max_age_default.total_seconds()
+    assert response.cache_control.max_age == app.config["SEND_FILE_MAX_AGE_DEFAULT"].total_seconds()

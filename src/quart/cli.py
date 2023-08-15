@@ -526,7 +526,7 @@ class QuartGroup(AppGroup):
             click.secho(f"Error: {e.format_message()}\n", err=True, fg="red")
             return None
 
-        return app.cli.get_command(ctx, name)  # type: ignore
+        return app.cli.get_command(ctx, name)
 
     def list_commands(self, ctx: click.Context) -> List[str]:
         self._load_plugin_commands()
@@ -537,7 +537,7 @@ class QuartGroup(AppGroup):
         # Add commands provided by the app, showing an error and
         # continuing if the app couldn't be loaded.
         try:
-            rv.update(info.load_app().cli.list_commands(ctx))  # type: ignore
+            rv.update(info.load_app().cli.list_commands(ctx))
         except NoAppException as e:
             # When an app couldn't be loaded, show the error message
             # without the traceback.
