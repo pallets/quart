@@ -9,7 +9,6 @@ from typing import (
     AnyStr,
     AsyncContextManager,
     AsyncGenerator,
-    AsyncIterator,
     Awaitable,
     Callable,
     Dict,
@@ -57,8 +56,6 @@ ResponseValue = Union[
     str,
     Mapping[str, Any],  # any jsonify-able dict
     List[Any],  # any jsonify-able list
-    AsyncIterator[bytes],
-    AsyncIterator[str],
     Iterator[bytes],
     Iterator[str],
 ]
@@ -103,8 +100,8 @@ BeforeWebsocketCallable = Union[
     Callable[[], Awaitable[Optional[ResponseReturnValue]]],
 ]
 ErrorHandlerCallable = Union[
-    Callable[[Exception], ResponseReturnValue],
-    Callable[[Exception], Awaitable[ResponseReturnValue]],
+    Callable[[Any], ResponseReturnValue],
+    Callable[[Any], Awaitable[ResponseReturnValue]],
 ]
 ShellContextProcessorCallable = Callable[[], Dict[str, Any]]
 TeardownCallable = Union[

@@ -54,7 +54,7 @@ def app() -> Quart:
             yield "Hello "
             yield "World"
 
-        return _gen()
+        return _gen()  # type: ignore
 
     @app.errorhandler(409)
     async def generic_http_handler(_: Exception) -> ResponseReturnValue:

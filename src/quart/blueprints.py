@@ -8,6 +8,7 @@ from datetime import timedelta
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
 from aiofiles.threadpool.binary import AsyncBufferedReader
+from flask.sansio.app import App
 from flask.sansio.blueprints import (  # noqa
     Blueprint as SansioBlueprint,
     BlueprintSetupState as BlueprintSetupState,
@@ -30,7 +31,6 @@ from .typing import (
 )
 
 if t.TYPE_CHECKING:
-    from .app import Quart
     from .wrappers import Response
 
 T_after_serving = t.TypeVar("T_after_serving", bound=AfterServingCallable)
@@ -208,9 +208,9 @@ class Blueprint(SansioBlueprint):
         return self.add_url_rule(
             rule,
             endpoint,
-            view_func,  # type: ignore[arg-type]
+            view_func,
             methods={"GET"},
-            is_websocket=True,
+            websocket=True,
             **options,
         )
 
@@ -372,7 +372,7 @@ class Blueprint(SansioBlueprint):
         self.record_once(lambda state: state.app.teardown_websocket(func))
         return func
 
-    def _merge_blueprint_funcs(self, app: Quart, name: str) -> None:
+    def _merge_blueprint_funcs(self, app: App, name: str) -> None:
         super()._merge_blueprint_funcs(app, name)
 
         def extend(bp_dict: dict, parent_dict: dict) -> None:
@@ -389,7 +389,7 @@ class Blueprint(SansioBlueprint):
                     for code, code_values in value.items()
                 },
             )
-            app.error_handler_spec[key] = value  # type: ignore[assignment]
+            app.error_handler_spec[key] = value
 
-        extend(self.before_websocket_funcs, app.before_websocket_funcs)
-        extend(self.after_websocket_funcs, app.after_websocket_funcs)
+        extend(self.before_websocket_funcs, app.before_websocket_funcs)  # type: ignore
+        extend(self.after_websocket_funcs, app.after_websocket_funcs)  # type: ignore

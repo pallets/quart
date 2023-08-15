@@ -38,7 +38,7 @@ async def test_secure_cookie_session_interface_save_session() -> None:
     await interface.save_session(app, session, response)
     cookies: SimpleCookie = SimpleCookie()
     cookies.load(response.headers["Set-Cookie"])
-    cookie = cookies[app.session_cookie_name]
+    cookie = cookies[app.config["SESSION_COOKIE_NAME"]]
     assert cookie["path"] == interface.get_cookie_path(app)
     assert cookie["httponly"] == "" if not interface.get_cookie_httponly(app) else True
     assert cookie["secure"] == "" if not interface.get_cookie_secure(app) else True

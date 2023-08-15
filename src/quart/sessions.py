@@ -45,7 +45,7 @@ class SessionInterface:
 
     def get_cookie_name(self, app: "Quart") -> str:
         """Helper method to return the Cookie Name for the App."""
-        return app.session_cookie_name
+        return app.config["SESSION_COOKIE_NAME"]
 
     def get_cookie_domain(self, app: "Quart") -> Optional[str]:
         """Helper method to return the Cookie Domain for the App."""
