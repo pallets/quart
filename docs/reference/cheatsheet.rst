@@ -63,11 +63,11 @@ Configuration
 .. code-block:: python
 
     import json
-    import toml
+    import tomllib
 
     app.config["VALUE"] = "something"
 
-    app.config.from_file("filename.toml", toml.load)
+    app.config.from_file("filename.toml", tomllib.load)
     app.config.from_file("filename.json", json.load)
 
 Request
