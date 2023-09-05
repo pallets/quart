@@ -21,13 +21,13 @@ if TYPE_CHECKING:
 
 
 class QuartCliRunner(CliRunner):
-    def __init__(self, app: "Quart", **kwargs: Any) -> None:
+    def __init__(self, app: Quart, **kwargs: Any) -> None:
         self.app = app
         super().__init__(**kwargs)
 
     def invoke(self, cli: Any = None, args: Any = None, **kwargs: Any) -> Any:  # type: ignore
         if cli is None:
-            cli = self.app.cli  # type: ignore
+            cli = self.app.cli
 
         if "obj" not in kwargs:
             kwargs["obj"] = ScriptInfo(create_app=lambda: self.app)

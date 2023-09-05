@@ -1,19 +1,9 @@
 from __future__ import annotations
 
-from typing import (
-    Any,
-    AsyncIterator,
-    Callable,
-    Dict,
-    Generator,
-    List,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import Any, AsyncIterator, TYPE_CHECKING
 
-from jinja2 import BaseLoader, Environment as BaseEnvironment, Template, TemplateNotFound
+from flask.templating import DispatchingJinjaLoader as DispatchingJinjaLoader  # noqa: F401
+from jinja2 import Environment as BaseEnvironment, Template
 
 from .ctx import has_app_context, has_request_context
 from .globals import app_ctx, current_app, request_ctx
@@ -31,7 +21,7 @@ class Environment(BaseEnvironment):
     DispatchingJinjaLoader, and enables async Jinja by default.
     """
 
-    def __init__(self, app: "Quart", **options: Any) -> None:
+    def __init__(self, app: Quart, **options: Any) -> None:
         """Create a Quart specific Jinja Environment.
 
         Arguments:
@@ -44,53 +34,7 @@ class Environment(BaseEnvironment):
         super().__init__(**options)
 
 
-class DispatchingJinjaLoader(BaseLoader):
-    """Quart specific Jinja Loader.
-
-    This changes the default sourcing to consider the app
-    and blueprints.
-    """
-
-    def __init__(self, app: "Quart") -> None:
-        self.app = app
-
-    def get_source(
-        self, environment: BaseEnvironment, template: str
-    ) -> Tuple[str, Optional[str], Optional[Callable[[], bool]]]:
-        """Returns the template source from the environment.
-
-        This considers the loaders on the :attr:`app` and blueprints.
-        """
-        for loader in self._loaders():
-            try:
-                return loader.get_source(environment, template)
-            except TemplateNotFound:
-                continue
-        raise TemplateNotFound(template)
-
-    def _loaders(self) -> Generator[BaseLoader, None, None]:
-        loader = self.app.jinja_loader
-        if loader is not None:
-            yield loader
-
-        for blueprint in self.app.iter_blueprints():
-            loader = blueprint.jinja_loader
-            if loader is not None:
-                yield loader
-
-    def list_templates(self) -> List[str]:
-        """Returns a list of all available templates in environment.
-
-        This considers the loaders on the :attr:`app` and blueprints.
-        """
-        result = set()
-        for loader in self._loaders():
-            for template in loader.list_templates():
-                result.add(str(template))
-        return list(result)
-
-
-async def render_template(template_name_or_list: Union[str, List[str]], **context: Any) -> str:
+async def render_template(template_name_or_list: str | list[str], **context: Any) -> str:
     """Render the template with the context given.
 
     Arguments:
@@ -115,7 +59,7 @@ async def render_template_string(source: str, **context: Any) -> str:
     return await _render(template, context, current_app._get_current_object())  # type: ignore
 
 
-async def _render(template: Template, context: dict, app: "Quart") -> str:
+async def _render(template: Template, context: dict, app: Quart) -> str:
     await before_render_template.send_async(
         app, _sync_wrapper=app.ensure_async, template=template, context=context
     )
@@ -126,7 +70,7 @@ async def _render(template: Template, context: dict, app: "Quart") -> str:
     return rendered_template
 
 
-async def _default_template_ctx_processor() -> Dict[str, Any]:
+async def _default_template_ctx_processor() -> dict[str, Any]:
     context = {}
     if has_app_context():
         context["g"] = app_ctx.g
@@ -137,7 +81,7 @@ async def _default_template_ctx_processor() -> Dict[str, Any]:
 
 
 async def stream_template(
-    template_name_or_list: Union[str, Template, List[Union[str, Template]]], **context: Any
+    template_name_or_list: str | Template | list[str | Template], **context: Any
 ) -> AsyncIterator[str]:
     """Render a template by name with the given context as a stream.
 
@@ -169,7 +113,7 @@ async def stream_template_string(source: str, **context: Any) -> AsyncIterator[s
     return await _stream(current_app._get_current_object(), template, context)  # type: ignore
 
 
-async def _stream(app: "Quart", template: Template, context: Dict[str, Any]) -> AsyncIterator[str]:
+async def _stream(app: Quart, template: Template, context: dict[str, Any]) -> AsyncIterator[str]:
     await before_render_template.send_async(
         app, _sync_wrapper=app.ensure_async, template=template, context=context
     )

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import asyncio
-from typing import AsyncGenerator, NoReturn, Optional, Set, Union
+from typing import AsyncGenerator, NoReturn
+from unittest.mock import AsyncMock
 
 import pytest
-from _pytest.monkeypatch import MonkeyPatch
 from hypercorn.typing import HTTPScope, WebsocketScope
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import InternalServerError
@@ -18,12 +18,6 @@ from quart.typing import ResponseReturnValue, ResponseTypes
 from quart.wrappers import Request, Response
 
 TEST_RESPONSE = Response("")
-
-try:
-    from unittest.mock import AsyncMock
-except ImportError:
-    # Python < 3.8
-    from mock import AsyncMock  # type: ignore
 
 
 class SimpleError(Exception):
@@ -68,7 +62,7 @@ def test_endpoint_overwrite() -> None:
     ],
 )
 def test_add_url_rule_methods(
-    methods: Set[str], required_methods: Set[str], automatic_options: bool
+    methods: set[str], required_methods: set[str], automatic_options: bool
 ) -> None:
     app = Quart(__name__)
 
@@ -83,8 +77,6 @@ def test_add_url_rule_methods(
         "/", "end", route, methods=non_func_methods, provide_automatic_options=automatic_options
     )
     result = {"PATCH"} if not methods else set()
-    if automatic_options:
-        result.add("OPTIONS")
     result.update(methods)
     result.update(required_methods)
     if "GET" in result:
@@ -95,19 +87,19 @@ def test_add_url_rule_methods(
 @pytest.mark.parametrize(
     "methods, arg_automatic, func_automatic, expected_methods, expected_automatic",
     [
-        ({"GET"}, True, None, {"HEAD", "GET", "OPTIONS"}, True),
+        ({"GET"}, True, None, {"HEAD", "GET"}, True),
         ({"GET"}, None, None, {"HEAD", "GET", "OPTIONS"}, True),
-        ({"GET"}, None, True, {"HEAD", "GET", "OPTIONS"}, True),
+        ({"GET"}, None, True, {"HEAD", "GET"}, True),
         ({"GET", "OPTIONS"}, None, None, {"HEAD", "GET", "OPTIONS"}, False),
         ({"GET"}, False, True, {"HEAD", "GET"}, False),
         ({"GET"}, None, False, {"HEAD", "GET"}, False),
     ],
 )
 def test_add_url_rule_automatic_options(
-    methods: Set[str],
-    arg_automatic: Optional[bool],
-    func_automatic: Optional[bool],
-    expected_methods: Set[str],
+    methods: set[str],
+    arg_automatic: bool | None,
+    func_automatic: bool | None,
+    expected_methods: set[str],
     expected_automatic: bool,
 ) -> None:
     app = Quart(__name__)
@@ -172,12 +164,12 @@ async def test_subdomain() -> None:
             False,
         ),
         (InternalServerError(), InternalServerError().get_response(), False),
-        ((val for val in "abcd"), Response((val for val in "abcd")), False),
+        ((val for val in "abcd"), Response(val for val in "abcd"), False),
         (int, None, True),
     ],
 )
 async def test_make_response(
-    result: ResponseReturnValue, expected: Union[Response, WerkzeugResponse], raises: bool
+    result: ResponseReturnValue, expected: Response | WerkzeugResponse, raises: bool
 ) -> None:
     app = Quart(__name__)
     app.config["RESPONSE_TIMEOUT"] = None
@@ -193,36 +185,6 @@ async def test_make_response(
             assert (await response.get_data()) == (await expected.get_data())  # type: ignore
         elif isinstance(response, WerkzeugResponse):
             assert response.get_data() == expected.get_data()
-
-
-@pytest.mark.parametrize(
-    "quart_env, quart_debug, expected_env, expected_debug",
-    [
-        (None, None, "production", False),
-        ("development", None, "development", True),
-        ("development", False, "development", False),
-    ],
-)
-def test_env_and_debug_environments(
-    quart_env: Optional[str],
-    quart_debug: Optional[bool],
-    expected_env: bool,
-    expected_debug: bool,
-    monkeypatch: MonkeyPatch,
-) -> None:
-    if quart_env is None:
-        monkeypatch.delenv("QUART_ENV", raising=False)
-    else:
-        monkeypatch.setenv("QUART_ENV", quart_env)
-
-    if quart_debug is None:
-        monkeypatch.delenv("QUART_DEBUG", raising=False)
-    else:
-        monkeypatch.setenv("QUART_DEBUG", str(quart_debug))
-
-    app = Quart(__name__)
-    assert app.env == expected_env
-    assert app.debug is expected_debug
 
 
 @pytest.fixture(name="basic_app")

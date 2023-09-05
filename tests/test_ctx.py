@@ -11,7 +11,6 @@ from werkzeug.exceptions import BadRequest
 
 from quart.app import Quart
 from quart.ctx import (
-    _AppCtxGlobals,
     after_this_request,
     AppContext,
     copy_current_app_context,
@@ -115,42 +114,6 @@ async def test_has_app_context() -> None:
     async with AppContext(Quart(__name__)):
         assert has_app_context() is True
     assert has_app_context() is False
-
-
-def test_app_ctx_globals_get() -> None:
-    g = _AppCtxGlobals()
-    g.foo = "bar"
-    assert g.get("foo") == "bar"
-    assert g.get("bar", "something") == "something"
-
-
-def test_app_ctx_globals_pop() -> None:
-    g = _AppCtxGlobals()
-    g.foo = "bar"
-    assert g.pop("foo") == "bar"
-    assert g.pop("foo", None) is None
-    with pytest.raises(KeyError):
-        g.pop("foo")
-
-
-def test_app_ctx_globals_setdefault() -> None:
-    g = _AppCtxGlobals()
-    g.setdefault("foo", []).append("bar")
-    assert g.foo == ["bar"]
-
-
-def test_app_ctx_globals_contains() -> None:
-    g = _AppCtxGlobals()
-    g.foo = "bar"
-    assert "foo" in g
-    assert "bar" not in g
-
-
-def test_app_ctx_globals_iter() -> None:
-    g = _AppCtxGlobals()
-    g.foo = "bar"
-    g.bar = "foo"
-    assert sorted(iter(g)) == ["bar", "foo"]
 
 
 async def test_copy_current_app_context() -> None:

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-from typing import List, Tuple
 from urllib.parse import urlencode
 
 import pytest
@@ -58,7 +57,7 @@ async def test_body_streaming_no_data() -> None:
     semaphore = asyncio.Semaphore(0)
     asyncio.ensure_future(_fill_body(body, semaphore, 0))
     async for _ in body:  # noqa: F841
-        assert False  # Should not reach this
+        raise AssertionError("Should not reach this line")
     assert b"" == await body
 
 
@@ -111,7 +110,7 @@ async def test_request_get_data_timeout(http_scope: HTTPScope) -> None:
     "method, expected",
     [("GET", ["b", "c"]), ("POST", ["b", "c", "d"])],
 )
-async def test_request_values(method: str, expected: List[str], http_scope: HTTPScope) -> None:
+async def test_request_values(method: str, expected: list[str], http_scope: HTTPScope) -> None:
     request = Request(
         method,
         "http",
@@ -129,7 +128,7 @@ async def test_request_values(method: str, expected: List[str], http_scope: HTTP
 
 
 async def test_request_send_push_promise(http_scope: HTTPScope) -> None:
-    push_promise: Tuple[str, Headers] = None
+    push_promise: tuple[str, Headers] = None
 
     async def _push(path: str, headers: Headers) -> None:
         nonlocal push_promise

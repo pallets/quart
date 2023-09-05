@@ -21,7 +21,7 @@ class LifespanError(Exception):
 class TestApp:
     def __init__(
         self,
-        app: "Quart",
+        app: Quart,
         startup_timeout: int = DEFAULT_TIMEOUT,
         shutdown_timeout: int = DEFAULT_TIMEOUT,
     ) -> None:
@@ -50,7 +50,7 @@ class TestApp:
         await asyncio.wait_for(self._shutdown.wait(), timeout=self.shutdown_timeout)
         await self._task
 
-    async def __aenter__(self) -> "TestApp":
+    async def __aenter__(self) -> TestApp:
         await self.startup()
         return self
 

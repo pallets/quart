@@ -14,13 +14,9 @@ from typing import (
     Awaitable,
     Callable,
     Coroutine,
-    Dict,
     Generator,
     Iterable,
-    List,
-    Tuple,
     TYPE_CHECKING,
-    Union,
 )
 
 from werkzeug.datastructures import Headers
@@ -37,7 +33,7 @@ class MustReloadError(Exception):
 
 def file_path_to_path(*paths: FilePath) -> Path:
     # Flask supports bytes paths
-    safe_paths: List[Union[str, os.PathLike]] = []
+    safe_paths: list[str | os.PathLike] = []
     for path in paths:
         if isinstance(path, bytes):
             safe_paths.append(path.decode())
@@ -98,41 +94,19 @@ def is_coroutine_function(func: Any) -> bool:
     # Python < 3.8 does not correctly determine partially wrapped
     # coroutine functions are coroutine functions, hence the need for
     # this to exist. Code taken from CPython.
-    if sys.version_info >= (3, 8):
-        return asyncio.iscoroutinefunction(func)
-    else:
-        # Note that there is something special about the AsyncMock
-        # such that it isn't determined as a coroutine function
-        # without an explicit check.
-        try:
-            from mock import AsyncMock
-
-            if isinstance(func, AsyncMock):
-                return True
-        except ImportError:
-            # Not testing, no asynctest to import
-            pass
-
-        while inspect.ismethod(func):
-            func = func.__func__
-        while isinstance(func, partial):
-            func = func.func
-        if not inspect.isfunction(func):
-            return False
-        result = bool(func.__code__.co_flags & inspect.CO_COROUTINE)
-        return result or getattr(func, "_is_coroutine", None) is asyncio.coroutines._is_coroutine
+    return asyncio.iscoroutinefunction(func)
 
 
-def encode_headers(headers: Headers) -> List[Tuple[bytes, bytes]]:
+def encode_headers(headers: Headers) -> list[tuple[bytes, bytes]]:
     return [(key.lower().encode(), value.encode()) for key, value in headers.items()]
 
 
-def decode_headers(headers: Iterable[Tuple[bytes, bytes]]) -> Headers:
+def decode_headers(headers: Iterable[tuple[bytes, bytes]]) -> Headers:
     return Headers([(key.decode(), value.decode()) for key, value in headers])
 
 
 async def observe_changes(sleep: Callable[[float], Awaitable[Any]], shutdown_event: Event) -> None:
-    last_updates: Dict[Path, float] = {}
+    last_updates: dict[Path, float] = {}
     for module in list(sys.modules.values()):
         filename = getattr(module, "__file__", None)
         if filename is None:

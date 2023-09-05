@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, AnyStr, cast, Dict, Optional, overload, Tuple, TYPE_CHECKING, Union
+from typing import Any, AnyStr, cast, overload, TYPE_CHECKING
 from urllib.parse import unquote, urlencode
 
 from hypercorn.typing import HTTPScope, Scope, WebsocketScope
@@ -24,13 +24,13 @@ sentinel = object()
 
 
 def make_test_headers_path_and_query_string(
-    app: "Quart",
+    app: Quart,
     path: str,
-    headers: Optional[Union[dict, Headers]] = None,
-    query_string: Optional[dict] = None,
-    auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
-    subdomain: Optional[str] = None,
-) -> Tuple[Headers, str, bytes]:
+    headers: dict | Headers | None = None,
+    query_string: dict | None = None,
+    auth: Authorization | tuple[str, str] | None = None,
+    subdomain: str | None = None,
+) -> tuple[Headers, str, bytes]:
     """Make the headers and path with defaults for testing.
 
     Arguments:
@@ -71,12 +71,12 @@ def make_test_headers_path_and_query_string(
 
 def make_test_body_with_headers(
     *,
-    data: Optional[AnyStr] = None,
-    form: Optional[dict] = None,
-    files: Optional[Dict[str, FileStorage]] = None,
+    data: AnyStr | None = None,
+    form: dict | None = None,
+    files: dict[str, FileStorage] | None = None,
     json: Any = sentinel,
-    app: Optional["Quart"] = None,
-) -> Tuple[bytes, Headers]:
+    app: Quart | None = None,
+) -> tuple[bytes, Headers]:
     """Make the body bytes with associated headers.
 
     Arguments:
@@ -143,7 +143,7 @@ def make_test_scope(
     scheme: str,
     root_path: str,
     http_version: str,
-    scope_base: Optional[dict],
+    scope_base: dict | None,
     *,
     _preserve_context: bool = False,
 ) -> HTTPScope:
@@ -160,7 +160,7 @@ def make_test_scope(
     scheme: str,
     root_path: str,
     http_version: str,
-    scope_base: Optional[dict],
+    scope_base: dict | None,
     *,
     _preserve_context: bool = False,
 ) -> WebsocketScope:
@@ -176,7 +176,7 @@ def make_test_scope(
     scheme: str,
     root_path: str,
     http_version: str,
-    scope_base: Optional[dict],
+    scope_base: dict | None,
     *,
     _preserve_context: bool = False,
 ) -> Scope:
