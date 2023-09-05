@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Dict, List, TYPE_CHECKING, Union
+from typing import Any, AsyncIterator, TYPE_CHECKING
 
 from flask.templating import DispatchingJinjaLoader as DispatchingJinjaLoader  # noqa: F401
 from jinja2 import Environment as BaseEnvironment, Template
@@ -21,7 +21,7 @@ class Environment(BaseEnvironment):
     DispatchingJinjaLoader, and enables async Jinja by default.
     """
 
-    def __init__(self, app: "Quart", **options: Any) -> None:
+    def __init__(self, app: Quart, **options: Any) -> None:
         """Create a Quart specific Jinja Environment.
 
         Arguments:
@@ -34,7 +34,7 @@ class Environment(BaseEnvironment):
         super().__init__(**options)
 
 
-async def render_template(template_name_or_list: Union[str, List[str]], **context: Any) -> str:
+async def render_template(template_name_or_list: str | list[str], **context: Any) -> str:
     """Render the template with the context given.
 
     Arguments:
@@ -59,7 +59,7 @@ async def render_template_string(source: str, **context: Any) -> str:
     return await _render(template, context, current_app._get_current_object())  # type: ignore
 
 
-async def _render(template: Template, context: dict, app: "Quart") -> str:
+async def _render(template: Template, context: dict, app: Quart) -> str:
     await before_render_template.send_async(
         app, _sync_wrapper=app.ensure_async, template=template, context=context
     )
@@ -70,7 +70,7 @@ async def _render(template: Template, context: dict, app: "Quart") -> str:
     return rendered_template
 
 
-async def _default_template_ctx_processor() -> Dict[str, Any]:
+async def _default_template_ctx_processor() -> dict[str, Any]:
     context = {}
     if has_app_context():
         context["g"] = app_ctx.g
@@ -81,7 +81,7 @@ async def _default_template_ctx_processor() -> Dict[str, Any]:
 
 
 async def stream_template(
-    template_name_or_list: Union[str, Template, List[Union[str, Template]]], **context: Any
+    template_name_or_list: str | Template | list[str | Template], **context: Any
 ) -> AsyncIterator[str]:
     """Render a template by name with the given context as a stream.
 
@@ -113,7 +113,7 @@ async def stream_template_string(source: str, **context: Any) -> AsyncIterator[s
     return await _stream(current_app._get_current_object(), template, context)  # type: ignore
 
 
-async def _stream(app: "Quart", template: Template, context: Dict[str, Any]) -> AsyncIterator[str]:
+async def _stream(app: Quart, template: Template, context: dict[str, Any]) -> AsyncIterator[str]:
     await before_render_template.send_async(
         app, _sync_wrapper=app.ensure_async, template=template, context=context
     )

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from os import PathLike
 from pathlib import Path
-from typing import IO, Optional
+from typing import IO
 
 from aiofiles import open as async_open
 from werkzeug.datastructures import FileStorage as WerkzeugFileStorage, Headers
@@ -13,12 +13,12 @@ class FileStorage(WerkzeugFileStorage):
 
     def __init__(
         self,
-        stream: Optional[IO[bytes]] = None,
-        filename: Optional[str] = None,
-        name: Optional[str] = None,
-        content_type: Optional[str] = None,
-        content_length: Optional[int] = None,
-        headers: Optional[Headers] = None,
+        stream: IO[bytes] | None = None,
+        filename: str | None = None,
+        name: str | None = None,
+        content_type: str | None = None,
+        content_length: int | None = None,
+        headers: Headers | None = None,
     ) -> None:
         super().__init__(stream, filename, name, content_type, content_length, headers)
 

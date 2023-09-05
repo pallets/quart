@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, IO, TYPE_CHECKING, Union
+from typing import Any, IO, TYPE_CHECKING
 
 from flask.json.provider import _default
 
@@ -27,7 +27,7 @@ def dump(object_: Any, fp: IO[str], **kwargs: Any) -> None:
         json.dump(object_, fp, **kwargs)
 
 
-def loads(object_: Union[str, bytes], **kwargs: Any) -> Any:
+def loads(object_: str | bytes, **kwargs: Any) -> Any:
     if current_app:
         return current_app.json.loads(object_, **kwargs)
     else:

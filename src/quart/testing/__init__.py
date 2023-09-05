@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 class QuartCliRunner(CliRunner):
-    def __init__(self, app: "Quart", **kwargs: Any) -> None:
+    def __init__(self, app: Quart, **kwargs: Any) -> None:
         self.app = app
         super().__init__(**kwargs)
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from types import TracebackType
-from typing import Any, AnyStr, Awaitable, List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, AnyStr, Awaitable, TYPE_CHECKING
 
 from hypercorn.typing import ASGIReceiveEvent, ASGISendEvent, HTTPScope, WebsocketScope
 from werkzeug.datastructures import Headers
@@ -32,11 +32,11 @@ class WebsocketResponseError(Exception):
 class TestHTTPConnection:
     def __init__(self, app: Quart, scope: HTTPScope, _preserve_context: bool = False) -> None:
         self.app = app
-        self.headers: Optional[Headers] = None
-        self.push_promises: List[Tuple[str, Headers]] = []
+        self.headers: Headers | None = None
+        self.push_promises: list[tuple[str, Headers]] = []
         self.response_data = bytearray()
         self.scope = scope
-        self.status_code: Optional[int] = None
+        self.status_code: int | None = None
         self._preserve_context = _preserve_context
         self._send_queue: asyncio.Queue = asyncio.Queue()
         self._receive_queue: asyncio.Queue = asyncio.Queue()
@@ -58,7 +58,7 @@ class TestHTTPConnection:
     async def disconnect(self) -> None:
         await self._send_queue.put({"type": "http.disconnect"})
 
-    async def __aenter__(self) -> "TestHTTPConnection":
+    async def __aenter__(self) -> TestHTTPConnection:
         self._task = asyncio.ensure_future(
             self.app(self.scope, self._asgi_receive, self._asgi_send)
         )
@@ -101,15 +101,15 @@ class TestWebsocketConnection:
     def __init__(self, app: Quart, scope: WebsocketScope) -> None:
         self.accepted = False
         self.app = app
-        self.headers: Optional[Headers] = None
+        self.headers: Headers | None = None
         self.response_data = bytearray()
         self.scope = scope
-        self.status_code: Optional[int] = None
+        self.status_code: int | None = None
         self._send_queue: asyncio.Queue = asyncio.Queue()
         self._receive_queue: asyncio.Queue = asyncio.Queue()
         self._task: Awaitable[None] = None
 
-    async def __aenter__(self) -> "TestWebsocketConnection":
+    async def __aenter__(self) -> TestWebsocketConnection:
         self._task = asyncio.ensure_future(
             self.app(self.scope, self._asgi_receive, self._asgi_send)
         )

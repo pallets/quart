@@ -13,7 +13,7 @@ import traceback
 from importlib import import_module
 from operator import attrgetter
 from types import ModuleType
-from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Callable, TYPE_CHECKING
 
 import click
 from click.core import ParameterSource
@@ -166,11 +166,11 @@ def find_app_by_string(module: ModuleType, app_name: str) -> Quart:
         return app
 
     raise NoAppException(
-        "A valid Quart application was not obtained from" f" '{module.__name__}:{app_name}'."
+        f"A valid Quart application was not obtained from '{module.__name__}:{app_name}'."
     )
 
 
-def locate_app(module_name: str, app_name: str) -> Optional[Quart]:
+def locate_app(module_name: str, app_name: str) -> Quart | None:
     try:
         module = import_module(module_name)
     except ImportError:
@@ -222,15 +222,15 @@ def prepare_import(path: str) -> str:
 class ScriptInfo:
     def __init__(
         self,
-        app_import_path: Optional[str] = None,
-        create_app: Optional[Callable[..., Quart]] = None,
+        app_import_path: str | None = None,
+        create_app: Callable[..., Quart] | None = None,
         set_debug_flag: bool = True,
     ) -> None:
         self.app_import_path = app_import_path
         self.create_app = create_app
-        self.data: Dict[Any, Any] = {}
+        self.data: dict[Any, Any] = {}
         self.set_debug_flag = set_debug_flag
-        self._loaded_app: Optional[Quart] = None
+        self._loaded_app: Quart | None = None
 
     def load_app(self) -> Quart:
         if self._loaded_app is not None:
@@ -267,7 +267,7 @@ class ScriptInfo:
 pass_script_info = click.make_pass_decorator(ScriptInfo, ensure=True)
 
 
-def with_appcontext(fn: Optional[Callable] = None) -> Callable:
+def with_appcontext(fn: Callable | None = None) -> Callable:
     # decorator was used with parenthesis
     if fn is None:
         return with_appcontext
@@ -528,7 +528,7 @@ class QuartGroup(AppGroup):
 
         return app.cli.get_command(ctx, name)
 
-    def list_commands(self, ctx: click.Context) -> List[str]:
+    def list_commands(self, ctx: click.Context) -> list[str]:
         self._load_plugin_commands()
 
         rv = set(super().list_commands(ctx))

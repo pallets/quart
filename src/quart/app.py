@@ -17,14 +17,9 @@ from typing import (
     Awaitable,
     Callable,
     Coroutine,
-    Dict,
-    List,
     NoReturn,
     Optional,
-    Tuple,
-    Type,
     TypeVar,
-    Union,
 )
 from urllib.parse import quote
 from weakref import WeakSet
@@ -197,11 +192,11 @@ class Quart(App):
 
     """
 
-    asgi_http_class: Type[ASGIHTTPProtocol]
-    asgi_lifespan_class: Type[ASGILifespanProtocol]
-    asgi_websocket_class: Type[ASGIWebsocketProtocol]
-    test_app_class: Type[TestAppProtocol]
-    test_client_class: Type[TestClientProtocol]  # type: ignore[assignment]
+    asgi_http_class: type[ASGIHTTPProtocol]
+    asgi_lifespan_class: type[ASGILifespanProtocol]
+    asgi_websocket_class: type[ASGIWebsocketProtocol]
+    test_app_class: type[TestAppProtocol]
+    test_client_class: type[TestClientProtocol]  # type: ignore[assignment]
 
     aborter_class = Aborter
     app_ctx_globals_class = _AppCtxGlobals
@@ -254,15 +249,15 @@ class Quart(App):
     def __init__(
         self,
         import_name: str,
-        static_url_path: Optional[str] = None,
-        static_folder: Optional[str] = "static",
-        static_host: Optional[str] = None,
+        static_url_path: str | None = None,
+        static_folder: str | None = "static",
+        static_host: str | None = None,
         host_matching: bool = False,
         subdomain_matching: bool = False,
-        template_folder: Optional[str] = "templates",
-        instance_path: Optional[str] = None,
+        template_folder: str | None = "templates",
+        instance_path: str | None = None,
         instance_relative_config: bool = False,
-        root_path: Optional[str] = None,
+        root_path: str | None = None,
     ) -> None:
         """Construct a Quart web application.
 
@@ -305,19 +300,19 @@ class Quart(App):
             root_path,
         )
 
-        self.after_serving_funcs: List[Callable[[], Awaitable[None]]] = []
-        self.after_websocket_funcs: Dict[
-            AppOrBlueprintKey, List[AfterWebsocketCallable]
+        self.after_serving_funcs: list[Callable[[], Awaitable[None]]] = []
+        self.after_websocket_funcs: dict[
+            AppOrBlueprintKey, list[AfterWebsocketCallable]
         ] = defaultdict(list)
         self.background_tasks: WeakSet[asyncio.Task] = WeakSet()
-        self.before_serving_funcs: List[Callable[[], Awaitable[None]]] = []
-        self.before_websocket_funcs: Dict[
-            AppOrBlueprintKey, List[BeforeWebsocketCallable]
+        self.before_serving_funcs: list[Callable[[], Awaitable[None]]] = []
+        self.before_websocket_funcs: dict[
+            AppOrBlueprintKey, list[BeforeWebsocketCallable]
         ] = defaultdict(list)
-        self.teardown_websocket_funcs: Dict[
-            AppOrBlueprintKey, List[TeardownCallable]
+        self.teardown_websocket_funcs: dict[
+            AppOrBlueprintKey, list[TeardownCallable]
         ] = defaultdict(list)
-        self.while_serving_gens: List[AsyncGenerator[None, None]] = []
+        self.while_serving_gens: list[AsyncGenerator[None, None]] = []
 
         self.template_context_processors[None] = [_default_template_ctx_processor]
 
@@ -526,7 +521,7 @@ class Quart(App):
         self.after_serving_funcs.append(func)
         return func
 
-    def create_url_adapter(self, request: Optional[BaseRequestWebsocket]) -> Optional[MapAdapter]:
+    def create_url_adapter(self, request: BaseRequestWebsocket | None) -> MapAdapter | None:
         """Create and return a URL adapter.
 
         This will create the adapter based on the request if present
@@ -652,10 +647,10 @@ class Quart(App):
         self,
         endpoint: str,
         *,
-        _anchor: Optional[str] = None,
-        _external: Optional[bool] = None,
-        _method: Optional[str] = None,
-        _scheme: Optional[str] = None,
+        _anchor: str | None = None,
+        _external: bool | None = None,
+        _method: str | None = None,
+        _scheme: str | None = None,
         **values: Any,
     ) -> str:
         """Return the url for a specific endpoint.
@@ -745,14 +740,14 @@ class Quart(App):
 
     def run(
         self,
-        host: Optional[str] = None,
-        port: Optional[int] = None,
-        debug: Optional[bool] = None,
+        host: str | None = None,
+        port: int | None = None,
+        debug: bool | None = None,
         use_reloader: bool = True,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
-        ca_certs: Optional[str] = None,
-        certfile: Optional[str] = None,
-        keyfile: Optional[str] = None,
+        loop: asyncio.AbstractEventLoop | None = None,
+        ca_certs: str | None = None,
+        certfile: str | None = None,
+        keyfile: str | None = None,
         **kwargs: Any,
     ) -> None:
         """Run this application.
@@ -866,11 +861,11 @@ class Quart(App):
         self,
         host: str = "127.0.0.1",
         port: int = 5000,
-        debug: Optional[bool] = None,
-        ca_certs: Optional[str] = None,
-        certfile: Optional[str] = None,
-        keyfile: Optional[str] = None,
-        shutdown_trigger: Optional[Callable[..., Awaitable[None]]] = None,
+        debug: bool | None = None,
+        ca_certs: str | None = None,
+        certfile: str | None = None,
+        keyfile: str | None = None,
+        shutdown_trigger: Callable[..., Awaitable[None]] | None = None,
     ) -> Coroutine[None, None, None]:
         """Return a task that when awaited runs this application.
 
@@ -910,7 +905,7 @@ class Quart(App):
 
     async def handle_http_exception(
         self, error: HTTPException
-    ) -> Union[HTTPException, ResponseReturnValue]:
+    ) -> HTTPException | ResponseReturnValue:
         """Handle a HTTPException subclass error.
 
         This will attempt to find a handler for the error and if fails
@@ -934,9 +929,7 @@ class Quart(App):
         else:
             return await self.ensure_async(handler)(error)
 
-    async def handle_user_exception(
-        self, error: Exception
-    ) -> Union[HTTPException, ResponseReturnValue]:
+    async def handle_user_exception(self, error: Exception) -> HTTPException | ResponseReturnValue:
         """Handle an exception that has been raised.
 
         This should forward :class:`~quart.exception.HTTPException` to
@@ -986,7 +979,7 @@ class Quart(App):
             raise error
 
         self.log_exception(exc_info)
-        server_error: Union[InternalServerError, ResponseReturnValue]
+        server_error: InternalServerError | ResponseReturnValue
         server_error = InternalServerError(original_exception=error)
         handler = self._find_error_handler(server_error, request.blueprints)
 
@@ -995,7 +988,7 @@ class Quart(App):
 
         return await self.finalize_request(server_error, from_error_handler=True)
 
-    async def handle_websocket_exception(self, error: Exception) -> Optional[ResponseTypes]:
+    async def handle_websocket_exception(self, error: Exception) -> ResponseTypes | None:
         """Handle an uncaught exception.
 
         By default this logs the exception and then re-raises it.
@@ -1018,7 +1011,7 @@ class Quart(App):
             raise error
 
         self.log_exception(exc_info)
-        server_error: Union[InternalServerError, ResponseReturnValue]
+        server_error: InternalServerError | ResponseReturnValue
         server_error = InternalServerError(original_exception=error)
         handler = self._find_error_handler(server_error, websocket.blueprints)
 
@@ -1029,7 +1022,7 @@ class Quart(App):
 
     def log_exception(
         self,
-        exception_info: Union[Tuple[type, BaseException, TracebackType], Tuple[None, None, None]],
+        exception_info: tuple[type, BaseException, TracebackType] | tuple[None, None, None],
     ) -> None:
         """Log a exception to the :attr:`logger`.
 
@@ -1073,7 +1066,7 @@ class Quart(App):
         return run_sync(func)
 
     async def do_teardown_request(
-        self, exc: Optional[BaseException], request_context: Optional[RequestContext] = None
+        self, exc: BaseException | None, request_context: RequestContext | None = None
     ) -> None:
         """Teardown the request, calling the teardown functions.
 
@@ -1091,7 +1084,7 @@ class Quart(App):
         await request_tearing_down.send_async(self, _sync_wrapper=self.ensure_async, exc=exc)
 
     async def do_teardown_websocket(
-        self, exc: Optional[BaseException], websocket_context: Optional[WebsocketContext] = None
+        self, exc: BaseException | None, websocket_context: WebsocketContext | None = None
     ) -> None:
         """Teardown the websocket, calling the teardown functions.
 
@@ -1108,7 +1101,7 @@ class Quart(App):
 
         await websocket_tearing_down.send_async(self, _sync_wrapper=self.ensure_async, exc=exc)
 
-    async def do_teardown_appcontext(self, exc: Optional[BaseException]) -> None:
+    async def do_teardown_appcontext(self, exc: BaseException | None) -> None:
         """Teardown the app (context), calling the teardown functions."""
         for function in self.teardown_appcontext_funcs:
             await self.ensure_async(function)(exc)
@@ -1166,18 +1159,18 @@ class Quart(App):
         path: str,
         *,
         method: str = "GET",
-        headers: Optional[Union[dict, Headers]] = None,
-        query_string: Optional[dict] = None,
+        headers: dict | Headers | None = None,
+        query_string: dict | None = None,
         scheme: str = "http",
         send_push_promise: Callable[[str, Headers], Awaitable[None]] = no_op_push,
-        data: Optional[AnyStr] = None,
-        form: Optional[dict] = None,
+        data: AnyStr | None = None,
+        form: dict | None = None,
         json: Any = sentinel,
         root_path: str = "",
         http_version: str = "1.1",
-        scope_base: Optional[dict] = None,
-        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
-        subdomain: Optional[str] = None,
+        scope_base: dict | None = None,
+        auth: Authorization | tuple[str, str] | None = None,
+        subdomain: str | None = None,
     ) -> RequestContext:
         """Create a request context for testing purposes.
 
@@ -1255,9 +1248,7 @@ class Quart(App):
         methods = request_ctx.url_adapter.allowed_methods()
         return self.response_class("", headers={"Allow": ", ".join(methods)})
 
-    async def make_response(
-        self, result: Union[ResponseReturnValue, HTTPException]
-    ) -> ResponseTypes:
+    async def make_response(self, result: ResponseReturnValue | HTTPException) -> ResponseTypes:
         """Make a Response from the result of the route handler.
 
         The result itself can either be:
@@ -1267,8 +1258,8 @@ class Quart(App):
 
         A ResponseValue is either a Response object (or subclass) or a str.
         """
-        headers: Optional[HeadersValue] = None
-        status: Optional[StatusCode] = None
+        headers: HeadersValue | None = None
+        status: StatusCode | None = None
         if isinstance(result, tuple):
             if len(result) == 3:
                 value, status, headers = result  # type: ignore[misc]
@@ -1328,7 +1319,7 @@ class Quart(App):
                 if request.scope.get("_quart._preserve_context", False):
                     self._preserved_context = request_context.copy()
 
-    async def handle_websocket(self, websocket: Websocket) -> Optional[ResponseTypes]:
+    async def handle_websocket(self, websocket: Websocket) -> ResponseTypes | None:
         async with self.websocket_context(websocket) as websocket_context:
             try:
                 return await self.full_dispatch_websocket(websocket_context)
@@ -1341,7 +1332,7 @@ class Quart(App):
                     self._preserved_context = websocket_context.copy()
 
     async def full_dispatch_request(
-        self, request_context: Optional[RequestContext] = None
+        self, request_context: RequestContext | None = None
     ) -> ResponseTypes:
         """Adds pre and post processing to the request dispatching.
 
@@ -1354,7 +1345,7 @@ class Quart(App):
         try:
             await request_started.send_async(self, _sync_wrapper=self.ensure_async)
 
-            result: Optional[Union[ResponseReturnValue, HTTPException]]
+            result: ResponseReturnValue | HTTPException | None
             result = await self.preprocess_request(request_context)
             if result is None:
                 result = await self.dispatch_request(request_context)
@@ -1363,8 +1354,8 @@ class Quart(App):
         return await self.finalize_request(result, request_context)
 
     async def full_dispatch_websocket(
-        self, websocket_context: Optional[WebsocketContext] = None
-    ) -> Optional[ResponseTypes]:
+        self, websocket_context: WebsocketContext | None = None
+    ) -> ResponseTypes | None:
         """Adds pre and post processing to the websocket dispatching.
 
         Arguments:
@@ -1376,7 +1367,7 @@ class Quart(App):
         try:
             await websocket_started.send_async(self, _sync_wrapper=self.ensure_async)
 
-            result: Optional[Union[ResponseReturnValue, HTTPException]]
+            result: ResponseReturnValue | HTTPException | None
             result = await self.preprocess_websocket(websocket_context)
             if result is None:
                 result = await self.dispatch_websocket(websocket_context)
@@ -1385,8 +1376,8 @@ class Quart(App):
         return await self.finalize_websocket(result, websocket_context)
 
     async def preprocess_request(
-        self, request_context: Optional[RequestContext] = None
-    ) -> Optional[ResponseReturnValue]:
+        self, request_context: RequestContext | None = None
+    ) -> ResponseReturnValue | None:
         """Preprocess the request i.e. call before_request functions.
 
         Arguments:
@@ -1408,8 +1399,8 @@ class Quart(App):
         return None
 
     async def preprocess_websocket(
-        self, websocket_context: Optional[WebsocketContext] = None
-    ) -> Optional[ResponseReturnValue]:
+        self, websocket_context: WebsocketContext | None = None
+    ) -> ResponseReturnValue | None:
         """Preprocess the websocket i.e. call before_websocket functions.
 
         Arguments:
@@ -1437,7 +1428,7 @@ class Quart(App):
         raise request.routing_exception
 
     async def dispatch_request(
-        self, request_context: Optional[RequestContext] = None
+        self, request_context: RequestContext | None = None
     ) -> ResponseReturnValue:
         """Dispatch the request to the view function.
 
@@ -1456,8 +1447,8 @@ class Quart(App):
         return await self.ensure_async(handler)(**request_.view_args)
 
     async def dispatch_websocket(
-        self, websocket_context: Optional[WebsocketContext] = None
-    ) -> Optional[ResponseReturnValue]:
+        self, websocket_context: WebsocketContext | None = None
+    ) -> ResponseReturnValue | None:
         """Dispatch the websocket to the view function.
 
         Arguments:
@@ -1473,8 +1464,8 @@ class Quart(App):
 
     async def finalize_request(
         self,
-        result: Union[ResponseReturnValue, HTTPException],
-        request_context: Optional[RequestContext] = None,
+        result: ResponseReturnValue | HTTPException,
+        request_context: RequestContext | None = None,
         from_error_handler: bool = False,
     ) -> ResponseTypes:
         """Turns the view response return value into a response.
@@ -1498,10 +1489,10 @@ class Quart(App):
 
     async def finalize_websocket(
         self,
-        result: Union[ResponseReturnValue, HTTPException],
-        websocket_context: Optional[WebsocketContext] = None,
+        result: ResponseReturnValue | HTTPException,
+        websocket_context: WebsocketContext | None = None,
         from_error_handler: bool = False,
-    ) -> Optional[ResponseTypes]:
+    ) -> ResponseTypes | None:
         """Turns the view response return value into a response.
 
         Arguments:
@@ -1527,7 +1518,7 @@ class Quart(App):
     async def process_response(
         self,
         response: ResponseTypes,
-        request_context: Optional[RequestContext] = None,
+        request_context: RequestContext | None = None,
     ) -> ResponseTypes:
         """Postprocess the request acting on the response.
 
@@ -1552,8 +1543,8 @@ class Quart(App):
 
     async def postprocess_websocket(
         self,
-        response: Optional[ResponseTypes],
-        websocket_context: Optional[WebsocketContext] = None,
+        response: ResponseTypes | None,
+        websocket_context: WebsocketContext | None = None,
     ) -> ResponseTypes:
         """Postprocess the websocket acting on the response.
 
@@ -1602,7 +1593,7 @@ class Quart(App):
             app.asgi_app = middleware(app.asgi_app)
 
         """
-        asgi_handler: Union[ASGIHTTPProtocol, ASGILifespanProtocol, ASGIWebsocketProtocol]
+        asgi_handler: ASGIHTTPProtocol | ASGILifespanProtocol | ASGIWebsocketProtocol
         if scope["type"] == "http":
             asgi_handler = self.asgi_http_class(self, scope)
         elif scope["type"] == "websocket":

@@ -18,7 +18,6 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    Type,
     TYPE_CHECKING,
     Union,
 )
@@ -153,7 +152,7 @@ class ASGIWebsocketProtocol(Protocol):
 
 
 class TestHTTPConnectionProtocol(Protocol):
-    push_promises: List[Tuple[str, Headers]]
+    push_promises: list[tuple[str, Headers]]
 
     def __init__(self, app: Quart, scope: HTTPScope, _preserve_context: bool = False) -> None:
         ...
@@ -211,10 +210,10 @@ class TestWebsocketConnectionProtocol(Protocol):
 
 class TestClientProtocol(Protocol):
     app: Quart
-    cookie_jar: Optional[CookieJar]
-    http_connection_class: Type[TestHTTPConnectionProtocol]
-    push_promises: List[Tuple[str, Headers]]
-    websocket_connection_class: Type[TestWebsocketConnectionProtocol]
+    cookie_jar: CookieJar | None
+    http_connection_class: type[TestHTTPConnectionProtocol]
+    push_promises: list[tuple[str, Headers]]
+    websocket_connection_class: type[TestWebsocketConnectionProtocol]
 
     def __init__(self, app: Quart, use_cookies: bool = True) -> None:
         ...
@@ -224,19 +223,19 @@ class TestClientProtocol(Protocol):
         path: str,
         *,
         method: str = "GET",
-        headers: Optional[Union[dict, Headers]] = None,
-        data: Optional[AnyStr] = None,
-        form: Optional[dict] = None,
-        files: Optional[Dict[str, FileStorage]] = None,
-        query_string: Optional[dict] = None,
+        headers: dict | Headers | None = None,
+        data: AnyStr | None = None,
+        form: dict | None = None,
+        files: dict[str, FileStorage] | None = None,
+        query_string: dict | None = None,
         json: Any,
         scheme: str = "http",
         follow_redirects: bool = False,
         root_path: str = "",
         http_version: str = "1.1",
-        scope_base: Optional[dict] = None,
-        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
-        subdomain: Optional[str] = None,
+        scope_base: dict | None = None,
+        auth: Authorization | tuple[str, str] | None = None,
+        subdomain: str | None = None,
     ) -> Response:
         ...
 
@@ -245,14 +244,14 @@ class TestClientProtocol(Protocol):
         path: str,
         *,
         method: str = "GET",
-        headers: Optional[Union[dict, Headers]] = None,
-        query_string: Optional[dict] = None,
+        headers: dict | Headers | None = None,
+        query_string: dict | None = None,
         scheme: str = "http",
         root_path: str = "",
         http_version: str = "1.1",
-        scope_base: Optional[dict] = None,
-        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
-        subdomain: Optional[str] = None,
+        scope_base: dict | None = None,
+        auth: Authorization | tuple[str, str] | None = None,
+        subdomain: str | None = None,
     ) -> TestHTTPConnectionProtocol:
         ...
 
@@ -260,15 +259,15 @@ class TestClientProtocol(Protocol):
         self,
         path: str,
         *,
-        headers: Optional[Union[dict, Headers]] = None,
-        query_string: Optional[dict] = None,
+        headers: dict | Headers | None = None,
+        query_string: dict | None = None,
         scheme: str = "ws",
-        subprotocols: Optional[List[str]] = None,
+        subprotocols: list[str] | None = None,
         root_path: str = "",
         http_version: str = "1.1",
-        scope_base: Optional[dict] = None,
-        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
-        subdomain: Optional[str] = None,
+        scope_base: dict | None = None,
+        auth: Authorization | tuple[str, str] | None = None,
+        subdomain: str | None = None,
     ) -> TestWebsocketConnectionProtocol:
         ...
 
@@ -301,10 +300,10 @@ class TestClientProtocol(Protocol):
         server_name: str,
         key: str,
         value: str = "",
-        max_age: Optional[Union[int, timedelta]] = None,
-        expires: Optional[Union[int, float, datetime]] = None,
+        max_age: int | timedelta | None = None,
+        expires: int | float | datetime | None = None,
         path: str = "/",
-        domain: Optional[str] = None,
+        domain: str | None = None,
         secure: bool = False,
         httponly: bool = False,
         samesite: str = None,
@@ -313,7 +312,7 @@ class TestClientProtocol(Protocol):
         ...
 
     def delete_cookie(
-        self, server_name: str, key: str, path: str = "/", domain: Optional[str] = None
+        self, server_name: str, key: str, path: str = "/", domain: str | None = None
     ) -> None:
         ...
 
@@ -322,11 +321,11 @@ class TestClientProtocol(Protocol):
         path: str = "/",
         *,
         method: str = "GET",
-        headers: Optional[Union[dict, Headers]] = None,
-        query_string: Optional[dict] = None,
+        headers: dict | Headers | None = None,
+        query_string: dict | None = None,
         scheme: str = "http",
-        data: Optional[AnyStr] = None,
-        form: Optional[dict] = None,
+        data: AnyStr | None = None,
+        form: dict | None = None,
         json: Any = None,
         root_path: str = "",
         http_version: str = "1.1",

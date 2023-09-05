@@ -4,18 +4,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from http.cookiejar import CookieJar
 from types import TracebackType
-from typing import (
-    Any,
-    AnyStr,
-    AsyncGenerator,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import Any, AnyStr, AsyncGenerator, TYPE_CHECKING
 from urllib.request import Request as U2Request
 
 from werkzeug.datastructures import Authorization, Headers
@@ -42,7 +31,7 @@ class _TestWrapper:
     def __init__(self, headers: Headers) -> None:
         self.headers = headers
 
-    def get_all(self, name: str, default: Optional[Any] = None) -> List[str]:
+    def get_all(self, name: str, default: Any | None = None) -> list[str]:
         name = name.lower()
         result = []
         for key, value in self.headers:
@@ -60,40 +49,40 @@ class _TestCookieJarResponse:
 
 
 class QuartClient:
-    http_connection_class: Type[TestHTTPConnectionProtocol]
-    websocket_connection_class: Type[TestWebsocketConnectionProtocol]
+    http_connection_class: type[TestHTTPConnectionProtocol]
+    websocket_connection_class: type[TestWebsocketConnectionProtocol]
 
     http_connection_class = TestHTTPConnection
     websocket_connection_class = TestWebsocketConnection
 
-    def __init__(self, app: "Quart", use_cookies: bool = True) -> None:
+    def __init__(self, app: Quart, use_cookies: bool = True) -> None:
         self.app = app
-        self.cookie_jar: Optional[CookieJar]
+        self.cookie_jar: CookieJar | None
         if use_cookies:
             self.cookie_jar = CookieJar()
         else:
             self.cookie_jar = None
         self.preserve_context = False
-        self.push_promises: List[Tuple[str, Headers]] = []
+        self.push_promises: list[tuple[str, Headers]] = []
 
     async def open(
         self,
         path: str,
         *,
         method: str = "GET",
-        headers: Optional[Union[dict, Headers]] = None,
-        data: Optional[AnyStr] = None,
-        form: Optional[dict] = None,
-        files: Optional[Dict[str, FileStorage]] = None,
-        query_string: Optional[dict] = None,
+        headers: dict | Headers | None = None,
+        data: AnyStr | None = None,
+        form: dict | None = None,
+        files: dict[str, FileStorage] | None = None,
+        query_string: dict | None = None,
         json: Any = sentinel,
         scheme: str = "http",
         follow_redirects: bool = False,
         root_path: str = "",
         http_version: str = "1.1",
-        scope_base: Optional[dict] = None,
-        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
-        subdomain: Optional[str] = None,
+        scope_base: dict | None = None,
+        auth: Authorization | tuple[str, str] | None = None,
+        subdomain: str | None = None,
     ) -> Response:
         self.push_promises = []
         response = await self._make_request(
@@ -144,14 +133,14 @@ class QuartClient:
         path: str,
         *,
         method: str = "GET",
-        headers: Optional[Union[dict, Headers]] = None,
-        query_string: Optional[dict] = None,
+        headers: dict | Headers | None = None,
+        query_string: dict | None = None,
         scheme: str = "http",
         root_path: str = "",
         http_version: str = "1.1",
-        scope_base: Optional[dict] = None,
-        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
-        subdomain: Optional[str] = None,
+        scope_base: dict | None = None,
+        auth: Authorization | tuple[str, str] | None = None,
+        subdomain: str | None = None,
     ) -> TestHTTPConnectionProtocol:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self.app,
@@ -182,15 +171,15 @@ class QuartClient:
         self,
         path: str,
         *,
-        headers: Optional[Union[dict, Headers]] = None,
-        query_string: Optional[dict] = None,
+        headers: dict | Headers | None = None,
+        query_string: dict | None = None,
         scheme: str = "ws",
-        subprotocols: Optional[List[str]] = None,
+        subprotocols: list[str] | None = None,
         root_path: str = "",
         http_version: str = "1.1",
-        scope_base: Optional[dict] = None,
-        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
-        subdomain: Optional[str] = None,
+        scope_base: dict | None = None,
+        auth: Authorization | tuple[str, str] | None = None,
+        subdomain: str | None = None,
     ) -> TestWebsocketConnectionProtocol:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self.app,
@@ -286,10 +275,10 @@ class QuartClient:
         server_name: str,
         key: str,
         value: str = "",
-        max_age: Optional[Union[int, timedelta]] = None,
-        expires: Optional[Union[int, float, datetime]] = None,
+        max_age: int | timedelta | None = None,
+        expires: int | float | datetime | None = None,
         path: str = "/",
-        domain: Optional[str] = None,
+        domain: str | None = None,
         secure: bool = False,
         httponly: bool = False,
         samesite: str = None,
@@ -316,7 +305,7 @@ class QuartClient:
         )
 
     def delete_cookie(
-        self, server_name: str, key: str, path: str = "/", domain: Optional[str] = None
+        self, server_name: str, key: str, path: str = "/", domain: str | None = None
     ) -> None:
         """Delete a cookie (set to expire immediately)."""
         self.set_cookie(server_name, key, expires=0, max_age=0, path=path, domain=domain)
@@ -327,15 +316,15 @@ class QuartClient:
         path: str = "/",
         *,
         method: str = "GET",
-        headers: Optional[Union[dict, Headers]] = None,
-        query_string: Optional[dict] = None,
+        headers: dict | Headers | None = None,
+        query_string: dict | None = None,
         scheme: str = "http",
-        data: Optional[AnyStr] = None,
-        form: Optional[dict] = None,
+        data: AnyStr | None = None,
+        form: dict | None = None,
         json: Any = sentinel,
         root_path: str = "",
         http_version: str = "1.1",
-        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
+        auth: Authorization | tuple[str, str] | None = None,
     ) -> AsyncGenerator[SessionMixin, None]:
         if self.cookie_jar is None:
             raise RuntimeError("Session transactions only make sense with cookies enabled.")
@@ -382,7 +371,7 @@ class QuartClient:
                 U2Request(ctx.request.url),
             )
 
-    async def __aenter__(self) -> "QuartClient":
+    async def __aenter__(self) -> QuartClient:
         if self.preserve_context:
             raise RuntimeError("Cannot nest client invocations")
         self.preserve_context = True
@@ -403,18 +392,18 @@ class QuartClient:
         self,
         path: str,
         method: str,
-        headers: Optional[Union[dict, Headers]],
-        data: Optional[AnyStr],
-        form: Optional[dict],
-        files: Optional[Dict[str, FileStorage]],
-        query_string: Optional[dict],
+        headers: dict | Headers | None,
+        data: AnyStr | None,
+        form: dict | None,
+        files: dict[str, FileStorage] | None,
+        query_string: dict | None,
         json: Any,
         scheme: str,
         root_path: str,
         http_version: str,
-        scope_base: Optional[dict],
-        auth: Optional[Union[Authorization, Tuple[str, str]]] = None,
-        subdomain: Optional[str] = None,
+        scope_base: dict | None,
+        auth: Authorization | tuple[str, str] | None = None,
+        subdomain: str | None = None,
     ) -> Response:
         headers, path, query_string_bytes = make_test_headers_path_and_query_string(
             self.app, path, headers, query_string, auth, subdomain

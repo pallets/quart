@@ -1,7 +1,6 @@
 import asyncio
 from typing import AsyncGenerator
 
-from quart import Quart
 
 class Broker:
     def __init__(self) -> None:

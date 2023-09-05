@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from http.cookies import SimpleCookie
-from sys import version_info
 
 from hypercorn.typing import HTTPScope
 from werkzeug.datastructures import Headers
@@ -42,8 +41,7 @@ async def test_secure_cookie_session_interface_save_session() -> None:
     assert cookie["path"] == interface.get_cookie_path(app)
     assert cookie["httponly"] == "" if not interface.get_cookie_httponly(app) else True
     assert cookie["secure"] == "" if not interface.get_cookie_secure(app) else True
-    if version_info >= (3, 8):
-        assert cookie["samesite"] == (interface.get_cookie_samesite(app) or "")
+    assert cookie["samesite"] == (interface.get_cookie_samesite(app) or "")
     assert cookie["domain"] == (interface.get_cookie_domain(app) or "")
     assert cookie["expires"] == (interface.get_expiration_time(app, session) or "")
     assert response.headers["Vary"] == "Cookie"
