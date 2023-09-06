@@ -41,7 +41,6 @@ from .asgi import ASGIHTTPConnection, ASGILifespan, ASGIWebsocketConnection
 from .ctx import (
     _AppCtxGlobals,
     AppContext,
-    copy_current_app_context,
     has_request_context,
     has_websocket_context,
     RequestContext,
@@ -1225,7 +1224,8 @@ class Quart(App):
     def add_background_task(self, func: Callable, *args: Any, **kwargs: Any) -> None:
         async def _wrapper() -> None:
             try:
-                await copy_current_app_context(self.ensure_async(func))(*args, **kwargs)
+                async with self.app_context():
+                    await self.ensure_async(func)(*args, **kwargs)
             except Exception as error:
                 await self.handle_background_exception(error)
 
