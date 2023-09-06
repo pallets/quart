@@ -91,7 +91,6 @@ from .typing import (
     ASGIHTTPProtocol,
     ASGILifespanProtocol,
     ASGIWebsocketProtocol,
-    BeforeFirstRequestCallable,
     BeforeServingCallable,
     BeforeWebsocketCallable,
     FilePath,
@@ -126,7 +125,6 @@ except ImportError:
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
 T_after_serving = TypeVar("T_after_serving", bound=AfterServingCallable)
-T_before_first_request = TypeVar("T_before_first_request", bound=BeforeFirstRequestCallable)
 T_before_serving = TypeVar("T_before_serving", bound=BeforeServingCallable)
 T_shell_context_processor = TypeVar(
     "T_shell_context_processor", bound=ShellContextProcessorCallable
@@ -280,8 +278,6 @@ class Quart(App):
                 request has been handled.
             after_websocket_funcs: The functions to execute after a
                 websocket has been handled.
-            before_first_request_func: Functions to execute before the
-                first request only.
             before_request_funcs: The functions to execute before handling
                 a request.
             before_websocket_funcs: The functions to execute before handling
@@ -1340,8 +1336,6 @@ class Quart(App):
             request_context: The request context, optional as Flask
                 omits this argument.
         """
-        self._got_first_request = True
-
         try:
             await request_started.send_async(self, _sync_wrapper=self.ensure_async)
 
@@ -1362,8 +1356,6 @@ class Quart(App):
             websocket_context: The websocket context, optional to match
                 the Flask convention.
         """
-        self._got_first_request = True
-
         try:
             await websocket_started.send_async(self, _sync_wrapper=self.ensure_async)
 
@@ -1605,8 +1597,6 @@ class Quart(App):
         await asgi_handler(receive, send)
 
     async def startup(self) -> None:
-        self._got_first_request = False
-
         try:
             async with self.app_context():
                 for func in self.before_serving_funcs:

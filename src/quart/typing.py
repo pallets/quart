@@ -88,7 +88,6 @@ AfterWebsocketCallable = Union[
     Callable[[ResponseTypes], Optional[ResponseTypes]],
     Callable[[ResponseTypes], Awaitable[Optional[ResponseTypes]]],
 ]
-BeforeFirstRequestCallable = Union[Callable[[], None], Callable[[], Awaitable[None]]]
 BeforeRequestCallable = Union[
     Callable[[], Optional[ResponseReturnValue]],
     Callable[[], Awaitable[Optional[ResponseReturnValue]]],

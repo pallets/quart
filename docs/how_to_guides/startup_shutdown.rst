@@ -8,9 +8,8 @@ coroutines before the first byte is received and after the final byte
 is sent, through the ``startup`` and ``shutdown`` lifespan events.
 This is particularly useful for creating and destroying connection
 pools.  Quart supports this via the decorators
-:func:`~quart.app.Quart.before_serving` and
-:func:`~quart.app.Quart.after_serving`, which function like
-:func:`~quart.app.Quart.before_first_request`, and
+:func:`~quart.app.Quart.before_serving`,
+:func:`~quart.app.Quart.after_serving`, and
 :func:`~quart.app.Quart.while_serving` which expects a function that
 returns a generator.
 
