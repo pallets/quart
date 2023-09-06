@@ -1611,6 +1611,8 @@ class Quart(App):
             raise
 
     async def shutdown(self) -> None:
+        await asyncio.gather(*self.background_tasks)
+
         try:
             async with self.app_context():
                 for func in self.after_serving_funcs:
@@ -1628,8 +1630,6 @@ class Quart(App):
             )
             self.log_exception(sys.exc_info())
             raise
-
-        await asyncio.gather(*self.background_tasks)
 
 
 def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
