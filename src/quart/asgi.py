@@ -71,6 +71,13 @@ class ASGIHTTPConnection:
 
         path = self.scope["path"]
         path = path if path[0] == "/" else urlparse(path).path
+        root_path = self.scope.get("root_path", "")
+        if root_path != "":
+            try:
+                path = path.split(root_path, 1)[1]
+                path = " " if path == "" else path
+            except IndexError:
+                path = " "  # Invalid in paths, hence will result in 404
 
         return self.app.request_class(
             self.scope["method"],
@@ -183,6 +190,13 @@ class ASGIWebsocketConnection:
 
         path = self.scope["path"]
         path = path if path[0] == "/" else urlparse(path).path
+        root_path = self.scope.get("root_path", "")
+        if root_path != "":
+            try:
+                path = path.split(root_path, 1)[1]
+                path = " " if path == "" else path
+            except IndexError:
+                path = " "  # Invalid in paths, hence will result in 404
 
         return self.app.websocket_class(
             path,

@@ -63,21 +63,13 @@ class QuartMap(Map):
             else:
                 subdomain = ".".join(filter(None, request_host_parts[:offset]))
 
-        if request.root_path:
-            try:
-                path = request.path.split(request.root_path, 1)[1]
-            except IndexError:
-                path = " "  # Invalid in paths, hence will result in 404
-        else:
-            path = request.path
-
         return super().bind(
             host,
             request.root_path,
             subdomain,
             request.scheme,
             request.method,
-            path,
+            request.path,
             request.query_string.decode(),
         )
 

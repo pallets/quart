@@ -174,6 +174,32 @@ def test_http_path_from_absolute_target() -> None:
     assert request.path == "/path"
 
 
+@pytest.mark.parametrize(
+    "path, expected",
+    [("/app", "/ "), ("/", "/ "), ("/app/", "/"), ("/app/2", "/2")],
+)
+def test_http_path_with_root_path(path: str, expected: str) -> None:
+    app = Quart(__name__)
+    scope: HTTPScope = {
+        "type": "http",
+        "asgi": {},
+        "http_version": "1.1",
+        "method": "GET",
+        "scheme": "https",
+        "path": path,
+        "raw_path": b"/",
+        "query_string": b"",
+        "root_path": "/app",
+        "headers": [(b"host", b"quart")],
+        "client": ("127.0.0.1", 80),
+        "server": None,
+        "extensions": {},
+    }
+    connection = ASGIHTTPConnection(app, scope)
+    request = connection._create_request_from_scope(lambda: None)  # type: ignore
+    assert request.path == expected
+
+
 def test_websocket_path_from_absolute_target() -> None:
     app = Quart(__name__)
     scope: WebsocketScope = {
@@ -194,6 +220,32 @@ def test_websocket_path_from_absolute_target() -> None:
     connection = ASGIWebsocketConnection(app, scope)
     websocket = connection._create_websocket_from_scope(lambda: None)  # type: ignore
     assert websocket.path == "/path"
+
+
+@pytest.mark.parametrize(
+    "path, expected",
+    [("/app", "/ "), ("/", "/ "), ("/app/", "/"), ("/app/2", "/2")],
+)
+def test_websocket_path_with_root_path(path: str, expected: str) -> None:
+    app = Quart(__name__)
+    scope: WebsocketScope = {
+        "type": "websocket",
+        "asgi": {},
+        "http_version": "1.1",
+        "scheme": "wss",
+        "path": path,
+        "raw_path": b"/",
+        "query_string": b"",
+        "root_path": "/app",
+        "headers": [(b"host", b"quart")],
+        "client": ("127.0.0.1", 80),
+        "server": None,
+        "subprotocols": [],
+        "extensions": {"websocket.http.response": {}},
+    }
+    connection = ASGIWebsocketConnection(app, scope)
+    websocket = connection._create_websocket_from_scope(lambda: None)  # type: ignore
+    assert websocket.path == expected
 
 
 @pytest.mark.parametrize(
