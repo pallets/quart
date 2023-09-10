@@ -108,6 +108,7 @@ from .typing import (
     WhileServingCallable,
 )
 from .utils import (
+    cancel_tasks,
     file_path_to_path,
     is_coroutine_function,
     MustReloadError,
@@ -215,6 +216,7 @@ class Quart(App):
     default_config = ImmutableDict(
         {
             "APPLICATION_ROOT": None,
+            "BACKGROUND_TASK_SHUTDOWN_TIMEOUT": 5,  # Second
             "BODY_TIMEOUT": 60,  # Second
             "DEBUG": None,
             "ENV": None,
@@ -1611,7 +1613,13 @@ class Quart(App):
             raise
 
     async def shutdown(self) -> None:
-        await asyncio.gather(*self.background_tasks)
+        try:
+            await asyncio.wait_for(
+                asyncio.gather(*self.background_tasks),
+                timeout=self.config["BACKGROUND_TASK_SHUTDOWN_TIMEOUT"],
+            )
+        except asyncio.TimeoutError:
+            await cancel_tasks(self.background_tasks)  # type: ignore
 
         try:
             async with self.app_context():

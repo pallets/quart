@@ -32,8 +32,11 @@ method:
 
 The background tasks will have access to the app context. The tasks
 will be awaited during shutdown to ensure they complete before the app
-shuts down. If your task does not complete it will eventually be
-cancelled as the app is forceably shut down by the server.
+shuts down. If your task does not complete within the config
+``BACKGROUND_TASK_SHUTDOWN_TIMEOUT`` it will be cancelled.
+
+Note ``BACKGROUND_TASK_SHUTDOWN_TIMEOUT`` should ideally be less than
+any server shutdown timeout.
 
 Synchronous background tasks are supported and will run in a separate
 thread.

@@ -29,7 +29,7 @@ from werkzeug.wrappers import Response as WerkzeugResponse
 from .debug import traceback_response
 from .signals import websocket_received, websocket_sent
 from .typing import ResponseTypes
-from .utils import encode_headers
+from .utils import cancel_tasks, encode_headers, raise_task_exceptions
 from .wrappers import Request, Response, Websocket  # noqa: F401
 
 if TYPE_CHECKING:
@@ -48,8 +48,8 @@ class ASGIHTTPConnection:
         done, pending = await asyncio.wait(
             [handler_task, receiver_task], return_when=asyncio.FIRST_COMPLETED
         )
-        await _cancel_tasks(pending)
-        _raise_exceptions(done)
+        await cancel_tasks(pending)
+        raise_task_exceptions(done)
 
     async def handle_messages(self, request: Request, receive: ASGIReceiveCallable) -> None:
         while True:
@@ -162,8 +162,8 @@ class ASGIWebsocketConnection:
         done, pending = await asyncio.wait(
             [handler_task, receiver_task], return_when=asyncio.FIRST_COMPLETED
         )
-        await _cancel_tasks(pending)
-        _raise_exceptions(done)
+        await cancel_tasks(pending)
+        raise_task_exceptions(done)
 
     async def handle_messages(self, receive: ASGIReceiveCallable) -> None:
         while True:
@@ -330,22 +330,6 @@ class ASGILifespan:
                         cast(LifespanShutdownCompleteEvent, {"type": "lifespan.shutdown.complete"}),
                     )
                 break
-
-
-async def _cancel_tasks(tasks: set[asyncio.Task]) -> None:
-    # Cancel any pending, and wait for the cancellation to
-    # complete i.e. finish any remaining work.
-    for task in tasks:
-        task.cancel()
-    await asyncio.gather(*tasks, return_exceptions=True)
-    _raise_exceptions(tasks)
-
-
-def _raise_exceptions(tasks: set[asyncio.Task]) -> None:
-    # Raise any unexpected exceptions
-    for task in tasks:
-        if not task.cancelled() and task.exception() is not None:
-            raise task.exception()
 
 
 def _convert_version(raw: str) -> list[int]:
