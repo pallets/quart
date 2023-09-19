@@ -151,7 +151,7 @@ type of request (WebSocket upgrade or not). As so,
     async def http():
         return "A HTTP request"
 
-    @app.route("/ws")
+    @app.websocket("/ws")
     async def ws():
         ...  # Use the WebSocket
 
