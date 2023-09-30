@@ -34,11 +34,7 @@ def get_debug_flag() -> bool:
     configured, it will be enabled automatically.
     """
     value = os.getenv("QUART_DEBUG", None)
-
-    if value is None:
-        return "development" == get_env()
-
-    return value.lower() not in {"0", "false", "no"}
+    return bool(value and value.lower() not in {"0", "false", "no"})
 
 
 def get_load_dotenv(default: bool = True) -> bool:
@@ -53,13 +49,6 @@ def get_load_dotenv(default: bool = True) -> bool:
         return default
 
     return val.lower() in ("0", "false", "no")
-
-
-def get_env(default: str | None = "production") -> str:
-    """Reads QUART_ENV environment variable to determine in which environment
-    the app is running on. Defaults to 'production' when unset.
-    """
-    return os.getenv("QUART_ENV", default)
 
 
 async def make_response(*args: Any) -> ResponseTypes:

@@ -372,29 +372,6 @@ _app_option = click.Option(
 )
 
 
-def _set_env(ctx: click.Context, param: click.Option, value: str | None) -> str | None:
-    if value is None:
-        return None
-
-    # Set with env var instead of ScriptInfo.load so that it can be
-    # accessed early during a factory function.
-    os.environ["QUART_ENV"] = value
-    return value
-
-
-_env_option = click.Option(
-    ["-E", "--env"],
-    metavar="NAME",
-    help=(
-        "The execution environment name to set in 'app.env'. Defaults to"
-        " 'production'. 'development' will enable 'app.debug' and start the"
-        " debugger and reloader when running the server."
-    ),
-    expose_value=False,
-    callback=_set_env,
-)
-
-
 def _set_debug(ctx: click.Context, param: click.Option, value: bool) -> bool | None:
     # If the flag isn't provided, it will default to False. Don't use
     # that, let debug be set by env in that case.
@@ -468,7 +445,7 @@ class QuartGroup(AppGroup):
         # callback. This allows users to make a custom group callback
         # without losing the behavior. --env-file must come first so
         # that it is eagerly evaluated before --app.
-        params.extend((_env_file_option, _app_option, _env_option, _debug_option))
+        params.extend((_env_file_option, _app_option, _debug_option))
 
         if add_version_option:
             params.append(version_option)
@@ -675,7 +652,7 @@ def shell_command() -> None:
     """
     banner = (
         f"Python {sys.version} on {sys.platform}\n"
-        f"App: {current_app.import_name} [{current_app.env}]\n"
+        f"App: {current_app.import_name}\n"
         f"Instance: {current_app.instance_path}"
     )
     ctx: dict = {}

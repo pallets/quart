@@ -57,7 +57,7 @@ from .globals import (
     websocket,
     websocket_ctx,
 )
-from .helpers import get_debug_flag, get_env, get_flashed_messages, send_from_directory
+from .helpers import get_debug_flag, get_flashed_messages, send_from_directory
 from .routing import QuartMap, QuartRule
 from .sessions import SecureCookieSessionInterface
 from .signals import (
@@ -776,10 +776,7 @@ class Quart(App):
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
 
-        if "QUART_ENV" in os.environ:
-            self.env = get_env()
-            self.debug = get_debug_flag()
-        elif "QUART_DEBUG" in os.environ:
+        if "QUART_DEBUG" in os.environ:
             self.debug = get_debug_flag()
 
         if debug is not None:
@@ -822,12 +819,8 @@ class Quart(App):
             shutdown_trigger=shutdown_event.wait,  # type: ignore
         )
         print(f" * Serving Quart app '{self.name}'")  # noqa: T201
-        print(f" * Environment: {self.env}")  # noqa: T201
-        if self.env == "production":
-            print(  # noqa: T201
-                " * Please use an ASGI server (e.g. Hypercorn) directly in production"
-            )
         print(f" * Debug mode: {self.debug or False}")  # noqa: T201
+        print(" * Please use an ASGI server (e.g. Hypercorn) directly in production")  # noqa: T201
         scheme = "https" if certfile is not None and keyfile is not None else "http"
         print(f" * Running on {scheme}://{host}:{port} (CTRL + C to quit)")  # noqa: T201
 

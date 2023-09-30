@@ -17,7 +17,6 @@ from quart.cli import AppGroup, cli, load_dotenv, ScriptInfo
 
 @pytest.fixture(scope="module")
 def reset_env() -> None:
-    os.environ.pop("QUART_ENV", None)
     os.environ.pop("QUART_DEBUG", None)
 
 
@@ -35,11 +34,6 @@ def loadable_app(monkeypatch: MonkeyPatch) -> Mock:
 def loadable_dev_app(app: Mock) -> Mock:
     app.debug = True
     return app
-
-
-@pytest.fixture(name="dev_env")
-def dev_env_patch(monkeypatch: MonkeyPatch) -> None:
-    monkeypatch.setenv("QUART_ENV", "development")
 
 
 @pytest.fixture(name="debug_env")
@@ -83,17 +77,7 @@ def test_run_command(app: Mock) -> None:
     )
 
 
-def test_run_command_development(dev_app: Mock, dev_env: None) -> None:
-    runner = CliRunner()
-    runner.invoke(cli, ["--app", "module:app", "run"])
-    dev_app.run.assert_called_once_with(
-        debug=True, host="127.0.0.1", port=5000, certfile=None, keyfile=None, use_reloader=True
-    )
-
-
-def test_run_command_development_debug_disabled(
-    dev_app: Mock, dev_env: None, no_debug_env: None
-) -> None:
+def test_run_command_development_debug_disabled(dev_app: Mock, no_debug_env: None) -> None:
     runner = CliRunner()
     runner.invoke(cli, ["--app", "module:app", "run"])
     dev_app.run.assert_called_once_with(
