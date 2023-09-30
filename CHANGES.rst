@@ -1,5 +1,34 @@
-* Fixed trailing slash issue in URL concatenation for empty 'path'
-* Fixed Issue #219. Use only CR in SSE documentation.
+0.19.0 2023-09-30
+-----------------
+
+* Remove Flask-Patch. It has been replaced with the Quart-Flask-Patch
+  extension.
+* Remove references to first request, as per Flask.
+* Await the background tasks before calling the after serving funcs.
+* Don't copy the app context into the background task.
+* Allow background tasks a grace period to complete during shutdown.
+* Base Quart on Flask, utilising Flask code where possible. This
+  introduces a dependency on Flask.
+* Bugfix trailing slash issue in URL concatenation for empty 'path'
+* Bugfix Issue #219. Use only CR in SSE documentation.
+* Bugfix typing for websocket to accept auth data.
+* Bugfix ensure subdomains apply to nested blueprints.
+* Bugfix ensure make_response errors if the value is incorrect.
+* Bugfix propagated exception handling.
+* Bugfix ensure exceptions propagate before logging.
+* Bugfix cope with scope extension value being None.
+* Bugfix ensure the conditional 304 response is empty.
+* Bugfix handle empty path in URL concatenation.
+* Bugfix corrected typing hint for abort method at helpers.py.
+* Bugfix root_path usage.
+* Fix Werkzeug deprecation warnings.
+* Add svg's to jinja's autoescaping.
+* Improve the WebsocketResponse error, by including the response.
+* Add a file mode parameter to the config.from_file method.
+* Show the subdomain or host in the routes command output.
+* Upgrade to blinker 1.6.
+* Require Werkzeug 3.0.0 and Flask 3.0.0.
+* Use tomllib rather than toml.
 
 0.18.4 2023-04-09
 -----------------
