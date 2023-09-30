@@ -317,7 +317,7 @@ class Response(SansIOResponse):
         async with self.response as body:
             async for data in body:
                 if as_text:
-                    result += data.decode(self._charset)
+                    result += data.decode()
                 else:
                     result += data
         return result  # type: ignore
@@ -328,7 +328,7 @@ class Response(SansIOResponse):
         This will encode using the :attr:`charset`.
         """
         if isinstance(data, str):
-            bytes_data = data.encode(self._charset)
+            bytes_data = data.encode()
         else:
             bytes_data = data
         self.response = self.data_body_class(bytes_data)
@@ -461,7 +461,7 @@ class Response(SansIOResponse):
         async with self.response as response_body:
             async for item in response_body:
                 if isinstance(item, str):
-                    yield item.encode(self._charset)
+                    yield item.encode()
                 else:
                     yield item
 

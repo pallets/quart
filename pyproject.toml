@@ -29,7 +29,7 @@ python = ">=3.8"
 aiofiles = "*"
 blinker = ">=1.6"
 click = ">=8.0.0"
-flask = { git = "https://github.com/pallets/flask.git", branch = "main" }
+flask = ">=3.0.0"
 hypercorn = ">=0.11.2"
 importlib_metadata = { version = "*", python = "<3.10" }
 itsdangerous = "*"
@@ -38,7 +38,7 @@ markupsafe = "*"
 pydata_sphinx_theme = { version = "*", optional = true }
 python-dotenv = { version = "*", optional = true }
 typing_extensions = { version = "*", python = "<3.10" }
-werkzeug = ">=2.2.0"
+werkzeug = ">=3.0.0"
 
 [tool.poetry.dev-dependencies]
 hypothesis = "*"

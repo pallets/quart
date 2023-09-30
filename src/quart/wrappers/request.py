@@ -226,7 +226,7 @@ class Request(BaseRequestWebsocket):
                 self.body.clear()
 
             if as_text:
-                return raw_data.decode(self._charset, self._encoding_errors)
+                return raw_data.decode()
             else:
                 return raw_data
 
@@ -271,8 +271,6 @@ class Request(BaseRequestWebsocket):
 
     def make_form_data_parser(self) -> FormDataParser:
         return self.form_data_parser_class(
-            charset=self._charset,
-            errors=self._encoding_errors,
             max_content_length=self.max_content_length,
             cls=self.parameter_storage_class,
         )

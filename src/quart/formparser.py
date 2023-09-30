@@ -41,16 +41,12 @@ class FormDataParser:
     def __init__(
         self,
         stream_factory: StreamFactory = default_stream_factory,
-        charset: str = "utf-8",
-        errors: str = "replace",
         max_form_memory_size: int | None = None,
         max_content_length: int | None = None,
         cls: type[MultiDict] | None = MultiDict,
         silent: bool = True,
     ) -> None:
         self.stream_factory = stream_factory
-        self.charset = charset
-        self.errors = errors
         self.cls = cls
         self.silent = silent
 
@@ -87,8 +83,6 @@ class FormDataParser:
     ) -> tuple[MultiDict, MultiDict]:
         parser = MultiPartParser(
             self.stream_factory,
-            self.charset,
-            self.errors,
             cls=self.cls,
             file_storage_cls=self.file_storage_class,
         )
@@ -109,8 +103,6 @@ class FormDataParser:
         form = parse_qsl(
             (await body).decode(),
             keep_blank_values=True,
-            encoding=self.charset,
-            errors=self.errors,
         )
         return self.cls(form), self.cls()
 
@@ -125,15 +117,11 @@ class MultiPartParser:
     def __init__(
         self,
         stream_factory: StreamFactory = default_stream_factory,
-        charset: str = "utf-8",
-        errors: str = "replace",
         max_form_memory_size: int | None = None,
         cls: type[MultiDict] = MultiDict,
         buffer_size: int = 64 * 1024,
         file_storage_cls: type[FileStorage] = FileStorage,
     ) -> None:
-        self.charset = charset
-        self.errors = errors
         self.max_form_memory_size = max_form_memory_size
         self.stream_factory = stream_factory
         self.cls = cls
@@ -147,10 +135,15 @@ class MultiPartParser:
         content_type = headers.get("content-type")
 
         if content_type:
-            mimetype, ct_params = parse_options_header(content_type)
-            return ct_params.get("charset", self.charset)
+            parameters = parse_options_header(content_type)[1]
+            ct_charset = parameters.get("charset", "").lower()
 
-        return self.charset
+            # A safe list of encodings. Modern clients should only send ASCII or UTF-8.
+            # This list will not be extended further.
+            if ct_charset in {"ascii", "us-ascii", "utf-8", "iso-8859-1"}:
+                return ct_charset
+
+        return "utf-8"
 
     def start_file_streaming(self, event: File, total_content_length: int) -> IO[bytes]:
         content_type = event.headers.get("content-type")
@@ -197,7 +190,7 @@ class MultiPartParser:
                     if not event.more_data:
                         if isinstance(current_part, Field):
                             value = b"".join(container).decode(
-                                self.get_part_charset(current_part.headers), self.errors
+                                self.get_part_charset(current_part.headers), "replace"
                             )
                             fields.append((current_part.name, value))
                         else:
