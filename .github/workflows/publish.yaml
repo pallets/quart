@@ -9,8 +9,8 @@ jobs:
     outputs:
       hash: ${{ steps.hash.outputs.hash }}
     steps:
-      - uses: actions/checkout
-      - uses: actions/setup-python
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
         with:
           python-version: '3.x'
       - run: pip install poetry
@@ -19,7 +19,7 @@ jobs:
       - name: generate hash
         id: hash
         run: cd dist && echo "hash=$(sha256sum * | base64 -w0)" >> $GITHUB_OUTPUT
-      - uses: actions/upload-artifact
+      - uses: actions/upload-artifact@v3
         with:
           path: ./dist
 
@@ -42,7 +42,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact
+      - uses: actions/download-artifact@v3
       - name: create release
         run: >
           gh release create --draft --repo ${{ github.repository }}
@@ -59,12 +59,12 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact
+      - uses: actions/download-artifact@v3
       # Try uploading to Test PyPI first, in case something fails.
-      - uses: pypa/gh-action-pypi-publish
+      - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
           packages-dir: artifact/
-      - uses: pypa/gh-action-pypi-publish
+      - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: artifact/
