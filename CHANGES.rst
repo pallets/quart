@@ -1,3 +1,9 @@
+0.19.2 2023-10-01
+-----------------
+
+* Bugfix restore the app {after, before}_websocket methods.
+* Bugfix correctly set the cli Group in Quart.
+
 0.19.1 2023-09-30
 -----------------
 
