@@ -56,6 +56,7 @@ class Blueprint(SansioBlueprint):
         super().__init__(*args, **kwargs)
 
         self.cli = AppGroup()  # type: ignore[assignment]
+        self.cli.name = self.name
 
         self.after_websocket_funcs: t.Dict[
             AppOrBlueprintKey, t.List[AfterWebsocketCallable]

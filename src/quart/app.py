@@ -38,6 +38,7 @@ from werkzeug.routing import BuildError, MapAdapter, RoutingException
 from werkzeug.wrappers import Response as WerkzeugResponse
 
 from .asgi import ASGIHTTPConnection, ASGILifespan, ASGIWebsocketConnection
+from .cli import AppGroup
 from .ctx import (
     _AppCtxGlobals,
     AppContext,
@@ -314,6 +315,9 @@ class Quart(App):
         self.while_serving_gens: list[AsyncGenerator[None, None]] = []
 
         self.template_context_processors[None] = [_default_template_ctx_processor]
+
+        self.cli = AppGroup()  # type: ignore[assignment]
+        self.cli.name = self.name
 
         if self.has_static_folder:
             assert (
