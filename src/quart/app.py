@@ -125,7 +125,9 @@ except ImportError:
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
 T_after_serving = TypeVar("T_after_serving", bound=AfterServingCallable)
+T_after_websocket = TypeVar("T_after_websocket", bound=AfterWebsocketCallable)
 T_before_serving = TypeVar("T_before_serving", bound=BeforeServingCallable)
+T_before_websocket = TypeVar("T_before_websocket", bound=BeforeWebsocketCallable)
 T_shell_context_processor = TypeVar(
     "T_shell_context_processor", bound=ShellContextProcessorCallable
 )
@@ -892,6 +894,54 @@ class Quart(App):
     def test_cli_runner(self, **kwargs: Any) -> QuartCliRunner:
         """Creates and returns a CLI test runner."""
         return self.test_cli_runner_class(self, **kwargs)  # type: ignore
+
+    @setupmethod
+    def before_websocket(
+        self,
+        func: T_before_websocket,
+    ) -> T_before_websocket:
+        """Add a before websocket function.
+
+        This is designed to be used as a decorator, if used to
+        decorate a synchronous function, the function will be wrapped
+        in :func:`~quart.utils.run_sync` and run in a thread executor
+        (with the wrapped function returned). An example usage,
+
+        .. code-block:: python
+
+            @app.before_websocket
+            async def func():
+                ...
+
+        Arguments:
+            func: The before websocket function itself.
+        """
+        self.before_websocket_funcs[None].append(func)
+        return func
+
+    @setupmethod
+    def after_websocket(
+        self,
+        func: T_after_websocket,
+    ) -> T_after_websocket:
+        """Add an after websocket function.
+
+        This is designed to be used as a decorator, if used to
+        decorate a synchronous function, the function will be wrapped
+        in :func:`~quart.utils.run_sync` and run in a thread executor
+        (with the wrapped function returned). An example usage,
+
+        .. code-block:: python
+
+            @app.after_websocket
+            async def func(response):
+                return response
+
+        Arguments:
+            func: The after websocket function itself.
+        """
+        self.after_websocket_funcs[None].append(func)
+        return func
 
     async def handle_http_exception(
         self, error: HTTPException
