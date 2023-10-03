@@ -54,7 +54,7 @@ class SessionInterface:
 
     def get_cookie_path(self, app: Quart) -> str:
         """Helper method to return the Cookie path for the App."""
-        return app.config["SESSION_COOKIE_PATH"] or app.config["APPLICATION_ROOT"] or "/"
+        return app.config["SESSION_COOKIE_PATH"] or app.config["APPLICATION_ROOT"]
 
     def get_cookie_httponly(self, app: Quart) -> bool:
         """Helper method to return if the Cookie should be HTTPOnly for the App."""

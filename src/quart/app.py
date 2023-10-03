@@ -218,11 +218,12 @@ class Quart(App):
 
     default_config = ImmutableDict(
         {
-            "APPLICATION_ROOT": None,
+            "APPLICATION_ROOT": "/",
             "BACKGROUND_TASK_SHUTDOWN_TIMEOUT": 5,  # Second
             "BODY_TIMEOUT": 60,  # Second
             "DEBUG": None,
             "ENV": None,
+            "EXPLAIN_TEMPLATE_LOADING": False,
             "MAX_CONTENT_LENGTH": 16 * 1024 * 1024,  # 16 MB Limit
             "MAX_COOKIE_SIZE": 4093,
             "PERMANENT_SESSION_LIFETIME": timedelta(days=31),
