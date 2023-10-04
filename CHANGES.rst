@@ -1,3 +1,8 @@
+0.19.3 2023-10-04
+-----------------
+
+* Bugfix update the default config to better match Flask.
+
 0.19.2 2023-10-01
 -----------------
 
