@@ -1,18 +1,8 @@
 from __future__ import annotations
 
-from functools import partial
-
 from werkzeug.datastructures import Headers
 
-from quart.utils import decode_headers, encode_headers, is_coroutine_function
-
-
-def test_is_coroutine_function() -> None:
-    async def async_func() -> None:
-        pass
-
-    assert is_coroutine_function(async_func)
-    assert is_coroutine_function(partial(async_func))
+from quart.utils import decode_headers, encode_headers
 
 
 def test_encode_headers() -> None:

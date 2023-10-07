@@ -90,13 +90,6 @@ def run_sync_iterable(iterable: Generator[Any, None, None]) -> AsyncGenerator[An
     return _gen_wrapper()
 
 
-def is_coroutine_function(func: Any) -> bool:
-    # Python < 3.8 does not correctly determine partially wrapped
-    # coroutine functions are coroutine functions, hence the need for
-    # this to exist. Code taken from CPython.
-    return asyncio.iscoroutinefunction(func)
-
-
 def encode_headers(headers: Headers) -> list[tuple[bytes, bytes]]:
     return [(key.lower().encode(), value.encode()) for key, value in headers.items()]
 

@@ -110,7 +110,6 @@ from .typing import (
 from .utils import (
     cancel_tasks,
     file_path_to_path,
-    is_coroutine_function,
     MustReloadError,
     observe_changes,
     restart,
@@ -1091,7 +1090,7 @@ class Quart(App):
         run. Before Quart 0.11 this did not run the synchronous code
         in an executor.
         """
-        if is_coroutine_function(func):
+        if asyncio.iscoroutinefunction(func):
             return func
         else:
             return self.sync_to_async(func)
