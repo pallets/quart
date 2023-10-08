@@ -776,7 +776,8 @@ class Quart(App):
             warnings.warn(
                 f"Additional arguments, {','.join(kwargs.keys())}, are not supported.\n"
                 "They may be supported by Hypercorn, which is the ASGI server Quart "
-                "uses by default. This method is meant for development and debugging."
+                "uses by default. This method is meant for development and debugging.",
+                stacklevel=2,
             )
 
         if loop is None:
