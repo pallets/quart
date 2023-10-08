@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import os
-import platform
 import signal
 import sys
 import warnings
@@ -833,8 +832,6 @@ class Quart(App):
         print(f" * Running on {scheme}://{host}:{port} (CTRL + C to quit)")  # noqa: T201
 
         tasks = [loop.create_task(task)]
-        if platform.system() == "Windows":
-            tasks.append(loop.create_task(_windows_signal_support()))
 
         if use_reloader:
             tasks.append(loop.create_task(observe_changes(asyncio.sleep, shutdown_event)))
@@ -1707,11 +1704,3 @@ def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
                     "task": task,
                 }
             )
-
-
-async def _windows_signal_support() -> None:
-    # See https://bugs.python.org/issue23057, to catch signals on
-    # Windows it is necessary for an IO event to happen periodically.
-    # Fixed by Python 3.8
-    while True:
-        await asyncio.sleep(1)
