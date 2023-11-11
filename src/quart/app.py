@@ -1318,9 +1318,9 @@ class Quart(App):
         status: StatusCode | None = None
         if isinstance(result, tuple):
             if len(result) == 3:
-                value, status, headers = result  # type: ignore[misc]
+                value, status, headers = result
             elif len(result) == 2:
-                value, status_or_headers = result  # type: ignore[misc]
+                value, status_or_headers = result
 
                 if isinstance(status_or_headers, (Headers, dict, list)):
                     headers = status_or_headers
@@ -1333,7 +1333,7 @@ class Quart(App):
                     headers), or (body, status, headers)"""
                 )
         else:
-            value = result
+            value = result  # type: ignore[assignment]
 
         if value is None:
             raise TypeError("The response value returned by the view function cannot be None")
