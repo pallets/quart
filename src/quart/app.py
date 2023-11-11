@@ -15,10 +15,13 @@ from typing import (
     AsyncGenerator,
     Awaitable,
     Callable,
+    cast,
     Coroutine,
     NoReturn,
     Optional,
+    overload,
     TypeVar,
+    Union,
 )
 from urllib.parse import quote
 from weakref import WeakSet
@@ -436,7 +439,7 @@ class Quart(App):
         extra_context: dict = {}
         for name in names:
             for processor in self.template_context_processors[name]:
-                extra_context.update(await self.ensure_async(processor)())
+                extra_context.update(await self.ensure_async(processor)())  # type: ignore
 
         original = context.copy()
         context.update(extra_context)
@@ -969,7 +972,7 @@ class Quart(App):
         if handler is None:
             return error
         else:
-            return await self.ensure_async(handler)(error)
+            return await self.ensure_async(handler)(error)  # type: ignore
 
     async def handle_user_exception(self, error: Exception) -> HTTPException | ResponseReturnValue:
         """Handle an exception that has been raised.
@@ -995,7 +998,7 @@ class Quart(App):
         handler = self._find_error_handler(error, blueprints)
         if handler is None:
             raise error
-        return await self.ensure_async(handler)(error)
+        return await self.ensure_async(handler)(error)  # type: ignore
 
     async def handle_exception(self, error: Exception) -> ResponseTypes:
         """Handle an uncaught exception.
@@ -1026,7 +1029,7 @@ class Quart(App):
         handler = self._find_error_handler(server_error, request.blueprints)
 
         if handler is not None:
-            server_error = await self.ensure_async(handler)(server_error)
+            server_error = await self.ensure_async(handler)(server_error)  # type: ignore
 
         return await self.finalize_request(server_error, from_error_handler=True)
 
@@ -1058,7 +1061,7 @@ class Quart(App):
         handler = self._find_error_handler(server_error, websocket.blueprints)
 
         if handler is not None:
-            server_error = await self.ensure_async(handler)(server_error)
+            server_error = await self.ensure_async(handler)(server_error)  # type: ignore
 
         return await self.finalize_websocket(server_error, from_error_handler=True)
 
@@ -1081,7 +1084,17 @@ class Quart(App):
         else:
             self.logger.error("Exception", exc_info=exception_info)
 
-    def ensure_async(self, func: Callable[P, Any]) -> Callable[P, Awaitable[Any]]:
+    @overload
+    def ensure_async(self, func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
+        ...
+
+    @overload
+    def ensure_async(self, func: Callable[P, T]) -> Callable[P, Awaitable[T]]:
+        ...
+
+    def ensure_async(
+        self, func: Union[Callable[P, Awaitable[T]], Callable[P, T]]
+    ) -> Callable[P, Awaitable[T]]:
         """Ensure that the returned func is async and calls the func.
 
         .. versionadded:: 0.11
@@ -1093,7 +1106,7 @@ class Quart(App):
         if asyncio.iscoroutinefunction(func):
             return func
         else:
-            return self.sync_to_async(func)
+            return self.sync_to_async(cast(Callable[P, T], func))
 
     def sync_to_async(self, func: Callable[P, T]) -> Callable[P, Awaitable[T]]:
         """Return a async function that will run the synchronous function *func*.
@@ -1433,7 +1446,7 @@ class Quart(App):
             for function in self.before_request_funcs[name]:
                 result = await self.ensure_async(function)()
                 if result is not None:
-                    return result
+                    return result  # type: ignore
 
         return None
 
@@ -1459,7 +1472,7 @@ class Quart(App):
             for function in self.before_websocket_funcs[name]:
                 result = await self.ensure_async(function)()
                 if result is not None:
-                    return result
+                    return result  # type: ignore
 
         return None
 
@@ -1569,7 +1582,7 @@ class Quart(App):
         names = [*(request_context or request_ctx).request.blueprints, None]
 
         for function in (request_context or request_ctx)._after_request_functions:
-            response = await self.ensure_async(function)(response)
+            response = await self.ensure_async(function)(response)  # type: ignore
 
         for name in names:
             for function in reversed(self.after_request_funcs[name]):
@@ -1595,11 +1608,11 @@ class Quart(App):
         names = [*(websocket_context or websocket_ctx).websocket.blueprints, None]
 
         for function in (websocket_context or websocket_ctx)._after_websocket_functions:
-            response = await self.ensure_async(function)(response)
+            response = await self.ensure_async(function)(response)  # type: ignore
 
         for name in names:
             for function in reversed(self.after_websocket_funcs[name]):
-                response = await self.ensure_async(function)(response)
+                response = await self.ensure_async(function)(response)  # type: ignore
 
         session_ = (websocket_context or websocket_ctx).session
         if not self.session_interface.is_null_session(session_):
