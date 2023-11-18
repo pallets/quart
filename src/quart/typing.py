@@ -361,3 +361,6 @@ class TestAppProtocol(Protocol):
 class Event(Protocol):
     def is_set(self) -> bool:
         ...
+
+    def set(self) -> None:
+        ...

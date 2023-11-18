@@ -95,6 +95,7 @@ from .typing import (
     ASGIWebsocketProtocol,
     BeforeServingCallable,
     BeforeWebsocketCallable,
+    Event,
     FilePath,
     HeadersValue,
     ResponseReturnValue,
@@ -174,6 +175,8 @@ class Quart(App):
             websocket protocol.
         config_class: The class to use for the configuration.
         env: The name of the environment the app is running on.
+        event_class: The class to use to signal an event in an async
+            manner.
         debug: Wrapper around configuration DEBUG value, in many places
             this will result in more output if True. If unset, debug
             mode will be activated if environ is set to 'development'.
@@ -188,6 +191,8 @@ class Quart(App):
         secret_key: Warpper around configuration SECRET_KEY value. The app
             secret for signing sessions.
         session_interface: The class to use as the session interface.
+        shutdown_event: This event is set when the app starts to
+            shutdown allowing waiting tasks to know when to stop.
         url_map_class: The class to map rules to endpoints.
         url_rule_class: The class to use for URL rules.
         websocket_class: The class to use for websockets.
@@ -197,6 +202,7 @@ class Quart(App):
     asgi_http_class: type[ASGIHTTPProtocol]
     asgi_lifespan_class: type[ASGILifespanProtocol]
     asgi_websocket_class: type[ASGIWebsocketProtocol]
+    shutdown_event: Event
     test_app_class: type[TestAppProtocol]
     test_client_class: type[TestClientProtocol]  # type: ignore[assignment]
 
@@ -205,6 +211,7 @@ class Quart(App):
     asgi_http_class = ASGIHTTPConnection
     asgi_lifespan_class = ASGILifespan
     asgi_websocket_class = ASGIWebsocketConnection
+    event_class = asyncio.Event
     jinja_environment = Environment  # type: ignore[assignment]
     lock_class = asyncio.Lock
     request_class = Request
@@ -1657,6 +1664,7 @@ class Quart(App):
         await asgi_handler(receive, send)
 
     async def startup(self) -> None:
+        self.shutdown_event = self.event_class()
         try:
             async with self.app_context():
                 for func in self.before_serving_funcs:
@@ -1671,6 +1679,7 @@ class Quart(App):
             raise
 
     async def shutdown(self) -> None:
+        self.shutdown_event.set()
         try:
             await asyncio.wait_for(
                 asyncio.gather(*self.background_tasks),
