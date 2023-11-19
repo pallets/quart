@@ -1,3 +1,11 @@
+0.19.4 2023-11-19
+-----------------
+
+* Bugfix program not closing on Ctrl+C in Windows.
+* Bugfix the typing for AfterWebsocket functions.
+* Improve the typing of the ensure_async method.
+* Add a shutdown event to the app.
+
 0.19.3 2023-10-04
 -----------------
 
