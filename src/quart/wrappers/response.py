@@ -64,7 +64,6 @@ def _raise_if_invalid_range(begin: int, end: int, size: int) -> None:
     if begin >= end or abs(begin) > size:
         raise RequestedRangeNotSatisfiable()
 
-
 class DataBody(ResponseBody):
     def __init__(self, data: bytes) -> None:
         self.data = data
@@ -77,11 +76,8 @@ class DataBody(ResponseBody):
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
         pass
 
-    def __aiter__(self) -> AsyncIterator:
-        async def _aiter() -> AsyncGenerator[bytes, None]:
-            yield self.data[self.begin : self.end]
-
-        return _aiter()
+    def __aiter__(self) -> AsyncIterator[bytes]:
+        return _DataBodyGen(self)
 
     async def make_conditional(self, begin: int, end: int | None) -> int:
         self.begin = begin
@@ -89,6 +85,20 @@ class DataBody(ResponseBody):
         self.end = min(len(self.data), self.end)
         _raise_if_invalid_range(self.begin, self.end, len(self.data))
         return len(self.data)
+
+
+class _DataBodyGen(AsyncIterator[bytes]):
+    def __init__(self, data_body: DataBody):
+        self._data_body = data_body
+        self._iterated = False
+
+    async def __anext__(self):
+        if self._iterated:
+            raise StopAsyncIteration
+
+        self._iterated = True
+        body = self._data_body
+        return body.data[body.begin : body.end]
 
 
 class IterableBody(ResponseBody):
