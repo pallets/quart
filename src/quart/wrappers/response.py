@@ -98,8 +98,7 @@ class _DataBodyGen(AsyncIterator[bytes]):
             raise StopAsyncIteration
 
         self._iterated = True
-        body = self._data_body
-        return body.data[body.begin : body.end]
+        return self._data_body.body[self._data_body.begin : self._data_body.end]
 
 
 class IterableBody(ResponseBody):
