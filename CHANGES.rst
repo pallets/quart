@@ -1,3 +1,8 @@
+0.19.5 2024-xx-xx
+-----------------
+
+* Bugfix DeprecationWarnings on Python 3.12
+
 0.19.4 2023-11-19
 -----------------
 
