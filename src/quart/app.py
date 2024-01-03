@@ -849,7 +849,9 @@ class Quart(App):
         scheme = "https" if certfile is not None and keyfile is not None else "http"
         print(f" * Running on {scheme}://{host}:{port} (CTRL + C to quit)")  # noqa: T201
         if all([insecure_port, insecure_port]):
-            print(f" * Running on http://{insecure_host}:{insecure_port} (CTRL + C to quit)")  # noqa: T201
+            print(  # noqa: T201
+                f" * Running on http://{insecure_host}:{insecure_port} " f"(CTRL + C to quit)"
+            )
 
         tasks = [loop.create_task(task)]
 

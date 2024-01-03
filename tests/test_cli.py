@@ -73,8 +73,14 @@ def test_run_command(app: Mock) -> None:
     runner = CliRunner()
     runner.invoke(cli, ["--app", "module:app", "run"])
     app.run.assert_called_once_with(
-        debug=False, host="127.0.0.1", port=5000, certfile=None, keyfile=None, use_reloader=False, insecure_host=None,
-        insecure_port=None
+        debug=False,
+        host="127.0.0.1",
+        port=5000,
+        certfile=None,
+        keyfile=None,
+        use_reloader=False,
+        insecure_host=None,
+        insecure_port=None,
     )
 
 
@@ -82,8 +88,14 @@ def test_run_command_development_debug_disabled(dev_app: Mock, no_debug_env: Non
     runner = CliRunner()
     runner.invoke(cli, ["--app", "module:app", "run"])
     dev_app.run.assert_called_once_with(
-        debug=False, host="127.0.0.1", port=5000, certfile=None, keyfile=None, use_reloader=False, insecure_host=None,
-        insecure_port=None
+        debug=False,
+        host="127.0.0.1",
+        port=5000,
+        certfile=None,
+        keyfile=None,
+        use_reloader=False,
+        insecure_host=None,
+        insecure_port=None,
     )
 
 

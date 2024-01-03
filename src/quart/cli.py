@@ -603,8 +603,11 @@ def load_dotenv(path: str | os.PathLike | None = None) -> bool:
 @click.command("run", short_help="Run a development server.")
 @click.option("--host", "-h", default="127.0.0.1", help="The interface to bind to.")
 @click.option("--port", "-p", default=5000, help="The port to bind to.")
-@click.option("--insecure-host", default=None, help="The interface to bind to. "
-                                                    "SSL options will not apply to this bind.")
+@click.option(
+    "--insecure-host",
+    default=None,
+    help="The interface to bind to. " "SSL options will not apply to this bind.",
+)
 @click.option("--insecure-port", default=None, help="The port to bind to for the insecure host.")
 @click.option(
     "--certfile",
@@ -642,8 +645,14 @@ def run_command(
         reload = debug
 
     app.run(
-        debug=debug, host=host, port=port, certfile=certfile, keyfile=keyfile, use_reloader=reload,
-        insecure_host=insecure_host, insecure_port=insecure_port
+        debug=debug,
+        host=host,
+        port=port,
+        certfile=certfile,
+        keyfile=keyfile,
+        use_reloader=reload,
+        insecure_host=insecure_host,
+        insecure_port=insecure_port,
     )
 
 
