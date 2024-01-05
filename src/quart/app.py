@@ -21,7 +21,6 @@ from typing import (
     Optional,
     overload,
     TypeVar,
-    Union,
 )
 from urllib.parse import quote
 from weakref import WeakSet
@@ -41,6 +40,7 @@ from werkzeug.wrappers import Response as WerkzeugResponse
 
 from .asgi import ASGIHTTPConnection, ASGILifespan, ASGIWebsocketConnection
 from .cli import AppGroup
+from .config import Config
 from .ctx import (
     _AppCtxGlobals,
     AppContext,
@@ -296,6 +296,7 @@ class Quart(App):
             before_websocket_funcs: The functions to execute before handling
                 a websocket.
         """
+        self.config_class = Config
         super().__init__(
             import_name,
             static_url_path,
@@ -1100,7 +1101,7 @@ class Quart(App):
         ...
 
     def ensure_async(
-        self, func: Union[Callable[P, Awaitable[T]], Callable[P, T]]
+        self, func: Callable[P, Awaitable[T]] | Callable[P, T]
     ) -> Callable[P, Awaitable[T]]:
         """Ensure that the returned func is async and calls the func.
 

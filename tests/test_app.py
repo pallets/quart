@@ -11,6 +11,7 @@ from werkzeug.exceptions import InternalServerError
 from werkzeug.wrappers import Response as WerkzeugResponse
 
 from quart.app import Quart
+from quart.config import Config
 from quart.globals import session, websocket
 from quart.sessions import SecureCookieSession, SessionInterface
 from quart.testing import no_op_push, WebsocketResponseError
@@ -408,3 +409,8 @@ async def test_test_app() -> None:
         assert serving == [1]
     assert shutdown
     assert serving == [1, 2]
+
+
+def test_app_config_class() -> None:
+    app = Quart(__name__)
+    assert isinstance(app.config, Config)
