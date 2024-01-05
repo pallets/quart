@@ -1,7 +1,3 @@
-0.19.5 2024-01-06
------------------
-* Bugfix change `app.config` to an `quart.config.Config` instance
-
 0.19.4 2023-11-19
 -----------------
 
