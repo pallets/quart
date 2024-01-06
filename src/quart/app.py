@@ -207,6 +207,7 @@ class Quart(App):
     test_client_class: type[TestClientProtocol]  # type: ignore[assignment]
 
     aborter_class = Aborter
+    config_class = Config
     app_ctx_globals_class = _AppCtxGlobals
     asgi_http_class = ASGIHTTPConnection
     asgi_lifespan_class = ASGILifespan
@@ -296,7 +297,6 @@ class Quart(App):
             before_websocket_funcs: The functions to execute before handling
                 a websocket.
         """
-        self.config_class = Config
         super().__init__(
             import_name,
             static_url_path,
