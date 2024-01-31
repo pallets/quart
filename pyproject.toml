@@ -43,7 +43,6 @@ werkzeug = ">=3.0.0"
 
 [tool.poetry.dev-dependencies]
 hypothesis = "*"
-mock = "*"
 pytest = "*"
 pytest-asyncio = "*"
 
