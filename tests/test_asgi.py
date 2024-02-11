@@ -284,7 +284,7 @@ async def test_websocket_accept_connection_warns(websocket_scope: WebsocketScope
     async def mock_send(message: ASGISendEvent) -> None:
         pass
 
-    with pytest.warns(None):
+    with pytest.warns(UserWarning):
         await connection.accept_connection(mock_send, Headers({"a": "b"}), None)
 
 

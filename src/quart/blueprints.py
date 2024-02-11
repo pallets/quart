@@ -55,15 +55,15 @@ class Blueprint(SansioBlueprint):
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
 
-        self.cli = AppGroup()  # type: ignore[assignment]
+        self.cli = AppGroup()
         self.cli.name = self.name
 
-        self.after_websocket_funcs: t.Dict[
-            AppOrBlueprintKey, t.List[AfterWebsocketCallable]
-        ] = defaultdict(list)
-        self.before_websocket_funcs: t.Dict[
-            AppOrBlueprintKey, t.List[BeforeWebsocketCallable]
-        ] = defaultdict(list)
+        self.after_websocket_funcs: t.Dict[AppOrBlueprintKey, t.List[AfterWebsocketCallable]] = (
+            defaultdict(list)
+        )
+        self.before_websocket_funcs: t.Dict[AppOrBlueprintKey, t.List[BeforeWebsocketCallable]] = (
+            defaultdict(list)
+        )
 
     def get_send_file_max_age(self, filename: str | None) -> int | None:
         """Used by :func:`send_file` to determine the ``max_age`` cache
@@ -279,7 +279,7 @@ class Blueprint(SansioBlueprint):
                 ...
 
         """
-        self.record_once(lambda state: state.app.before_websocket(func))
+        self.record_once(lambda state: state.app.before_websocket(func))  # type: ignore
         return func
 
     @setupmethod
@@ -297,7 +297,7 @@ class Blueprint(SansioBlueprint):
                 ...
 
         """
-        self.record_once(lambda state: state.app.before_serving(func))
+        self.record_once(lambda state: state.app.before_serving(func))  # type: ignore
         return func
 
     @setupmethod
@@ -315,7 +315,7 @@ class Blueprint(SansioBlueprint):
             def after():
                 ...
         """
-        self.record_once(lambda state: state.app.after_websocket(func))
+        self.record_once(lambda state: state.app.after_websocket(func))  # type: ignore[attr-defined]
         return func
 
     @setupmethod
@@ -332,7 +332,7 @@ class Blueprint(SansioBlueprint):
             def after():
                 ...
         """
-        self.record_once(lambda state: state.app.after_serving(func))
+        self.record_once(lambda state: state.app.after_serving(func))  # type: ignore[attr-defined]
         return func
 
     @setupmethod
@@ -351,7 +351,7 @@ class Blueprint(SansioBlueprint):
                 ...  # Shutdown
 
         """
-        self.record_once(lambda state: state.app.while_serving(func))
+        self.record_once(lambda state: state.app.while_serving(func))  # type: ignore[attr-defined]
         return func
 
     @setupmethod
@@ -370,7 +370,7 @@ class Blueprint(SansioBlueprint):
             def teardown():
                 ...
         """
-        self.record_once(lambda state: state.app.teardown_websocket(func))
+        self.record_once(lambda state: state.app.teardown_websocket(func))  # type: ignore
         return func
 
     def _merge_blueprint_funcs(self, app: App, name: str) -> None:

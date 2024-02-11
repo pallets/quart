@@ -187,18 +187,17 @@ class Request(BaseRequestWebsocket):
         return await self.get_data(as_text=False, parse_form_data=True)
 
     @overload
-    async def get_data(self, cache: bool, as_text: Literal[False], parse_form_data: bool) -> bytes:
-        ...
+    async def get_data(
+        self, cache: bool, as_text: Literal[False], parse_form_data: bool
+    ) -> bytes: ...
 
     @overload
-    async def get_data(self, cache: bool, as_text: Literal[True], parse_form_data: bool) -> str:
-        ...
+    async def get_data(self, cache: bool, as_text: Literal[True], parse_form_data: bool) -> str: ...
 
     @overload
     async def get_data(
         self, cache: bool = True, as_text: bool = False, parse_form_data: bool = False
-    ) -> AnyStr:
-        ...
+    ) -> AnyStr: ...
 
     async def get_data(
         self, cache: bool = True, as_text: bool = False, parse_form_data: bool = False

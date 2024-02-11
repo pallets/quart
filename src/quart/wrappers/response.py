@@ -298,16 +298,13 @@ class Response(SansIOResponse):
         return super().max_cookie_size
 
     @overload
-    async def get_data(self, as_text: Literal[True]) -> str:
-        ...
+    async def get_data(self, as_text: Literal[True]) -> str: ...
 
     @overload
-    async def get_data(self, as_text: Literal[False]) -> bytes:
-        ...
+    async def get_data(self, as_text: Literal[False]) -> bytes: ...
 
     @overload
-    async def get_data(self, as_text: bool = True) -> AnyStr:
-        ...
+    async def get_data(self, as_text: bool = True) -> AnyStr: ...
 
     async def get_data(self, as_text: bool = False) -> AnyStr:
         """Return the body data."""

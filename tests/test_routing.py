@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import warnings
+
 import pytest
 from hypercorn.typing import HTTPScope
 from werkzeug.datastructures import Headers
@@ -10,10 +12,10 @@ from quart.wrappers.request import Request
 
 
 @pytest.mark.parametrize(
-    "server_name, expected",
-    [("localhost", 0), ("quart.com", 1)],
+    "server_name, warns",
+    [("localhost", False), ("quart.com", True)],
 )
-async def test_bind_warning(server_name: str, expected: int, http_scope: HTTPScope) -> None:
+async def test_bind_warning(server_name: str, warns: bool, http_scope: HTTPScope) -> None:
     map_ = QuartMap(host_matching=False)
     request = Request(
         "GET",
@@ -26,7 +28,11 @@ async def test_bind_warning(server_name: str, expected: int, http_scope: HTTPSco
         http_scope,
         send_push_promise=no_op_push,
     )
-    with pytest.warns(None) as record:
-        map_.bind_to_request(request, subdomain=None, server_name=server_name)
 
-    assert len(record) == expected
+    if warns:
+        with pytest.warns(UserWarning):
+            map_.bind_to_request(request, subdomain=None, server_name=server_name)
+    else:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            map_.bind_to_request(request, subdomain=None, server_name=server_name)

@@ -157,8 +157,9 @@ class SecureCookieSessionInterface(SessionInterface):
         cookie = request.cookies.get(self.get_cookie_name(app))
         if cookie is None:
             return self.session_class()
+        max_age = int(app.permanent_session_lifetime.total_seconds())
         try:
-            data = signer.loads(cookie, max_age=app.permanent_session_lifetime.total_seconds())
+            data = signer.loads(cookie, max_age=max_age)
             return self.session_class(data)
         except BadSignature:
             return self.session_class()

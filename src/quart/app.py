@@ -310,22 +310,22 @@ class Quart(App):
         )
 
         self.after_serving_funcs: list[Callable[[], Awaitable[None]]] = []
-        self.after_websocket_funcs: dict[
-            AppOrBlueprintKey, list[AfterWebsocketCallable]
-        ] = defaultdict(list)
+        self.after_websocket_funcs: dict[AppOrBlueprintKey, list[AfterWebsocketCallable]] = (
+            defaultdict(list)
+        )
         self.background_tasks: WeakSet[asyncio.Task] = WeakSet()
         self.before_serving_funcs: list[Callable[[], Awaitable[None]]] = []
-        self.before_websocket_funcs: dict[
-            AppOrBlueprintKey, list[BeforeWebsocketCallable]
-        ] = defaultdict(list)
-        self.teardown_websocket_funcs: dict[
-            AppOrBlueprintKey, list[TeardownCallable]
-        ] = defaultdict(list)
+        self.before_websocket_funcs: dict[AppOrBlueprintKey, list[BeforeWebsocketCallable]] = (
+            defaultdict(list)
+        )
+        self.teardown_websocket_funcs: dict[AppOrBlueprintKey, list[TeardownCallable]] = (
+            defaultdict(list)
+        )
         self.while_serving_gens: list[AsyncGenerator[None, None]] = []
 
         self.template_context_processors[None] = [_default_template_ctx_processor]
 
-        self.cli = AppGroup()  # type: ignore[assignment]
+        self.cli = AppGroup()
         self.cli.name = self.name
 
         if self.has_static_folder:
@@ -1092,12 +1092,10 @@ class Quart(App):
             self.logger.error("Exception", exc_info=exception_info)
 
     @overload
-    def ensure_async(self, func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
-        ...
+    def ensure_async(self, func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]: ...
 
     @overload
-    def ensure_async(self, func: Callable[P, T]) -> Callable[P, Awaitable[T]]:
-        ...
+    def ensure_async(self, func: Callable[P, T]) -> Callable[P, Awaitable[T]]: ...
 
     def ensure_async(
         self, func: Union[Callable[P, Awaitable[T]], Callable[P, T]]
@@ -1356,7 +1354,7 @@ class Quart(App):
             ):
                 response = self.response_class(value)
             elif isinstance(value, (list, dict)):
-                response = self.json.response(value)
+                response = self.json.response(value)  # type: ignore[assignment]
             else:
                 raise TypeError(f"The response value type ({type(value).__name__}) is not valid")
         else:
@@ -1503,7 +1501,7 @@ class Quart(App):
             return await self.make_default_options_response()
 
         handler = self.view_functions[request_.url_rule.endpoint]
-        return await self.ensure_async(handler)(**request_.view_args)
+        return await self.ensure_async(handler)(**request_.view_args)  # type: ignore
 
     async def dispatch_websocket(
         self, websocket_context: WebsocketContext | None = None
@@ -1519,7 +1517,7 @@ class Quart(App):
             self.raise_routing_exception(websocket_)
 
         handler = self.view_functions[websocket_.url_rule.endpoint]
-        return await self.ensure_async(handler)(**websocket_.view_args)
+        return await self.ensure_async(handler)(**websocket_.view_args)  # type: ignore
 
     async def finalize_request(
         self,

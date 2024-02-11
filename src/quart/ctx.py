@@ -215,7 +215,6 @@ class WebsocketContext(_BaseRequestWebsocketContext):
 
 
 class AppContext:
-
     """The context relating to the app bound to the current task.
 
     Do not use directly, prefer the

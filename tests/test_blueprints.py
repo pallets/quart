@@ -162,7 +162,7 @@ def test_cli_blueprints(cli_group: str | None, args: list[str]) -> None:
 
     blueprint = Blueprint("blueprint", __name__, cli_group=cli_group)
 
-    @blueprint.cli.command("cmd")  # type: ignore
+    @blueprint.cli.command("cmd")
     def command() -> None:
         click.echo("command")
 

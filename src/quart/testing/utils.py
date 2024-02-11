@@ -146,8 +146,7 @@ def make_test_scope(
     scope_base: dict | None,
     *,
     _preserve_context: bool = False,
-) -> HTTPScope:
-    ...
+) -> HTTPScope: ...
 
 
 @overload
@@ -163,8 +162,7 @@ def make_test_scope(
     scope_base: dict | None,
     *,
     _preserve_context: bool = False,
-) -> WebsocketScope:
-    ...
+) -> WebsocketScope: ...
 
 
 def make_test_scope(
