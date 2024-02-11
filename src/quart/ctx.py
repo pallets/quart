@@ -147,6 +147,10 @@ class RequestContext(_BaseRequestWebsocketContext):
                 if exc is _sentinel:
                     exc = sys.exc_info()[1]
                 await self.app.do_teardown_request(exc, self)
+
+                request_close = getattr(self.request_websocket, "close", None)
+                if request_close is not None:
+                    await request_close()
         finally:
             ctx = _cv_request.get()
             token, app_ctx = self._cv_tokens.pop()
