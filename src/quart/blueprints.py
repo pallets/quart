@@ -315,7 +315,7 @@ class Blueprint(SansioBlueprint):
             def after():
                 ...
         """
-        self.record_once(lambda state: state.app.after_websocket(func))  # type: ignore[attr-defined]
+        self.record_once(lambda state: state.app.after_websocket(func))  # type: ignore
         return func
 
     @setupmethod
