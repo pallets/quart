@@ -33,7 +33,7 @@ You can choose to install with the dotenv extra:
 
     pip install quart[dotenv]
 
-Whcih will install the ``python-dotenv`` package which enables support
+Which will install the ``python-dotenv`` package which enables support
 for automatically loading environment variables when running ``quart``
 commands.
 
