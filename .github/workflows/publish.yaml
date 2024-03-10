@@ -19,7 +19,7 @@ jobs:
       - name: generate hash
         id: hash
         run: cd dist && echo "hash=$(sha256sum * | base64 -w0)" >> $GITHUB_OUTPUT
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           path: ./dist
 
