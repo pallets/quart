@@ -36,7 +36,7 @@ jobs:
           - {name: Format, python: '3.12', os: ubuntu-latest, tox: format}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
       - name: update pip
