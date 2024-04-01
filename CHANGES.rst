@@ -1,3 +1,13 @@
+0.19.5 2024-04-01
+-----------------
+
+* Bugfix DeprecationWarning from datetime.utcnow().
+* Bugfix ensure request files are closed.
+* Bugfix development restarting when commands are passed.
+* Restore teardown_websocket methods.
+* Correct the config_class type.
+* Allow kwargs to be passed to the test client (matches Flask API).
+
 0.19.4 2023-11-19
 -----------------
 
