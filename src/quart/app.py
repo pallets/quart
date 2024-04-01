@@ -955,6 +955,26 @@ class Quart(App):
         self.after_websocket_funcs[None].append(func)
         return func
 
+    @setupmethod
+    def teardown_websocket(
+        self,
+        func: T_teardown,
+    ) -> T_teardown:
+        """Add a teardown websocket function.
+        This is designed to be used as a decorator, if used to
+        decorate a synchronous function, the function will be wrapped
+        in :func:`~quart.utils.run_sync` and run in a thread executor
+        (with the wrapped function returned). An example usage,
+        .. code-block:: python
+            @app.teardown_websocket
+            async def func():
+                ...
+        Arguments:
+            func: The teardown websocket function itself.
+        """
+        self.teardown_websocket_funcs[None].append(func)
+        return func
+
     async def handle_http_exception(
         self, error: HTTPException
     ) -> HTTPException | ResponseReturnValue:
