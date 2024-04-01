@@ -212,6 +212,22 @@ async def test_form() -> None:
     assert (await response.get_json()) == {"a": "b"}
 
 
+async def test_files() -> None:
+    app = Quart(__name__)
+
+    @app.route("/", methods=["POST"])
+    async def echo() -> Response:
+        files = await request.files
+        data = files["file"].read()
+        return data
+
+    client = Client(app)
+    response = await client.post(
+        "/", files={"file": FileStorage(BytesIO(b"bar"), filename="a.txt")}
+    )
+    assert (await response.get_data(as_text=True)) == "bar"
+
+
 async def test_data() -> None:
     app = Quart(__name__)
 
