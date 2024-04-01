@@ -145,14 +145,14 @@ def restart() -> None:
                 executable = str(script_path.with_suffix(".exe"))
             else:
                 # python run.py
-                args.append(str(script_path))
+                args = [str(script_path), *args]
         else:
             if script_path.is_file() and os.access(script_path, os.X_OK):
                 # hypercorn run:app --reload
                 executable = str(script_path)
             else:
                 # python run.py
-                args.append(str(script_path))
+                args = [str(script_path), *args]
     else:
         # Executed as a module e.g. python -m run
         module = script_path.stem
