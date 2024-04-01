@@ -901,9 +901,9 @@ class Quart(App):
 
         return serve(self, config, shutdown_trigger=shutdown_trigger)
 
-    def test_client(self, use_cookies: bool = True) -> TestClientProtocol:
+    def test_client(self, use_cookies: bool = True, **kwargs: Any) -> TestClientProtocol:
         """Creates and returns a test client."""
-        return self.test_client_class(self, use_cookies=use_cookies)
+        return self.test_client_class(self, use_cookies=use_cookies, **kwargs)
 
     def test_cli_runner(self, **kwargs: Any) -> QuartCliRunner:
         """Creates and returns a CLI test runner."""
