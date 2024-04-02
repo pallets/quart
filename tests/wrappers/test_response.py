@@ -97,7 +97,7 @@ async def test_response_make_conditional(http_scope: HTTPScope) -> None:
     assert response.accept_ranges == "bytes"
     assert response.content_range.units == "bytes"
     assert response.content_range.start == 0
-    assert response.content_range.stop == 3
+    assert response.content_range.stop == 4
     assert response.content_range.length == 6
 
 

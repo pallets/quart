@@ -1,3 +1,5 @@
+* Fixed Issue #331. Use ContentRange in the right way.
+
 0.19.5 2024-04-01
 -----------------
 

@@ -414,7 +414,7 @@ class Response(SansIOResponse):
         self.content_range = ContentRange(
             request_range.units,
             self.response.begin,  # type: ignore
-            self.response.end - 1,  # type: ignore
+            self.response.end,  # type: ignore
             complete_length,
         )
         self.status_code = 206
