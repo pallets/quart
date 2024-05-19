@@ -20,11 +20,11 @@ from typing import (
     NoReturn,
     Optional,
     overload,
+    Set,
     TypeVar,
     Union,
 )
 from urllib.parse import quote
-from weakref import WeakSet
 
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
@@ -315,7 +315,7 @@ class Quart(App):
         self.after_websocket_funcs: dict[AppOrBlueprintKey, list[AfterWebsocketCallable]] = (
             defaultdict(list)
         )
-        self.background_tasks: WeakSet[asyncio.Task] = WeakSet()
+        self.background_tasks: Set[asyncio.Task] = set()
         self.before_serving_funcs: list[Callable[[], Awaitable[None]]] = []
         self.before_websocket_funcs: dict[AppOrBlueprintKey, list[BeforeWebsocketCallable]] = (
             defaultdict(list)
@@ -1324,6 +1324,7 @@ class Quart(App):
 
         task = asyncio.get_event_loop().create_task(_wrapper())
         self.background_tasks.add(task)
+        task.add_done_callback(self.background_tasks.discard)
 
     async def handle_background_exception(self, error: Exception) -> None:
         await got_background_exception.send_async(
@@ -1714,7 +1715,7 @@ class Quart(App):
                 timeout=self.config["BACKGROUND_TASK_SHUTDOWN_TIMEOUT"],
             )
         except asyncio.TimeoutError:
-            await cancel_tasks(self.background_tasks)  # type: ignore
+            await cancel_tasks(self.background_tasks)
 
         try:
             async with self.app_context():
