@@ -213,7 +213,7 @@ class SecureCookieSessionInterface(SessionInterface):
         val = self.get_signing_serializer(app).dumps(dict(session))
         response.set_cookie(
             name,
-            val,  # type: ignore
+            val,
             expires=expires,
             httponly=httponly,
             domain=domain,
