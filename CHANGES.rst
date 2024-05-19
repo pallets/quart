@@ -1,3 +1,10 @@
+0.19.6 2024-05-19
+-----------------
+
+* Bugfix use ContentRange in the right way. See issue #331.
+* Bugfix hold a strong reference to background tasks.
+* Bugfix avoid ResourceWarning in DataBody.__aiter__.
+
 0.19.5 2024-04-01
 -----------------
 

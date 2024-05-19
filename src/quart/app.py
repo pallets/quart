@@ -20,11 +20,11 @@ from typing import (
     NoReturn,
     Optional,
     overload,
+    Set,
     TypeVar,
     Union,
 )
 from urllib.parse import quote
-from weakref import WeakSet
 
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
@@ -315,7 +315,7 @@ class Quart(App):
         self.after_websocket_funcs: dict[AppOrBlueprintKey, list[AfterWebsocketCallable]] = (
             defaultdict(list)
         )
-        self.background_tasks: WeakSet[asyncio.Task] = WeakSet()
+        self.background_tasks: Set[asyncio.Task] = set()
         self.before_serving_funcs: list[Callable[[], Awaitable[None]]] = []
         self.before_websocket_funcs: dict[AppOrBlueprintKey, list[BeforeWebsocketCallable]] = (
             defaultdict(list)
@@ -1037,7 +1037,7 @@ class Quart(App):
         """
         exc_info = sys.exc_info()
         await got_request_exception.send_async(
-            self, _sync_wrapper=self.ensure_async, exception=error
+            self, _sync_wrapper=self.ensure_async, exception=error  # type: ignore
         )
         propagate = self.config["PROPAGATE_EXCEPTIONS"]
 
@@ -1069,7 +1069,7 @@ class Quart(App):
         """
         exc_info = sys.exc_info()
         await got_websocket_exception.send_async(
-            self, _sync_wrapper=self.ensure_async, exception=error
+            self, _sync_wrapper=self.ensure_async, exception=error  # type: ignore
         )
         propagate = self.config["PROPAGATE_EXCEPTIONS"]
 
@@ -1163,7 +1163,9 @@ class Quart(App):
             for function in reversed(self.teardown_request_funcs[name]):
                 await self.ensure_async(function)(exc)
 
-        await request_tearing_down.send_async(self, _sync_wrapper=self.ensure_async, exc=exc)
+        await request_tearing_down.send_async(
+            self, _sync_wrapper=self.ensure_async, exc=exc  # type: ignore
+        )
 
     async def do_teardown_websocket(
         self, exc: BaseException | None, websocket_context: WebsocketContext | None = None
@@ -1181,13 +1183,17 @@ class Quart(App):
             for function in reversed(self.teardown_websocket_funcs[name]):
                 await self.ensure_async(function)(exc)
 
-        await websocket_tearing_down.send_async(self, _sync_wrapper=self.ensure_async, exc=exc)
+        await websocket_tearing_down.send_async(
+            self, _sync_wrapper=self.ensure_async, exc=exc  # type: ignore
+        )
 
     async def do_teardown_appcontext(self, exc: BaseException | None) -> None:
         """Teardown the app (context), calling the teardown functions."""
         for function in self.teardown_appcontext_funcs:
             await self.ensure_async(function)(exc)
-        await appcontext_tearing_down.send_async(self, _sync_wrapper=self.ensure_async, exc=exc)
+        await appcontext_tearing_down.send_async(
+            self, _sync_wrapper=self.ensure_async, exc=exc  # type: ignore
+        )
 
     def app_context(self) -> AppContext:
         """Create and return an app context.
@@ -1318,10 +1324,11 @@ class Quart(App):
 
         task = asyncio.get_event_loop().create_task(_wrapper())
         self.background_tasks.add(task)
+        task.add_done_callback(self.background_tasks.discard)
 
     async def handle_background_exception(self, error: Exception) -> None:
         await got_background_exception.send_async(
-            self, _sync_wrapper=self.ensure_async, exception=error
+            self, _sync_wrapper=self.ensure_async, exception=error  # type: ignore
         )
 
         self.log_exception(sys.exc_info())
@@ -1424,7 +1431,7 @@ class Quart(App):
                 omits this argument.
         """
         try:
-            await request_started.send_async(self, _sync_wrapper=self.ensure_async)
+            await request_started.send_async(self, _sync_wrapper=self.ensure_async)  # type: ignore
 
             result: ResponseReturnValue | HTTPException | None
             result = await self.preprocess_request(request_context)
@@ -1444,7 +1451,9 @@ class Quart(App):
                 the Flask convention.
         """
         try:
-            await websocket_started.send_async(self, _sync_wrapper=self.ensure_async)
+            await websocket_started.send_async(
+                self, _sync_wrapper=self.ensure_async  # type: ignore
+            )
 
             result: ResponseReturnValue | HTTPException | None
             result = await self.preprocess_websocket(websocket_context)
@@ -1558,7 +1567,7 @@ class Quart(App):
         try:
             response = await self.process_response(response, request_context)
             await request_finished.send_async(
-                self, _sync_wrapper=self.ensure_async, response=response
+                self, _sync_wrapper=self.ensure_async, response=response  # type: ignore
             )
         except Exception:
             if not from_error_handler:
@@ -1586,7 +1595,7 @@ class Quart(App):
         try:
             response = await self.postprocess_websocket(response, websocket_context)
             await websocket_finished.send_async(
-                self, _sync_wrapper=self.ensure_async, response=response
+                self, _sync_wrapper=self.ensure_async, response=response  # type: ignore
             )
         except Exception:
             if not from_error_handler:
@@ -1693,7 +1702,7 @@ class Quart(App):
                     await gen.__anext__()
         except Exception as error:
             await got_serving_exception.send_async(
-                self, _sync_wrapper=self.ensure_async, exception=error
+                self, _sync_wrapper=self.ensure_async, exception=error  # type: ignore
             )
             self.log_exception(sys.exc_info())
             raise
@@ -1706,7 +1715,7 @@ class Quart(App):
                 timeout=self.config["BACKGROUND_TASK_SHUTDOWN_TIMEOUT"],
             )
         except asyncio.TimeoutError:
-            await cancel_tasks(self.background_tasks)  # type: ignore
+            await cancel_tasks(self.background_tasks)
 
         try:
             async with self.app_context():
@@ -1721,7 +1730,7 @@ class Quart(App):
                         raise RuntimeError("While serving generator didn't terminate")
         except Exception as error:
             await got_serving_exception.send_async(
-                self, _sync_wrapper=self.ensure_async, exception=error
+                self, _sync_wrapper=self.ensure_async, exception=error  # type: ignore
             )
             self.log_exception(sys.exc_info())
             raise
