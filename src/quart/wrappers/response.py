@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from hashlib import md5
-from inspect import isasyncgen, isgenerator
 from io import BytesIO
 from os import PathLike
 from types import TracebackType
@@ -101,27 +100,21 @@ class _DataBodyGen(AsyncIterator[bytes]):
 
 
 class IterableBody(ResponseBody):
-    def __init__(self, iterable: AsyncGenerator[bytes, None] | Iterable) -> None:
-        self.iter: AsyncGenerator[bytes, None]
-        if isasyncgen(iterable):
-            self.iter = iterable
-        elif isgenerator(iterable):
-            self.iter = run_sync_iterable(iterable)
+    def __init__(self, iterable: AsyncIterable[Any] | Iterable[Any]) -> None:
+        self.iter: AsyncIterator[Any]
+        if isinstance(iterable, Iterable):
+            self.iter = run_sync_iterable(iter(iterable))
         else:
-
-            async def _aiter() -> AsyncGenerator[bytes, None]:
-                for data in iterable:  # type: ignore
-                    yield data
-
-            self.iter = _aiter()
+            self.iter = iterable.__aiter__()  # Can't use aiter() until 3.10
 
     async def __aenter__(self) -> IterableBody:
         return self
 
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
-        await self.iter.aclose()
+        if hasattr(self.iter, "aclose"):
+            await self.iter.aclose()
 
-    def __aiter__(self) -> AsyncIterator:
+    def __aiter__(self) -> AsyncIterator[Any]:
         return self.iter
 
 
@@ -261,7 +254,7 @@ class Response(SansIOResponse):
 
     def __init__(
         self,
-        response: ResponseBody | str | bytes | Iterable | None = None,
+        response: ResponseBody | str | bytes | Iterable | AsyncIterable | None = None,
         status: int | None = None,
         headers: dict | Headers | None = None,
         mimetype: str | None = None,
