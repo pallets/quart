@@ -10,13 +10,14 @@ from functools import partial, wraps
 from pathlib import Path
 from typing import (
     Any,
-    AsyncGenerator,
+    AsyncIterator,
     Awaitable,
     Callable,
     Coroutine,
-    Generator,
     Iterable,
+    Iterator,
     TYPE_CHECKING,
+    TypeVar,
 )
 
 from werkzeug.datastructures import Headers
@@ -66,12 +67,15 @@ def run_sync(func: Callable[..., Any]) -> Callable[..., Coroutine[None, None, An
     return _wrapper
 
 
-def run_sync_iterable(iterable: Generator[Any, None, None]) -> AsyncGenerator[Any, None]:
-    async def _gen_wrapper() -> AsyncGenerator[Any, None]:
+T = TypeVar("T")
+
+
+def run_sync_iterable(iterable: Iterator[T]) -> AsyncIterator[T]:
+    async def _gen_wrapper() -> AsyncIterator[T]:
         # Wrap the generator such that each iteration runs
         # in the executor. Then rationalise the raised
         # errors so that it ends.
-        def _inner() -> Any:
+        def _inner() -> T:
             # https://bugs.python.org/issue26221
             # StopIteration errors are swallowed by the
             # run_in_exector method
