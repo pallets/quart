@@ -110,7 +110,7 @@ we can do by adding the command code to *src/blog/__init__.py*:
     from sqlite3 import dbapi2 as sqlite3
 
     app.config.update({
-      "DATABASE": app.root_path / "blog.db",
+      "DATABASE": Path(app.root_path) / "blog.db",
     })
 
     def _connect_db():
@@ -120,7 +120,7 @@ we can do by adding the command code to *src/blog/__init__.py*:
 
     def init_db():
         db = _connect_db()
-        with open(app.root_path / "schema.sql", mode="r") as file_:
+        with open(Path(app.root_path) / "schema.sql", mode="r") as file_:
             db.cursor().executescript(file_.read())
         db.commit()
 
