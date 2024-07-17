@@ -31,7 +31,7 @@ environment variable. For example,
     $ QUART_APP=run:app quart run
 
 The ``quart run`` command comes with ``--host``, and ``--port`` to
-specify where the app is served, and ``--cerfile`` and ``--keyfile``
+specify where the app is served, and ``--certfile`` and ``--keyfile``
 to specify the SSL certificates to use.
 
 app.run()
