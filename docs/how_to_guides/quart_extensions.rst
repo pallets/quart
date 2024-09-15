@@ -48,6 +48,8 @@ here,
   validation and auto-generated API documentation.
 - `Quart-session <https://github.com/sanderfoobar/quart-session>`_ server
   side session support.
+- `Quart-LibreTranslate <https://github.com/Quart-Addons/quart-libretranslate>`_ Simple integration to
+  use LibreTranslate with your Quart app.
 - `Quart-Uploads <https://github.com/Quart-Addons/quart-uploads>`_ File upload handling for Quart.
 
 Supporting sync code in a Quart Extension
