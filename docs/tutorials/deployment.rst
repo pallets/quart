@@ -43,7 +43,7 @@ Server name                                          HTTP/2 HTTP/3 Server Push W
 ==================================================== ====== ====== =========== ==================
 `Hypercorn <https://github.com/pgjones/hypercorn>`_  ✓      ✓      ✓           ✓
 `Daphne <https://github.com/django/daphne>`_         ✓      ✗      ✗           ✗
-`Uvicorn <https://github.com/encode/uvicorn>`_       ✗      ✗      ✗           ✗
+`Uvicorn <https://github.com/encode/uvicorn>`_       ✗      ✗      ✗           ✓
 ==================================================== ====== ====== =========== ==================
 
 Serverless deployment
