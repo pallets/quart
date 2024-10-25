@@ -1,6 +1,8 @@
 0.19.8
 ------
 
+* Bugfix Fix missing check that caused the previous fix to raise an error. #366
+
 0.19.7 2024-10-25
 -----------------
 
