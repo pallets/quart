@@ -15,6 +15,7 @@ from typing import (
 from urllib.parse import parse_qsl
 
 from werkzeug.datastructures import Headers, MultiDict
+from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.formparser import default_stream_factory
 from werkzeug.http import parse_options_header
 from werkzeug.sansio.multipart import Data, Epilogue, Field, File, MultipartDecoder, NeedData
@@ -173,19 +174,28 @@ class MultiPartParser:
         files = []
 
         current_part: Field | File
+        field_size: int | None = None
         async for data in body:
             parser.receive_data(data)
             event = parser.next_event()
             while not isinstance(event, (Epilogue, NeedData)):
                 if isinstance(event, Field):
                     current_part = event
+                    field_size = 0
                     container = []
                     _write = container.append
                 elif isinstance(event, File):
                     current_part = event
+                    field_size = None
                     container = self.start_file_streaming(event, content_length)
                     _write = container.write
                 elif isinstance(event, Data):
+                    if field_size is not None:
+                        field_size += len(event.data)
+
+                        if field_size > self.max_form_memory_size:
+                            raise RequestEntityTooLarge()
+
                     _write(event.data)
                     if not event.more_data:
                         if isinstance(current_part, Field):
