@@ -1,5 +1,5 @@
-0.19.7
-------
+0.19.7 2024-10-25
+-----------------
 
 * Security Fix how ``max_form_memory_size`` is applied when parsing large
   non-file fields. https://github.com/advisories/GHSA-q34m-jh98-gwm2
