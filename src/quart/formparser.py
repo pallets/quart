@@ -190,7 +190,7 @@ class MultiPartParser:
                     container = self.start_file_streaming(event, content_length)
                     _write = container.write
                 elif isinstance(event, Data):
-                    if field_size is not None:
+                    if self.max_form_memory_size is not None and field_size is not None:
                         field_size += len(event.data)
 
                         if field_size > self.max_form_memory_size:
