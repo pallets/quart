@@ -7,7 +7,7 @@ import sys
 import warnings
 from collections import defaultdict
 from datetime import timedelta
-from inspect import isasyncgen, isgenerator
+from inspect import isasyncgen, iscoroutinefunction, isgenerator
 from types import TracebackType
 from typing import (
     Any,
@@ -1130,7 +1130,7 @@ class Quart(App):
         run. Before Quart 0.11 this did not run the synchronous code
         in an executor.
         """
-        if asyncio.iscoroutinefunction(func):
+        if iscoroutinefunction(func):
             return func
         else:
             return self.sync_to_async(cast(Callable[P, T], func))
