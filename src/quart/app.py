@@ -7,7 +7,7 @@ import sys
 import warnings
 from collections import defaultdict
 from datetime import timedelta
-from inspect import isasyncgen, iscoroutinefunction, isgenerator
+from inspect import isasyncgen, iscoroutinefunction as _inspect_iscoroutinefunction, isgenerator
 from types import TracebackType
 from typing import (
     Any,
@@ -126,6 +126,15 @@ try:
     from typing import ParamSpec
 except ImportError:
     from typing_extensions import ParamSpec  # type: ignore
+
+# Python 3.14 deprecated asyncio.iscoroutinefunction, but suggested
+# inspect.iscoroutinefunction does not work correctly in some Python
+# versions before 3.12.
+# See https://github.com/python/cpython/issues/122858#issuecomment-2466239748
+if sys.version_info >= (3, 12):
+    iscoroutinefunction = _inspect_iscoroutinefunction
+else:
+    iscoroutinefunction = asyncio.iscoroutinefunction
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
 T_after_serving = TypeVar("T_after_serving", bound=AfterServingCallable)
