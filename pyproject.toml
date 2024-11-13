@@ -30,7 +30,7 @@ aiofiles = "*"
 blinker = ">=1.6"
 click = ">=8.0.0"
 flask = ">=3.0.0"
-hypercorn = ">=0.11.2"
+hypercorn = ">=0.11.2,<=0.16.0"
 importlib_metadata = { version = "*", python = "<3.10" }
 itsdangerous = "*"
 jinja2 = "*"
