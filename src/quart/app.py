@@ -26,10 +26,10 @@ from typing import (
 )
 from urllib.parse import quote
 
+import flask.app
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
 from aiofiles.threadpool.binary import AsyncBufferedReader
-import flask.app
 from flask.sansio.app import App
 from flask.sansio.scaffold import setupmethod
 from hypercorn.asyncio import serve
@@ -228,10 +228,8 @@ class Quart(App):
     websocket_class = Websocket
 
     default_config = ImmutableDict(
-
-        flask.app.Flask.default_config |
-
-        {
+        flask.app.Flask.default_config
+        | {
             "APPLICATION_ROOT": "/",
             "BACKGROUND_TASK_SHUTDOWN_TIMEOUT": 5,  # Second
             "BODY_TIMEOUT": 60,  # Second
