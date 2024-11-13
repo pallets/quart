@@ -83,13 +83,13 @@ async def test_index(path: str, app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get(path)
     assert response.status_code == 200
-    assert b"index" in (await response.get_data())  # type: ignore
+    assert b"index" in (await response.get_data())
 
 
 async def test_iri(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get("/❤️")
-    assert "💔".encode() in (await response.get_data())  # type: ignore
+    assert "💔".encode() in (await response.get_data())
 
 
 async def test_options(app: Quart) -> None:
@@ -107,35 +107,35 @@ async def test_json(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.post("/json/", json={"value": "json"})
     assert response.status_code == 200
-    assert b'{"value":"json"}\n' == (await response.get_data())  # type: ignore
+    assert b'{"value":"json"}\n' == (await response.get_data())
 
 
 async def test_implicit_json(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.post("/implicit_json/", json={"value": "json"})
     assert response.status_code == 200
-    assert b'{"value":"json"}\n' == (await response.get_data())  # type: ignore
+    assert b'{"value":"json"}\n' == (await response.get_data())
 
 
 async def test_implicit_json_list(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.post("/implicit_json/", json=["a", 2])
     assert response.status_code == 200
-    assert b'["a",2]\n' == (await response.get_data())  # type: ignore
+    assert b'["a",2]\n' == (await response.get_data())
 
 
 async def test_werkzeug(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get("/werkzeug/")
     assert response.status_code == 200
-    assert b"Hello" == (await response.get_data())  # type: ignore
+    assert b"Hello" == (await response.get_data())
 
 
 async def test_generic_error(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get("/error/")
     assert response.status_code == 409
-    assert b"Something Unique" in (await response.get_data())  # type: ignore
+    assert b"Something Unique" in (await response.get_data())
 
 
 async def test_url_defaults(app: Quart) -> None:
@@ -151,7 +151,7 @@ async def test_not_found_error(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get("/not_found/")
     assert response.status_code == 404
-    assert b"Not Found" in (await response.get_data())  # type: ignore
+    assert b"Not Found" in (await response.get_data())
 
 
 async def test_make_response_str(app: Quart) -> None:
@@ -225,4 +225,4 @@ async def test_root_path(app: Quart) -> None:
 async def test_stream(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get("/stream")
-    assert (await response.get_data()) == b"Hello World"  # type: ignore
+    assert (await response.get_data()) == b"Hello World"

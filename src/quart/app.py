@@ -126,7 +126,7 @@ from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 try:
     from typing import ParamSpec
 except ImportError:
-    from typing_extensions import ParamSpec  # type: ignore
+    from typing_extensions import ParamSpec
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
 T_after_serving = TypeVar("T_after_serving", bound=AfterServingCallable)
@@ -1395,7 +1395,7 @@ class Quart(App):
             response.status_code = int(status)
 
         if headers is not None:
-            response.headers.update(headers)  # type: ignore[arg-type]
+            response.headers.update(headers)
 
         return response
 

@@ -148,7 +148,7 @@ class FileBody(ResponseBody):
         if buffer_size is not None:
             self.buffer_size = buffer_size
         self.file: AsyncBufferedIOBase | None = None
-        self.file_manager: AiofilesContextManager[None, None, AsyncBufferedReader] = None
+        self.file_manager: AiofilesContextManager = None
 
     async def __aenter__(self) -> FileBody:
         self.file_manager = async_open(self.file_path, mode="rb")
@@ -296,7 +296,7 @@ class Response(SansIOResponse):
         elif isinstance(response, ResponseBody):
             self.response = response
         elif isinstance(response, (str, bytes)):
-            self.set_data(response)  # type: ignore
+            self.set_data(response) 
         else:
             self.response = self.iterable_body_class(response)
 
@@ -314,9 +314,9 @@ class Response(SansIOResponse):
     async def get_data(self, as_text: Literal[False]) -> bytes: ...
 
     @overload
-    async def get_data(self, as_text: bool = True) -> AnyStr: ...
+    async def get_data(self) -> bytes: ...
 
-    async def get_data(self, as_text: bool = False) -> AnyStr:
+    async def get_data(self, as_text: bool = False) -> str | bytes:
         """Return the body data."""
         if self.implicit_sequence_conversion:
             await self.make_sequence()
@@ -327,9 +327,9 @@ class Response(SansIOResponse):
                     result += data.decode()
                 else:
                     result += data
-        return result  # type: ignore
+        return result
 
-    def set_data(self, data: AnyStr) -> None:
+    def set_data(self, data: str | bytes) -> None:
         """Set the response data.
 
         This will encode using the :attr:`charset`.
@@ -366,7 +366,7 @@ class Response(SansIOResponse):
         if not (force or self.is_json):
             return None
 
-        data = await self.get_data(as_text=True)
+        data: str = await self.get_data(as_text=True)
         try:
             return self.json_module.loads(data)
         except ValueError:
