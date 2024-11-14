@@ -123,6 +123,7 @@ from .utils import (
 )
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 
+ParamSpec: typing_extensions.ParamSpec | typing.ParamSpec
 try:
     from typing import ParamSpec
 except ImportError:
