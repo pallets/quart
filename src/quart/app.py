@@ -28,7 +28,6 @@ from urllib.parse import quote
 
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
-from aiofiles.threadpool.binary import AsyncBufferedReader
 from flask.sansio.app import App
 from flask.sansio.scaffold import setupmethod
 from hypercorn.asyncio import serve
@@ -125,7 +124,7 @@ from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 try:
     from typing import ParamSpec
 except ImportError:
-    from typing_extensions import ParamSpec  # type: ignore
+    from typing_extensions import ParamSpec
 
 # Python 3.14 deprecated asyncio.iscoroutinefunction, but suggested
 # inspect.iscoroutinefunction does not work correctly in some Python
@@ -384,7 +383,7 @@ class Quart(App):
         self,
         path: FilePath,
         mode: str = "rb",
-    ) -> AiofilesContextManager[None, None, AsyncBufferedReader]:
+    ) -> AiofilesContextManager:
         """Open a file for reading.
 
         Use as
@@ -401,7 +400,7 @@ class Quart(App):
 
     async def open_instance_resource(
         self, path: FilePath, mode: str = "rb"
-    ) -> AiofilesContextManager[None, None, AsyncBufferedReader]:
+    ) -> AiofilesContextManager:
         """Open a file for reading.
 
         Use as
@@ -1402,7 +1401,7 @@ class Quart(App):
             response.status_code = int(status)
 
         if headers is not None:
-            response.headers.update(headers)  # type: ignore[arg-type]
+            response.headers.update(headers)
 
         return response
 

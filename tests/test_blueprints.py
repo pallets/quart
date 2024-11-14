@@ -86,7 +86,7 @@ async def test_empty_path_with_url_prefix() -> None:
     test_client = app.test_client()
     response = await test_client.get("/prefix")
     assert response.status_code == 200
-    assert await response.get_data() == b"OK"  # type: ignore
+    assert await response.get_data() == b"OK"
 
 
 async def test_blueprint_template_filter() -> None:
@@ -104,7 +104,7 @@ async def test_blueprint_template_filter() -> None:
     app.register_blueprint(blueprint)
 
     response = await app.test_client().get("/")
-    assert b"olleh" in (await response.get_data())  # type: ignore
+    assert b"olleh" in (await response.get_data())
 
 
 async def test_blueprint_error_handler() -> None:
@@ -124,7 +124,7 @@ async def test_blueprint_error_handler() -> None:
 
     response = await app.test_client().get("/error/")
     assert response.status_code == 409
-    assert b"Something Unique" in (await response.get_data())  # type: ignore
+    assert b"Something Unique" in (await response.get_data())
 
 
 async def test_blueprint_method_view() -> None:
@@ -328,14 +328,14 @@ async def test_nested_blueprint() -> None:
 
     client = app.test_client()
 
-    assert (await (await client.get("/parent/")).get_data()) == b"Parent yes"  # type: ignore
-    assert (await (await client.get("/parent/child/")).get_data()) == b"Child yes"  # type: ignore
-    assert (await (await client.get("/parent/sibling")).get_data()) == b"Sibling yes"  # type: ignore  # noqa: E501
-    assert (await (await client.get("/alt/sibling")).get_data()) == b"Sibling yes"  # type: ignore
-    assert (await (await client.get("/parent/child/grandchild/")).get_data()) == b"Grandchild yes"  # type: ignore  # noqa: E501
-    assert (await (await client.get("/parent/no")).get_data()) == b"Parent no"  # type: ignore
-    assert (await (await client.get("/parent/child/no")).get_data()) == b"Parent no"  # type: ignore
-    assert (await (await client.get("/parent/child/grandchild/no")).get_data()) == b"Grandchild no"  # type: ignore  # noqa: E501
+    assert (await (await client.get("/parent/")).get_data()) == b"Parent yes"
+    assert (await (await client.get("/parent/child/")).get_data()) == b"Child yes"
+    assert (await (await client.get("/parent/sibling")).get_data()) == b"Sibling yes"
+    assert (await (await client.get("/alt/sibling")).get_data()) == b"Sibling yes"
+    assert (await (await client.get("/parent/child/grandchild/")).get_data()) == b"Grandchild yes"
+    assert (await (await client.get("/parent/no")).get_data()) == b"Parent no"
+    assert (await (await client.get("/parent/child/no")).get_data()) == b"Parent no"
+    assert (await (await client.get("/parent/child/grandchild/no")).get_data()) == b"Grandchild no"
 
 
 async def test_blueprint_renaming() -> None:
@@ -366,12 +366,12 @@ async def test_blueprint_renaming() -> None:
 
     client = app.test_client()
 
-    assert (await (await client.get("/a/")).get_data()) == b"bp.index"  # type: ignore
-    assert (await (await client.get("/b/")).get_data()) == b"alt.index"  # type: ignore
-    assert (await (await client.get("/a/a/")).get_data()) == b"bp.sub.index2"  # type: ignore
-    assert (await (await client.get("/b/a/")).get_data()) == b"alt.sub.index2"  # type: ignore
-    assert (await (await client.get("/a/error")).get_data()) == b"Error"  # type: ignore
-    assert (await (await client.get("/b/error")).get_data()) == b"Error"  # type: ignore
+    assert (await (await client.get("/a/")).get_data()) == b"bp.index"
+    assert (await (await client.get("/b/")).get_data()) == b"alt.index"
+    assert (await (await client.get("/a/a/")).get_data()) == b"bp.sub.index2"
+    assert (await (await client.get("/b/a/")).get_data()) == b"alt.sub.index2"
+    assert (await (await client.get("/a/error")).get_data()) == b"Error"
+    assert (await (await client.get("/b/error")).get_data()) == b"Error"
 
 
 def test_self_registration() -> None:
@@ -461,5 +461,5 @@ async def test_nested_callback_order() -> None:
     client = app.test_client()
     assert (
         await (await client.get("/a")).get_data()
-    ) == b"app_1, app_2, parent_1, parent_2, child_1, child_2"  # type: ignore
-    assert (await (await client.get("/b")).get_data()) == b"child"  # type: ignore
+    ) == b"app_1, app_2, parent_1, parent_2, child_1, child_2"
+    assert (await (await client.get("/b")).get_data()) == b"child"

@@ -37,7 +37,7 @@ class TestApp:
         return self.app.test_client()
 
     async def startup(self) -> None:
-        scope: LifespanScope = {"type": "lifespan", "asgi": {"spec_version": "2.0"}}
+        scope: LifespanScope = {"type": "lifespan", "asgi": {"spec_version": "2.0"}, "state": {}}
         self._task = asyncio.ensure_future(self.app(scope, self._asgi_receive, self._asgi_send))
         await self._app_queue.put({"type": "lifespan.startup"})
         await asyncio.wait_for(self._startup.wait(), timeout=self.startup_timeout)
