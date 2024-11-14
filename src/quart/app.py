@@ -249,6 +249,7 @@ class Quart(App):
             "PREFER_SECURE_URLS": False,
             "PRESERVE_CONTEXT_ON_EXCEPTION": None,
             "PROPAGATE_EXCEPTIONS": None,
+            "PROVIDE_AUTOMATIC_OPTIONS": True,
             "RESPONSE_TIMEOUT": 60,  # Second
             "SECRET_KEY": None,
             "SEND_FILE_MAX_AGE_DEFAULT": timedelta(hours=12),
