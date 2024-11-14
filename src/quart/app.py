@@ -29,7 +29,6 @@ from urllib.parse import quote
 import flask.app
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
-from aiofiles.threadpool.binary import AsyncBufferedReader
 from flask.sansio.app import App
 from flask.sansio.scaffold import setupmethod
 from hypercorn.asyncio import serve
@@ -126,7 +125,7 @@ from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 try:
     from typing import ParamSpec
 except ImportError:
-    from typing_extensions import ParamSpec #type: ignore
+    from typing_extensions import ParamSpec  # type: ignore
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
 T_after_serving = TypeVar("T_after_serving", bound=AfterServingCallable)

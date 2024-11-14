@@ -19,7 +19,7 @@ from typing import (
 
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
-from aiofiles.threadpool.binary import AsyncBufferedIOBase, AsyncBufferedReader
+from aiofiles.threadpool.binary import AsyncBufferedIOBase
 from werkzeug.datastructures import ContentRange, Headers
 from werkzeug.exceptions import RequestedRangeNotSatisfiable
 from werkzeug.http import parse_etags
