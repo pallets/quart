@@ -124,7 +124,7 @@ from .utils import (
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 
 try:
-    from typing import ParamSpec #type: ignore
+    from typing import ParamSpec
 except ImportError:
     from typing_extensions import ParamSpec #type: ignore
 
