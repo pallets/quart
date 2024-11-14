@@ -15,6 +15,7 @@ on:
       - 'docs/**'
       - '*.md'
       - '*.rst'
+  workflow-dispatch:
 jobs:
   tests:
     name: ${{ matrix.name }}
