@@ -6,7 +6,7 @@ Quart
 
 |Build Status| |docs| |pypi| |python| |license| |chat|
 
-Quart is an async Python web microframework. Using Quart you can,
+Quart is an async Python web microframework. Using Quart you can, 
 
 * render and serve HTML templates,
 * write (RESTful) JSON APIs,
