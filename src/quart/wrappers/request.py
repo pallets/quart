@@ -187,35 +187,32 @@ class Request(BaseRequestWebsocket):
         return await self.get_data(as_text=False, parse_form_data=True)
 
     @overload
-    async def get_data(
-        self, as_text: Literal[False], parse_form_data: bool) -> bytes: ...
+    async def get_data(self, as_text: Literal[False], parse_form_data: bool) -> bytes: ...
 
     @overload
     async def get_data(self, as_text: Literal[True], parse_form_data: bool) -> str: ...
 
     @overload
     async def get_data(
-        self, cache: bool, as_text: Literal[False], parse_form_data: bool) -> bytes: ...
+        self, cache: bool, as_text: Literal[False], parse_form_data: bool
+    ) -> bytes: ...
 
     @overload
     async def get_data(self, cache: bool, as_text: Literal[True], parse_form_data: bool) -> str: ...
 
     @overload
-    async def get_data(
-        self, cache: bool, as_text: Literal[False]) -> bytes: ...
+    async def get_data(self, cache: bool, as_text: Literal[False]) -> bytes: ...
 
     @overload
     async def get_data(self, cache: bool, as_text: Literal[True]) -> str: ...
 
     @overload
-    async def get_data(
-        self, cache: bool
-    ) -> bytes: ...
+    async def get_data(self, cache: bool) -> bytes: ...
 
     @overload
     async def get_data(self) -> bytes: ...
 
-    async def get_data( #type: ignore[misc]
+    async def get_data(  # type: ignore[misc]
         self, cache: bool = True, as_text: bool = False, parse_form_data: bool = False
     ) -> str | bytes:
         """Get the request body data.

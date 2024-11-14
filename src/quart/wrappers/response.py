@@ -296,7 +296,7 @@ class Response(SansIOResponse):
         elif isinstance(response, ResponseBody):
             self.response = response
         elif isinstance(response, (str, bytes)):
-            self.set_data(response) 
+            self.set_data(response)
         else:
             self.response = self.iterable_body_class(response)
 

@@ -332,10 +332,14 @@ async def test_nested_blueprint() -> None:
     assert (await (await client.get("/parent/child/")).get_data()) == b"Child yes"
     assert (await (await client.get("/parent/sibling")).get_data()) == b"Sibling yes"  # noqa: E501
     assert (await (await client.get("/alt/sibling")).get_data()) == b"Sibling yes"
-    assert (await (await client.get("/parent/child/grandchild/")).get_data()) == b"Grandchild yes"  # noqa: E501
+    assert (
+        await (await client.get("/parent/child/grandchild/")).get_data()
+    ) == b"Grandchild yes"  # noqa: E501
     assert (await (await client.get("/parent/no")).get_data()) == b"Parent no"
     assert (await (await client.get("/parent/child/no")).get_data()) == b"Parent no"
-    assert (await (await client.get("/parent/child/grandchild/no")).get_data()) == b"Grandchild no"  # noqa: E501
+    assert (
+        await (await client.get("/parent/child/grandchild/no")).get_data()
+    ) == b"Grandchild no"  # noqa: E501
 
 
 async def test_blueprint_renaming() -> None:

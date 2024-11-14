@@ -123,11 +123,10 @@ from .utils import (
 )
 from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 
-ParamSpec: typing_extensions.ParamSpec | typing.ParamSpec
 try:
-    from typing import ParamSpec
+    from typing import ParamSpec #type: ignore
 except ImportError:
-    from typing_extensions import ParamSpec
+    from typing_extensions import ParamSpec #type: ignore
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
 T_after_serving = TypeVar("T_after_serving", bound=AfterServingCallable)
