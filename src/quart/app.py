@@ -26,9 +26,9 @@ from typing import (
 )
 from urllib.parse import quote
 
+import flask.app
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
-import flask.app
 from flask.sansio.app import App
 from flask.sansio.scaffold import setupmethod
 from hypercorn.asyncio import serve
