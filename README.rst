@@ -24,7 +24,7 @@ Quart can be installed via `pip
 
     $ pip install quart
 
-and requires Python 3.8.0 or higher (see `python version support
+and requires Python 3.9.0 or higher (see `python version support
 <https://quart.palletsprojects.com/en/latest/discussion/python_versions.html>`_
 for reasoning).
 
