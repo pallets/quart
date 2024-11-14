@@ -26,9 +26,9 @@ from typing import (
 )
 from urllib.parse import quote
 
+import flask.app
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
-from aiofiles.threadpool.binary import AsyncBufferedReader
 from flask.sansio.app import App
 from flask.sansio.scaffold import setupmethod
 from hypercorn.asyncio import serve
@@ -227,7 +227,8 @@ class Quart(App):
     websocket_class = Websocket
 
     default_config = ImmutableDict(
-        {
+        flask.app.Flask.default_config
+        | {
             "APPLICATION_ROOT": "/",
             "BACKGROUND_TASK_SHUTDOWN_TIMEOUT": 5,  # Second
             "BODY_TIMEOUT": 60,  # Second
@@ -375,7 +376,7 @@ class Quart(App):
         self,
         path: FilePath,
         mode: str = "rb",
-    ) -> AiofilesContextManager[None, None, AsyncBufferedReader]:
+    ) -> AiofilesContextManager:
         """Open a file for reading.
 
         Use as
@@ -392,7 +393,7 @@ class Quart(App):
 
     async def open_instance_resource(
         self, path: FilePath, mode: str = "rb"
-    ) -> AiofilesContextManager[None, None, AsyncBufferedReader]:
+    ) -> AiofilesContextManager:
         """Open a file for reading.
 
         Use as
@@ -1393,7 +1394,7 @@ class Quart(App):
             response.status_code = int(status)
 
         if headers is not None:
-            response.headers.update(headers)  # type: ignore[arg-type]
+            response.headers.update(headers)
 
         return response
 

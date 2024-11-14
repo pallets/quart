@@ -73,9 +73,9 @@ def test_response_status(status: Any, expected: int) -> None:
 
 async def test_response_body() -> None:
     response = Response(b"Body")
-    assert b"Body" == (await response.get_data())  # type: ignore
+    assert b"Body" == (await response.get_data())
     # Fetch again to ensure it isn't exhausted
-    assert b"Body" == (await response.get_data())  # type: ignore
+    assert b"Body" == (await response.get_data())
 
 
 async def test_response_make_conditional(http_scope: HTTPScope) -> None:
@@ -92,7 +92,7 @@ async def test_response_make_conditional(http_scope: HTTPScope) -> None:
     )
     response = Response(b"abcdef")
     await response.make_conditional(request, accept_ranges=True, complete_length=6)
-    assert b"abcd" == (await response.get_data())  # type: ignore
+    assert b"abcd" == (await response.get_data())
     assert response.status_code == 206
     assert response.accept_ranges == "bytes"
     assert response.content_range.units == "bytes"
@@ -107,7 +107,7 @@ async def test_response_make_conditional_no_condition(http_scope: HTTPScope) -> 
     )
     response = Response(b"abcdef")
     await response.make_conditional(request, complete_length=6)
-    assert b"abcdef" == (await response.get_data())  # type: ignore
+    assert b"abcdef" == (await response.get_data())
     assert response.status_code == 200
 
 
@@ -125,7 +125,7 @@ async def test_response_make_conditional_out_of_bound(http_scope: HTTPScope) -> 
     )
     response = Response(b"abcdef")
     await response.make_conditional(request, complete_length=6)
-    assert b"abcdef" == (await response.get_data())  # type: ignore
+    assert b"abcdef" == (await response.get_data())
     assert response.status_code == 206
 
 
@@ -145,7 +145,7 @@ async def test_response_make_conditional_not_modified(http_scope: HTTPScope) -> 
     )
     await response.make_conditional(request)
     assert response.status_code == 304
-    assert b"" == (await response.get_data())  # type: ignore
+    assert b"" == (await response.get_data())
     assert "content-length" not in response.headers
 
 
@@ -182,7 +182,7 @@ def test_response_cache_control() -> None:
 
 async def test_empty_response() -> None:
     response = Response()
-    assert b"" == (await response.get_data())  # type: ignore
+    assert b"" == (await response.get_data())
 
 
 @given(

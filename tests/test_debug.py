@@ -10,4 +10,4 @@ async def test_debug() -> None:
         response = await traceback_response(Exception("Unique error"))
 
     assert response.status_code == 500
-    assert b"Unique error" in (await response.get_data())  # type: ignore
+    assert b"Unique error" in (await response.get_data())

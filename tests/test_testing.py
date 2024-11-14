@@ -232,7 +232,7 @@ async def test_data() -> None:
     app = Quart(__name__)
 
     @app.route("/", methods=["POST"])
-    async def echo() -> str:
+    async def echo() -> bytes:
         data = await request.get_data(True)
         return data
 
@@ -365,7 +365,7 @@ async def test_session_transactions() -> None:
         local_session["foo"] = [42]
         assert len(local_session) == 1
     response = await test_client.get("/")
-    assert (await response.get_data()) == b"[42]"  # type: ignore
+    assert (await response.get_data()) == b"[42]"
     async with test_client.session_transaction() as local_session:
         assert len(local_session) == 1
         assert local_session["foo"] == [42]

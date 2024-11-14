@@ -130,7 +130,7 @@ class RequestContext(_BaseRequestWebsocketContext):
         session: SessionMixin | None = None,
     ) -> None:
         super().__init__(app, request, session)
-        self.flashes = None
+        self.flashes: Any | list[Any] | None = None
         self._after_request_functions: list[AfterRequestCallable] = []
 
     @property

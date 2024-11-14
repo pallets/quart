@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, AnyStr, Awaitable, Callable, Generator, NoReturn, overload
+from typing import Any, Awaitable, Callable, Generator, NoReturn, overload
 
 from hypercorn.typing import HTTPScope
 from werkzeug.datastructures import CombinedMultiDict, Headers, iter_multi_items, MultiDict
@@ -187,6 +187,12 @@ class Request(BaseRequestWebsocket):
         return await self.get_data(as_text=False, parse_form_data=True)
 
     @overload
+    async def get_data(self, as_text: Literal[False], parse_form_data: bool) -> bytes: ...
+
+    @overload
+    async def get_data(self, as_text: Literal[True], parse_form_data: bool) -> str: ...
+
+    @overload
     async def get_data(
         self, cache: bool, as_text: Literal[False], parse_form_data: bool
     ) -> bytes: ...
@@ -195,18 +201,25 @@ class Request(BaseRequestWebsocket):
     async def get_data(self, cache: bool, as_text: Literal[True], parse_form_data: bool) -> str: ...
 
     @overload
-    async def get_data(
-        self, cache: bool = True, as_text: bool = False, parse_form_data: bool = False
-    ) -> AnyStr: ...
+    async def get_data(self, cache: bool, as_text: Literal[False]) -> bytes: ...
 
-    async def get_data(
+    @overload
+    async def get_data(self, cache: bool, as_text: Literal[True]) -> str: ...
+
+    @overload
+    async def get_data(self, cache: bool) -> bytes: ...
+
+    @overload
+    async def get_data(self) -> bytes: ...
+
+    async def get_data(  # type: ignore[misc]
         self, cache: bool = True, as_text: bool = False, parse_form_data: bool = False
-    ) -> AnyStr:
+    ) -> str | bytes:
         """Get the request body data.
 
         Arguments:
             cache: If False the body data will be cleared, resulting in any
-                subsequent calls returning an empty AnyStr and reducing
+                subsequent calls returning '' or b'' and reducing
                 memory usage.
             as_text: If True the data is returned as a decoded string,
                 otherwise raw bytes are returned.
