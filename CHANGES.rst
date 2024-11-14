@@ -1,8 +1,9 @@
 0.19.9 2024-11-14
 -----------------
 
--   Fix missing ``PROVIDE_AUTOMATIC_OPTIONS`` config for compatibility
-    with Flask 3.1.
+* Fix missing ``PROVIDE_AUTOMATIC_OPTIONS`` config for compatibility
+  with Flask 3.1.
+* Drop support for Python3.8 and support Python 3.13.
 
 0.19.8 2024-10-25
 -----------------
