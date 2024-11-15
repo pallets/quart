@@ -26,7 +26,7 @@ from typing import (
 )
 from urllib.parse import quote
 
-import flask.app
+from flask.app import Flask
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
 from flask.sansio.app import App
@@ -236,7 +236,7 @@ class Quart(App):
     websocket_class = Websocket
 
     default_config = ImmutableDict(
-        flask.app.Flask.default_config
+        Flask.default_config
         | {
             "APPLICATION_ROOT": "/",
             "BACKGROUND_TASK_SHUTDOWN_TIMEOUT": 5,  # Second
