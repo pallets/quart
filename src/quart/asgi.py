@@ -351,7 +351,7 @@ def _convert_version(raw: str) -> list[int]:
 
 
 async def _handle_exception(app: Quart, error: Exception) -> Response:
-    if not app.testing and app.config["PROPAGATE_EXCEPTIONS"]:
+    if not app.testing and not app.config["PROPAGATE_EXCEPTIONS"]:
         return await traceback_response(error)
     else:
         raise error
