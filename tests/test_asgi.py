@@ -34,6 +34,7 @@ async def test_http_1_0_host_header(headers: list, expected: str) -> None:
         "client": ("127.0.0.1", 80),
         "server": None,
         "extensions": {},
+        "state": {},  # type: ignore[typeddict-item]
     }
     connection = ASGIHTTPConnection(app, scope)
     request = connection._create_request_from_scope(lambda: None)  # type: ignore
@@ -57,6 +58,7 @@ async def test_http_completion() -> None:
         "client": ("127.0.0.1", 80),
         "server": None,
         "extensions": {},
+        "state": {},  # type: ignore[typeddict-item]
     }
     connection = ASGIHTTPConnection(app, scope)
 
@@ -98,6 +100,7 @@ async def test_http_request_without_body(request_message: dict) -> None:
         "client": ("127.0.0.1", 80),
         "server": None,
         "extensions": {},
+        "state": {},  # type: ignore[typeddict-item]
     }
     connection = ASGIHTTPConnection(app, scope)
     request = connection._create_request_from_scope(lambda: None)  # type: ignore
@@ -135,6 +138,7 @@ async def test_websocket_completion() -> None:
         "server": None,
         "subprotocols": [],
         "extensions": {"websocket.http.response": {}},
+        "state": {},  # type: ignore[typeddict-item]
     }
     connection = ASGIWebsocketConnection(app, scope)
 
@@ -168,6 +172,7 @@ def test_http_path_from_absolute_target() -> None:
         "client": ("127.0.0.1", 80),
         "server": None,
         "extensions": {},
+        "state": {},  # type: ignore[typeddict-item]
     }
     connection = ASGIHTTPConnection(app, scope)
     request = connection._create_request_from_scope(lambda: None)  # type: ignore
@@ -194,6 +199,7 @@ def test_http_path_with_root_path(path: str, expected: str) -> None:
         "client": ("127.0.0.1", 80),
         "server": None,
         "extensions": {},
+        "state": {},  # type: ignore[typeddict-item]
     }
     connection = ASGIHTTPConnection(app, scope)
     request = connection._create_request_from_scope(lambda: None)  # type: ignore
@@ -216,6 +222,7 @@ def test_websocket_path_from_absolute_target() -> None:
         "server": None,
         "subprotocols": [],
         "extensions": {"websocket.http.response": {}},
+        "state": {},  # type: ignore[typeddict-item]
     }
     connection = ASGIWebsocketConnection(app, scope)
     websocket = connection._create_websocket_from_scope(lambda: None)  # type: ignore
@@ -242,6 +249,7 @@ def test_websocket_path_with_root_path(path: str, expected: str) -> None:
         "server": None,
         "subprotocols": [],
         "extensions": {"websocket.http.response": {}},
+        "state": {},  # type: ignore[typeddict-item]
     }
     connection = ASGIWebsocketConnection(app, scope)
     websocket = connection._create_websocket_from_scope(lambda: None)  # type: ignore

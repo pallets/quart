@@ -129,10 +129,10 @@ def get_flashed_messages(
     all messages will be popped, but only those matching the filter
     returned. See :func:`~quart.helpers.flash` for message creation.
     """
-    flashes = request_ctx.flashes
+    flashes: list[str] = request_ctx.flashes
     if flashes is None:
-        flashes = session.pop("_flashes") if "_flashes" in session else []
-        request_ctx.flashes = flashes
+        flashes = session.pop("_flashes", [])
+        request_ctx.flashes = flashes  # type: ignore[assignment]
     if category_filter:
         flashes = [flash for flash in flashes if flash[0] in category_filter]
     if not with_categories:

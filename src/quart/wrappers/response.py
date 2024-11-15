@@ -2,13 +2,11 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from hashlib import md5
-from inspect import isasyncgen, isgenerator
 from io import BytesIO
 from os import PathLike
 from types import TracebackType
 from typing import (
     Any,
-    AnyStr,
     AsyncGenerator,
     AsyncIterable,
     AsyncIterator,
@@ -19,7 +17,7 @@ from typing import (
 
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
-from aiofiles.threadpool.binary import AsyncBufferedIOBase, AsyncBufferedReader
+from aiofiles.threadpool.binary import AsyncBufferedIOBase
 from werkzeug.datastructures import ContentRange, Headers
 from werkzeug.exceptions import RequestedRangeNotSatisfiable
 from werkzeug.http import parse_etags
@@ -102,27 +100,21 @@ class _DataBodyGen(AsyncIterator[bytes]):
 
 
 class IterableBody(ResponseBody):
-    def __init__(self, iterable: AsyncGenerator[bytes, None] | Iterable) -> None:
-        self.iter: AsyncGenerator[bytes, None]
-        if isasyncgen(iterable):
-            self.iter = iterable
-        elif isgenerator(iterable):
-            self.iter = run_sync_iterable(iterable)
+    def __init__(self, iterable: AsyncIterable[Any] | Iterable[Any]) -> None:
+        self.iter: AsyncIterator[Any]
+        if isinstance(iterable, Iterable):
+            self.iter = run_sync_iterable(iter(iterable))
         else:
-
-            async def _aiter() -> AsyncGenerator[bytes, None]:
-                for data in iterable:  # type: ignore
-                    yield data
-
-            self.iter = _aiter()
+            self.iter = iterable.__aiter__()  # Can't use aiter() until 3.10
 
     async def __aenter__(self) -> IterableBody:
         return self
 
     async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
-        await self.iter.aclose()
+        if hasattr(self.iter, "aclose"):
+            await self.iter.aclose()
 
-    def __aiter__(self) -> AsyncIterator:
+    def __aiter__(self) -> AsyncIterator[Any]:
         return self.iter
 
 
@@ -148,7 +140,7 @@ class FileBody(ResponseBody):
         if buffer_size is not None:
             self.buffer_size = buffer_size
         self.file: AsyncBufferedIOBase | None = None
-        self.file_manager: AiofilesContextManager[None, None, AsyncBufferedReader] = None
+        self.file_manager: AiofilesContextManager = None
 
     async def __aenter__(self) -> FileBody:
         self.file_manager = async_open(self.file_path, mode="rb")
@@ -262,7 +254,7 @@ class Response(SansIOResponse):
 
     def __init__(
         self,
-        response: ResponseBody | AnyStr | Iterable | None = None,
+        response: ResponseBody | str | bytes | Iterable | AsyncIterable | None = None,
         status: int | None = None,
         headers: dict | Headers | None = None,
         mimetype: str | None = None,
@@ -296,7 +288,7 @@ class Response(SansIOResponse):
         elif isinstance(response, ResponseBody):
             self.response = response
         elif isinstance(response, (str, bytes)):
-            self.set_data(response)  # type: ignore
+            self.set_data(response)
         else:
             self.response = self.iterable_body_class(response)
 
@@ -314,9 +306,9 @@ class Response(SansIOResponse):
     async def get_data(self, as_text: Literal[False]) -> bytes: ...
 
     @overload
-    async def get_data(self, as_text: bool = True) -> AnyStr: ...
+    async def get_data(self, as_text: bool = True) -> str | bytes: ...
 
-    async def get_data(self, as_text: bool = False) -> AnyStr:
+    async def get_data(self, as_text: bool = False) -> str | bytes:
         """Return the body data."""
         if self.implicit_sequence_conversion:
             await self.make_sequence()
@@ -327,9 +319,9 @@ class Response(SansIOResponse):
                     result += data.decode()
                 else:
                     result += data
-        return result  # type: ignore
+        return result
 
-    def set_data(self, data: AnyStr) -> None:
+    def set_data(self, data: str | bytes) -> None:
         """Set the response data.
 
         This will encode using the :attr:`charset`.
@@ -344,7 +336,7 @@ class Response(SansIOResponse):
 
     @property
     async def data(self) -> bytes:
-        return await self.get_data()
+        return await self.get_data(as_text=False)
 
     @data.setter
     def data(self, value: bytes) -> None:

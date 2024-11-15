@@ -38,13 +38,10 @@ See the `Hypercorn docs <https://hypercorn.readthedocs.io/>`_.
 Alternative ASGI Servers
 ------------------------
 
-==================================================== ====== ====== =========== ==================
-Server name                                          HTTP/2 HTTP/3 Server Push Websocket Response
-==================================================== ====== ====== =========== ==================
-`Hypercorn <https://github.com/pgjones/hypercorn>`_  ✓      ✓      ✓           ✓
-`Daphne <https://github.com/django/daphne>`_         ✓      ✗      ✗           ✗
-`Uvicorn <https://github.com/encode/uvicorn>`_       ✗      ✗      ✗           ✗
-==================================================== ====== ====== =========== ==================
+Alongside `Hypercorn <https://github.com/pgjones/hypercorn>`_, `Daphne
+<https://github.com/django/daphne>`_, and `Uvicorn
+<https://github.com/encode/uvicorn>`_ are available ASGI servers that
+work with Quart.
 
 Serverless deployment
 ---------------------

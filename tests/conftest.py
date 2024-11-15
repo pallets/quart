@@ -23,6 +23,7 @@ def _http_scope() -> HTTPScope:
         ],
         "client": ("127.0.0.1", 80),
         "server": None,
+        "state": {},  # type: ignore[typeddict-item]
         "extensions": {},
     }
 
@@ -46,5 +47,6 @@ def _websocket_scope() -> WebsocketScope:
         "client": ("127.0.0.1", 80),
         "server": None,
         "subprotocols": [],
+        "state": {},  # type: ignore[typeddict-item]
         "extensions": {},
     }

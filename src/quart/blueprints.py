@@ -7,7 +7,6 @@ from datetime import timedelta
 
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
-from aiofiles.threadpool.binary import AsyncBufferedReader
 from flask.sansio.app import App
 from flask.sansio.blueprints import (  # noqa
     Blueprint as SansioBlueprint,
@@ -101,7 +100,7 @@ class Blueprint(SansioBlueprint):
         self,
         path: FilePath,
         mode: str = "rb",
-    ) -> AiofilesContextManager[None, None, AsyncBufferedReader]:
+    ) -> AiofilesContextManager:
         """Open a file for reading.
 
         Use as

@@ -7,7 +7,7 @@ import sys
 import warnings
 from collections import defaultdict
 from datetime import timedelta
-from inspect import isasyncgen, isgenerator
+from inspect import isasyncgen, iscoroutinefunction as _inspect_iscoroutinefunction, isgenerator
 from types import TracebackType
 from typing import (
     Any,
@@ -28,7 +28,6 @@ from urllib.parse import quote
 
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
-from aiofiles.threadpool.binary import AsyncBufferedReader
 from flask.sansio.app import App
 from flask.sansio.scaffold import setupmethod
 from hypercorn.asyncio import serve
@@ -125,7 +124,16 @@ from .wrappers import BaseRequestWebsocket, Request, Response, Websocket
 try:
     from typing import ParamSpec
 except ImportError:
-    from typing_extensions import ParamSpec  # type: ignore
+    from typing_extensions import ParamSpec
+
+# Python 3.14 deprecated asyncio.iscoroutinefunction, but suggested
+# inspect.iscoroutinefunction does not work correctly in some Python
+# versions before 3.12.
+# See https://github.com/python/cpython/issues/122858#issuecomment-2466239748
+if sys.version_info >= (3, 12):
+    iscoroutinefunction = _inspect_iscoroutinefunction
+else:
+    iscoroutinefunction = asyncio.iscoroutinefunction
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
 T_after_serving = TypeVar("T_after_serving", bound=AfterServingCallable)
@@ -241,6 +249,7 @@ class Quart(App):
             "PREFER_SECURE_URLS": False,
             "PRESERVE_CONTEXT_ON_EXCEPTION": None,
             "PROPAGATE_EXCEPTIONS": None,
+            "PROVIDE_AUTOMATIC_OPTIONS": True,
             "RESPONSE_TIMEOUT": 60,  # Second
             "SECRET_KEY": None,
             "SEND_FILE_MAX_AGE_DEFAULT": timedelta(hours=12),
@@ -375,7 +384,7 @@ class Quart(App):
         self,
         path: FilePath,
         mode: str = "rb",
-    ) -> AiofilesContextManager[None, None, AsyncBufferedReader]:
+    ) -> AiofilesContextManager:
         """Open a file for reading.
 
         Use as
@@ -392,7 +401,7 @@ class Quart(App):
 
     async def open_instance_resource(
         self, path: FilePath, mode: str = "rb"
-    ) -> AiofilesContextManager[None, None, AsyncBufferedReader]:
+    ) -> AiofilesContextManager:
         """Open a file for reading.
 
         Use as
@@ -1130,7 +1139,7 @@ class Quart(App):
         run. Before Quart 0.11 this did not run the synchronous code
         in an executor.
         """
-        if asyncio.iscoroutinefunction(func):
+        if iscoroutinefunction(func):
             return func
         else:
             return self.sync_to_async(cast(Callable[P, T], func))
@@ -1393,7 +1402,7 @@ class Quart(App):
             response.status_code = int(status)
 
         if headers is not None:
-            response.headers.update(headers)  # type: ignore[arg-type]
+            response.headers.update(headers)
 
         return response
 

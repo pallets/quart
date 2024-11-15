@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, AnyStr, Awaitable, Callable, Generator, NoReturn, overload
+from typing import Any, Awaitable, Callable, Generator, NoReturn, overload
 
 from hypercorn.typing import HTTPScope
 from werkzeug.datastructures import CombinedMultiDict, Headers, iter_multi_items, MultiDict
@@ -184,7 +184,7 @@ class Request(BaseRequestWebsocket):
 
     @property
     async def data(self) -> bytes:
-        return await self.get_data(as_text=False, parse_form_data=True)
+        return await self.get_data(as_text=False, parse_form_data=True)  # type: ignore
 
     @overload
     async def get_data(
@@ -197,16 +197,16 @@ class Request(BaseRequestWebsocket):
     @overload
     async def get_data(
         self, cache: bool = True, as_text: bool = False, parse_form_data: bool = False
-    ) -> AnyStr: ...
+    ) -> str | bytes: ...
 
     async def get_data(
         self, cache: bool = True, as_text: bool = False, parse_form_data: bool = False
-    ) -> AnyStr:
+    ) -> str | bytes:
         """Get the request body data.
 
         Arguments:
             cache: If False the body data will be cleared, resulting in any
-                subsequent calls returning an empty AnyStr and reducing
+                subsequent calls returning an empty str | bytes and reducing
                 memory usage.
             as_text: If True the data is returned as a decoded string,
                 otherwise raw bytes are returned.

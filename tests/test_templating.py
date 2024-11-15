@@ -9,6 +9,7 @@ from quart import (
     g,
     Quart,
     render_template_string,
+    Response,
     ResponseReturnValue,
     session,
     stream_template_string,
@@ -148,3 +149,11 @@ async def test_simple_stream(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get("/")
     assert (await response.data) == b"42"
+
+    @app.get("/2")
+    async def index2() -> ResponseReturnValue:
+        return Response(await stream_template_string("{{ config }}", config=43))
+
+    test_client = app.test_client()
+    response = await test_client.get("/2")
+    assert (await response.data) == b"43"

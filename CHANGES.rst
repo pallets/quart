@@ -1,3 +1,20 @@
+0.19.9 2024-11-14
+-----------------
+
+* Fix missing ``PROVIDE_AUTOMATIC_OPTIONS`` config for compatibility
+  with Flask 3.1.
+
+0.19.8 2024-10-25
+-----------------
+
+* Bugfix Fix missing check that caused the previous fix to raise an error. #366
+
+0.19.7 2024-10-25
+-----------------
+
+* Security Fix how ``max_form_memory_size`` is applied when parsing large
+  non-file fields. https://github.com/advisories/GHSA-q34m-jh98-gwm2
+
 0.19.6 2024-05-19
 -----------------
 

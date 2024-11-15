@@ -233,8 +233,8 @@ async def test_data() -> None:
 
     @app.route("/", methods=["POST"])
     async def echo() -> str:
-        data = await request.get_data(True)
-        return data
+        data = await request.get_data(as_text=True)
+        return data  # type: ignore
 
     client = Client(app)
     headers = {"Content-Type": "application/octet-stream"}
@@ -365,7 +365,7 @@ async def test_session_transactions() -> None:
         local_session["foo"] = [42]
         assert len(local_session) == 1
     response = await test_client.get("/")
-    assert (await response.get_data()) == b"[42]"  # type: ignore
+    assert (await response.get_data()) == b"[42]"
     async with test_client.session_transaction() as local_session:
         assert len(local_session) == 1
         assert local_session["foo"] == [42]
