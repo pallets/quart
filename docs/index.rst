@@ -89,6 +89,8 @@ References
 ----------
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   reference/index.rst
+    reference/index
+    license
+    changes
