@@ -3,7 +3,8 @@ from __future__ import annotations
 from http import HTTPStatus
 
 import pytest
-from werkzeug.exceptions import abort, HTTPException
+from werkzeug.exceptions import abort
+from werkzeug.exceptions import HTTPException
 
 from quart import Response
 

@@ -1,27 +1,32 @@
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 from http.cookiejar import CookieJar
 from types import TracebackType
-from typing import Any, AnyStr, AsyncGenerator, TYPE_CHECKING
+from typing import Any
+from typing import AnyStr
+from typing import TYPE_CHECKING
 from urllib.request import Request as U2Request
 
-from werkzeug.datastructures import Authorization, Headers
+from werkzeug.datastructures import Authorization
+from werkzeug.datastructures import Headers
 from werkzeug.http import dump_cookie
 
-from .connections import TestHTTPConnection, TestWebsocketConnection
-from .utils import (
-    make_test_body_with_headers,
-    make_test_headers_path_and_query_string,
-    make_test_scope,
-    sentinel,
-)
 from ..datastructures import FileStorage
 from ..globals import _cv_request
 from ..sessions import SessionMixin
-from ..typing import TestHTTPConnectionProtocol, TestWebsocketConnectionProtocol
+from ..typing import TestHTTPConnectionProtocol
+from ..typing import TestWebsocketConnectionProtocol
 from ..wrappers import Response
+from .connections import TestHTTPConnection
+from .connections import TestWebsocketConnection
+from .utils import make_test_body_with_headers
+from .utils import make_test_headers_path_and_query_string
+from .utils import make_test_scope
+from .utils import sentinel
 
 if TYPE_CHECKING:
     from ..app import Quart  # noqa
@@ -103,9 +108,9 @@ class QuartClient:
         )
         if follow_redirects:
             while response.status_code >= 300 and response.status_code <= 399:
-                # Most browsers respond to an HTTP 302 with a GET request to the new location,
-                # despite what the HTTP spec says. HTTP 303 should always be responded to with
-                # a GET request.
+                # Most browsers respond to an HTTP 302 with a GET request to the
+                # new location, despite what the HTTP spec says. HTTP 303 should
+                # always be responded to with a GET request.
                 if response.status_code == 302 or response.status_code == 303:
                     method = "GET"
                 response = await self._make_request(
@@ -165,7 +170,9 @@ class QuartClient:
             scope_base,
             _preserve_context=self.preserve_context,
         )
-        return self.http_connection_class(self.app, scope, _preserve_context=self.preserve_context)
+        return self.http_connection_class(
+            self.app, scope, _preserve_context=self.preserve_context
+        )
 
     def websocket(
         self,
@@ -308,7 +315,9 @@ class QuartClient:
         self, server_name: str, key: str, path: str = "/", domain: str | None = None
     ) -> None:
         """Delete a cookie (set to expire immediately)."""
-        self.set_cookie(server_name, key, expires=0, max_age=0, path=path, domain=domain)
+        self.set_cookie(
+            server_name, key, expires=0, max_age=0, path=path, domain=domain
+        )
 
     @asynccontextmanager
     async def session_transaction(
@@ -327,7 +336,9 @@ class QuartClient:
         auth: Authorization | tuple[str, str] | None = None,
     ) -> AsyncGenerator[SessionMixin, None]:
         if self.cookie_jar is None:
-            raise RuntimeError("Session transactions only make sense with cookies enabled.")
+            raise RuntimeError(
+                "Session transactions only make sense with cookies enabled."
+            )
 
         if headers is None:
             headers = Headers()
@@ -377,7 +388,9 @@ class QuartClient:
         self.preserve_context = True
         return self
 
-    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+    async def __aexit__(
+        self, exc_type: type, exc_value: BaseException, tb: TracebackType
+    ) -> None:
         self.preserve_context = False
 
         while True:

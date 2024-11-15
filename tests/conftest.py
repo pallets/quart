@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import pytest
-from hypercorn.typing import HTTPScope, WebsocketScope
+from hypercorn.typing import HTTPScope
+from hypercorn.typing import WebsocketScope
 
 
 @pytest.fixture(name="http_scope")

@@ -4,16 +4,25 @@ import sys
 from contextvars import Token
 from functools import wraps
 from types import TracebackType
-from typing import Any, Callable, cast, Iterator, List, Optional, Tuple, TYPE_CHECKING  # noqa: F401
+from typing import Any
+from typing import Callable
+from typing import cast
+from typing import TYPE_CHECKING
 
 from flask.ctx import _AppCtxGlobals as _AppCtxGlobals  # noqa: F401
 from werkzeug.exceptions import HTTPException
 
-from .globals import _cv_app, _cv_request, _cv_websocket
+from .globals import _cv_app
+from .globals import _cv_request
+from .globals import _cv_websocket
 from .sessions import SessionMixin  # noqa
-from .signals import appcontext_popped, appcontext_pushed
-from .typing import AfterRequestCallable, AfterWebsocketCallable
-from .wrappers import BaseRequestWebsocket, Request, Websocket
+from .signals import appcontext_popped
+from .signals import appcontext_pushed
+from .typing import AfterRequestCallable
+from .typing import AfterWebsocketCallable
+from .wrappers import BaseRequestWebsocket
+from .wrappers import Request
+from .wrappers import Websocket
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa
@@ -22,7 +31,8 @@ _sentinel = object()
 
 
 class _BaseRequestWebsocketContext:
-    """A base context relating to either request or websockets, bound to the current task.
+    """A base context relating to either request or websockets, bound to the
+    current task.
 
     Attributes:
         app: The app itself.
@@ -84,7 +94,9 @@ class _BaseRequestWebsocketContext:
         await self.push()
         return self
 
-    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+    async def __aexit__(
+        self, exc_type: type, exc_value: BaseException, tb: TracebackType
+    ) -> None:
         await self.auto_pop(exc_value)
 
     async def _push_appctx(self, token: Token) -> None:
@@ -160,7 +172,9 @@ class RequestContext(_BaseRequestWebsocketContext):
                 await app_ctx.pop(exc)
 
             if ctx is not self:
-                raise AssertionError(f"Popped wrong request context. ({ctx!r} instead of {self!r})")
+                raise AssertionError(
+                    f"Popped wrong request context. ({ctx!r} instead of {self!r})"
+                )
 
     async def __aenter__(self) -> RequestContext:
         await self.push()
@@ -211,7 +225,9 @@ class WebsocketContext(_BaseRequestWebsocketContext):
                 await app_ctx.pop(exc)
 
             if ctx is not self:
-                raise AssertionError(f"Popped wrong request context. ({ctx!r} instead of {self!r})")
+                raise AssertionError(
+                    f"Popped wrong request context. ({ctx!r} instead of {self!r})"
+                )
 
     async def __aenter__(self) -> WebsocketContext:
         await self.push()
@@ -245,7 +261,8 @@ class AppContext:
     async def push(self) -> None:
         self._cv_tokens.append(_cv_app.set(self))
         await appcontext_pushed.send_async(
-            self.app, _sync_wrapper=self.app.ensure_async  # type: ignore
+            self.app,
+            _sync_wrapper=self.app.ensure_async,  # type: ignore
         )
 
     async def pop(self, exc: BaseException | None = _sentinel) -> None:  # type: ignore
@@ -259,17 +276,22 @@ class AppContext:
             _cv_app.reset(self._cv_tokens.pop())
 
             if ctx is not self:
-                raise AssertionError(f"Popped wrong app context. ({ctx!r} instead of {self!r})")
+                raise AssertionError(
+                    f"Popped wrong app context. ({ctx!r} instead of {self!r})"
+                )
 
         await appcontext_popped.send_async(
-            self.app, _sync_wrapper=self.app.ensure_async  # type: ignore
+            self.app,
+            _sync_wrapper=self.app.ensure_async,  # type: ignore
         )
 
     async def __aenter__(self) -> AppContext:
         await self.push()
         return self
 
-    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+    async def __aexit__(
+        self, exc_type: type, exc_value: BaseException, tb: TracebackType
+    ) -> None:
         await self.pop(exc_value)
 
 
@@ -369,7 +391,9 @@ def copy_current_request_context(func: Callable) -> Callable:
 
     """
     if not has_request_context():
-        raise RuntimeError("Attempt to copy request context outside of a request context")
+        raise RuntimeError(
+            "Attempt to copy request context outside of a request context"
+        )
 
     request_context = _cv_request.get().copy()
 
@@ -397,7 +421,9 @@ def copy_current_websocket_context(func: Callable) -> Callable:
 
     """
     if not has_websocket_context():
-        raise RuntimeError("Attempt to copy websocket context outside of a websocket context")
+        raise RuntimeError(
+            "Attempt to copy websocket context outside of a websocket context"
+        )
 
     websocket_context = _cv_websocket.get().copy()
 

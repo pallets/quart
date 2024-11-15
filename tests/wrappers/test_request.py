@@ -6,10 +6,12 @@ from urllib.parse import urlencode
 import pytest
 from hypercorn.typing import HTTPScope
 from werkzeug.datastructures import Headers
-from werkzeug.exceptions import RequestEntityTooLarge, RequestTimeout
+from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.exceptions import RequestTimeout
 
 from quart.testing import no_op_push
-from quart.wrappers.request import Body, Request
+from quart.wrappers.request import Body
+from quart.wrappers.request import Request
 
 
 async def _fill_body(body: Body, semaphore: asyncio.Semaphore, limit: int) -> None:
@@ -110,13 +112,17 @@ async def test_request_get_data_timeout(http_scope: HTTPScope) -> None:
     "method, expected",
     [("GET", ["b", "c"]), ("POST", ["b", "c", "d"])],
 )
-async def test_request_values(method: str, expected: list[str], http_scope: HTTPScope) -> None:
+async def test_request_values(
+    method: str, expected: list[str], http_scope: HTTPScope
+) -> None:
     request = Request(
         method,
         "http",
         "/",
         b"a=b&a=c",
-        Headers({"host": "quart.com", "Content-Type": "application/x-www-form-urlencoded"}),
+        Headers(
+            {"host": "quart.com", "Content-Type": "application/x-www-form-urlencoded"}
+        ),
         "",
         "1.1",
         http_scope,

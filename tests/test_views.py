@@ -1,11 +1,15 @@
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Any
+from typing import Callable
 
 import pytest
 
-from quart import Quart, request, ResponseReturnValue
-from quart.views import MethodView, View
+from quart import Quart
+from quart import request
+from quart import ResponseReturnValue
+from quart.views import MethodView
+from quart.views import View
 
 
 @pytest.fixture
@@ -18,7 +22,9 @@ async def test_view(app: Quart) -> None:
     class Views(View):
         methods = ["GET", "POST"]
 
-        async def dispatch_request(self, *args: Any, **kwargs: Any) -> ResponseReturnValue:
+        async def dispatch_request(
+            self, *args: Any, **kwargs: Any
+        ) -> ResponseReturnValue:
             return request.method
 
     app.add_url_rule("/", view_func=Views.as_view("simple"))
@@ -59,7 +65,9 @@ async def test_view_decorators(app: Quart) -> None:
         decorators = [decorate_status_code]
         methods = ["GET"]
 
-        async def dispatch_request(self, *args: Any, **kwargs: Any) -> ResponseReturnValue:
+        async def dispatch_request(
+            self, *args: Any, **kwargs: Any
+        ) -> ResponseReturnValue:
             return request.method
 
     app.add_url_rule("/", view_func=Views.as_view("simple"))

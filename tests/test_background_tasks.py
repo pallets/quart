@@ -3,7 +3,8 @@ from __future__ import annotations
 import asyncio
 import time
 
-from quart import current_app, Quart
+from quart import current_app
+from quart import Quart
 
 
 async def test_background_task() -> None:

@@ -5,24 +5,24 @@ import inspect
 import os
 import platform
 import sys
+from collections.abc import AsyncIterator
+from collections.abc import Awaitable
+from collections.abc import Coroutine
+from collections.abc import Iterable
+from collections.abc import Iterator
 from contextvars import copy_context
-from functools import partial, wraps
+from functools import partial
+from functools import wraps
 from pathlib import Path
-from typing import (
-    Any,
-    AsyncIterator,
-    Awaitable,
-    Callable,
-    Coroutine,
-    Iterable,
-    Iterator,
-    TYPE_CHECKING,
-    TypeVar,
-)
+from typing import Any
+from typing import Callable
+from typing import TYPE_CHECKING
+from typing import TypeVar
 
 from werkzeug.datastructures import Headers
 
-from .typing import Event, FilePath
+from .typing import Event
+from .typing import FilePath
 
 if TYPE_CHECKING:
     from .wrappers.response import Response  # noqa: F401
@@ -81,8 +81,8 @@ def run_sync_iterable(iterable: Iterator[T]) -> AsyncIterator[T]:
             # run_in_exector method
             try:
                 return next(iterable)
-            except StopIteration:
-                raise StopAsyncIteration()
+            except StopIteration as e:
+                raise StopAsyncIteration() from e
 
         loop = asyncio.get_running_loop()
         while True:
@@ -102,7 +102,9 @@ def decode_headers(headers: Iterable[tuple[bytes, bytes]]) -> Headers:
     return Headers([(key.decode(), value.decode()) for key, value in headers])
 
 
-async def observe_changes(sleep: Callable[[float], Awaitable[Any]], shutdown_event: Event) -> None:
+async def observe_changes(
+    sleep: Callable[[float], Awaitable[Any]], shutdown_event: Event
+) -> None:
     last_updates: dict[Path, float] = {}
     for module in list(sys.modules.values()):
         filename = getattr(module, "__file__", None)
@@ -124,9 +126,9 @@ async def observe_changes(sleep: Callable[[float], Awaitable[Any]], shutdown_eve
 
             try:
                 mtime = path.stat().st_mtime
-            except FileNotFoundError:
+            except FileNotFoundError as e:
                 # File deleted
-                raise MustReloadError()
+                raise MustReloadError() from e
             else:
                 if mtime > last_mtime:
                     raise MustReloadError()

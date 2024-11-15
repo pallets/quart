@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import IO
 
 from aiofiles import open as async_open
-from werkzeug.datastructures import FileStorage as WerkzeugFileStorage, Headers
+from werkzeug.datastructures import FileStorage as WerkzeugFileStorage
+from werkzeug.datastructures import Headers
 
 
 class FileStorage(WerkzeugFileStorage):

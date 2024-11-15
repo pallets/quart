@@ -1,11 +1,24 @@
 from __future__ import annotations
 
-from typing import Any, AnyStr, cast, overload, TYPE_CHECKING
-from urllib.parse import unquote, urlencode
+from typing import Any
+from typing import AnyStr
+from typing import cast
+from typing import overload
+from typing import TYPE_CHECKING
+from urllib.parse import unquote
+from urllib.parse import urlencode
 
-from hypercorn.typing import HTTPScope, Scope, WebsocketScope
-from werkzeug.datastructures import Authorization, Headers
-from werkzeug.sansio.multipart import Data, Epilogue, Field, File, MultipartEncoder, Preamble
+from hypercorn.typing import HTTPScope
+from hypercorn.typing import Scope
+from hypercorn.typing import WebsocketScope
+from werkzeug.datastructures import Authorization
+from werkzeug.datastructures import Headers
+from werkzeug.sansio.multipart import Data
+from werkzeug.sansio.multipart import Epilogue
+from werkzeug.sansio.multipart import Field
+from werkzeug.sansio.multipart import File
+from werkzeug.sansio.multipart import MultipartEncoder
+from werkzeug.sansio.multipart import Preamble
 from werkzeug.urls import iri_to_uri
 
 from ..datastructures import FileStorage
@@ -89,9 +102,13 @@ def make_test_body_with_headers(
 
     """
     if [json is not sentinel, form is not None, data is not None].count(True) > 1:
-        raise ValueError("Quart test args 'json', 'form', and 'data' are mutually exclusive")
+        raise ValueError(
+            "Quart test args 'json', 'form', and 'data' are mutually exclusive"
+        )
     if [json is not sentinel, files is not None, data is not None].count(True) > 1:
-        raise ValueError("Quart test args 'files', 'json', and 'data' are mutually exclusive")
+        raise ValueError(
+            "Quart test args 'files', 'json', and 'data' are mutually exclusive"
+        )
 
     request_data = b""
 
@@ -112,7 +129,11 @@ def make_test_body_with_headers(
         request_data += encoder.send_event(Preamble(data=b""))
         for key, file_storage in files.items():
             request_data += encoder.send_event(
-                File(name=key, filename=file_storage.filename, headers=file_storage.headers)
+                File(
+                    name=key,
+                    filename=file_storage.filename,
+                    headers=file_storage.headers,
+                )
             )
             chunk = file_storage.read(16384)
             while chunk != b"":

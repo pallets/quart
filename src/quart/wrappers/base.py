@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
+from typing import Any
+from typing import TYPE_CHECKING
 
 from hypercorn.typing import WWWScope
 from werkzeug.datastructures import Headers

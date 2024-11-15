@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Callable
+from typing import Any
+from typing import Callable
 
-from flask.config import Config as FlaskConfig, ConfigAttribute as ConfigAttribute  # noqa: F401
+from flask.config import Config as FlaskConfig  # noqa: F401
+from flask.config import ConfigAttribute as ConfigAttribute  # noqa: F401
 
 
 class Config(FlaskConfig):

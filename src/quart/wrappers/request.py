@@ -1,15 +1,25 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Awaitable, Callable, Generator, NoReturn, overload
+from collections.abc import Awaitable
+from collections.abc import Generator
+from typing import Any
+from typing import Callable
+from typing import NoReturn
+from typing import overload
 
 from hypercorn.typing import HTTPScope
-from werkzeug.datastructures import CombinedMultiDict, Headers, iter_multi_items, MultiDict
-from werkzeug.exceptions import BadRequest, RequestEntityTooLarge, RequestTimeout
+from werkzeug.datastructures import CombinedMultiDict
+from werkzeug.datastructures import Headers
+from werkzeug.datastructures import iter_multi_items
+from werkzeug.datastructures import MultiDict
+from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.exceptions import RequestTimeout
 
-from .base import BaseRequestWebsocket
 from ..formparser import FormDataParser
 from ..globals import current_app
+from .base import BaseRequestWebsocket
 
 try:
     from typing import Literal
@@ -42,7 +52,9 @@ class Body:
     it.
     """
 
-    def __init__(self, expected_content_length: int | None, max_content_length: int | None) -> None:
+    def __init__(
+        self, expected_content_length: int | None, max_content_length: int | None
+    ) -> None:
         self._data = bytearray()
         self._complete: asyncio.Event = asyncio.Event()
         self._has_data: asyncio.Event = asyncio.Event()
@@ -97,7 +109,10 @@ class Body:
             return
         self._data.extend(data)
         self._has_data.set()
-        if self._max_content_length is not None and len(self._data) > self._max_content_length:
+        if (
+            self._max_content_length is not None
+            and len(self._data) > self._max_content_length
+        ):
             self._must_raise = RequestEntityTooLarge()
             self.set_complete()
 
@@ -192,7 +207,9 @@ class Request(BaseRequestWebsocket):
     ) -> bytes: ...
 
     @overload
-    async def get_data(self, cache: bool, as_text: Literal[True], parse_form_data: bool) -> str: ...
+    async def get_data(
+        self, cache: bool, as_text: Literal[True], parse_form_data: bool
+    ) -> str: ...
 
     @overload
     async def get_data(
@@ -218,8 +235,8 @@ class Request(BaseRequestWebsocket):
 
         try:
             raw_data = await asyncio.wait_for(self.body, timeout=self.body_timeout)
-        except asyncio.TimeoutError:
-            raise RequestTimeout()
+        except asyncio.TimeoutError as e:
+            raise RequestTimeout() from e
         else:
             if not cache:
                 self.body.clear()
@@ -288,14 +305,16 @@ class Request(BaseRequestWebsocket):
                         ),
                         timeout=self.body_timeout,
                     )
-                except asyncio.TimeoutError:
-                    raise RequestTimeout()
+                except asyncio.TimeoutError as e:
+                    raise RequestTimeout() from e
 
     @property
     async def json(self) -> Any:
         return await self.get_json()
 
-    async def get_json(self, force: bool = False, silent: bool = False, cache: bool = True) -> Any:
+    async def get_json(
+        self, force: bool = False, silent: bool = False, cache: bool = True
+    ) -> Any:
         """Parses the body data as JSON and returns it.
 
         Arguments:

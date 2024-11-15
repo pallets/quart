@@ -1,12 +1,10 @@
-from flask.json.tag import (  # noqa: F401
-    JSONTag as JSONTag,
-    PassDict as PassDict,
-    PassList as PassList,
-    TagBytes as TagBytes,
-    TagDateTime as TagDateTime,
-    TagDict as TagDict,
-    TaggedJSONSerializer as TaggedJSONSerializer,
-    TagMarkup as TagMarkup,
-    TagTuple as TagTuple,
-    TagUUID as TagUUID,
-)
+from flask.json.tag import JSONTag as JSONTag  # noqa: F401
+from flask.json.tag import PassDict as PassDict  # noqa: F401
+from flask.json.tag import PassList as PassList  # noqa: F401
+from flask.json.tag import TagBytes as TagBytes  # noqa: F401
+from flask.json.tag import TagDateTime as TagDateTime  # noqa: F401
+from flask.json.tag import TagDict as TagDict  # noqa: F401
+from flask.json.tag import TaggedJSONSerializer as TaggedJSONSerializer  # noqa: F401
+from flask.json.tag import TagMarkup as TagMarkup  # noqa: F401
+from flask.json.tag import TagTuple as TagTuple  # noqa: F401
+from flask.json.tag import TagUUID as TagUUID  # noqa: F401

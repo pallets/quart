@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import threading
-from typing import Generator
+from collections.abc import Generator
 
 import pytest
 
-from quart import Quart, request, ResponseReturnValue
+from quart import Quart
+from quart import request
+from quart import ResponseReturnValue
 
 
 @pytest.fixture(name="app")

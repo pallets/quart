@@ -66,7 +66,8 @@ h1>span {
       </div>
       <div class="traceback">
         {% for line in frame.code[0] %}
-          <div {% if frame.line == loop.index + frame.code[1] %}class="highlight"{% endif %}>
+          <div {% if frame.line == loop.index + frame.code[1] %}class="highlight"\
+{% endif %}>
             <div>{{ loop.index + frame.code[1] }}</div>
             <div><pre>{{ line }}</pre></div>
           </div>
