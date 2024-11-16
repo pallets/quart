@@ -11,6 +11,7 @@ from io import BytesIO
 from os import PathLike
 from types import TracebackType
 from typing import Any
+from typing import Literal
 from typing import overload
 from typing import TYPE_CHECKING
 
@@ -31,11 +32,6 @@ from ..utils import run_sync_iterable
 
 if TYPE_CHECKING:
     from .request import Request
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal  # type: ignore
 
 
 class ResponseBody(ABC):

@@ -262,7 +262,7 @@ class AppContext:
         self._cv_tokens.append(_cv_app.set(self))
         await appcontext_pushed.send_async(
             self.app,
-            _sync_wrapper=self.app.ensure_async,  # type: ignore
+            _sync_wrapper=self.app.ensure_async,  # type: ignore[arg-type]
         )
 
     async def pop(self, exc: BaseException | None = _sentinel) -> None:  # type: ignore
@@ -282,7 +282,7 @@ class AppContext:
 
         await appcontext_popped.send_async(
             self.app,
-            _sync_wrapper=self.app.ensure_async,  # type: ignore
+            _sync_wrapper=self.app.ensure_async,  # type: ignore[arg-type]
         )
 
     async def __aenter__(self) -> AppContext:

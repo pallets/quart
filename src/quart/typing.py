@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from collections.abc import AsyncGenerator
 from collections.abc import Awaitable
 from collections.abc import Iterator
@@ -26,10 +27,10 @@ from hypercorn.typing import WebsocketScope
 
 from .datastructures import FileStorage
 
-try:
+if sys.version_info >= (3, 10):
     from typing import Protocol
-except ImportError:
-    from typing_extensions import Protocol  # type: ignore
+else:
+    from typing_extensions import Protocol
 
 if TYPE_CHECKING:
     from werkzeug.datastructures import Authorization  # noqa: F401

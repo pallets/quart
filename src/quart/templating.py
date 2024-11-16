@@ -73,16 +73,16 @@ async def render_template_string(source: str, **context: Any) -> str:
 async def _render(template: Template, context: dict, app: Quart) -> str:
     await before_render_template.send_async(
         app,
-        _sync_wrapper=app.ensure_async,
+        _sync_wrapper=app.ensure_async,  # type: ignore[arg-type]
         template=template,
-        context=context,  # type: ignore
+        context=context,
     )
     rendered_template = await template.render_async(context)
     await template_rendered.send_async(
         app,
-        _sync_wrapper=app.ensure_async,
+        _sync_wrapper=app.ensure_async,  # type: ignore[arg-type]
         template=template,
-        context=context,  # type: ignore
+        context=context,
     )
     return rendered_template
 
@@ -135,9 +135,9 @@ async def _stream(
 ) -> AsyncIterator[str]:
     await before_render_template.send_async(
         app,
-        _sync_wrapper=app.ensure_async,
+        _sync_wrapper=app.ensure_async,  # type: ignore[arg-type]
         template=template,
-        context=context,  # type: ignore
+        context=context,
     )
 
     async def generate() -> AsyncIterator[str]:
@@ -145,9 +145,9 @@ async def _stream(
             yield chunk
         await template_rendered.send_async(
             app,
-            _sync_wrapper=app.ensure_async,
+            _sync_wrapper=app.ensure_async,  # type: ignore[arg-type]
             template=template,
-            context=context,  # type: ignore
+            context=context,
         )
 
     # If a request context is active, keep it while generating.

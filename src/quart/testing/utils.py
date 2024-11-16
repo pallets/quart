@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 from typing import AnyStr
 from typing import cast
+from typing import Literal
 from typing import overload
 from typing import TYPE_CHECKING
 from urllib.parse import unquote
@@ -27,11 +28,6 @@ from ..utils import encode_headers
 
 if TYPE_CHECKING:
     from ..app import Quart  # noqa
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal  # type: ignore
 
 sentinel = object()
 

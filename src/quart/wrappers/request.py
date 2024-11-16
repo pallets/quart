@@ -5,6 +5,7 @@ from collections.abc import Awaitable
 from collections.abc import Generator
 from typing import Any
 from typing import Callable
+from typing import Literal
 from typing import NoReturn
 from typing import overload
 
@@ -20,11 +21,6 @@ from werkzeug.exceptions import RequestTimeout
 from ..formparser import FormDataParser
 from ..globals import current_app
 from .base import BaseRequestWebsocket
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal  # type: ignore
 
 SERVER_PUSH_HEADERS_TO_COPY = {
     "accept",
