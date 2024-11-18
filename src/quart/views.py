@@ -1,11 +1,18 @@
 from __future__ import annotations
 
-from typing import Any, Callable, ClassVar, Collection
+from collections.abc import Collection
+from typing import Any
+from typing import Callable
+from typing import ClassVar
 
-from .globals import current_app, request
-from .typing import ResponseReturnValue, RouteCallable
+from .globals import current_app
+from .globals import request
+from .typing import ResponseReturnValue
+from .typing import RouteCallable
 
-http_method_funcs = frozenset(["get", "post", "head", "options", "delete", "put", "trace", "patch"])
+http_method_funcs = frozenset(
+    ["get", "post", "head", "options", "delete", "put", "trace", "patch"]
+)
 
 
 class View:

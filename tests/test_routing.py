@@ -15,7 +15,9 @@ from quart.wrappers.request import Request
     "server_name, warns",
     [("localhost", False), ("quart.com", True)],
 )
-async def test_bind_warning(server_name: str, warns: bool, http_scope: HTTPScope) -> None:
+async def test_bind_warning(
+    server_name: str, warns: bool, http_scope: HTTPScope
+) -> None:
     map_ = QuartMap(host_matching=False)
     request = Request(
         "GET",

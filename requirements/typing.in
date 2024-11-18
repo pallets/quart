@@ -1,0 +1,7 @@
+mypy
+hypothesis
+pyright
+pytest
+pytest-asyncio
+types-aiofiles
+python-dotenv

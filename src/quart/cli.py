@@ -13,13 +13,16 @@ import traceback
 from importlib import import_module
 from operator import attrgetter
 from types import ModuleType
-from typing import Any, Callable, TYPE_CHECKING
+from typing import Any
+from typing import Callable
+from typing import TYPE_CHECKING
 
 import click
 from click.core import ParameterSource
 
 from .globals import current_app
-from .helpers import get_debug_flag, get_load_dotenv
+from .helpers import get_debug_flag
+from .helpers import get_load_dotenv
 
 try:
     from importlib.metadata import version
@@ -123,7 +126,9 @@ def find_app_by_string(module: ModuleType, app_name: str) -> Quart:
     elif isinstance(expr, ast.Call):
         # Ensure the function name is an attribute name only.
         if not isinstance(expr.func, ast.Name):
-            raise NoAppException(f"Function reference must be a simple name: {app_name!r}.")
+            raise NoAppException(
+                f"Function reference must be a simple name: {app_name!r}."
+            )
 
         name = expr.func.id
 
@@ -138,12 +143,16 @@ def find_app_by_string(module: ModuleType, app_name: str) -> Quart:
                 f"Failed to parse arguments as literal values: {app_name!r}."
             ) from None
     else:
-        raise NoAppException(f"Failed to parse {app_name!r} as an attribute name or function call.")
+        raise NoAppException(
+            f"Failed to parse {app_name!r} as an attribute name or function call."
+        )
 
     try:
         attr = getattr(module, name)
     except AttributeError as e:
-        raise NoAppException(f"Failed to find attribute {name!r} in {module.__name__!r}.") from e
+        raise NoAppException(
+            f"Failed to find attribute {name!r} in {module.__name__!r}."
+        ) from e
 
     # If the attribute is a function, call it with any args and kwargs
     # to get the real application.
@@ -166,7 +175,8 @@ def find_app_by_string(module: ModuleType, app_name: str) -> Quart:
         return app
 
     raise NoAppException(
-        f"A valid Quart application was not obtained from '{module.__name__}:{app_name}'."
+        "A valid Quart application was not obtained from"
+        f" '{module.__name__}:{app_name}'."
     )
 
 
@@ -240,7 +250,9 @@ class ScriptInfo:
             app = self.create_app()
         else:
             if self.app_import_path:
-                path, name = (re.split(r":(?![\\/])", self.app_import_path, 1) + [None])[:2]
+                path, name = (
+                    re.split(r":(?![\\/])", self.app_import_path, maxsplit=1) + [None]
+                )[:2]
                 import_name = prepare_import(path)
                 app = locate_app(import_name, name)
             else:
@@ -279,10 +291,13 @@ def with_appcontext(fn: Callable | None = None) -> Callable:
                 try:
                     return __ctx.invoke(fn, *args, **kwargs)
                 except RuntimeError as error:
-                    if error.args[0] == "Cannot run the event loop while another loop is running":
+                    if (
+                        error.args[0]
+                        == "Cannot run the event loop while another loop is running"
+                    ):
                         click.echo(
-                            "The appcontext cannot be used with a command that runs an event loop. "
-                            "See quart#361 for more details"
+                            "The appcontext cannot be used with a command that"
+                            " runs an event loop. See quart#361 for more details"
                         )
                     raise
 
@@ -397,7 +412,9 @@ _debug_option = click.Option(
 )
 
 
-def _env_file_callback(ctx: click.Context, param: click.Option, value: str | None) -> str | None:
+def _env_file_callback(
+    ctx: click.Context, param: click.Option, value: str | None
+) -> str | None:
     if value is None:
         return None
 
@@ -637,7 +654,12 @@ def run_command(
         reload = debug
 
     app.run(
-        debug=debug, host=host, port=port, certfile=certfile, keyfile=keyfile, use_reloader=reload
+        debug=debug,
+        host=host,
+        port=port,
+        certfile=certfile,
+        keyfile=keyfile,
+        use_reloader=reload,
     )
 
 

@@ -1,9 +1,14 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import datetime
 
-from quart_schema import QuartSchema, validate_request, validate_response
+from quart_schema import QuartSchema
+from quart_schema import validate_request
+from quart_schema import validate_response
 
-from quart import Quart, request
+from quart import Quart
+from quart import request
 
 app = Quart(__name__)
 QuartSchema(app)

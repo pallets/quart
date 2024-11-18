@@ -1,0 +1,6 @@
+hypothesis
+pytest
+pytest-asyncio
+pytest-cov
+pytest-sugar
+python-dotenv

@@ -1,4 +1,6 @@
-from quart import Quart, render_template, send_file
+from quart import Quart
+from quart import render_template
+from quart import send_file
 
 app = Quart(__name__)
 

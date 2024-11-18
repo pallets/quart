@@ -1,21 +1,28 @@
 from __future__ import annotations
 
 import asyncio
-from typing import AsyncGenerator, NoReturn
+from collections.abc import AsyncGenerator
+from typing import NoReturn
 from unittest.mock import AsyncMock
 
 import pytest
-from hypercorn.typing import HTTPScope, WebsocketScope
+from hypercorn.typing import HTTPScope
+from hypercorn.typing import WebsocketScope
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import InternalServerError
 from werkzeug.wrappers import Response as WerkzeugResponse
 
 from quart.app import Quart
-from quart.globals import session, websocket
-from quart.sessions import SecureCookieSession, SessionInterface
-from quart.testing import no_op_push, WebsocketResponseError
-from quart.typing import ResponseReturnValue, ResponseTypes
-from quart.wrappers import Request, Response
+from quart.globals import session
+from quart.globals import websocket
+from quart.sessions import SecureCookieSession
+from quart.sessions import SessionInterface
+from quart.testing import no_op_push
+from quart.testing import WebsocketResponseError
+from quart.typing import ResponseReturnValue
+from quart.typing import ResponseTypes
+from quart.wrappers import Request
+from quart.wrappers import Response
 
 TEST_RESPONSE = Response("")
 
@@ -74,7 +81,11 @@ def test_add_url_rule_methods(
 
     non_func_methods = {"PATCH"} if not methods else None
     app.add_url_rule(
-        "/", "end", route, methods=non_func_methods, provide_automatic_options=automatic_options
+        "/",
+        "end",
+        route,
+        methods=non_func_methods,
+        provide_automatic_options=automatic_options,
     )
     result = {"PATCH"} if not methods else set()
     result.update(methods)
@@ -109,7 +120,9 @@ def test_add_url_rule_automatic_options(
 
     route.provide_automatic_options = func_automatic  # type: ignore
 
-    app.add_url_rule("/", "end", route, methods=methods, provide_automatic_options=arg_automatic)
+    app.add_url_rule(
+        "/", "end", route, methods=methods, provide_automatic_options=arg_automatic
+    )
     assert app.url_map._rules_by_endpoint["end"][0].methods == expected_methods
     assert (
         app.url_map._rules_by_endpoint["end"][0].provide_automatic_options  # type: ignore
@@ -151,7 +164,11 @@ async def test_subdomain() -> None:
         (None, None, True),
         ((None, 201), None, True),
         (TEST_RESPONSE, TEST_RESPONSE, False),
-        (("hello", {"X-Header": "bob"}), Response("hello", headers={"X-Header": "bob"}), False),
+        (
+            ("hello", {"X-Header": "bob"}),
+            Response("hello", headers={"X-Header": "bob"}),
+            False,
+        ),
         (("hello", 201), Response("hello", 201), False),
         (
             ("hello", 201, {"X-Header": "bob"}),
@@ -238,7 +255,9 @@ async def test_app_after_request_handler_exception(basic_app: Quart) -> None:
     assert response.status_code == 500
 
 
-async def test_app_handle_request_asyncio_cancelled_error(http_scope: HTTPScope) -> None:
+async def test_app_handle_request_asyncio_cancelled_error(
+    http_scope: HTTPScope,
+) -> None:
     app = Quart(__name__)
 
     @app.route("/")
@@ -339,9 +358,16 @@ async def test_app_session_websocket_return(session_app: Quart) -> None:
 
 @pytest.mark.parametrize(
     "debug, testing, raises",
-    [(False, False, False), (True, False, True), (False, True, True), (True, True, True)],
+    [
+        (False, False, False),
+        (True, False, True),
+        (False, True, True),
+        (True, True, True),
+    ],
 )
-async def test_propagation(debug: bool, testing: bool, raises: bool, http_scope: HTTPScope) -> None:
+async def test_propagation(
+    debug: bool, testing: bool, raises: bool, http_scope: HTTPScope
+) -> None:
     app = Quart(__name__)
 
     @app.route("/")

@@ -1,20 +1,19 @@
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
+from typing import Any
+from typing import TYPE_CHECKING
 
 from click.testing import CliRunner
 
+from ..cli import ScriptInfo
 from .app import TestApp
 from .client import QuartClient
 from .connections import WebsocketResponseError
-from .utils import (
-    make_test_body_with_headers,
-    make_test_headers_path_and_query_string,
-    make_test_scope,
-    no_op_push,
-    sentinel,
-)
-from ..cli import ScriptInfo
+from .utils import make_test_body_with_headers
+from .utils import make_test_headers_path_and_query_string
+from .utils import make_test_scope
+from .utils import no_op_push
+from .utils import sentinel
 
 if TYPE_CHECKING:
     from ..app import Quart

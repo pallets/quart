@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable
 from types import TracebackType
-from typing import Awaitable, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
-from hypercorn.typing import ASGIReceiveEvent, ASGISendEvent, LifespanScope
+from hypercorn.typing import ASGIReceiveEvent
+from hypercorn.typing import ASGISendEvent
+from hypercorn.typing import LifespanScope
 
 from ..typing import TestClientProtocol
 
@@ -37,8 +40,14 @@ class TestApp:
         return self.app.test_client()
 
     async def startup(self) -> None:
-        scope: LifespanScope = {"type": "lifespan", "asgi": {"spec_version": "2.0"}, "state": {}}
-        self._task = asyncio.ensure_future(self.app(scope, self._asgi_receive, self._asgi_send))
+        scope: LifespanScope = {
+            "type": "lifespan",
+            "asgi": {"spec_version": "2.0"},
+            "state": {},
+        }
+        self._task = asyncio.ensure_future(
+            self.app(scope, self._asgi_receive, self._asgi_send)
+        )
         await self._app_queue.put({"type": "lifespan.startup"})
         await asyncio.wait_for(self._startup.wait(), timeout=self.startup_timeout)
         if self._task.done():
@@ -54,7 +63,9 @@ class TestApp:
         await self.startup()
         return self
 
-    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+    async def __aexit__(
+        self, exc_type: type, exc_value: BaseException, tb: TracebackType
+    ) -> None:
         await self.shutdown()
 
     async def _asgi_receive(self) -> ASGIReceiveEvent:

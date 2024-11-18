@@ -1,6 +1,11 @@
 from sqlite3 import dbapi2 as sqlite3
 
-from quart import g, Quart, redirect, render_template, request, url_for
+from quart import g
+from quart import Quart
+from quart import redirect
+from quart import render_template
+from quart import request
+from quart import url_for
 
 app = Quart(__name__)
 

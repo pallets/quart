@@ -1,8 +1,16 @@
 from __future__ import annotations
 
 import sys
-from logging import DEBUG, Formatter, getLogger, Handler, Logger, LogRecord, NOTSET, StreamHandler
-from logging.handlers import QueueHandler, QueueListener
+from logging import DEBUG
+from logging import Formatter
+from logging import getLogger
+from logging import Handler
+from logging import Logger
+from logging import LogRecord
+from logging import NOTSET
+from logging import StreamHandler
+from logging.handlers import QueueHandler
+from logging.handlers import QueueListener
 from queue import SimpleQueue as Queue
 from typing import TYPE_CHECKING
 
@@ -10,7 +18,9 @@ if TYPE_CHECKING:
     from .app import Quart  # noqa
 
 default_handler = StreamHandler(sys.stderr)
-default_handler.setFormatter(Formatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s"))
+default_handler.setFormatter(
+    Formatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s")
+)
 
 
 class LocalQueueHandler(QueueHandler):

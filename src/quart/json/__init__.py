@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
-from typing import Any, IO, TYPE_CHECKING
+from typing import Any
+from typing import IO
+from typing import TYPE_CHECKING
 
 from flask.json.provider import _default
 

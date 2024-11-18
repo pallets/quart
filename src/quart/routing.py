@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import warnings
-from typing import Iterable
+from collections.abc import Iterable
 
-from werkzeug.routing import Map, MapAdapter, Rule
+from werkzeug.routing import Map
+from werkzeug.routing import MapAdapter
+from werkzeug.routing import Rule
 
 from .wrappers.base import BaseRequestWebsocket
 
@@ -38,7 +40,10 @@ class QuartRule(Rule):
 
 class QuartMap(Map):
     def bind_to_request(
-        self, request: BaseRequestWebsocket, subdomain: str | None, server_name: str | None
+        self,
+        request: BaseRequestWebsocket,
+        subdomain: str | None,
+        server_name: str | None,
     ) -> MapAdapter:
         host: str
         if server_name is None:
@@ -49,7 +54,9 @@ class QuartMap(Map):
         host = _normalise_host(request.scheme, host)
 
         if subdomain is None and not self.host_matching:
-            request_host_parts = _normalise_host(request.scheme, request.host.lower()).split(".")
+            request_host_parts = _normalise_host(
+                request.scheme, request.host.lower()
+            ).split(".")
             config_host_parts = host.split(".")
             offset = -len(config_host_parts)
 

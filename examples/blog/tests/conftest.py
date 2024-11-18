@@ -1,5 +1,6 @@
 import pytest
-from blog import app, init_db
+from blog import app
+from blog import init_db
 
 
 @pytest.fixture(autouse=True)

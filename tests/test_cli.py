@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import os
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 from unittest.mock import Mock
 
 import pytest
@@ -12,7 +12,10 @@ from click.testing import CliRunner
 
 import quart.cli
 from quart.app import Quart
-from quart.cli import AppGroup, cli, load_dotenv, ScriptInfo
+from quart.cli import AppGroup
+from quart.cli import cli
+from quart.cli import load_dotenv
+from quart.cli import ScriptInfo
 
 
 @pytest.fixture(scope="module")
@@ -73,15 +76,27 @@ def test_run_command(app: Mock) -> None:
     runner = CliRunner()
     runner.invoke(cli, ["--app", "module:app", "run"])
     app.run.assert_called_once_with(
-        debug=False, host="127.0.0.1", port=5000, certfile=None, keyfile=None, use_reloader=False
+        debug=False,
+        host="127.0.0.1",
+        port=5000,
+        certfile=None,
+        keyfile=None,
+        use_reloader=False,
     )
 
 
-def test_run_command_development_debug_disabled(dev_app: Mock, no_debug_env: None) -> None:
+def test_run_command_development_debug_disabled(
+    dev_app: Mock, no_debug_env: None
+) -> None:
     runner = CliRunner()
     runner.invoke(cli, ["--app", "module:app", "run"])
     dev_app.run.assert_called_once_with(
-        debug=False, host="127.0.0.1", port=5000, certfile=None, keyfile=None, use_reloader=False
+        debug=False,
+        host="127.0.0.1",
+        port=5000,
+        certfile=None,
+        keyfile=None,
+        use_reloader=False,
     )
 
 

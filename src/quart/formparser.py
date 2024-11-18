@@ -1,24 +1,26 @@
 from __future__ import annotations
 
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    cast,
-    Dict,
-    IO,
-    NoReturn,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-)
+from collections.abc import Awaitable
+from typing import Any
+from typing import Callable
+from typing import cast
+from typing import IO
+from typing import NoReturn
+from typing import Optional
+from typing import TYPE_CHECKING
 from urllib.parse import parse_qsl
 
-from werkzeug.datastructures import Headers, MultiDict
+from werkzeug.datastructures import Headers
+from werkzeug.datastructures import MultiDict
 from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.formparser import default_stream_factory
 from werkzeug.http import parse_options_header
-from werkzeug.sansio.multipart import Data, Epilogue, Field, File, MultipartDecoder, NeedData
+from werkzeug.sansio.multipart import Data
+from werkzeug.sansio.multipart import Epilogue
+from werkzeug.sansio.multipart import Field
+from werkzeug.sansio.multipart import File
+from werkzeug.sansio.multipart import MultipartDecoder
+from werkzeug.sansio.multipart import NeedData
 
 from .datastructures import FileStorage
 
@@ -31,8 +33,8 @@ StreamFactory = Callable[
 ]
 
 ParserFunc = Callable[
-    ["FormDataParser", "Body", str, Optional[int], Dict[str, str]],
-    Awaitable[Tuple[MultiDict, MultiDict]],
+    ["FormDataParser", "Body", str, Optional[int], dict[str, str]],
+    Awaitable[tuple[MultiDict, MultiDict]],
 ]
 
 
@@ -51,7 +53,9 @@ class FormDataParser:
         self.cls = cls
         self.silent = silent
 
-    def get_parse_func(self, mimetype: str, options: dict[str, str]) -> ParserFunc | None:
+    def get_parse_func(
+        self, mimetype: str, options: dict[str, str]
+    ) -> ParserFunc | None:
         return self.parse_functions.get(mimetype)
 
     async def parse(
