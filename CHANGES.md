@@ -1,3 +1,11 @@
+## Version 0.20.0
+
+Unreleased
+
+- Drop support for Python 3.8.
+- Fix deprecated `asyncio.iscoroutinefunction` for Python 3.14.
+- Allow `AsyncIterable` to be passed to `Response`.
+
 ## Version 0.19.9
 
 Released 2024-11-14
