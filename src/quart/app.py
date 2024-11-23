@@ -912,18 +912,17 @@ class Quart(App):
             keyfile: Path to the SSL key file.
 
         """
-        config = HyperConfig()
-        config.access_log_format = "%(h)s %(r)s %(s)s %(b)s %(D)s"
-        config.accesslog = "-"
-        config.bind = [f"{host}:{port}"]
-        config.ca_certs = ca_certs
-        config.certfile = certfile
+        hconfig = HyperConfig()
+        hconfig.bind = [f"{host}:{port}"]
+        hconfig.ca_certs = ca_certs
+        hconfig.certfile = certfile
+        hconfig.keyfile = keyfile
         if debug is not None:
             self.debug = debug
-        config.errorlog = config.accesslog
-        config.keyfile = keyfile
+        hconfig.accesslog = self.logger
+        hconfig.errorlog = self.logger
 
-        return serve(self, config, shutdown_trigger=shutdown_trigger)
+        return serve(self, hconfig, shutdown_trigger=shutdown_trigger)
 
     def test_client(
         self, use_cookies: bool = True, **kwargs: Any
