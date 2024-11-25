@@ -1,4 +1,2 @@
-from flask.json.provider import (  # noqa: F401
-    DefaultJSONProvider as DefaultJSONProvider,
-    JSONProvider as JSONProvider,
-)
+from flask.json.provider import DefaultJSONProvider as DefaultJSONProvider  # noqa: F401
+from flask.json.provider import JSONProvider as JSONProvider  # noqa: F401

@@ -1,19 +1,22 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import datetime, timezone
+from datetime import datetime
+from datetime import timezone
 from typing import TYPE_CHECKING
 
+from flask.sessions import NullSession as NullSession  # noqa: F401
+from flask.sessions import SecureCookieSession as SecureCookieSession  # noqa: F401
 from flask.sessions import (  # noqa: F401
-    NullSession as NullSession,
-    SecureCookieSession as SecureCookieSession,
     session_json_serializer as session_json_serializer,
-    SessionMixin as SessionMixin,
 )
-from itsdangerous import BadSignature, URLSafeTimedSerializer
+from flask.sessions import SessionMixin as SessionMixin  # noqa: F401
+from itsdangerous import BadSignature
+from itsdangerous import URLSafeTimedSerializer
 from werkzeug.wrappers import Response as WerkzeugResponse
 
-from .wrappers import BaseRequestWebsocket, Response
+from .wrappers import BaseRequestWebsocket
+from .wrappers import Response
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa
@@ -90,7 +93,9 @@ class SessionInterface:
         save_each = app.config["SESSION_REFRESH_EACH_REQUEST"]
         return save_each and session.permanent
 
-    async def open_session(self, app: Quart, request: BaseRequestWebsocket) -> SessionMixin | None:
+    async def open_session(
+        self, app: Quart, request: BaseRequestWebsocket
+    ) -> SessionMixin | None:
         """Open an existing session from the request or create one.
 
         Returns:
@@ -101,7 +106,10 @@ class SessionInterface:
         raise NotImplementedError()
 
     async def save_session(
-        self, app: Quart, session: SessionMixin, response: Response | WerkzeugResponse | None
+        self,
+        app: Quart,
+        session: SessionMixin,
+        response: Response | WerkzeugResponse | None,
     ) -> None:
         """Save the session argument to the response.
 
@@ -137,9 +145,15 @@ class SecureCookieSessionInterface(SessionInterface):
         if not app.secret_key:
             return None
 
-        options = {"key_derivation": self.key_derivation, "digest_method": self.digest_method}
+        options = {
+            "key_derivation": self.key_derivation,
+            "digest_method": self.digest_method,
+        }
         return URLSafeTimedSerializer(
-            app.secret_key, salt=self.salt, serializer=self.serializer, signer_kwargs=options
+            app.secret_key,
+            salt=self.salt,
+            serializer=self.serializer,
+            signer_kwargs=options,
         )
 
     async def open_session(

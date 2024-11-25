@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from werkzeug.datastructures import Headers
 
-from quart.utils import decode_headers, encode_headers
+from quart.utils import decode_headers
+from quart.utils import encode_headers
 
 
 def test_encode_headers() -> None:

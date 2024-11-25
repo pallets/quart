@@ -11,8 +11,12 @@ from quart.wrappers.base import BaseRequestWebsocket
 
 def test_basic_authorization(http_scope: HTTPScope) -> None:
     headers = Headers()
-    headers["Authorization"] = "Basic {}".format(b64encode(b"identity:secret").decode("ascii"))
-    request = BaseRequestWebsocket("GET", "http", "/", b"", headers, "", "1.1", http_scope)
+    headers["Authorization"] = "Basic {}".format(
+        b64encode(b"identity:secret").decode("ascii")
+    )
+    request = BaseRequestWebsocket(
+        "GET", "http", "/", b"", headers, "", "1.1", http_scope
+    )
     auth = request.authorization
     assert auth.username == "identity"
     assert auth.password == "secret"
@@ -29,7 +33,9 @@ def test_digest_authorization(http_scope: HTTPScope) -> None:
         'response="abcd1235", '
         'opaque="abcd1236"'
     )
-    request = BaseRequestWebsocket("GET", "http", "/", b"", headers, "", "1.1", http_scope)
+    request = BaseRequestWebsocket(
+        "GET", "http", "/", b"", headers, "", "1.1", http_scope
+    )
     auth = request.authorization
     assert auth.username == "identity"
     assert auth.realm == "realm@rea.lm"
@@ -100,7 +106,14 @@ def test_url_structure(
     http_scope: HTTPScope,
 ) -> None:
     base_request_websocket = BaseRequestWebsocket(
-        method, scheme, path, query_string, Headers({"host": host}), "", "1.1", http_scope
+        method,
+        scheme,
+        path,
+        query_string,
+        Headers({"host": host}),
+        "",
+        "1.1",
+        http_scope,
     )
 
     assert base_request_websocket.path == expected_path
@@ -118,7 +131,14 @@ def test_url_structure(
 
 def test_query_string(http_scope: HTTPScope) -> None:
     base_request_websocket = BaseRequestWebsocket(
-        "GET", "http", "/", b"a=b&a=c&f", Headers({"host": "localhost"}), "", "1.1", http_scope
+        "GET",
+        "http",
+        "/",
+        b"a=b&a=c&f",
+        Headers({"host": "localhost"}),
+        "",
+        "1.1",
+        http_scope,
     )
     assert base_request_websocket.query_string == b"a=b&a=c&f"
     assert base_request_websocket.args.getlist("a") == ["b", "c"]

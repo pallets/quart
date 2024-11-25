@@ -1,23 +1,24 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from collections.abc import AsyncGenerator
+from datetime import datetime
+from datetime import timezone
 from io import BytesIO
 from pathlib import Path
-from typing import AsyncGenerator
 
 import pytest
 from werkzeug.exceptions import NotFound
 
-from quart import Blueprint, Quart, request
-from quart.helpers import (
-    flash,
-    get_flashed_messages,
-    make_response,
-    send_file,
-    send_from_directory,
-    stream_with_context,
-    url_for,
-)
+from quart import Blueprint
+from quart import Quart
+from quart import request
+from quart.helpers import flash
+from quart.helpers import get_flashed_messages
+from quart.helpers import make_response
+from quart.helpers import send_file
+from quart.helpers import send_from_directory
+from quart.helpers import stream_with_context
+from quart.helpers import url_for
 
 SERVER_NAME = "localhost"
 
@@ -37,7 +38,9 @@ def app() -> Quart:
     async def index_post() -> str:
         return ""
 
-    app.add_url_rule("/post", view_func=index_post, methods=["POST"], endpoint="index_post")
+    app.add_url_rule(
+        "/post", view_func=index_post, methods=["POST"], endpoint="index_post"
+    )
 
     @app.route("/resource/<int:id>")
     async def resource(id: int) -> str:
@@ -80,8 +83,14 @@ async def test_flash_category(app: Quart) -> None:
     async with app.test_request_context("/"):
         await flash("bar", "error")
         await flash("foo", "info")
-        assert get_flashed_messages(with_categories=True) == [("error", "bar"), ("info", "foo")]
-        assert get_flashed_messages(with_categories=True) == [("error", "bar"), ("info", "foo")]
+        assert get_flashed_messages(with_categories=True) == [
+            ("error", "bar"),
+            ("info", "foo"),
+        ]
+        assert get_flashed_messages(with_categories=True) == [
+            ("error", "bar"),
+            ("info", "foo"),
+        ]
 
 
 async def test_flash_category_filter(app: Quart) -> None:
@@ -109,7 +118,9 @@ async def test_url_for_external(app: Quart) -> None:
     async with app.test_request_context("/"):
         assert url_for("index") == "/"
         assert url_for("index", _external=True) == "http://localhost/"
-        assert url_for("resource", id=5, _external=True) == "http://localhost/resource/5"
+        assert (
+            url_for("resource", id=5, _external=True) == "http://localhost/resource/5"
+        )
         assert url_for("resource", id=5, _external=False) == "/resource/5"
 
     async with app.app_context():
@@ -216,7 +227,9 @@ async def test_send_file_as_attachment_name(tmp_path: Path) -> None:
     file_ = tmp_path / "send.img"
     file_.write_text("something")
     async with app.app_context():
-        response = await send_file(Path(file_), as_attachment=True, attachment_filename="send.html")
+        response = await send_file(
+            Path(file_), as_attachment=True, attachment_filename="send.html"
+        )
     assert response.headers["content-disposition"] == "attachment; filename=send.html"
 
 
@@ -257,4 +270,7 @@ async def test_send_file_max_age(tmp_path: Path) -> None:
     file_.write_text("something")
     async with app.app_context():
         response = await send_file(str(file_))
-    assert response.cache_control.max_age == app.config["SEND_FILE_MAX_AGE_DEFAULT"].total_seconds()
+    assert (
+        response.cache_control.max_age
+        == app.config["SEND_FILE_MAX_AGE_DEFAULT"].total_seconds()
+    )

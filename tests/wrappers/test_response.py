@@ -1,20 +1,27 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from collections.abc import AsyncGenerator
+from datetime import datetime
+from datetime import timezone
 from http import HTTPStatus
 from io import BytesIO
 from pathlib import Path
-from typing import Any, AsyncGenerator
+from typing import Any
 
 import pytest
-from hypothesis import given, strategies as strategies
+from hypothesis import given
+from hypothesis import strategies as strategies
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import RequestedRangeNotSatisfiable
 
 from quart.testing import no_op_push
 from quart.typing import HTTPScope
 from quart.wrappers import Request
-from quart.wrappers.response import DataBody, FileBody, IOBody, IterableBody, Response
+from quart.wrappers.response import DataBody
+from quart.wrappers.response import FileBody
+from quart.wrappers.response import IOBody
+from quart.wrappers.response import IterableBody
+from quart.wrappers.response import Response
 
 
 async def test_data_wrapper() -> None:
@@ -32,7 +39,8 @@ async def _simple_async_generator() -> AsyncGenerator[bytes, None]:
 
 
 @pytest.mark.parametrize(
-    "iterable", [[b"abc", b"def"], (data for data in [b"abc", b"def"]), _simple_async_generator()]
+    "iterable",
+    [[b"abc", b"def"], (data for data in [b"abc", b"def"]), _simple_async_generator()],
 )
 async def test_iterable_wrapper(iterable: Any) -> None:
     wrapper = IterableBody(iterable)
@@ -103,7 +111,15 @@ async def test_response_make_conditional(http_scope: HTTPScope) -> None:
 
 async def test_response_make_conditional_no_condition(http_scope: HTTPScope) -> None:
     request = Request(
-        "GET", "https", "/", b"", Headers(), "", "1.1", http_scope, send_push_promise=no_op_push
+        "GET",
+        "https",
+        "/",
+        b"",
+        Headers(),
+        "",
+        "1.1",
+        http_scope,
+        send_push_promise=no_op_push,
     )
     response = Response(b"abcdef")
     await response.make_conditional(request, complete_length=6)

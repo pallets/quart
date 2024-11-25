@@ -3,34 +3,40 @@ from __future__ import annotations
 import asyncio
 import warnings
 from functools import partial
-from typing import AnyStr, cast, Optional, TYPE_CHECKING
+from typing import AnyStr
+from typing import cast
+from typing import Optional
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
-from hypercorn.typing import (
-    ASGIReceiveCallable,
-    ASGISendCallable,
-    HTTPResponseBodyEvent,
-    HTTPResponseStartEvent,
-    HTTPScope,
-    LifespanScope,
-    LifespanShutdownCompleteEvent,
-    LifespanShutdownFailedEvent,
-    LifespanStartupCompleteEvent,
-    LifespanStartupFailedEvent,
-    WebsocketAcceptEvent,
-    WebsocketCloseEvent,
-    WebsocketResponseBodyEvent,
-    WebsocketResponseStartEvent,
-    WebsocketScope,
-)
+from hypercorn.typing import ASGIReceiveCallable
+from hypercorn.typing import ASGISendCallable
+from hypercorn.typing import HTTPResponseBodyEvent
+from hypercorn.typing import HTTPResponseStartEvent
+from hypercorn.typing import HTTPScope
+from hypercorn.typing import LifespanScope
+from hypercorn.typing import LifespanShutdownCompleteEvent
+from hypercorn.typing import LifespanShutdownFailedEvent
+from hypercorn.typing import LifespanStartupCompleteEvent
+from hypercorn.typing import LifespanStartupFailedEvent
+from hypercorn.typing import WebsocketAcceptEvent
+from hypercorn.typing import WebsocketCloseEvent
+from hypercorn.typing import WebsocketResponseBodyEvent
+from hypercorn.typing import WebsocketResponseStartEvent
+from hypercorn.typing import WebsocketScope
 from werkzeug.datastructures import Headers
 from werkzeug.wrappers import Response as WerkzeugResponse
 
 from .debug import traceback_response
-from .signals import websocket_received, websocket_sent
+from .signals import websocket_received
+from .signals import websocket_sent
 from .typing import ResponseTypes
-from .utils import cancel_tasks, encode_headers, raise_task_exceptions
-from .wrappers import Request, Response, Websocket  # noqa: F401
+from .utils import cancel_tasks
+from .utils import encode_headers
+from .utils import raise_task_exceptions
+from .wrappers import Request  # noqa: F401
+from .wrappers import Response  # noqa: F401
+from .wrappers import Websocket  # noqa: F401
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa: F401
@@ -41,7 +47,9 @@ class ASGIHTTPConnection:
         self.app = app
         self.scope = scope
 
-    async def __call__(self, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None:
+    async def __call__(
+        self, receive: ASGIReceiveCallable, send: ASGISendCallable
+    ) -> None:
         request = self._create_request_from_scope(send)
         receiver_task = asyncio.ensure_future(self.handle_messages(request, receive))
         handler_task = asyncio.ensure_future(self.handle_request(request, send))
@@ -51,7 +59,9 @@ class ASGIHTTPConnection:
         await cancel_tasks(pending)
         raise_task_exceptions(done)
 
-    async def handle_messages(self, request: Request, receive: ASGIReceiveCallable) -> None:
+    async def handle_messages(
+        self, request: Request, receive: ASGIReceiveCallable
+    ) -> None:
         while True:
             message = await receive()
             if message["type"] == "http.request":
@@ -108,7 +118,9 @@ class ASGIHTTPConnection:
         except asyncio.TimeoutError:
             pass
 
-    async def _send_response(self, send: ASGISendCallable, response: ResponseTypes) -> None:
+    async def _send_response(
+        self, send: ASGISendCallable, response: ResponseTypes
+    ) -> None:
         await send(
             cast(
                 HTTPResponseStartEvent,
@@ -136,7 +148,11 @@ class ASGIHTTPConnection:
                     await send(
                         cast(
                             HTTPResponseBodyEvent,
-                            {"type": "http.response.body", "body": body, "more_body": True},
+                            {
+                                "type": "http.response.body",
+                                "body": body,
+                                "more_body": True,
+                            },
                         )
                     )
         await send(
@@ -146,11 +162,17 @@ class ASGIHTTPConnection:
             )
         )
 
-    async def _send_push_promise(self, send: ASGISendCallable, path: str, headers: Headers) -> None:
+    async def _send_push_promise(
+        self, send: ASGISendCallable, path: str, headers: Headers
+    ) -> None:
         extensions = self.scope.get("extensions", {}) or {}
         if "http.response.push" in extensions:
             await send(
-                {"type": "http.response.push", "path": path, "headers": encode_headers(headers)}
+                {
+                    "type": "http.response.push",
+                    "path": path,
+                    "headers": encode_headers(headers),
+                }
             )
 
 
@@ -162,7 +184,9 @@ class ASGIWebsocketConnection:
         self._accepted = False
         self._closed = False
 
-    async def __call__(self, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None:
+    async def __call__(
+        self, receive: ASGIReceiveCallable, send: ASGISendCallable
+    ) -> None:
         websocket = self._create_websocket_from_scope(send)
         receiver_task = asyncio.ensure_future(self.handle_messages(receive))
         handler_task = asyncio.ensure_future(self.handle_websocket(websocket, send))
@@ -213,7 +237,9 @@ class ASGIWebsocketConnection:
             scope=self.scope,
         )
 
-    async def handle_websocket(self, websocket: Websocket, send: ASGISendCallable) -> None:
+    async def handle_websocket(
+        self, websocket: Websocket, send: ASGISendCallable
+    ) -> None:
         try:
             response = await self.app.handle_websocket(websocket)
         except Exception as error:
@@ -264,13 +290,21 @@ class ASGIWebsocketConnection:
                 await send(
                     cast(
                         WebsocketResponseBodyEvent,
-                        {"type": "websocket.http.response.body", "body": b"", "more_body": False},
+                        {
+                            "type": "websocket.http.response.body",
+                            "body": b"",
+                            "more_body": False,
+                        },
                     )
                 )
             elif not self._closed:
-                await send(cast(WebsocketCloseEvent, {"type": "websocket.close", "code": 1000}))
+                await send(
+                    cast(WebsocketCloseEvent, {"type": "websocket.close", "code": 1000})
+                )
         elif self._accepted and not self._closed:
-            await send(cast(WebsocketCloseEvent, {"type": "websocket.close", "code": 1000}))
+            await send(
+                cast(WebsocketCloseEvent, {"type": "websocket.close", "code": 1000})
+            )
 
     async def send_data(self, send: ASGISendCallable, data: AnyStr) -> None:
         if isinstance(data, str):
@@ -288,19 +322,28 @@ class ASGIWebsocketConnection:
                 "subprotocol": subprotocol,
                 "type": "websocket.accept",
             }
-            spec_version = _convert_version(self.scope.get("asgi", {}).get("spec_version", "2.0"))
+            spec_version = _convert_version(
+                self.scope.get("asgi", {}).get("spec_version", "2.0")
+            )
             if spec_version > [2, 0]:
                 message["headers"] = encode_headers(headers)
             elif headers:
-                warnings.warn("The ASGI Server does not support accept headers, headers not sent")
+                warnings.warn(
+                    "The ASGI Server does not support accept headers, headers not sent",
+                    stacklevel=1,
+                )
             self._accepted = True
             await send(message)
 
-    async def close_connection(self, send: ASGISendCallable, code: int, reason: str) -> None:
+    async def close_connection(
+        self, send: ASGISendCallable, code: int, reason: str
+    ) -> None:
         if self._closed:
             raise RuntimeError("Cannot close websocket multiple times")
 
-        spec_version = _convert_version(self.scope.get("asgi", {}).get("spec_version", "2.0"))
+        spec_version = _convert_version(
+            self.scope.get("asgi", {}).get("spec_version", "2.0")
+        )
         if spec_version >= [2, 3]:
             await send({"type": "websocket.close", "code": code, "reason": reason})
         else:
@@ -312,7 +355,9 @@ class ASGILifespan:
     def __init__(self, app: Quart, scope: LifespanScope) -> None:
         self.app = app
 
-    async def __call__(self, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None:
+    async def __call__(
+        self, receive: ASGIReceiveCallable, send: ASGISendCallable
+    ) -> None:
         while True:
             event = await receive()
             if event["type"] == "lifespan.startup":
@@ -327,7 +372,10 @@ class ASGILifespan:
                     )
                 else:
                     await send(
-                        cast(LifespanStartupCompleteEvent, {"type": "lifespan.startup.complete"})
+                        cast(
+                            LifespanStartupCompleteEvent,
+                            {"type": "lifespan.startup.complete"},
+                        )
                     )
             elif event["type"] == "lifespan.shutdown":
                 try:
@@ -341,7 +389,10 @@ class ASGILifespan:
                     )
                 else:
                     await send(
-                        cast(LifespanShutdownCompleteEvent, {"type": "lifespan.shutdown.complete"}),
+                        cast(
+                            LifespanShutdownCompleteEvent,
+                            {"type": "lifespan.shutdown.complete"},
+                        ),
                     )
                 break
 

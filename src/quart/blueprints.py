@@ -8,26 +8,22 @@ from datetime import timedelta
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
 from flask.sansio.app import App
-from flask.sansio.blueprints import (  # noqa
-    Blueprint as SansioBlueprint,
-    BlueprintSetupState as BlueprintSetupState,
-)
+from flask.sansio.blueprints import Blueprint as SansioBlueprint  # noqa
+from flask.sansio.blueprints import BlueprintSetupState as BlueprintSetupState  # noqa
 from flask.sansio.scaffold import setupmethod
 
 from .cli import AppGroup
 from .globals import current_app
 from .helpers import send_from_directory
-from .typing import (
-    AfterServingCallable,
-    AfterWebsocketCallable,
-    AppOrBlueprintKey,
-    BeforeServingCallable,
-    BeforeWebsocketCallable,
-    FilePath,
-    TeardownCallable,
-    WebsocketCallable,
-    WhileServingCallable,
-)
+from .typing import AfterServingCallable
+from .typing import AfterWebsocketCallable
+from .typing import AppOrBlueprintKey
+from .typing import BeforeServingCallable
+from .typing import BeforeWebsocketCallable
+from .typing import FilePath
+from .typing import TeardownCallable
+from .typing import WebsocketCallable
+from .typing import WhileServingCallable
 
 if t.TYPE_CHECKING:
     from .wrappers import Response
@@ -57,15 +53,15 @@ class Blueprint(SansioBlueprint):
         self.cli = AppGroup()
         self.cli.name = self.name
 
-        self.after_websocket_funcs: t.Dict[AppOrBlueprintKey, t.List[AfterWebsocketCallable]] = (
-            defaultdict(list)
-        )
-        self.before_websocket_funcs: t.Dict[AppOrBlueprintKey, t.List[BeforeWebsocketCallable]] = (
-            defaultdict(list)
-        )
-        self.teardown_websocket_funcs: dict[AppOrBlueprintKey, list[TeardownCallable]] = (
-            defaultdict(list)
-        )
+        self.after_websocket_funcs: dict[
+            AppOrBlueprintKey, list[AfterWebsocketCallable]
+        ] = defaultdict(list)
+        self.before_websocket_funcs: dict[
+            AppOrBlueprintKey, list[BeforeWebsocketCallable]
+        ] = defaultdict(list)
+        self.teardown_websocket_funcs: dict[
+            AppOrBlueprintKey, list[TeardownCallable]
+        ] = defaultdict(list)
 
     def get_send_file_max_age(self, filename: str | None) -> int | None:
         """Used by :func:`send_file` to determine the ``max_age`` cache

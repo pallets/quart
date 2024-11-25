@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, AnyStr, Callable
+from typing import Any
+from typing import AnyStr
+from typing import Callable
 
 from hypercorn.typing import WebsocketScope
 from werkzeug.datastructures import Headers
@@ -40,7 +42,9 @@ class Websocket(BaseRequestWebsocket):
             accept: Idempotent callable to accept the websocket connection.
             scope: Underlying ASGI scope dictionary.
         """
-        super().__init__("GET", scheme, path, query_string, headers, root_path, http_version, scope)
+        super().__init__(
+            "GET", scheme, path, query_string, headers, root_path, http_version, scope
+        )
         self._accept = accept
         self._close = close
         self._receive = receive
@@ -69,7 +73,9 @@ class Websocket(BaseRequestWebsocket):
 
     async def send_json(self, *args: Any, **kwargs: Any) -> None:
         if args and kwargs:
-            raise TypeError("jsonify() behavior undefined when passed both args and kwargs")
+            raise TypeError(
+                "jsonify() behavior undefined when passed both args and kwargs"
+            )
         elif len(args) == 1:
             data = args[0]
         else:

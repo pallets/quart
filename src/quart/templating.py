@@ -1,14 +1,23 @@
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, TYPE_CHECKING
+from collections.abc import AsyncIterator
+from typing import Any
+from typing import TYPE_CHECKING
 
-from flask.templating import DispatchingJinjaLoader as DispatchingJinjaLoader  # noqa: F401
-from jinja2 import Environment as BaseEnvironment, Template
+from flask.templating import (
+    DispatchingJinjaLoader as DispatchingJinjaLoader,  # noqa: F401
+)
+from jinja2 import Environment as BaseEnvironment
+from jinja2 import Template
 
-from .ctx import has_app_context, has_request_context
-from .globals import app_ctx, current_app, request_ctx
+from .ctx import has_app_context
+from .ctx import has_request_context
+from .globals import app_ctx
+from .globals import current_app
+from .globals import request_ctx
 from .helpers import stream_with_context
-from .signals import before_render_template, template_rendered
+from .signals import before_render_template
+from .signals import template_rendered
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa
@@ -34,7 +43,9 @@ class Environment(BaseEnvironment):
         super().__init__(**options)
 
 
-async def render_template(template_name_or_list: str | list[str], **context: Any) -> str:
+async def render_template(
+    template_name_or_list: str | list[str], **context: Any
+) -> str:
     """Render the template with the context given.
 
     Arguments:
@@ -61,11 +72,17 @@ async def render_template_string(source: str, **context: Any) -> str:
 
 async def _render(template: Template, context: dict, app: Quart) -> str:
     await before_render_template.send_async(
-        app, _sync_wrapper=app.ensure_async, template=template, context=context  # type: ignore
+        app,
+        _sync_wrapper=app.ensure_async,  # type: ignore[arg-type]
+        template=template,
+        context=context,
     )
     rendered_template = await template.render_async(context)
     await template_rendered.send_async(
-        app, _sync_wrapper=app.ensure_async, template=template, context=context  # type: ignore
+        app,
+        _sync_wrapper=app.ensure_async,  # type: ignore[arg-type]
+        template=template,
+        context=context,
     )
     return rendered_template
 
@@ -113,16 +130,24 @@ async def stream_template_string(source: str, **context: Any) -> AsyncIterator[s
     return await _stream(current_app._get_current_object(), template, context)  # type: ignore
 
 
-async def _stream(app: Quart, template: Template, context: dict[str, Any]) -> AsyncIterator[str]:
+async def _stream(
+    app: Quart, template: Template, context: dict[str, Any]
+) -> AsyncIterator[str]:
     await before_render_template.send_async(
-        app, _sync_wrapper=app.ensure_async, template=template, context=context  # type: ignore
+        app,
+        _sync_wrapper=app.ensure_async,  # type: ignore[arg-type]
+        template=template,
+        context=context,
     )
 
     async def generate() -> AsyncIterator[str]:
         async for chunk in template.generate_async(context):
             yield chunk
         await template_rendered.send_async(
-            app, _sync_wrapper=app.ensure_async, template=template, context=context  # type: ignore
+            app,
+            _sync_wrapper=app.ensure_async,  # type: ignore[arg-type]
+            template=template,
+            context=context,
         )
 
     # If a request context is active, keep it while generating.

@@ -1,24 +1,25 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
+from abc import abstractmethod
+from collections.abc import AsyncGenerator
+from collections.abc import AsyncIterable
+from collections.abc import AsyncIterator
+from collections.abc import Iterable
 from hashlib import md5
 from io import BytesIO
 from os import PathLike
 from types import TracebackType
-from typing import (
-    Any,
-    AsyncGenerator,
-    AsyncIterable,
-    AsyncIterator,
-    Iterable,
-    overload,
-    TYPE_CHECKING,
-)
+from typing import Any
+from typing import Literal
+from typing import overload
+from typing import TYPE_CHECKING
 
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
 from aiofiles.threadpool.binary import AsyncBufferedIOBase
-from werkzeug.datastructures import ContentRange, Headers
+from werkzeug.datastructures import ContentRange
+from werkzeug.datastructures import Headers
 from werkzeug.exceptions import RequestedRangeNotSatisfiable
 from werkzeug.http import parse_etags
 from werkzeug.sansio.http import is_resource_modified
@@ -26,15 +27,11 @@ from werkzeug.sansio.response import Response as SansIOResponse
 
 from .. import json
 from ..globals import current_app
-from ..utils import file_path_to_path, run_sync_iterable
+from ..utils import file_path_to_path
+from ..utils import run_sync_iterable
 
 if TYPE_CHECKING:
     from .request import Request
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal  # type: ignore
 
 
 class ResponseBody(ABC):
@@ -54,7 +51,9 @@ class ResponseBody(ABC):
         pass
 
     @abstractmethod
-    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+    async def __aexit__(
+        self, exc_type: type, exc_value: BaseException, tb: TracebackType
+    ) -> None:
         pass
 
 
@@ -72,7 +71,9 @@ class DataBody(ResponseBody):
     async def __aenter__(self) -> DataBody:
         return self
 
-    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+    async def __aexit__(
+        self, exc_type: type, exc_value: BaseException, tb: TracebackType
+    ) -> None:
         pass
 
     def __aiter__(self) -> AsyncIterator[bytes]:
@@ -110,7 +111,9 @@ class IterableBody(ResponseBody):
     async def __aenter__(self) -> IterableBody:
         return self
 
-    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+    async def __aexit__(
+        self, exc_type: type, exc_value: BaseException, tb: TracebackType
+    ) -> None:
         if hasattr(self.iter, "aclose"):
             await self.iter.aclose()
 
@@ -132,7 +135,9 @@ class FileBody(ResponseBody):
 
     buffer_size = 8192
 
-    def __init__(self, file_path: str | PathLike, *, buffer_size: int | None = None) -> None:
+    def __init__(
+        self, file_path: str | PathLike, *, buffer_size: int | None = None
+    ) -> None:
         self.file_path = file_path_to_path(file_path)
         self.size = self.file_path.stat().st_size
         self.begin = 0
@@ -148,7 +153,9 @@ class FileBody(ResponseBody):
         await self.file.seek(self.begin)
         return self
 
-    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+    async def __aexit__(
+        self, exc_type: type, exc_value: BaseException, tb: TracebackType
+    ) -> None:
         await self.file_manager.__aexit__(exc_type, exc_value, tb)
 
     def __aiter__(self) -> FileBody:
@@ -200,7 +207,9 @@ class IOBody(ResponseBody):
         self.io_stream.seek(self.begin)
         return self
 
-    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+    async def __aexit__(
+        self, exc_type: type, exc_value: BaseException, tb: TracebackType
+    ) -> None:
         return None
 
     def __aiter__(self) -> IOBody:
@@ -431,7 +440,9 @@ class Response(SansIOResponse):
     ) -> Response:
         if request.method in {"GET", "HEAD"}:
             accept_ranges = _clean_accept_ranges(accept_ranges)
-            is206 = await self._process_range_request(request, complete_length, accept_ranges)
+            is206 = await self._process_range_request(
+                request, complete_length, accept_ranges
+            )
             if not is206 and not is_resource_modified(
                 http_range=request.headers.get("Range"),
                 http_if_range=request.headers.get("If-Range"),

@@ -1,11 +1,19 @@
 from __future__ import annotations
 
-from typing import AsyncGenerator, cast
+from collections.abc import AsyncGenerator
+from typing import cast
 
 import pytest
 from werkzeug.wrappers import Response as WerkzeugResponse
 
-from quart import abort, jsonify, Quart, request, Response, ResponseReturnValue, url_for, websocket
+from quart import abort
+from quart import jsonify
+from quart import Quart
+from quart import request
+from quart import Response
+from quart import ResponseReturnValue
+from quart import url_for
+from quart import websocket
 from quart.testing import WebsocketResponseError
 
 

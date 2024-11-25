@@ -1,4 +1,5 @@
-from api import app, TodoIn
+from api import app
+from api import TodoIn
 
 
 async def test_echo() -> None:

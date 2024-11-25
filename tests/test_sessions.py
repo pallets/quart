@@ -6,12 +6,16 @@ from hypercorn.typing import HTTPScope
 from werkzeug.datastructures import Headers
 
 from quart.app import Quart
-from quart.sessions import SecureCookieSession, SecureCookieSessionInterface
+from quart.sessions import SecureCookieSession
+from quart.sessions import SecureCookieSessionInterface
 from quart.testing import no_op_push
-from quart.wrappers import Request, Response
+from quart.wrappers import Request
+from quart.wrappers import Response
 
 
-async def test_secure_cookie_session_interface_open_session(http_scope: HTTPScope) -> None:
+async def test_secure_cookie_session_interface_open_session(
+    http_scope: HTTPScope,
+) -> None:
     session = SecureCookieSession()
     session["something"] = "else"
     interface = SecureCookieSessionInterface()
@@ -20,7 +24,15 @@ async def test_secure_cookie_session_interface_open_session(http_scope: HTTPScop
     response = Response("")
     await interface.save_session(app, session, response)
     request = Request(
-        "GET", "http", "/", b"", Headers(), "", "1.1", http_scope, send_push_promise=no_op_push
+        "GET",
+        "http",
+        "/",
+        b"",
+        Headers(),
+        "",
+        "1.1",
+        http_scope,
+        send_push_promise=no_op_push,
     )
     request.headers["Cookie"] = response.headers["Set-Cookie"]
     new_session = await interface.open_session(app, request)

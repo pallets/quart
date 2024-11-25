@@ -1,44 +1,40 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime, timedelta
+import sys
+from collections.abc import AsyncGenerator
+from collections.abc import Awaitable
+from collections.abc import Iterator
+from collections.abc import Mapping
+from collections.abc import Sequence
+from contextlib import AbstractAsyncContextManager
+from datetime import datetime
+from datetime import timedelta
 from http.cookiejar import CookieJar
 from types import TracebackType
-from typing import (
-    Any,
-    AnyStr,
-    AsyncContextManager,
-    AsyncGenerator,
-    Awaitable,
-    Callable,
-    Dict,
-    Iterator,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import Any
+from typing import AnyStr
+from typing import Callable
+from typing import Optional
+from typing import TYPE_CHECKING
+from typing import Union
 
-from hypercorn.typing import (
-    ASGIReceiveCallable,
-    ASGISendCallable,
-    HTTPScope,
-    LifespanScope,
-    WebsocketScope,
-)
+from hypercorn.typing import ASGIReceiveCallable
+from hypercorn.typing import ASGISendCallable
+from hypercorn.typing import HTTPScope
+from hypercorn.typing import LifespanScope
+from hypercorn.typing import WebsocketScope
 
 from .datastructures import FileStorage
 
-try:
+if sys.version_info >= (3, 10):
     from typing import Protocol
-except ImportError:
-    from typing_extensions import Protocol  # type: ignore
+else:
+    from typing_extensions import Protocol
 
 if TYPE_CHECKING:
-    from werkzeug.datastructures import Authorization, Headers  # noqa: F401
+    from werkzeug.datastructures import Authorization  # noqa: F401
+    from werkzeug.datastructures import Headers  # noqa: F401
     from werkzeug.wrappers import Response as WerkzeugResponse
 
     from .app import Quart
@@ -54,7 +50,7 @@ ResponseValue = Union[
     bytes,
     str,
     Mapping[str, Any],  # any jsonify-able dict
-    List[Any],  # any jsonify-able list
+    list[Any],  # any jsonify-able list
     Iterator[bytes],
     Iterator[str],
 ]
@@ -62,26 +58,29 @@ StatusCode = int
 
 # the possible types for an individual HTTP header
 HeaderName = str
-HeaderValue = Union[str, List[str], Tuple[str, ...]]
+HeaderValue = Union[str, list[str], tuple[str, ...]]
 
 # the possible types for HTTP headers
 HeadersValue = Union[
-    "Headers", Mapping[HeaderName, HeaderValue], Sequence[Tuple[HeaderName, HeaderValue]]
+    "Headers",
+    Mapping[HeaderName, HeaderValue],
+    Sequence[tuple[HeaderName, HeaderValue]],
 ]
 
 # The possible types returned by a route function.
 ResponseReturnValue = Union[
     ResponseValue,
-    Tuple[ResponseValue, HeadersValue],
-    Tuple[ResponseValue, StatusCode],
-    Tuple[ResponseValue, StatusCode, HeadersValue],
+    tuple[ResponseValue, HeadersValue],
+    tuple[ResponseValue, StatusCode],
+    tuple[ResponseValue, StatusCode, HeadersValue],
 ]
 
 ResponseTypes = Union["Response", "WerkzeugResponse"]
 
 AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
 AfterRequestCallable = Union[
-    Callable[[ResponseTypes], ResponseTypes], Callable[[ResponseTypes], Awaitable[ResponseTypes]]
+    Callable[[ResponseTypes], ResponseTypes],
+    Callable[[ResponseTypes], Awaitable[ResponseTypes]],
 ]
 AfterServingCallable = Union[Callable[[], None], Callable[[], Awaitable[None]]]
 AfterWebsocketCallable = Union[
@@ -101,13 +100,13 @@ ErrorHandlerCallable = Union[
     Callable[[Any], ResponseReturnValue],
     Callable[[Any], Awaitable[ResponseReturnValue]],
 ]
-ShellContextProcessorCallable = Callable[[], Dict[str, Any]]
+ShellContextProcessorCallable = Callable[[], dict[str, Any]]
 TeardownCallable = Union[
     Callable[[Optional[BaseException]], None],
     Callable[[Optional[BaseException]], Awaitable[None]],
 ]
 TemplateContextProcessorCallable = Union[
-    Callable[[], Dict[str, Any]], Callable[[], Awaitable[Dict[str, Any]]]
+    Callable[[], dict[str, Any]], Callable[[], Awaitable[dict[str, Any]]]
 ]
 TemplateFilterCallable = Callable[[Any], Any]
 TemplateGlobalCallable = Callable[[Any], Any]
@@ -129,25 +128,33 @@ WebsocketCallable = Union[
 class ASGIHTTPProtocol(Protocol):
     def __init__(self, app: Quart, scope: HTTPScope) -> None: ...
 
-    async def __call__(self, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None: ...
+    async def __call__(
+        self, receive: ASGIReceiveCallable, send: ASGISendCallable
+    ) -> None: ...
 
 
 class ASGILifespanProtocol(Protocol):
     def __init__(self, app: Quart, scope: LifespanScope) -> None: ...
 
-    async def __call__(self, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None: ...
+    async def __call__(
+        self, receive: ASGIReceiveCallable, send: ASGISendCallable
+    ) -> None: ...
 
 
 class ASGIWebsocketProtocol(Protocol):
     def __init__(self, app: Quart, scope: WebsocketScope) -> None: ...
 
-    async def __call__(self, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None: ...
+    async def __call__(
+        self, receive: ASGIReceiveCallable, send: ASGISendCallable
+    ) -> None: ...
 
 
 class TestHTTPConnectionProtocol(Protocol):
     push_promises: list[tuple[str, Headers]]
 
-    def __init__(self, app: Quart, scope: HTTPScope, _preserve_context: bool = False) -> None: ...
+    def __init__(
+        self, app: Quart, scope: HTTPScope, _preserve_context: bool = False
+    ) -> None: ...
 
     async def send(self, data: bytes) -> None: ...
 
@@ -295,7 +302,7 @@ class TestClientProtocol(Protocol):
         json: Any = None,
         root_path: str = "",
         http_version: str = "1.1",
-    ) -> AsyncContextManager[SessionMixin]: ...
+    ) -> AbstractAsyncContextManager[SessionMixin]: ...
 
     async def __aenter__(self) -> TestClientProtocol: ...
 

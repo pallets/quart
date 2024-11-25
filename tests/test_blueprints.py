@@ -5,16 +5,14 @@ from typing import cast
 import click
 import pytest
 
-from quart import (
-    abort,
-    Blueprint,
-    g,
-    Quart,
-    render_template_string,
-    request,
-    ResponseReturnValue,
-    websocket,
-)
+from quart import abort
+from quart import Blueprint
+from quart import g
+from quart import Quart
+from quart import render_template_string
+from quart import request
+from quart import ResponseReturnValue
+from quart import websocket
 from quart.views import MethodView
 
 
@@ -332,10 +330,14 @@ async def test_nested_blueprint() -> None:
     assert (await (await client.get("/parent/child/")).get_data()) == b"Child yes"
     assert (await (await client.get("/parent/sibling")).get_data()) == b"Sibling yes"
     assert (await (await client.get("/alt/sibling")).get_data()) == b"Sibling yes"
-    assert (await (await client.get("/parent/child/grandchild/")).get_data()) == b"Grandchild yes"
+    assert (
+        await (await client.get("/parent/child/grandchild/")).get_data()
+    ) == b"Grandchild yes"
     assert (await (await client.get("/parent/no")).get_data()) == b"Parent no"
     assert (await (await client.get("/parent/child/no")).get_data()) == b"Parent no"
-    assert (await (await client.get("/parent/child/grandchild/no")).get_data()) == b"Grandchild no"
+    assert (
+        await (await client.get("/parent/child/grandchild/no")).get_data()
+    ) == b"Grandchild no"
 
 
 async def test_blueprint_renaming() -> None:

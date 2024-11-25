@@ -7,15 +7,19 @@ import pytest
 from werkzeug.datastructures import Headers
 from werkzeug.wrappers import Response as WerkzeugResponse
 
-from quart import jsonify, Quart, redirect, request, Response, session, websocket
+from quart import jsonify
+from quart import Quart
+from quart import redirect
+from quart import request
+from quart import Response
+from quart import session
+from quart import websocket
 from quart.datastructures import FileStorage
-from quart.testing import (
-    make_test_body_with_headers,
-    make_test_headers_path_and_query_string,
-    make_test_scope,
-    QuartClient as Client,
-    WebsocketResponseError,
-)
+from quart.testing import make_test_body_with_headers
+from quart.testing import make_test_headers_path_and_query_string
+from quart.testing import make_test_scope
+from quart.testing import QuartClient as Client
+from quart.testing import WebsocketResponseError
 
 
 async def test_methods() -> None:
@@ -36,7 +40,14 @@ async def test_methods() -> None:
 
 
 @pytest.mark.parametrize(
-    "path, query_string, subdomain, expected_path, expected_query_string, expected_host",
+    (
+        "path",
+        "query_string",
+        "subdomain",
+        "expected_path",
+        "expected_query_string",
+        "expected_host",
+    ),
     [
         ("/path", {"a": "b"}, None, "/path", b"a=b", "localhost"),
         ("/path", {"a": ["b", "c"]}, None, "/path", b"a=b&a=c", "localhost"),
@@ -64,7 +75,9 @@ def test_build_headers_path_and_query_string(
 
 def test_build_headers_path_and_query_string_with_query_string_error() -> None:
     with pytest.raises(ValueError):
-        make_test_headers_path_and_query_string(Quart(__name__), "/?a=b", None, {"c": "d"})
+        make_test_headers_path_and_query_string(
+            Quart(__name__), "/?a=b", None, {"c": "d"}
+        )
 
 
 def test_build_headers_path_and_query_string_with_auth() -> None:
@@ -98,7 +111,9 @@ def test_make_test_body_with_headers_files() -> None:
         b'\r\n------QuartBoundary\r\nContent-Disposition: form-data; name="a"; '
         b'filename="Quart"\r\n\r\nabc\r\n------QuartBoundary--\r\n'
     )
-    assert headers == Headers({"Content-Type": "multipart/form-data; boundary=----QuartBoundary"})
+    assert headers == Headers(
+        {"Content-Type": "multipart/form-data; boundary=----QuartBoundary"}
+    )
 
 
 def test_make_test_body_with_headers_form_and_files() -> None:
@@ -108,9 +123,12 @@ def test_make_test_body_with_headers_form_and_files() -> None:
     assert body == (
         b'\r\n------QuartBoundary\r\nContent-Disposition: form-data; name="a"; '
         b'filename="Quart"\r\n\r\nabc\r\n------QuartBoundary\r\n'
-        b'Content-Disposition: form-data; name="b"\r\n\r\nc\r\n------QuartBoundary--\r\n'
+        b'Content-Disposition: form-data; name="b"\r\n\r\nc\r\n'
+        b"------QuartBoundary--\r\n"
     )
-    assert headers == Headers({"Content-Type": "multipart/form-data; boundary=----QuartBoundary"})
+    assert headers == Headers(
+        {"Content-Type": "multipart/form-data; boundary=----QuartBoundary"}
+    )
 
 
 def test_make_test_body_with_headers_json() -> None:
@@ -134,7 +152,15 @@ def test_make_test_body_with_headers_argument_error() -> None:
 )
 def test_make_test_scope_with_scope_base(path: str, expected_raw_path: bytes) -> None:
     scope = make_test_scope(
-        "http", path, "GET", Headers(), b"", "http", "", "1.1", {"client": ("127.0.0.2", "1234")}
+        "http",
+        path,
+        "GET",
+        Headers(),
+        b"",
+        "http",
+        "",
+        "1.1",
+        {"client": ("127.0.0.2", "1234")},
     )
     assert scope == {
         "type": "http",
@@ -411,7 +437,9 @@ async def test_middleware() -> None:
         def __init__(self, app: Callable) -> None:
             self.app = app
 
-        async def __call__(self, scope: dict, receive: Callable, send: Callable) -> None:
+        async def __call__(
+            self, scope: dict, receive: Callable, send: Callable
+        ) -> None:
             if scope["path"] != "/":
                 await send(
                     {

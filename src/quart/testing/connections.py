@@ -1,13 +1,20 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable
 from types import TracebackType
-from typing import Any, AnyStr, Awaitable, TYPE_CHECKING
+from typing import Any
+from typing import AnyStr
+from typing import TYPE_CHECKING
 
-from hypercorn.typing import ASGIReceiveEvent, ASGISendEvent, HTTPScope, WebsocketScope
+from hypercorn.typing import ASGIReceiveEvent
+from hypercorn.typing import ASGISendEvent
+from hypercorn.typing import HTTPScope
+from hypercorn.typing import WebsocketScope
 from werkzeug.datastructures import Headers
 
-from ..json import dumps, loads
+from ..json import dumps
+from ..json import loads
 from ..utils import decode_headers
 from ..wrappers import Response
 
@@ -30,7 +37,9 @@ class WebsocketResponseError(Exception):
 
 
 class TestHTTPConnection:
-    def __init__(self, app: Quart, scope: HTTPScope, _preserve_context: bool = False) -> None:
+    def __init__(
+        self, app: Quart, scope: HTTPScope, _preserve_context: bool = False
+    ) -> None:
         self.app = app
         self.headers: Headers | None = None
         self.push_promises: list[tuple[str, Headers]] = []
@@ -43,10 +52,14 @@ class TestHTTPConnection:
         self._task: Awaitable[None] = None
 
     async def send(self, data: bytes) -> None:
-        await self._send_queue.put({"type": "http.request", "body": data, "more_body": True})
+        await self._send_queue.put(
+            {"type": "http.request", "body": data, "more_body": True}
+        )
 
     async def send_complete(self) -> None:
-        await self._send_queue.put({"type": "http.request", "body": b"", "more_body": False})
+        await self._send_queue.put(
+            {"type": "http.request", "body": b"", "more_body": False}
+        )
 
     async def receive(self) -> bytes:
         data = await self._receive_queue.get()
@@ -64,7 +77,9 @@ class TestHTTPConnection:
         )
         return self
 
-    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+    async def __aexit__(
+        self, exc_type: type, exc_value: BaseException, tb: TracebackType
+    ) -> None:
         if exc_type is not None:
             await self.disconnect()
         await self._task
@@ -80,7 +95,9 @@ class TestHTTPConnection:
             data = await self._receive_queue.get()
             if isinstance(data, bytes):
                 self.response_data.extend(data)
-        return self.app.response_class(bytes(self.response_data), self.status_code, self.headers)
+        return self.app.response_class(
+            bytes(self.response_data), self.status_code, self.headers
+        )
 
     async def _asgi_receive(self) -> ASGIReceiveEvent:
         return await self._send_queue.get()
@@ -92,7 +109,9 @@ class TestHTTPConnection:
         elif message["type"] == "http.response.body":
             await self._receive_queue.put(message["body"])
         elif message["type"] == "http.response.push":
-            self.push_promises.append((message["path"], decode_headers(message["headers"])))
+            self.push_promises.append(
+                (message["path"], decode_headers(message["headers"]))
+            )
         elif message["type"] == "http.disconnect":
             await self._receive_queue.put(HTTPDisconnectError())
 
@@ -115,12 +134,16 @@ class TestWebsocketConnection:
         )
         return self
 
-    async def __aexit__(self, exc_type: type, exc_value: BaseException, tb: TracebackType) -> None:
+    async def __aexit__(
+        self, exc_type: type, exc_value: BaseException, tb: TracebackType
+    ) -> None:
         await self.disconnect()
         await self._task
         while not self._receive_queue.empty():
             data = await self._receive_queue.get()
-            if isinstance(data, Exception) and not isinstance(data, WebsocketDisconnectError):
+            if isinstance(data, Exception) and not isinstance(
+                data, WebsocketDisconnectError
+            ):
                 raise data
 
     async def receive(self) -> AnyStr:
@@ -172,4 +195,6 @@ class TestWebsocketConnection:
                     )
                 )
         elif message["type"] == "websocket.close":
-            await self._receive_queue.put(WebsocketDisconnectError(message.get("code", 1000)))
+            await self._receive_queue.put(
+                WebsocketDisconnectError(message.get("code", 1000))
+            )

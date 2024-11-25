@@ -4,21 +4,36 @@ import mimetypes
 import os
 import pkgutil
 import sys
-from datetime import datetime, timedelta, timezone
-from functools import lru_cache, wraps
+from collections.abc import Iterable
+from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
+from functools import cache
+from functools import wraps
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable, cast, Iterable, NoReturn
+from typing import Any
+from typing import Callable
+from typing import cast
+from typing import NoReturn
 from zlib import adler32
 
 from flask.helpers import get_root_path as get_root_path  # noqa: F401
-from werkzeug.exceptions import abort as werkzeug_abort, NotFound
-from werkzeug.utils import redirect as werkzeug_redirect, safe_join
+from werkzeug.exceptions import abort as werkzeug_abort
+from werkzeug.exceptions import NotFound
+from werkzeug.utils import redirect as werkzeug_redirect
+from werkzeug.utils import safe_join
 from werkzeug.wrappers import Response as WerkzeugResponse
 
-from .globals import _cv_request, current_app, request, request_ctx, session
+from .globals import _cv_request
+from .globals import current_app
+from .globals import request
+from .globals import request_ctx
+from .globals import session
 from .signals import message_flashed
-from .typing import FilePath, ResponseReturnValue, ResponseTypes
+from .typing import FilePath
+from .typing import ResponseReturnValue
+from .typing import ResponseTypes
 from .utils import file_path_to_path
 from .wrappers import Response
 from .wrappers.response import ResponseBody
@@ -325,22 +340,26 @@ async def send_file(
             last_modified = file_path.stat().st_mtime  # type: ignore
         if cache_timeout is None:
             cache_timeout = current_app.get_send_file_max_age(str(file_path))
-        etag = "{}-{}-{}".format(
-            file_path.stat().st_mtime, file_path.stat().st_size, adler32(bytes(file_path))
+        etag = (
+            f"{file_path.stat().st_mtime}-{file_path.stat().st_size}"
+            f"-{adler32(bytes(file_path))}"
         )
 
     if mimetype is None and attachment_filename is not None:
         mimetype = mimetypes.guess_type(attachment_filename)[0] or DEFAULT_MIMETYPE
     if mimetype is None:
         raise ValueError(
-            "The mime type cannot be inferred, please set it manually via the mimetype argument."
+            "The mime type cannot be inferred, please set it manually via the"
+            " mimetype argument."
         )
 
     response = current_app.response_class(file_body, mimetype=mimetype)
     response.content_length = file_size
 
     if as_attachment:
-        response.headers.add("Content-Disposition", "attachment", filename=attachment_filename)
+        response.headers.add(
+            "Content-Disposition", "attachment", filename=attachment_filename
+        )
 
     if last_modified is not None:
         response.last_modified = last_modified
@@ -354,11 +373,13 @@ async def send_file(
         response.set_etag(etag)
 
     if conditional:
-        await response.make_conditional(request, accept_ranges=True, complete_length=file_size)
+        await response.make_conditional(
+            request, accept_ranges=True, complete_length=file_size
+        )
     return response
 
 
-@lru_cache(maxsize=None)
+@cache
 def _split_blueprint_path(name: str) -> list[str]:
     bps = [name]
     while "." in bps[-1]:

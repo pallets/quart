@@ -7,9 +7,13 @@ from werkzeug.local import LocalProxy
 
 if TYPE_CHECKING:
     from .app import Quart
-    from .ctx import _AppCtxGlobals, AppContext, RequestContext, WebsocketContext
+    from .ctx import _AppCtxGlobals
+    from .ctx import AppContext
+    from .ctx import RequestContext
+    from .ctx import WebsocketContext
     from .sessions import SessionMixin
-    from .wrappers import Request, Websocket
+    from .wrappers import Request
+    from .wrappers import Websocket
 
 _no_app_msg = "Not within an app context"
 _cv_app: ContextVar[AppContext] = ContextVar("quart.app_ctx")
@@ -49,7 +53,7 @@ def _session_lookup() -> RequestContext | WebsocketContext:
         try:
             return _cv_websocket.get()
         except LookupError:
-            raise RuntimeError("Not within a request nor websocket context")
+            raise RuntimeError("Not within a request nor websocket context") from None
 
 
 session: SessionMixin = LocalProxy(_session_lookup, "session")  # type: ignore[assignment]
