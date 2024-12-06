@@ -17,7 +17,7 @@ Quart dependends on the following packages, which will automatically
 be installed with Quart:
 
 - aiofiles, to load files in an asyncio compatible manner,
-- blinker, to manager signals,
+- blinker, to manage signals,
 - click, to manage command line arguments
 - hypercorn, an ASGI server for development,
 - importlib_metadata only for Python 3.9,
