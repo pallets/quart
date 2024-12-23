@@ -141,6 +141,9 @@ class Request(BaseRequestWebsocket):
     body_class = Body
     form_data_parser_class = FormDataParser
     lock_class = asyncio.Lock
+    _max_content_length: int | None = None
+    _max_form_memory_size: int | None = None
+    _max_form_parts: int | None = None
 
     def __init__(
         self,
@@ -188,6 +191,48 @@ class Request(BaseRequestWebsocket):
         self._files: MultiDict | None = None
         self._parsing_lock = self.lock_class()
         self._send_push_promise = send_push_promise
+
+    @property
+    def max_content_length(self) -> int | None:
+        if self._max_content_length is not None:
+            return self._max_content_length
+
+        if current_app:
+            return current_app.config["MAX_CONTENT_LENGTH"]
+
+        return None
+
+    @max_content_length.setter
+    def max_content_length(self, value: int | None) -> None:
+        self._max_content_length = value
+
+    @property
+    def max_form_memory_size(self) -> int | None:
+        if self._max_form_memory_size is not None:
+            return self._max_form_memory_size
+
+        if current_app:
+            return current_app.config["MAX_FORM_MEMORY_SIZE"]
+
+        return None
+
+    @max_form_memory_size.setter
+    def max_form_memory_size(self, value: int | None) -> None:
+        self._max_form_memory_size = value
+
+    @property
+    def max_form_parts(self) -> int | None:
+        if self._max_form_parts is not None:
+            return self._max_form_parts
+
+        if current_app:
+            return current_app.config["MAX_FORM_PARTS"]
+
+        return None
+
+    @max_form_parts.setter
+    def max_form_parts(self, value: int | None) -> None:
+        self._max_form_parts = value
 
     @property
     async def stream(self) -> NoReturn:
@@ -284,6 +329,8 @@ class Request(BaseRequestWebsocket):
     def make_form_data_parser(self) -> FormDataParser:
         return self.form_data_parser_class(
             max_content_length=self.max_content_length,
+            max_form_memory_size=self.max_form_memory_size,
+            max_form_parts=self.max_form_parts,
             cls=self.parameter_storage_class,
         )
 

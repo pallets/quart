@@ -43,15 +43,20 @@ class FormDataParser:
 
     def __init__(
         self,
-        stream_factory: StreamFactory = default_stream_factory,
-        max_form_memory_size: int | None = None,
-        max_content_length: int | None = None,
+        *,
         cls: type[MultiDict] | None = MultiDict,
+        max_content_length: int | None = None,
+        max_form_memory_size: int | None = None,
+        max_form_parts: int | None = None,
         silent: bool = True,
+        stream_factory: StreamFactory = default_stream_factory,
     ) -> None:
-        self.stream_factory = stream_factory
         self.cls = cls
+        self.max_content_length = max_content_length
+        self.max_form_memory_size = max_form_memory_size
+        self.max_form_parts = max_form_parts
         self.silent = silent
+        self.stream_factory = stream_factory
 
     def get_parse_func(
         self, mimetype: str, options: dict[str, str]
@@ -87,9 +92,12 @@ class FormDataParser:
         options: dict[str, str],
     ) -> tuple[MultiDict, MultiDict]:
         parser = MultiPartParser(
-            self.stream_factory,
             cls=self.cls,
             file_storage_cls=self.file_storage_class,
+            max_content_length=self.max_content_length,
+            max_form_memory_size=self.max_form_memory_size,
+            max_form_parts=self.max_form_parts,
+            stream_factory=self.stream_factory,
         )
         boundary = options.get("boundary", "").encode("ascii")
 
@@ -105,10 +113,14 @@ class FormDataParser:
         content_length: int | None,
         options: dict[str, str],
     ) -> tuple[MultiDict, MultiDict]:
-        form = parse_qsl(
-            (await body).decode(),
-            keep_blank_values=True,
-        )
+        try:
+            form = parse_qsl(
+                (await body).decode(),
+                keep_blank_values=True,
+                max_num_fields=self.max_form_parts,
+            )
+        except ValueError:
+            raise RequestEntityTooLarge() from None
         return self.cls(form), self.cls()
 
     parse_functions: dict[str, ParserFunc] = {
@@ -121,17 +133,22 @@ class FormDataParser:
 class MultiPartParser:
     def __init__(
         self,
-        stream_factory: StreamFactory = default_stream_factory,
-        max_form_memory_size: int | None = None,
-        cls: type[MultiDict] = MultiDict,
+        *,
         buffer_size: int = 64 * 1024,
+        cls: type[MultiDict] = MultiDict,
         file_storage_cls: type[FileStorage] = FileStorage,
+        max_content_length: int | None = None,
+        max_form_memory_size: int | None = None,
+        max_form_parts: int | None = None,
+        stream_factory: StreamFactory = default_stream_factory,
     ) -> None:
-        self.max_form_memory_size = max_form_memory_size
-        self.stream_factory = stream_factory
-        self.cls = cls
         self.buffer_size = buffer_size
+        self.cls = cls
         self.file_storage_cls = file_storage_cls
+        self.max_content_length = max_content_length
+        self.max_form_memory_size = max_form_memory_size
+        self.max_form_parts = max_form_parts
+        self.stream_factory = stream_factory
 
     def fail(self, message: str) -> NoReturn:
         raise ValueError(message)
@@ -172,7 +189,9 @@ class MultiPartParser:
         container: IO[bytes] | list[bytes]
         _write: Callable[[bytes], Any]
 
-        parser = MultipartDecoder(boundary, self.max_form_memory_size)
+        parser = MultipartDecoder(
+            boundary, self.max_content_length, max_parts=self.max_form_parts
+        )
 
         fields = []
         files = []
