@@ -113,14 +113,10 @@ class FormDataParser:
         content_length: int | None,
         options: dict[str, str],
     ) -> tuple[MultiDict, MultiDict]:
-        try:
-            form = parse_qsl(
-                (await body).decode(),
-                keep_blank_values=True,
-                max_num_fields=self.max_form_parts,
-            )
-        except ValueError:
-            raise RequestEntityTooLarge() from None
+        form = parse_qsl(
+            (await body).decode(),
+            keep_blank_values=True,
+        )
         return self.cls(form), self.cls()
 
     parse_functions: dict[str, ParserFunc] = {

@@ -3,7 +3,6 @@ from __future__ import annotations
 import pytest
 from werkzeug.exceptions import RequestEntityTooLarge
 
-from quart.formparser import FormDataParser
 from quart.formparser import MultiPartParser
 from quart.wrappers.request import Body
 
@@ -20,12 +19,3 @@ async def test_multipart_max_form_memory_size() -> None:
 
     with pytest.raises(RequestEntityTooLarge):
         await parser.parse(body, b"bound", 0)
-
-
-async def test_formparser_max_num_parts() -> None:
-    parser = FormDataParser(max_form_parts=1)
-    body = Body(None, None)
-    body.set_result(b"param1=data1&param2=data2&param3=data3")
-
-    with pytest.raises(RequestEntityTooLarge):
-        await parser.parse(body, "application/x-url-encoded", None)
