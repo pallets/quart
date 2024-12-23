@@ -1,10 +1,11 @@
 ## Version 0.20.0
 
-Unreleased
+Released 2024-12-23
 
 - Drop support for Python 3.8.
 - Fix deprecated `asyncio.iscoroutinefunction` for Python 3.14.
 - Allow `AsyncIterable` to be passed to `Response`.
+- Support max_form_parts and max_form_memory_size.
 
 ## Version 0.19.9
 
