@@ -258,6 +258,7 @@ class Quart(App):
             "PROVIDE_AUTOMATIC_OPTIONS": True,
             "RESPONSE_TIMEOUT": 60,  # Second
             "SECRET_KEY": None,
+            "SECRET_KEY_FALLBACKS": None,
             "SEND_FILE_MAX_AGE_DEFAULT": timedelta(hours=12),
             "SERVER_NAME": None,
             "SESSION_COOKIE_DOMAIN": None,

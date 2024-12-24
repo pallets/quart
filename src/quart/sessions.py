@@ -149,12 +149,17 @@ class SecureCookieSessionInterface(SessionInterface):
         if not app.secret_key:
             return None
 
+        keys: list[str | bytes] = [app.secret_key]
+
+        if fallbacks := app.config["SECRET_KEY_FALLBACKS"]:
+            keys.extend(fallbacks)
+
         options = {
             "key_derivation": self.key_derivation,
             "digest_method": self.digest_method,
         }
         return URLSafeTimedSerializer(
-            app.secret_key,
+            keys,  # type: ignore[arg-type]
             salt=self.salt,
             serializer=self.serializer,
             signer_kwargs=options,
