@@ -55,6 +55,10 @@ class SessionInterface:
         rv = app.config["SESSION_COOKIE_DOMAIN"]
         return rv if rv else None
 
+    def get_cookie_partitioned(self, app: Quart) -> bool:
+        """Helper method to return the Cookie partitioned setting for the App."""
+        return app.config["SESSION_COOKIE_PARTITIONED"]
+
     def get_cookie_path(self, app: Quart) -> str:
         """Helper method to return the Cookie path for the App."""
         return app.config["SESSION_COOKIE_PATH"] or app.config["APPLICATION_ROOT"]
@@ -195,6 +199,7 @@ class SecureCookieSessionInterface(SessionInterface):
 
         name = self.get_cookie_name(app)
         domain = self.get_cookie_domain(app)
+        partitioned = self.get_cookie_partitioned(app)
         path = self.get_cookie_path(app)
         secure = self.get_cookie_secure(app)
         samesite = self.get_cookie_samesite(app)
@@ -211,6 +216,7 @@ class SecureCookieSessionInterface(SessionInterface):
                 response.delete_cookie(
                     name,
                     domain=domain,
+                    partitioned=partitioned,
                     path=path,
                     secure=secure,
                     samesite=samesite,
@@ -231,6 +237,7 @@ class SecureCookieSessionInterface(SessionInterface):
             expires=expires,
             httponly=httponly,
             domain=domain,
+            partitioned=partitioned,
             path=path,
             secure=secure,
             samesite=samesite,
