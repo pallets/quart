@@ -8,7 +8,6 @@ from werkzeug.datastructures import Headers
 from werkzeug.sansio.request import Request as SansIORequest
 
 from .. import json
-from ..globals import current_app
 
 if TYPE_CHECKING:
     from ..routing import QuartRule  # noqa
@@ -72,14 +71,6 @@ class BaseRequestWebsocket(SansIORequest):
         )
         self.http_version = http_version
         self.scope = scope
-
-    @property
-    def max_content_length(self) -> int | None:
-        """Read-only view of the ``MAX_CONTENT_LENGTH`` config key."""
-        if current_app:
-            return current_app.config["MAX_CONTENT_LENGTH"]
-        else:
-            return None
 
     @property
     def endpoint(self) -> str | None:

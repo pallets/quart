@@ -248,6 +248,8 @@ class Quart(App):
             "EXPLAIN_TEMPLATE_LOADING": False,
             "MAX_CONTENT_LENGTH": 16 * 1024 * 1024,  # 16 MB Limit
             "MAX_COOKIE_SIZE": 4093,
+            "MAX_FORM_MEMORY_SIZE": 500_000,
+            "MAX_FORM_PARTS": 1_000,
             "PERMANENT_SESSION_LIFETIME": timedelta(days=31),
             # Replaces PREFERRED_URL_SCHEME to allow for WebSocket scheme
             "PREFER_SECURE_URLS": False,
@@ -256,11 +258,13 @@ class Quart(App):
             "PROVIDE_AUTOMATIC_OPTIONS": True,
             "RESPONSE_TIMEOUT": 60,  # Second
             "SECRET_KEY": None,
+            "SECRET_KEY_FALLBACKS": None,
             "SEND_FILE_MAX_AGE_DEFAULT": timedelta(hours=12),
             "SERVER_NAME": None,
             "SESSION_COOKIE_DOMAIN": None,
             "SESSION_COOKIE_HTTPONLY": True,
             "SESSION_COOKIE_NAME": "session",
+            "SESSION_COOKIE_PARTITIONED": False,
             "SESSION_COOKIE_PATH": None,
             "SESSION_COOKIE_SAMESITE": None,
             "SESSION_COOKIE_SECURE": False,
@@ -1130,8 +1134,9 @@ class Quart(App):
 
     def log_exception(
         self,
-        exception_info: tuple[type, BaseException, TracebackType]
-        | tuple[None, None, None],
+        exception_info: (
+            tuple[type, BaseException, TracebackType] | tuple[None, None, None]
+        ),
     ) -> None:
         """Log a exception to the :attr:`logger`.
 

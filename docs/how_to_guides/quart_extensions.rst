@@ -42,6 +42,7 @@ here,
   <https://github.com/enchant97/quart-redis>`_ Redis connection handling
 - `Webargs-Quart <https://github.com/esfoobar/webargs-quart>`_ Webargs
   parsing for Quart.
+- `Quart-SqlAlchemy <https://github.com/joeblackwaslike/quart-sqlalchemy>`_ Quart-SQLAlchemy provides a simple wrapper for SQLAlchemy.
 - `Quart-WTF <https://github.com/Quart-Addons/quart-wtf>`_ Simple integration of Quart
   and WTForms. Including CSRF and file uploading.
 - `Quart-Schema <https://github.com/pgjones/quart-schema>`_ Schema
