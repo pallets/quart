@@ -164,7 +164,7 @@ adding the following to *src/chat/broker.py*:
             finally:
                 self.connections.remove(connection)
 
-This ``Broker`` has a publish-subscibe pattern based interface, with
+This ``Broker`` has a publish-subscribe pattern based interface, with
 clients expected to publish messages to other clients whilst
 subscribing to any messages sent.
 
