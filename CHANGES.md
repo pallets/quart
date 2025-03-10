@@ -1,3 +1,11 @@
+## Version 0.20.1
+
+Unreleased
+
+- Flask backport: Fix signing key selection order when key rotation is enabled
+  via ``SECRET_KEY_FALLBACKS``.
+  <https://github.com/pallets/flask/security/advisories/GHSA-4grg-w6v8-c28g>
+
 ## Version 0.20.0
 
 Released 2024-12-23
