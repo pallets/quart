@@ -41,7 +41,7 @@ the response headers appropriately:
 
 .. code-block:: python
 
-    from quart import abort, make_response
+    from quart import abort, make_response, request
 
     @app.get("/sse")
     async def sse():
