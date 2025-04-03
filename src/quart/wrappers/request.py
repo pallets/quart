@@ -171,8 +171,6 @@ class Request(BaseRequestWebsocket):
             root_path: The root path that should be prepended to all
                 routes.
             http_version: The HTTP version of the request.
-            body: An awaitable future for the body data i.e.
-                ``data = await body``
             max_content_length: The maximum length in bytes of the
                 body (None implies no limit in Quart).
             body_timeout: The maximum time (seconds) to wait for the
