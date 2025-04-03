@@ -88,17 +88,17 @@ class Body:
         return data
 
     def __await__(self) -> Generator[Any, None, Any]:
-        # Must check the _must_raise before and after waiting on the
-        # completion event as it may change whilst waiting and the
-        # event may not be set if there is already an issue.
-        if self._must_raise is not None:
-            raise self._must_raise
+        async def accumulate_data() -> bytes:
+            data = bytearray()
 
-        yield from self._complete.wait().__await__()
+            # Receive chunks of data from the client and build up the complete
+            # request body.
+            async for data_chunk in self:
+                data.extend(data_chunk)
 
-        if self._must_raise is not None:
-            raise self._must_raise
-        return bytes(self._data)
+            return bytes(data)
+
+        return accumulate_data().__await__()
 
     def append(self, data: bytes) -> None:
         if data == b"" or self._must_raise is not None:
