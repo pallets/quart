@@ -183,7 +183,7 @@ class ASGIWebsocketConnection:
     def __init__(self, app: Quart, scope: WebsocketScope) -> None:
         self.app = app
         self.scope = scope
-        self.queue: asyncio.Queue = asyncio.Queue()
+        self.queue: asyncio.Queue = asyncio.Queue(1)
         self._accepted = False
         self._closed = False
 
