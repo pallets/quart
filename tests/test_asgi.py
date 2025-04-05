@@ -118,7 +118,7 @@ async def test_http_request_without_body(request_message: dict) -> None:
 
     # This test fails with a timeout error if the request body is not received
     # within 1 second
-    receiver_task = asyncio.ensure_future(connection.handle_messages(request, receive))
+    receiver_task = asyncio.ensure_future(connection.handle_messages(receive))
     body = await asyncio.wait_for(request.body, timeout=1)
     receiver_task.cancel()
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncIterator
 from collections.abc import Awaitable
 from collections.abc import Generator
 from typing import Any
@@ -49,11 +50,13 @@ class Body:
     """
 
     def __init__(
-        self, expected_content_length: int | None, max_content_length: int | None
+        self,
+        chunks: AsyncIterator[bytes],
+        expected_content_length: int | None,
+        max_content_length: int | None,
     ) -> None:
-        self._data = bytearray()
-        self._complete: asyncio.Event = asyncio.Event()
-        self._has_data: asyncio.Event = asyncio.Event()
+        self._chunks = chunks
+        self._received_content_length = 0
         self._max_content_length = max_content_length
         # Exceptions must be raised within application (not ASGI)
         # calls, this is achieved by having the ASGI methods set this
@@ -73,18 +76,16 @@ class Body:
         if self._must_raise is not None:
             raise self._must_raise
 
-        # if we got all of the data in the first shot, then self._complete is
-        # set and self._has_data will not get set again, so skip the await
-        # if we already have completed everything
-        if not self._complete.is_set():
-            await self._has_data.wait()
+        data = await self._chunks.__anext__()
 
-        if self._complete.is_set() and len(self._data) == 0:
-            raise StopAsyncIteration()
+        self._received_content_length += len(data)
 
-        data = bytes(self._data)
-        self._data.clear()
-        self._has_data.clear()
+        if (
+            self._max_content_length is not None
+            and self._received_content_length > self._max_content_length
+        ):
+            raise RequestEntityTooLarge()
+
         return data
 
     def __await__(self) -> Generator[Any, None, Any]:
@@ -99,30 +100,6 @@ class Body:
             return bytes(data)
 
         return accumulate_data().__await__()
-
-    def append(self, data: bytes) -> None:
-        if data == b"" or self._must_raise is not None:
-            return
-        self._data.extend(data)
-        self._has_data.set()
-        if (
-            self._max_content_length is not None
-            and len(self._data) > self._max_content_length
-        ):
-            self._must_raise = RequestEntityTooLarge()
-            self.set_complete()
-
-    def set_complete(self) -> None:
-        self._complete.set()
-        self._has_data.set()
-
-    def set_result(self, data: bytes) -> None:
-        """Convenience method, mainly for testing."""
-        self.append(data)
-        self.set_complete()
-
-    def clear(self) -> None:
-        self._data.clear()
 
 
 class Request(BaseRequestWebsocket):
@@ -158,6 +135,7 @@ class Request(BaseRequestWebsocket):
         *,
         max_content_length: int | None = None,
         body_timeout: int | None = None,
+        body_chunks: AsyncIterator[bytes],
         send_push_promise: Callable[[str, Headers], Awaitable[None]],
     ) -> None:
         """Create a request object.
@@ -173,6 +151,8 @@ class Request(BaseRequestWebsocket):
             http_version: The HTTP version of the request.
             max_content_length: The maximum length in bytes of the
                 body (None implies no limit in Quart).
+            body_chunks: An async iterable that provides the request body as a
+                sequence of data chunks.
             body_timeout: The maximum time (seconds) to wait for the
                 body before timing out.
             send_push_promise: An awaitable to send a push promise based
@@ -183,7 +163,12 @@ class Request(BaseRequestWebsocket):
             method, scheme, path, query_string, headers, root_path, http_version, scope
         )
         self.body_timeout = body_timeout
-        self.body = self.body_class(self.content_length, max_content_length)
+        self.body = self.body_class(
+            body_chunks,
+            self.content_length,
+            max_content_length,
+        )
+        self._cached_data: str | bytes | None = None
         self._cached_json: dict[bool, Any] = {False: Ellipsis, True: Ellipsis}
         self._form: MultiDict | None = None
         self._files: MultiDict | None = None
@@ -269,6 +254,9 @@ class Request(BaseRequestWebsocket):
             parse_form_data: Parse the data as form data first, return any
                 remaining data.
         """
+        if self._cached_data is not None:
+            return self._cached_data
+
         if parse_form_data:
             await self._load_form_data()
 
@@ -277,13 +265,12 @@ class Request(BaseRequestWebsocket):
         except asyncio.TimeoutError as e:
             raise RequestTimeout() from e
         else:
-            if not cache:
-                self.body.clear()
+            data = raw_data.decode() if as_text else raw_data
 
-            if as_text:
-                return raw_data.decode()
-            else:
-                return raw_data
+            if cache:
+                self._cached_data = data
+
+            return data
 
     @property
     async def values(self) -> CombinedMultiDict:

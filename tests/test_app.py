@@ -17,6 +17,7 @@ from quart.globals import session
 from quart.globals import websocket
 from quart.sessions import SecureCookieSession
 from quart.sessions import SessionInterface
+from quart.testing import make_test_body_chunks
 from quart.testing import no_op_push
 from quart.testing import WebsocketResponseError
 from quart.typing import ResponseReturnValue
@@ -273,6 +274,7 @@ async def test_app_handle_request_asyncio_cancelled_error(
         "",
         "1.1",
         http_scope,
+        body_chunks=make_test_body_chunks(),
         send_push_promise=no_op_push,
     )
     with pytest.raises(asyncio.CancelledError):
@@ -390,6 +392,7 @@ async def test_propagation(
                     "",
                     "1.1",
                     http_scope,
+                    body_chunks=make_test_body_chunks(),
                     send_push_promise=no_op_push,
                 )
             )
