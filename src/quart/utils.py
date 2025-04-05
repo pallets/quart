@@ -24,7 +24,7 @@ from werkzeug.datastructures import Headers
 from .typing import Event
 from .typing import FilePath
 
-if sys.version_info >= (3, 10):
+if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
