@@ -1,4 +1,5 @@
 from sqlite3 import dbapi2 as sqlite3
+from pathlib import Path
 
 from quart import g
 from quart import Quart
@@ -11,7 +12,7 @@ app = Quart(__name__)
 
 app.config.update(
     {
-        "DATABASE": app.root_path / "blog.db",
+        "DATABASE": Path(app.root_path) / "blog.db",
     }
 )
 
@@ -57,7 +58,7 @@ async def create():
 
 def init_db():
     db = _connect_db()
-    with open(app.root_path / "schema.sql") as file_:
+    with open(Path(app.root_path) / "schema.sql") as file_:
         db.cursor().executescript(file_.read())
     db.commit()
 
