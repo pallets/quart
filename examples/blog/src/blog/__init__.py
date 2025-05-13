@@ -1,5 +1,5 @@
-from sqlite3 import dbapi2 as sqlite3
 from pathlib import Path
+from sqlite3 import dbapi2 as sqlite3
 
 from quart import g
 from quart import Quart
