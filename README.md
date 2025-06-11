@@ -1,6 +1,6 @@
-# Quart
+<div align="center"><img src="https://raw.githubusercontent.com/pallets/quart/refs/heads/stable/docs/_static/quart-horizontal.svg" alt="" height="150"></div>
 
-![](https://raw.githubusercontent.com/pallets/quart/main/artwork/logo.png)
+# Quart
 
 Quart is an async Python web application framework. Using Quart you can,
 
