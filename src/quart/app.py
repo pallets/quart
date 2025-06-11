@@ -348,9 +348,9 @@ class Quart(App):
         self.cli.name = self.name
 
         if self.has_static_folder:
-            assert (
-                bool(static_host) == host_matching
-            ), "Invalid static_host/host_matching combination"
+            assert bool(static_host) == host_matching, (
+                "Invalid static_host/host_matching combination"
+            )
 
             self.add_url_rule(
                 f"{self.static_url_path}/<path:filename>",
@@ -433,7 +433,7 @@ class Quart(App):
             options["autoescape"] = self.select_jinja_autoescape
         if "auto_reload" not in options:
             options["auto_reload"] = self.config["TEMPLATES_AUTO_RELOAD"]
-        jinja_env = self.jinja_environment(self, **options)  # type: ignore
+        jinja_env = self.jinja_environment(self, **options)
         jinja_env.globals.update(
             {
                 "config": self.config,
@@ -937,7 +937,7 @@ class Quart(App):
 
     def test_cli_runner(self, **kwargs: Any) -> QuartCliRunner:
         """Creates and returns a CLI test runner."""
-        return self.test_cli_runner_class(self, **kwargs)  # type: ignore
+        return self.test_cli_runner_class(self, **kwargs)
 
     @setupmethod
     def before_websocket(

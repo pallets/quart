@@ -168,7 +168,7 @@ async def test_url_for_root_path(app: Quart) -> None:
 async def test_stream_with_context() -> None:
     app = Quart(__name__)
 
-    @app.route("/")  # type: ignore
+    @app.route("/")
     async def index() -> AsyncGenerator[bytes, None]:
         @stream_with_context
         async def generator() -> AsyncGenerator[bytes, None]:

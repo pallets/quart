@@ -1,11 +1,10 @@
 .idea/
 .vscode/
-.venv*/
-venv*/
 __pycache__/
 dist/
 .coverage*
 htmlcov/
 .tox/
+.hypothesis/
 docs/reference/source
 docs/_build/
