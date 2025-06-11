@@ -1,4 +1,4 @@
-<div align="center"><img src="https://raw.githubusercontent.com/pallets/quart/refs/heads/stable/docs/_static/quart-horizontal.svg" alt="" height="150"></div>
+<div align="center"><img src="https://raw.githubusercontent.com/pallets/quart/refs/heads/main/docs/_static/quart-horizontal.svg" alt="" height="150"></div>
 
 # Quart
 
