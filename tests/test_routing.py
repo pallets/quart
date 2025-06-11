@@ -7,6 +7,7 @@ from hypercorn.typing import HTTPScope
 from werkzeug.datastructures import Headers
 
 from quart.routing import QuartMap
+from quart.testing import make_test_body_chunks
 from quart.testing import no_op_push
 from quart.wrappers.request import Request
 
@@ -28,6 +29,7 @@ async def test_bind_warning(
         "",
         "1.1",
         http_scope,
+        body_chunks=make_test_body_chunks(),
         send_push_promise=no_op_push,
     )
 

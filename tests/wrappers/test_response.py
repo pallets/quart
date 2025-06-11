@@ -14,6 +14,7 @@ from hypothesis import strategies as strategies
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import RequestedRangeNotSatisfiable
 
+from quart.testing import make_test_body_chunks
 from quart.testing import no_op_push
 from quart.typing import HTTPScope
 from quart.wrappers import Request
@@ -96,6 +97,7 @@ async def test_response_make_conditional(http_scope: HTTPScope) -> None:
         "",
         "1.1",
         http_scope,
+        body_chunks=make_test_body_chunks(),
         send_push_promise=no_op_push,
     )
     response = Response(b"abcdef")
@@ -119,6 +121,7 @@ async def test_response_make_conditional_no_condition(http_scope: HTTPScope) -> 
         "",
         "1.1",
         http_scope,
+        body_chunks=make_test_body_chunks(),
         send_push_promise=no_op_push,
     )
     response = Response(b"abcdef")
@@ -137,6 +140,7 @@ async def test_response_make_conditional_out_of_bound(http_scope: HTTPScope) -> 
         "",
         "1.1",
         http_scope,
+        body_chunks=make_test_body_chunks(),
         send_push_promise=no_op_push,
     )
     response = Response(b"abcdef")
@@ -157,6 +161,7 @@ async def test_response_make_conditional_not_modified(http_scope: HTTPScope) -> 
         "",
         "1.1",
         http_scope,
+        body_chunks=make_test_body_chunks(),
         send_push_promise=no_op_push,
     )
     await response.make_conditional(request)
@@ -181,6 +186,7 @@ async def test_response_make_conditional_not_satisfiable(
         "",
         "1.1",
         http_scope,
+        body_chunks=make_test_body_chunks(),
         send_push_promise=no_op_push,
     )
     response = Response(b"abcdef")
