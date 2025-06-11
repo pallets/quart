@@ -284,7 +284,7 @@ class Quart(App):
         static_host: str | None = None,
         host_matching: bool = False,
         subdomain_matching: bool = False,
-        template_folder: str | None = "templates",
+        template_folder: str | os.PathLike[str] | None = "templates",
         instance_path: str | None = None,
         instance_relative_config: bool = False,
         root_path: str | None = None,
