@@ -26,6 +26,7 @@ from urllib.parse import quote
 
 from aiofiles import open as async_open
 from aiofiles.base import AiofilesContextManager
+from flask.app import Flask
 from flask.sansio.app import App
 from flask.sansio.scaffold import setupmethod
 from hypercorn.asyncio import serve
@@ -239,7 +240,8 @@ class Quart(App):
     websocket_class = Websocket
 
     default_config = ImmutableDict(
-        {
+        Flask.default_config
+        | {
             "APPLICATION_ROOT": "/",
             "BACKGROUND_TASK_SHUTDOWN_TIMEOUT": 5,  # Second
             "BODY_TIMEOUT": 60,  # Second
