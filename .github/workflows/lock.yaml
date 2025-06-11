@@ -10,6 +10,7 @@ on:
 permissions:
   issues: write
   pull-requests: write
+  discussions: write
 concurrency:
   group: lock
 jobs:
@@ -20,3 +21,4 @@ jobs:
         with:
           issue-inactive-days: 14
           pr-inactive-days: 14
+          discussion-inactive-days: 14
