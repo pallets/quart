@@ -48,6 +48,7 @@ from werkzeug.wrappers import Response as WerkzeugResponse
 from .asgi import ASGIHTTPConnection
 from .asgi import ASGILifespan
 from .asgi import ASGIWebsocketConnection
+from .blueprints import Blueprint
 from .cli import AppGroup
 from .config import Config
 from .ctx import _AppCtxGlobals
@@ -224,6 +225,7 @@ class Quart(App):
     asgi_http_class = ASGIHTTPConnection
     asgi_lifespan_class = ASGILifespan
     asgi_websocket_class = ASGIWebsocketConnection
+    blueprints: dict[str, Blueprint]  # type: ignore[assignment]
     config_class = Config
     event_class = asyncio.Event
     jinja_environment = Environment  # type: ignore[assignment]
