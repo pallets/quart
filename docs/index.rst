@@ -2,12 +2,12 @@
 
 .. title:: Quart documentation
 
-.. image:: _static/quart-horizontal.svg
+.. image:: _static/quart-name.svg
     :class: only-light
     :height: 200px
     :align: center
 
-.. image:: _static/quart-horizontal-dark.svg
+.. image:: _static/quart-name-dark.svg
     :class: only-dark
     :height: 200px
     :align: center
