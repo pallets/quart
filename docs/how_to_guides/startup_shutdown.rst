@@ -64,7 +64,7 @@ for example
 
 .. code-block:: python
 
-    @pytest.fixture(name="app", scope="function")
+    @pytest_asyncio.fixture(name="app", scope="function")
     async def _app():
         app = create_app()  # Initialize app
         async with app.test_app() as test_app:
