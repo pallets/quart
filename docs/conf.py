@@ -29,6 +29,7 @@ myst_heading_anchors = 2
 
 html_theme = "pydata_sphinx_theme"
 html_theme_options = {
+    "logo": {"text": "Quart"},
     "external_links": [
         {"name": "Source code", "url": "https://github.com/pallets/quart"},
         {"name": "Issues", "url": "https://github.com/pallets/quart/issues"},
@@ -42,7 +43,8 @@ html_theme_options = {
     ],
 }
 html_static_path = ["_static"]
-html_logo = "_static/logo_short.png"
+html_favicon = "_static/quart-icon.svg"
+html_logo = "_static/quart-logo.svg"
 
 
 def run_apidoc(_):

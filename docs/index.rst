@@ -2,10 +2,15 @@
 
 .. title:: Quart documentation
 
-.. image:: _static/logo.png
-   :width: 300px
-   :alt: Quart logo
-   :align: right
+.. image:: _static/quart-name.svg
+    :class: only-light
+    :height: 200px
+    :align: center
+
+.. image:: _static/quart-name-dark.svg
+    :class: only-dark
+    :height: 200px
+    :align: center
 
 Quart
 =====

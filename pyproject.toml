@@ -3,15 +3,15 @@ name = "Quart"
 version = "0.20.0"
 description = "A Python ASGI web framework with the same API as Flask"
 readme = "README.md"
-license = {text = "MIT"}
-authors = [{name = "pgjones", email = "philip.graham.jones@googlemail.com"}]
-maintainers = [{name = "Pallets", email = "contact@palletsprojects.com"}]
+license = "MIT"
+license-files = ["LICENSE.txt"]
+authors = [{ name = "pgjones", email = "philip.graham.jones@googlemail.com" }]
+maintainers = [{ name = "Pallets", email = "contact@palletsprojects.com" }]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Web Environment",
     "Framework :: Flask",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
@@ -35,8 +35,8 @@ dependencies = [
 
 [project.urls]
 Donate = "https://palletsprojects.com/donate"
-Documentation = "https://quart.palletsprojects.com/"
-Changes = "https://quart.palletsprojects.com/en/latest/changes.html"
+Documentation = "https://quart.palletsprojects.com"
+Changes = "https://quart.palletsprojects.com/page/changes/"
 Source = "https://github.com/pallets/quart/"
 Chat = "https://discord.gg/pallets"
 
@@ -46,6 +46,42 @@ dotenv = ["python-dotenv"]
 [project.scripts]
 quart = "quart.cli:main"
 
+[dependency-groups]
+dev = [
+    "ruff",
+    "tox",
+    "tox-uv",
+]
+docs = [
+    "myst-parser",
+    "pydata-sphinx-theme",
+    "sphinx",
+]
+docs-auto = [
+    "sphinx-autobuild",
+]
+gha-update = [
+    "gha-update ; python_full_version >= '3.12'",
+]
+pre-commit = [
+    "pre-commit",
+    "pre-commit-uv",
+]
+tests = [
+    "hypothesis",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-sugar",
+    "python-dotenv",
+]
+typing = [
+    "mypy",
+    "pyright",
+    "pytest",
+    "types-aiofiles",
+]
+
 [build-system]
 requires = ["flit-core<4"]
 build-backend = "flit_core.buildapi"
@@ -53,11 +89,17 @@ build-backend = "flit_core.buildapi"
 [tool.flit.module]
 name = "quart"
 
+[tool.uv]
+default-groups = ["dev", "pre-commit", "tests", "typing"]
+
 [tool.pytest.ini_options]
 addopts = "--no-cov-on-fail --showlocals --strict-markers"
 asyncio_default_fixture_loop_scope = "session"
 asyncio_mode = "auto"
 testpaths = ["tests"]
+filterwarnings = [
+    "error",
+]
 
 [tool.coverage.run]
 branch = true
@@ -66,9 +108,16 @@ source = ["quart", "tests"]
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
 
+[tool.coverage.report]
+exclude_also = [
+    "if t.TYPE_CHECKING",
+    "raise NotImplementedError",
+    ": \\.{3}",
+]
+
 [tool.mypy]
 python_version = "3.9"
-files = ["src/quart", "tests"]
+files = ["src", "tests"]
 show_error_codes = true
 pretty = true
 strict = true
@@ -83,7 +132,7 @@ warn_return_any = false
 
 [tool.pyright]
 pythonVersion = "3.9"
-include = ["src/quart", "tests"]
+include = ["src", "tests"]
 typeCheckingMode = "basic"
 
 [tool.ruff]
@@ -103,7 +152,78 @@ select = [
     "UP",  # pyupgrade
     "W",  # pycodestyle warning
 ]
+ignore = [
+    "UP038",  # keep isinstance tuple
+]
 
 [tool.ruff.lint.isort]
 force-single-line = true
 order-by-type = false
+
+[tool.tox]
+env_list = [
+    "py3.13", "py3.12", "py3.11", "py3.10", "py3.9",
+    "style",
+    "typing",
+    "docs",
+]
+
+[tool.tox.env_run_base]
+description = "pytest on latest dependency versions"
+runner = "uv-venv-lock-runner"
+package = "wheel"
+wheel_build_env = ".pkg"
+constrain_package_deps = true
+use_frozen_constraints = true
+dependency_groups = ["tests"]
+commands = [[
+    "pytest", "-v", "--tb=short", "--basetemp={env_tmp_dir}", "--cov=quart",
+    {replace = "posargs", default = [], extend = true},
+]]
+
+[tool.tox.env.style]
+description = "run all pre-commit hooks on all files"
+dependency_groups = ["pre-commit"]
+skip_install = true
+commands = [["pre-commit", "run", "--all-files"]]
+
+[tool.tox.env.typing]
+description = "run static type checkers"
+dependency_groups = ["tests", "typing"]
+commands = [
+    ["mypy"],
+]
+
+[tool.tox.env.docs]
+description = "build docs"
+dependency_groups = ["docs"]
+# TODO fix warnings and add -W
+commands = [["sphinx-build", "-E", "-b", "dirhtml", "docs", "docs/_build/dirhtml"]]
+
+[tool.tox.env.docs-auto]
+description = "continuously rebuild docs and start a local server"
+dependency_groups = ["docs", "docs-auto"]
+# TODO fix warnings and add -W
+commands = [["sphinx-autobuild", "-b", "dirhtml", "--watch", "src", "docs", "docs/_build/dirhtml"]]
+
+[tool.tox.env.update-actions]
+description = "update GitHub Actions pins"
+labels = ["update"]
+dependency_groups = ["gha-update"]
+skip_install = true
+commands = [["gha-update"]]
+
+[tool.tox.env.update-pre_commit]
+description = "update pre-commit pins"
+labels = ["update"]
+dependency_groups = ["pre-commit"]
+skip_install = true
+commands = [["pre-commit", "autoupdate", "--freeze", "-j4"]]
+
+[tool.tox.env.update-requirements]
+description = "update uv lock"
+labels = ["update"]
+dependency_groups = []
+no_default_groups = true
+skip_install = true
+commands = [["uv", "lock", {replace = "posargs", default = ["-U"], extend = true}]]
