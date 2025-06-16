@@ -58,7 +58,7 @@ follow our [contributing guide].
 
 [GitHub]: https://github.com/pallets/quart
 [issue]: https://github.com/pallets/quart/issues
-[contributing guide]: https://github.com/pallets/quart/CONTRIBUTING.rst
+[contributing guide]: https://github.com/pallets/quart/CONTRIBUTING.md
 
 ## Help
 
