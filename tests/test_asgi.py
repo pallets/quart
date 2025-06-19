@@ -12,6 +12,7 @@ from hypercorn.typing import WebsocketScope
 from werkzeug.datastructures import Headers
 
 from quart import Quart
+from quart import websocket
 from quart.asgi import _convert_version
 from quart.asgi import _handle_exception
 from quart.asgi import ASGIHTTPConnection
@@ -118,7 +119,7 @@ async def test_http_request_without_body(request_message: dict) -> None:
 
     # This test fails with a timeout error if the request body is not received
     # within 1 second
-    receiver_task = asyncio.ensure_future(connection.handle_messages(request, receive))
+    receiver_task = asyncio.ensure_future(connection.handle_messages(receive))
     body = await asyncio.wait_for(request.body, timeout=1)
     receiver_task.cancel()
 
@@ -158,6 +159,61 @@ async def test_websocket_completion() -> None:
 
     # This test fails if a timeout error is raised here
     await asyncio.wait_for(connection(receive, send), timeout=1)
+
+
+async def test_websocket_backpressure() -> None:
+    app = Quart(__name__)
+    scope: WebsocketScope = {
+        "type": "websocket",
+        "asgi": {},
+        "http_version": "1.1",
+        "scheme": "wss",
+        "path": "/",
+        "raw_path": b"/",
+        "query_string": b"",
+        "root_path": "",
+        "headers": [(b"host", b"quart")],
+        "client": ("127.0.0.1", 80),
+        "server": None,
+        "subprotocols": [],
+        "extensions": {"websocket.http.response": {}},
+        "state": {},  # type: ignore[typeddict-item]
+    }
+    connection = ASGIWebsocketConnection(app, scope)
+
+    count = 3
+
+    queue: asyncio.Queue = asyncio.Queue()
+    queue.put_nowait({"type": "websocket.connect"})
+    for i in range(count):
+        queue.put_nowait({"type": "websocket.receive", "text": str(i)})
+    queue.put_nowait({"type": "websocket.disconnect"})
+
+    async def receive() -> ASGIReceiveEvent:
+        return await queue.get()
+
+    async def send(message: ASGISendEvent) -> None:
+        pass
+
+    size_checks: list[tuple[int, int]] = []
+
+    @app.websocket("/")
+    async def ws() -> None:
+        while True:
+            n = int(await websocket.receive())
+
+            size_check = (n, queue.qsize())
+            size_checks.append(size_check)
+
+    await connection(receive, send)
+
+    assert len(size_checks) == count
+    for n, qsize in size_checks:
+        # At each step, the queue contains the remaining data messages except
+        # for the one that's just been received and the next one after it (that
+        # one's been moved to the connection's internal queue), plus the
+        # disconnect message.
+        assert qsize == (count - n - 2) + 1
 
 
 def test_http_path_from_absolute_target() -> None:

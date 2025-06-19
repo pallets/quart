@@ -31,6 +31,7 @@ from .debug import traceback_response
 from .signals import websocket_received
 from .signals import websocket_sent
 from .typing import ResponseTypes
+from .utils import AsyncQueueIterator
 from .utils import cancel_tasks
 from .utils import encode_headers
 from .utils import raise_task_exceptions
@@ -46,12 +47,13 @@ class ASGIHTTPConnection:
     def __init__(self, app: Quart, scope: HTTPScope) -> None:
         self.app = app
         self.scope = scope
+        self.queue: AsyncQueueIterator[bytes] = AsyncQueueIterator(1)
 
     async def __call__(
         self, receive: ASGIReceiveCallable, send: ASGISendCallable
     ) -> None:
         request = self._create_request_from_scope(send)
-        receiver_task = asyncio.ensure_future(self.handle_messages(request, receive))
+        receiver_task = asyncio.ensure_future(self.handle_messages(receive))
         handler_task = asyncio.ensure_future(self.handle_request(request, send))
         done, pending = await asyncio.wait(
             [handler_task, receiver_task], return_when=asyncio.FIRST_COMPLETED
@@ -59,15 +61,15 @@ class ASGIHTTPConnection:
         await cancel_tasks(pending)
         raise_task_exceptions(done)
 
-    async def handle_messages(
-        self, request: Request, receive: ASGIReceiveCallable
-    ) -> None:
+    async def handle_messages(self, receive: ASGIReceiveCallable) -> None:
+        queue = self.queue  # for quicker access in the loop
+
         while True:
             message = await receive()
             if message["type"] == "http.request":
-                request.body.append(message.get("body", b""))
+                await queue.put(message.get("body", b""))
                 if not message.get("more_body", False):
-                    request.body.set_complete()
+                    queue.set_complete()
             elif message["type"] == "http.disconnect":
                 return
 
@@ -99,6 +101,7 @@ class ASGIHTTPConnection:
             self.scope["http_version"],
             max_content_length=self.app.config["MAX_CONTENT_LENGTH"],
             body_timeout=self.app.config["BODY_TIMEOUT"],
+            body_chunks=self.queue,
             send_push_promise=partial(self._send_push_promise, send),
             scope=self.scope,
         )
@@ -180,7 +183,7 @@ class ASGIWebsocketConnection:
     def __init__(self, app: Quart, scope: WebsocketScope) -> None:
         self.app = app
         self.scope = scope
-        self.queue: asyncio.Queue = asyncio.Queue()
+        self.queue: asyncio.Queue = asyncio.Queue(1)
         self._accepted = False
         self._closed = False
 

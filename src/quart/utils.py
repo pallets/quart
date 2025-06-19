@@ -24,6 +24,11 @@ from werkzeug.datastructures import Headers
 from .typing import Event
 from .typing import FilePath
 
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
+
 if TYPE_CHECKING:
     from .wrappers.response import Response  # noqa: F401
 
@@ -184,3 +189,61 @@ def raise_task_exceptions(tasks: set[asyncio.Task]) -> None:
     for task in tasks:
         if not task.cancelled() and task.exception() is not None:
             raise task.exception()
+
+
+# Dummy type used in AsyncQueueIterator to wakeup an await without sending any
+# data.  (None isn't used for that, because the generic type T could allow None
+# as valid data in the queue.)
+class _AsyncQueueWakeup:
+    pass
+
+
+# Items go in using an async queue interface, and come out via async iteration.
+class AsyncQueueIterator(AsyncIterator[T]):
+    _queue: asyncio.Queue[T | _AsyncQueueWakeup]
+    _complete: bool
+
+    def __init__(self, maxsize: int = 0) -> None:
+        self._queue = asyncio.Queue(maxsize)
+        self._complete = False  # In Python 3.13, use queue's shutdown() instead
+
+    def __aiter__(self) -> Self:
+        return self
+
+    async def __anext__(self) -> T:
+        while not (self._queue.empty() and self._complete):
+            item = await self._queue.get()
+
+            if not isinstance(item, _AsyncQueueWakeup):
+                return item
+
+        raise StopAsyncIteration()
+
+    def empty(self) -> bool:
+        return self._queue.empty()
+
+    def full(self) -> bool:
+        return self._queue.full()
+
+    def complete(self) -> bool:
+        return self._complete
+
+    def _reject_if_complete(self) -> None:
+        if self._complete:
+            raise RuntimeError("already complete")
+
+    async def put(self, item: T) -> None:
+        self._reject_if_complete()
+
+        await self._queue.put(item)
+
+    def put_nowait(self, item: T) -> None:
+        self._reject_if_complete()
+
+        self._queue.put_nowait(item)
+
+    def set_complete(self) -> None:
+        self._complete = True
+
+        if self._queue.empty():  # so a get() might be waiting
+            self._queue.put_nowait(_AsyncQueueWakeup())
