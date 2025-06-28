@@ -645,7 +645,7 @@ class Quart(App):
             def websocket_route():
                 ...
 
-            app.add_websocket('/', websocket_route)
+            app.add_websocket('/', view_func=websocket_route)
 
         Arguments:
             rule: The path to route on, should start with a ``/``.
