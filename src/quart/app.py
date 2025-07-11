@@ -919,7 +919,10 @@ class Quart(App):
         config = HyperConfig()
         config.access_log_format = "%(h)s %(r)s %(s)s %(b)s %(D)s"
         config.accesslog = "-"
-        config.bind = [f"{host}:{port}"]
+        if host.startswith("unix:") or host.startswith("fd:"):
+            config.bind = [f"{host}"]
+        else:
+            config.bind = [f"{host}:{port}"]
         config.ca_certs = ca_certs
         config.certfile = certfile
         if debug is not None:
