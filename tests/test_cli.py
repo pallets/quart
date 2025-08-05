@@ -132,3 +132,29 @@ def test_load_dotenv_beats_dotquartenv(empty_cwd: Path) -> None:
     load_dotenv()
 
     assert os.environ.pop("TEST_ENV_VAR", None) == env_value
+
+
+def test_run_command_debug_option(app: Mock) -> None:
+    runner = CliRunner()
+    runner.invoke(cli, ["--app", "module:app", "run", "--debug"])
+    app.run.assert_called_once_with(
+        debug=True,
+        host="127.0.0.1",
+        port=5000,
+        certfile=None,
+        keyfile=None,
+        use_reloader=True,
+    )
+
+
+def test_run_command_no_debug_option(dev_app: Mock) -> None:
+    runner = CliRunner()
+    runner.invoke(cli, ["--app", "module:app", "run", "--no-debug"])
+    dev_app.run.assert_called_once_with(
+        debug=False,
+        host="127.0.0.1",
+        port=5000,
+        certfile=None,
+        keyfile=None,
+        use_reloader=False,
+    )
