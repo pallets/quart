@@ -325,10 +325,10 @@ def test_http_asgi_scope_from_request() -> None:
 @pytest.mark.parametrize(
     "propagate_exceptions, testing, raises",
     [
-        (True, False, False),
+        (True, False, True),
         (True, True, True),
         (False, True, True),
-        (False, False, True),
+        (False, False, False),
     ],
 )
 async def test__handle_exception(
