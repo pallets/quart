@@ -22,6 +22,7 @@ from quart.globals import g
 from quart.globals import request
 from quart.globals import websocket
 from quart.routing import QuartRule
+from quart.testing import make_test_body_chunks
 from quart.testing import make_test_headers_path_and_query_string
 from quart.testing import no_op_push
 from quart.wrappers import Request
@@ -42,6 +43,7 @@ async def test_request_context_match(http_scope: HTTPScope) -> None:
         "",
         "1.1",
         http_scope,
+        body_chunks=make_test_body_chunks(),
         send_push_promise=no_op_push,
     )
     async with RequestContext(app, request):
@@ -63,6 +65,7 @@ async def test_bad_request_if_websocket_route(http_scope: HTTPScope) -> None:
         "",
         "1.1",
         http_scope,
+        body_chunks=make_test_body_chunks(),
         send_push_promise=no_op_push,
     )
     async with RequestContext(app, request):
@@ -83,6 +86,7 @@ async def test_after_this_request(http_scope: HTTPScope) -> None:
             "",
             "1.1",
             http_scope,
+            body_chunks=make_test_body_chunks(),
             send_push_promise=no_op_push,
         ),
     ) as context:
@@ -102,6 +106,7 @@ async def test_has_request_context(http_scope: HTTPScope) -> None:
         "",
         "1.1",
         http_scope,
+        body_chunks=make_test_body_chunks(),
         send_push_promise=no_op_push,
     )
     async with RequestContext(Quart(__name__), request):

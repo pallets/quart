@@ -84,6 +84,7 @@ from .signals import websocket_started
 from .signals import websocket_tearing_down
 from .templating import _default_template_ctx_processor
 from .templating import Environment
+from .testing import make_test_body_chunks
 from .testing import make_test_body_with_headers
 from .testing import make_test_headers_path_and_query_string
 from .testing import make_test_scope
@@ -1363,10 +1364,10 @@ class Quart(App):
             headers,
             root_path,
             http_version,
+            body_chunks=make_test_body_chunks(request_body),
             send_push_promise=send_push_promise,
             scope=scope,
         )
-        request.body.set_result(request_body)
         return self.request_context(request)
 
     def add_background_task(self, func: Callable, *args: Any, **kwargs: Any) -> None:

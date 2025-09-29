@@ -8,6 +8,7 @@ from werkzeug.datastructures import Headers
 from quart.app import Quart
 from quart.sessions import SecureCookieSession
 from quart.sessions import SecureCookieSessionInterface
+from quart.testing import make_test_body_chunks
 from quart.testing import no_op_push
 from quart.wrappers import Request
 from quart.wrappers import Response
@@ -32,6 +33,7 @@ async def test_secure_cookie_session_interface_open_session(
         "",
         "1.1",
         http_scope,
+        body_chunks=make_test_body_chunks(),
         send_push_promise=no_op_push,
     )
     request.headers["Cookie"] = response.headers["Set-Cookie"]

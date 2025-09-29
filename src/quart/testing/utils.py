@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from typing import Any
 from typing import AnyStr
 from typing import cast
@@ -216,6 +217,11 @@ def make_test_scope(
     elif type_ == "websocket":
         scope["extensions"] = {"websocket.http.response": {}}
     return cast(Scope, scope)
+
+
+async def make_test_body_chunks(*chunks: bytes) -> AsyncIterator[bytes]:
+    for chunk in chunks:
+        yield chunk
 
 
 async def no_op_push(path: str, headers: Headers) -> None:
