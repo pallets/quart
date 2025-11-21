@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 from typing import Any
-from typing import AnyStr
 from typing import Callable
 
 from hypercorn.typing import WebsocketScope
@@ -55,11 +54,11 @@ class Websocket(BaseRequestWebsocket):
     def requested_subprotocols(self) -> list[str]:
         return self._subprotocols
 
-    async def receive(self) -> AnyStr:
+    async def receive(self) -> str | bytes:
         await self.accept()
         return await self._receive()
 
-    async def send(self, data: AnyStr) -> None:
+    async def send(self, data: str | bytes) -> None:
         # Must allow for the event loop to act if the user has say
         # setup a tight loop sending data over a websocket (as in the
         # example). So yield via the sleep.
