@@ -13,7 +13,6 @@ from datetime import timedelta
 from http.cookiejar import CookieJar
 from types import TracebackType
 from typing import Any
-from typing import AnyStr
 from typing import Callable
 from typing import Optional
 from typing import TYPE_CHECKING
@@ -182,9 +181,9 @@ class TestWebsocketConnectionProtocol(Protocol):
         self, exc_type: type, exc_value: BaseException, tb: TracebackType
     ) -> None: ...
 
-    async def receive(self) -> AnyStr: ...
+    async def receive(self) -> str | bytes: ...
 
-    async def send(self, data: AnyStr) -> None: ...
+    async def send(self, data: str | bytes) -> None: ...
 
     async def receive_json(self) -> Any: ...
 
@@ -210,7 +209,7 @@ class TestClientProtocol(Protocol):
         *,
         method: str = "GET",
         headers: dict | Headers | None = None,
-        data: AnyStr | None = None,
+        data: str | bytes | None = None,
         form: dict | None = None,
         files: dict[str, FileStorage] | None = None,
         query_string: dict | None = None,
@@ -297,7 +296,7 @@ class TestClientProtocol(Protocol):
         headers: dict | Headers | None = None,
         query_string: dict | None = None,
         scheme: str = "http",
-        data: AnyStr | None = None,
+        data: str | bytes | None = None,
         form: dict | None = None,
         json: Any = None,
         root_path: str = "",

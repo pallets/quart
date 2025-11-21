@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import warnings
 from functools import partial
-from typing import AnyStr
 from typing import cast
 from typing import Optional
 from typing import TYPE_CHECKING
@@ -306,7 +305,7 @@ class ASGIWebsocketConnection:
                 cast(WebsocketCloseEvent, {"type": "websocket.close", "code": 1000})
             )
 
-    async def send_data(self, send: ASGISendCallable, data: AnyStr) -> None:
+    async def send_data(self, send: ASGISendCallable, data: str | bytes) -> None:
         if isinstance(data, str):
             await send({"type": "websocket.send", "bytes": None, "text": data})
         else:

@@ -7,7 +7,6 @@ from datetime import timedelta
 from http.cookiejar import CookieJar
 from types import TracebackType
 from typing import Any
-from typing import AnyStr
 from typing import TYPE_CHECKING
 from urllib.request import Request as U2Request
 
@@ -76,7 +75,7 @@ class QuartClient:
         *,
         method: str = "GET",
         headers: dict | Headers | None = None,
-        data: AnyStr | None = None,
+        data: str | bytes | None = None,
         form: dict | None = None,
         files: dict[str, FileStorage] | None = None,
         query_string: dict | None = None,
@@ -328,7 +327,7 @@ class QuartClient:
         headers: dict | Headers | None = None,
         query_string: dict | None = None,
         scheme: str = "http",
-        data: AnyStr | None = None,
+        data: str | bytes | None = None,
         form: dict | None = None,
         json: Any = sentinel,
         root_path: str = "",
@@ -406,7 +405,7 @@ class QuartClient:
         path: str,
         method: str,
         headers: dict | Headers | None,
-        data: AnyStr | None,
+        data: str | bytes | None,
         form: dict | None,
         files: dict[str, FileStorage] | None,
         query_string: dict | None,
