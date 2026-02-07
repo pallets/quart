@@ -26,7 +26,8 @@ a simulated IO delay,
 
 
     def main():
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         results = loop.run_until_complete(asyncio.gather(
             simulated_fetch('http://google.com', 2),
             simulated_fetch('http://bbc.co.uk', 1),
