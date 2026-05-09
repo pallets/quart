@@ -44,11 +44,11 @@ got_request_exception = _signals.signal("got-request-exception")
 websocket_started = _signals.signal("websocket-started")
 
 #: Called on receipt of a message over the websocket, connected
-# functions should have a signature of Callable[[AnyStr], None]
+# functions should have a signature of Callable[[str | bytes], None]
 websocket_received = _signals.signal("websocket-received")
 
 #: Called when a message has been sent over the websocket, connected
-# functions should have a signature of Callable[[AnyStr], None]
+# functions should have a signature of Callable[[str | bytes], None]
 websocket_sent = _signals.signal("websocket-sent")
 
 #: Called after a response is fully finalised, connected functions

@@ -15,7 +15,6 @@ from inspect import iscoroutinefunction as _inspect_iscoroutinefunction
 from inspect import isgenerator
 from types import TracebackType
 from typing import Any
-from typing import AnyStr
 from typing import Callable
 from typing import cast
 from typing import NoReturn
@@ -1304,7 +1303,7 @@ class Quart(App):
         query_string: dict | None = None,
         scheme: str = "http",
         send_push_promise: Callable[[str, Headers], Awaitable[None]] = no_op_push,
-        data: AnyStr | None = None,
+        data: str | bytes | None = None,
         form: dict | None = None,
         json: Any = sentinel,
         root_path: str = "",

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import Any
-from typing import AnyStr
 from typing import cast
 from typing import Literal
 from typing import overload
@@ -80,7 +79,7 @@ def make_test_headers_path_and_query_string(
 
 def make_test_body_with_headers(
     *,
-    data: AnyStr | None = None,
+    data: str | bytes | None = None,
     form: dict | None = None,
     files: dict[str, FileStorage] | None = None,
     json: Any = sentinel,

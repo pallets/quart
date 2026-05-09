@@ -4,7 +4,6 @@ import asyncio
 from collections.abc import Awaitable
 from types import TracebackType
 from typing import Any
-from typing import AnyStr
 from typing import TYPE_CHECKING
 
 from hypercorn.typing import ASGIReceiveEvent
@@ -146,14 +145,14 @@ class TestWebsocketConnection:
             ):
                 raise data
 
-    async def receive(self) -> AnyStr:
+    async def receive(self) -> str | bytes:
         data = await self._receive_queue.get()
         if isinstance(data, Exception):
             raise data
         else:
             return data
 
-    async def send(self, data: AnyStr) -> None:
+    async def send(self, data: str | bytes) -> None:
         if isinstance(data, str):
             await self._send_queue.put({"type": "websocket.receive", "text": data})
         else:
