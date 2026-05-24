@@ -32,7 +32,7 @@ new loop separate from the Quart loop for ThirdParty,
 Controlling the event loop
 --------------------------
 
-It is the ASGI server running running Quart that owns the event loop
+It is the ASGI server running Quart that owns the event loop
 that Quart runs within, by default the server is Hypercorn. Both Quart
 and Hypercorn allow the loop to be specified, the Quart shortcut in
 development is to pass the loop to the ``app.run`` method,
