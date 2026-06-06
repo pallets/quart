@@ -152,7 +152,7 @@ async def test_blueprint_method_view() -> None:
     [
         ("named", ["named", "cmd"]),
         (None, ["cmd"]),
-        (Ellipsis, ["blueprint", "cmd"]),
+        ("blueprint", ["blueprint", "cmd"]),
     ],
 )
 def test_cli_blueprints(cli_group: str | None, args: list[str]) -> None:
