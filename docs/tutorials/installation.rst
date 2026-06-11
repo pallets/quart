@@ -13,7 +13,7 @@ using pip or your favorite python package manager:
 Dependencies
 ------------
 
-Quart dependends on the following packages, which will automatically
+Quart depends on the following packages, which will automatically
 be installed with Quart:
 
 - aiofiles, to load files in an asyncio compatible manner,

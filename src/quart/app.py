@@ -200,8 +200,8 @@ class Quart(App):
             PERMANENT_SESSION_LIFETIME value. Specifies how long the session
             data should survive.
         request_class: The class to use for requests.
-        response_class: The class to user for responses.
-        secret_key: Warpper around configuration SECRET_KEY value. The app
+        response_class: The class to use for responses.
+        secret_key: Wrapper around configuration SECRET_KEY value. The app
             secret for signing sessions.
         session_interface: The class to use as the session interface.
         shutdown_event: This event is set when the app starts to

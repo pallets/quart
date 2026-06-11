@@ -18,6 +18,6 @@ Python versions
 ---------------
 
 Quart will support Python versions until they reach end of life. This
-may, is rare circumstances be achieved by bug fixes to a specific
-release branch i.e. no new features. This happended with Python 3.6
+may, in rare circumstances be achieved by bug fixes to a specific
+release branch i.e. no new features. This happened with Python 3.6
 and the Quart 0.5.X releases.
