@@ -52,6 +52,8 @@ here,
 - `Quart-LibreTranslate <https://github.com/Quart-Addons/quart-libretranslate>`_ Simple integration to
   use LibreTranslate with your Quart app.
 - `Quart-Uploads <https://github.com/Quart-Addons/quart-uploads>`_ File upload handling for Quart.
+`Quart-Enciphers <https://pypi.org/project/quart-enciphers/>`_
+   Encrypted cookie session using enciphers.
 
 Supporting sync code in a Quart Extension
 -----------------------------------------
