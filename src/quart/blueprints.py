@@ -85,7 +85,6 @@ class Blueprint(SansioBlueprint):
             return int(value.total_seconds())
 
         return value
-        return None
 
     async def send_static_file(self, filename: str) -> Response:
         if not self.has_static_folder:
