@@ -15,9 +15,7 @@ from typing import Literal
 from typing import overload
 from typing import TYPE_CHECKING
 
-from aiofiles import open as async_open
-from aiofiles.base import AiofilesContextManager
-from aiofiles.threadpool.binary import AsyncBufferedIOBase
+from anyio import open_file as async_open
 from werkzeug.datastructures import ContentRange
 from werkzeug.datastructures import Headers
 from werkzeug.exceptions import RequestedRangeNotSatisfiable
@@ -144,11 +142,12 @@ class FileBody(ResponseBody):
         self.end = self.size
         if buffer_size is not None:
             self.buffer_size = buffer_size
-        self.file: AsyncBufferedIOBase | None = None
-        self.file_manager: AiofilesContextManager = None
+        self.file = None
+        self.file_manager = None
 
     async def __aenter__(self) -> FileBody:
-        self.file_manager = async_open(self.file_path, mode="rb")
+        self.file_manager = await async_open(self.file_path, mode="rb")
+        # self.file_manager = self.file_path.open(mode="rb")
         self.file = await self.file_manager.__aenter__()
         await self.file.seek(self.begin)
         return self

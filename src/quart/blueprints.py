@@ -5,8 +5,8 @@ import typing as t
 from collections import defaultdict
 from datetime import timedelta
 
-from aiofiles import open as async_open
-from aiofiles.base import AiofilesContextManager
+from anyio import AsyncFile
+from anyio import open_file as async_open
 from flask.sansio.app import App
 from flask.sansio.blueprints import Blueprint as SansioBlueprint  # noqa
 from flask.sansio.blueprints import BlueprintSetupState as BlueprintSetupState  # noqa
@@ -96,7 +96,7 @@ class Blueprint(SansioBlueprint):
         self,
         path: FilePath,
         mode: str = "rb",
-    ) -> AiofilesContextManager:
+    ) -> AsyncFile:
         """Open a file for reading.
 
         Use as
