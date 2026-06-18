@@ -2,9 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from quart.app import Quart
 
 
+@pytest.mark.anyio
 async def test_host_matching() -> None:
     app = Quart(__name__, static_folder="./assets", static_url_path="/static")
 

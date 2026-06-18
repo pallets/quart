@@ -30,6 +30,7 @@ def _app() -> Quart:
     return app
 
 
+@pytest.mark.anyio
 async def test_sync_request_context(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get("/")
@@ -38,6 +39,7 @@ async def test_sync_request_context(app: Quart) -> None:
     assert b"POST" in (await response.get_data())
 
 
+@pytest.mark.anyio
 async def test_sync_generator(app: Quart) -> None:
     test_client = app.test_client()
     response = await test_client.get("/gen")

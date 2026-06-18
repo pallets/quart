@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
-from typing import Callable
 
 import pytest
 
@@ -18,6 +18,7 @@ def app() -> Quart:
     return app
 
 
+@pytest.mark.anyio
 async def test_view(app: Quart) -> None:
     class Views(View):
         methods = ["GET", "POST"]
@@ -36,6 +37,7 @@ async def test_view(app: Quart) -> None:
     assert response.status_code == 405
 
 
+@pytest.mark.anyio
 async def test_method_view(app: Quart) -> None:
     class Views(MethodView):
         async def get(self) -> ResponseReturnValue:
@@ -53,6 +55,7 @@ async def test_method_view(app: Quart) -> None:
     assert "POST" == (await response.get_data(as_text=True))
 
 
+@pytest.mark.anyio
 async def test_view_decorators(app: Quart) -> None:
     def decorate_status_code(func: Callable) -> Callable:
         async def wrapper(*args: Any, **kwargs: Any) -> ResponseReturnValue:

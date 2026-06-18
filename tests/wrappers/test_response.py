@@ -24,6 +24,7 @@ from quart.wrappers.response import IterableBody
 from quart.wrappers.response import Response
 
 
+@pytest.mark.anyio
 async def test_data_wrapper() -> None:
     wrapper = DataBody(b"abcdef")
     results = []
@@ -42,6 +43,7 @@ async def _simple_async_generator() -> AsyncGenerator[bytes, None]:
     "iterable",
     [[b"abc", b"def"], (data for data in [b"abc", b"def"]), _simple_async_generator()],
 )
+@pytest.mark.anyio
 async def test_iterable_wrapper(iterable: Any) -> None:
     wrapper = IterableBody(iterable)
     results = []
@@ -51,6 +53,7 @@ async def test_iterable_wrapper(iterable: Any) -> None:
     assert results == [b"abc", b"def"]
 
 
+@pytest.mark.anyio
 async def test_file_wrapper(tmp_path: Path) -> None:
     file_ = tmp_path / "file_wrapper"
     file_.write_text("abcdef")
@@ -62,6 +65,7 @@ async def test_file_wrapper(tmp_path: Path) -> None:
     assert results == [b"abc", b"def"]
 
 
+@pytest.mark.anyio
 async def test_io_wrapper() -> None:
     wrapper = IOBody(BytesIO(b"abcdef"), buffer_size=3)
     results = []
@@ -79,6 +83,7 @@ def test_response_status(status: Any, expected: int) -> None:
     assert response.status_code == expected
 
 
+@pytest.mark.anyio
 async def test_response_body() -> None:
     response = Response(b"Body")
     assert b"Body" == (await response.get_data())
@@ -86,6 +91,7 @@ async def test_response_body() -> None:
     assert b"Body" == (await response.get_data())
 
 
+@pytest.mark.anyio
 async def test_response_make_conditional(http_scope: HTTPScope) -> None:
     request = Request(
         "GET",
@@ -109,6 +115,7 @@ async def test_response_make_conditional(http_scope: HTTPScope) -> None:
     assert response.content_range.length == 6
 
 
+@pytest.mark.anyio
 async def test_response_make_conditional_no_condition(http_scope: HTTPScope) -> None:
     request = Request(
         "GET",
@@ -127,6 +134,7 @@ async def test_response_make_conditional_no_condition(http_scope: HTTPScope) -> 
     assert response.status_code == 200
 
 
+@pytest.mark.anyio
 async def test_response_make_conditional_out_of_bound(http_scope: HTTPScope) -> None:
     request = Request(
         "GET",
@@ -145,6 +153,7 @@ async def test_response_make_conditional_out_of_bound(http_scope: HTTPScope) -> 
     assert response.status_code == 206
 
 
+@pytest.mark.anyio
 async def test_response_make_conditional_not_modified(http_scope: HTTPScope) -> None:
     response = Response(b"abcdef")
     await response.add_etag()
@@ -169,6 +178,7 @@ async def test_response_make_conditional_not_modified(http_scope: HTTPScope) -> 
     "range_",
     ["second=0-3", "bytes=0-2,3-5", "bytes=8-16"],
 )
+@pytest.mark.anyio
 async def test_response_make_conditional_not_satisfiable(
     range_: str, http_scope: HTTPScope
 ) -> None:
@@ -196,6 +206,7 @@ def test_response_cache_control() -> None:
     assert response.headers["Cache-Control"] == "max-age=2, no-cache"
 
 
+@pytest.mark.anyio
 async def test_empty_response() -> None:
     response = Response()
     assert b"" == (await response.get_data())

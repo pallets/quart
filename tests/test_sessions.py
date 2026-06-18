@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from http.cookies import SimpleCookie
 
+import pytest
 from hypercorn.typing import HTTPScope
 from werkzeug.datastructures import Headers
 
@@ -13,6 +14,7 @@ from quart.wrappers import Request
 from quart.wrappers import Response
 
 
+@pytest.mark.anyio
 async def test_secure_cookie_session_interface_open_session(
     http_scope: HTTPScope,
 ) -> None:
@@ -39,6 +41,7 @@ async def test_secure_cookie_session_interface_open_session(
     assert new_session == session
 
 
+@pytest.mark.anyio
 async def test_secure_cookie_session_interface_save_session() -> None:
     session = SecureCookieSession()
     session["something"] = "else"
@@ -59,6 +62,7 @@ async def test_secure_cookie_session_interface_save_session() -> None:
     assert response.headers["Vary"] == "Cookie"
 
 
+@pytest.mark.anyio
 async def _save_session(session: SecureCookieSession) -> Response:
     interface = SecureCookieSessionInterface()
     app = Quart(__name__)
@@ -68,6 +72,7 @@ async def _save_session(session: SecureCookieSession) -> Response:
     return response
 
 
+@pytest.mark.anyio
 async def test_secure_cookie_session_interface_save_session_no_modification() -> None:
     session = SecureCookieSession()
     session["something"] = "else"
@@ -76,6 +81,7 @@ async def test_secure_cookie_session_interface_save_session_no_modification() ->
     assert response.headers.get("Set-Cookie") is None
 
 
+@pytest.mark.anyio
 async def test_secure_cookie_session_interface_save_session_no_access() -> None:
     session = SecureCookieSession()
     session["something"] = "else"

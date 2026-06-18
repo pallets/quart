@@ -15,6 +15,7 @@ from quart.wrappers.request import Request
     "server_name, warns",
     [("localhost", False), ("quart.com", True)],
 )
+@pytest.mark.anyio
 async def test_bind_warning(
     server_name: str, warns: bool, http_scope: HTTPScope
 ) -> None:
