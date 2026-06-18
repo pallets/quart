@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable
+from collections.abc import Callable
 from typing import Any
-from typing import Callable
 from typing import cast
 from typing import IO
 from typing import NoReturn
-from typing import Optional
 from typing import TYPE_CHECKING
 from urllib.parse import parse_qsl
 
@@ -28,12 +27,12 @@ if TYPE_CHECKING:
     from .wrappers.request import Body
 
 StreamFactory = Callable[
-    [Optional[int], Optional[str], Optional[str], Optional[int]],
+    [int | None, str | None, str | None, int | None],
     IO[bytes],
 ]
 
 ParserFunc = Callable[
-    ["FormDataParser", "Body", str, Optional[int], dict[str, str]],
+    ["FormDataParser", "Body", str, int | None, dict[str, str]],
     Awaitable[tuple[MultiDict, MultiDict]],
 ]
 

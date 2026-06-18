@@ -4,6 +4,7 @@ import mimetypes
 import os
 import pkgutil
 import sys
+from collections.abc import Callable
 from collections.abc import Iterable
 from datetime import datetime
 from datetime import timedelta
@@ -13,7 +14,6 @@ from functools import wraps
 from io import BytesIO
 from pathlib import Path
 from typing import Any
-from typing import Callable
 from typing import cast
 from typing import NoReturn
 from zlib import adler32

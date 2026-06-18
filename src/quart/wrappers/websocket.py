@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from typing import Any
 from typing import AnyStr
-from typing import Callable
 
 from hypercorn.typing import WebsocketScope
 from werkzeug.datastructures import Headers

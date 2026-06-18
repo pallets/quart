@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable
+from collections.abc import Callable
 from collections.abc import Generator
 from typing import Any
-from typing import Callable
 from typing import Literal
 from typing import NoReturn
 from typing import overload

@@ -21,6 +21,7 @@ from typing import cast
 from typing import NoReturn
 from typing import Optional
 from typing import overload
+from typing import ParamSpec
 from typing import TypeVar
 from urllib.parse import quote
 
@@ -125,11 +126,6 @@ from .wrappers import BaseRequestWebsocket
 from .wrappers import Request
 from .wrappers import Response
 from .wrappers import Websocket
-
-if sys.version_info >= (3, 10):
-    from typing import ParamSpec
-else:
-    from typing_extensions import ParamSpec
 
 # Python 3.14 deprecated asyncio.iscoroutinefunction, but suggested
 # inspect.iscoroutinefunction does not work correctly in some Python
