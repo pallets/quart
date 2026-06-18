@@ -5,6 +5,18 @@ from hypercorn.typing import HTTPScope
 from hypercorn.typing import WebsocketScope
 
 
+@pytest.fixture(
+    params=[
+        pytest.param("asyncio", id="asyncio"),
+        pytest.param(
+            "trio", id="trio", marks=pytest.mark.skip(reason="trio support WIP")
+        ),
+    ]
+)
+async def anyio_backend(request: pytest.FixtureRequest) -> None:
+    return request.param
+
+
 @pytest.fixture(name="http_scope")
 def _http_scope() -> HTTPScope:
     return {

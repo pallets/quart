@@ -22,6 +22,7 @@ from quart.utils import encode_headers
 @pytest.mark.parametrize(
     "headers, expected", [([(b"host", b"quart")], "quart"), ([], "")]
 )
+@pytest.mark.anyio
 async def test_http_1_0_host_header(headers: list, expected: str) -> None:
     app = Quart(__name__)
     scope: HTTPScope = {
@@ -45,6 +46,7 @@ async def test_http_1_0_host_header(headers: list, expected: str) -> None:
     assert request.headers["host"] == expected
 
 
+@pytest.mark.anyio
 async def test_http_completion() -> None:
     # Ensure that the connecion callable returns on completion
     app = Quart(__name__)
@@ -87,6 +89,7 @@ async def test_http_completion() -> None:
         {"type": "http.request", "more_body": False},
     ],
 )
+@pytest.mark.anyio
 async def test_http_request_without_body(request_message: dict) -> None:
     app = Quart(__name__)
 
@@ -125,6 +128,7 @@ async def test_http_request_without_body(request_message: dict) -> None:
     assert body == b""
 
 
+@pytest.mark.anyio
 async def test_websocket_completion() -> None:
     # Ensure that the connecion callable returns on completion
     app = Quart(__name__)
@@ -269,6 +273,7 @@ def test_websocket_path_with_root_path(path: str, expected: str) -> None:
         ({"asgi": {"spec_version": "2.1.1"}}, Headers({"a": "b"}), None, True),
     ],
 )
+@pytest.mark.anyio
 async def test_websocket_accept_connection(
     scope: dict, headers: Headers, subprotocol: str | None, has_headers: bool
 ) -> None:
@@ -290,6 +295,7 @@ async def test_websocket_accept_connection(
         )
 
 
+@pytest.mark.anyio
 async def test_websocket_accept_connection_warns(
     websocket_scope: WebsocketScope,
 ) -> None:
@@ -331,6 +337,7 @@ def test_http_asgi_scope_from_request() -> None:
         (False, False, True),
     ],
 )
+@pytest.mark.anyio
 async def test__handle_exception(
     propagate_exceptions: bool, testing: bool, raises: bool
 ) -> None:

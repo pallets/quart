@@ -1,5 +1,6 @@
 import asyncio
 
+import pytest
 from chat import app
 
 from quart.testing.connections import (
@@ -11,6 +12,7 @@ async def _receive(test_websocket: _TestWebsocketConnection) -> str:
     return await test_websocket.receive()
 
 
+@pytest.mark.anyio
 async def test_websocket() -> None:
     test_client = app.test_client()
     async with test_client.websocket("/ws") as test_websocket:

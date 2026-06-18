@@ -1,6 +1,8 @@
+import pytest
 from video import app
 
 
+@pytest.mark.anyio
 async def test_auto_video() -> None:
     test_client = app.test_client()
     response = await test_client.get("/video.mp4")

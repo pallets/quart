@@ -3,10 +3,13 @@ from __future__ import annotations
 import asyncio
 import time
 
+import pytest
+
 from quart import current_app
 from quart import Quart
 
 
+@pytest.mark.anyio
 async def test_background_task() -> None:
     app = Quart(__name__)
     app.config["DATA"] = "data"
@@ -30,6 +33,7 @@ async def test_background_task() -> None:
     assert data == "data"
 
 
+@pytest.mark.anyio
 async def test_lifespan_background_task() -> None:
     app = Quart(__name__)
     app.config["DATA"] = "data"
@@ -51,6 +55,7 @@ async def test_lifespan_background_task() -> None:
     assert data == "data"
 
 
+@pytest.mark.anyio
 async def test_sync_background_task() -> None:
     app = Quart(__name__)
     app.config["DATA"] = "data"

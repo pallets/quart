@@ -1,6 +1,8 @@
+import pytest
 from blog import app
 
 
+@pytest.mark.anyio
 async def test_create_post():
     test_client = app.test_client()
     response = await test_client.post(
