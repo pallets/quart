@@ -7,18 +7,18 @@ import platform
 import sys
 from collections.abc import AsyncIterator
 from collections.abc import Awaitable
+from collections.abc import Callable
 from collections.abc import Coroutine
 from collections.abc import Iterable
 from collections.abc import Iterator
-from contextvars import copy_context
 from functools import partial
 from functools import wraps
 from pathlib import Path
 from typing import Any
-from typing import Callable
 from typing import TYPE_CHECKING
 from typing import TypeVar
 
+import anyio
 from werkzeug.datastructures import Headers
 
 from .typing import Event
@@ -44,20 +44,15 @@ def file_path_to_path(*paths: FilePath) -> Path:
 
 
 def run_sync(func: Callable[..., Any]) -> Callable[..., Coroutine[None, None, Any]]:
-    """Ensure that the sync function is run within the event loop.
+    """Ensure that the sync function is run within the worker thread.
 
-    If the *func* is not a coroutine it will be wrapped such that
-    it runs in the default executor (use loop.set_default_executor
-    to change). This ensures that synchronous functions do not
+    This ensures that synchronous functions do not
     block the event loop.
     """
 
     @wraps(func)
     async def _wrapper(*args: Any, **kwargs: Any) -> Any:
-        loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(
-            None, copy_context().run, partial(func, *args, **kwargs)
-        )
+        result = await anyio.to_thread.run_sync(partial(func, *args, **kwargs))
         if inspect.isgenerator(result):
             return run_sync_iterable(result)
         else:
@@ -70,25 +65,27 @@ def run_sync(func: Callable[..., Any]) -> Callable[..., Coroutine[None, None, An
 T = TypeVar("T")
 
 
+class _StopIteration(Exception):  # noqa: N818
+    pass
+
+
+def _next(iterator: Iterator[T]) -> T:
+    try:
+        return next(iterator)
+    except StopIteration as e:
+        raise _StopIteration from e
+
+
 def run_sync_iterable(iterable: Iterator[T]) -> AsyncIterator[T]:
     async def _gen_wrapper() -> AsyncIterator[T]:
         # Wrap the generator such that each iteration runs
-        # in the executor. Then rationalise the raised
+        # in the worker thread. Then rationalise the raised
         # errors so that it ends.
-        def _inner() -> T:
-            # https://bugs.python.org/issue26221
-            # StopIteration errors are swallowed by the
-            # run_in_exector method
-            try:
-                return next(iterable)
-            except StopIteration as e:
-                raise StopAsyncIteration() from e
 
-        loop = asyncio.get_running_loop()
         while True:
             try:
-                yield await loop.run_in_executor(None, copy_context().run, _inner)
-            except StopAsyncIteration:
+                yield await anyio.to_thread.run_sync(_next, iterable)
+            except _StopIteration:
                 return
 
     return _gen_wrapper()
