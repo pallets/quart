@@ -18,6 +18,7 @@ from werkzeug.exceptions import BadRequest
 from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.exceptions import RequestTimeout
 
+from ..datastructures import FileStorage
 from ..formparser import FormDataParser
 from ..globals import current_app
 from .base import BaseRequestWebsocket
@@ -316,7 +317,7 @@ class Request(BaseRequestWebsocket):
         return self._form
 
     @property
-    async def files(self) -> MultiDict:
+    async def files(self) -> MultiDict[str, FileStorage]:
         """The parsed files.
 
         This will return an empty multidict unless the request
