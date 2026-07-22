@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from io import BytesIO
-from typing import Callable
 
 import pytest
 from werkzeug.datastructures import Headers

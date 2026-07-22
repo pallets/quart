@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from datetime import datetime
-from datetime import timezone
+from datetime import UTC
 from typing import TYPE_CHECKING
 
 from flask.sessions import NullSession as NullSession  # noqa: F401
@@ -82,7 +82,7 @@ class SessionInterface:
         the browser stops accessing the app.
         """
         if session.permanent:
-            return datetime.now(timezone.utc) + app.permanent_session_lifetime
+            return datetime.now(UTC) + app.permanent_session_lifetime
         else:
             return None
 

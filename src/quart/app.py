@@ -8,6 +8,7 @@ import warnings
 from collections import defaultdict
 from collections.abc import AsyncGenerator
 from collections.abc import Awaitable
+from collections.abc import Callable
 from collections.abc import Coroutine
 from datetime import timedelta
 from inspect import isasyncgen
@@ -15,11 +16,10 @@ from inspect import iscoroutinefunction as _inspect_iscoroutinefunction
 from inspect import isgenerator
 from types import TracebackType
 from typing import Any
-from typing import Callable
 from typing import cast
 from typing import NoReturn
-from typing import Optional
 from typing import overload
+from typing import ParamSpec
 from typing import TypeVar
 from urllib.parse import quote
 
@@ -125,11 +125,6 @@ from .wrappers import Request
 from .wrappers import Response
 from .wrappers import Websocket
 
-if sys.version_info >= (3, 10):
-    from typing import ParamSpec
-else:
-    from typing_extensions import ParamSpec
-
 # Python 3.14 deprecated asyncio.iscoroutinefunction, but suggested
 # inspect.iscoroutinefunction does not work correctly in some Python
 # versions before 3.12.
@@ -139,7 +134,7 @@ if sys.version_info >= (3, 12):
 else:
     iscoroutinefunction = asyncio.iscoroutinefunction
 
-AppOrBlueprintKey = Optional[str]  # The App key is None, whereas blueprints are named
+AppOrBlueprintKey = str | None  # The App key is None, whereas blueprints are named
 T_after_serving = TypeVar("T_after_serving", bound=AfterServingCallable)
 T_after_websocket = TypeVar("T_after_websocket", bound=AfterWebsocketCallable)
 T_before_serving = TypeVar("T_before_serving", bound=BeforeServingCallable)
@@ -1790,7 +1785,7 @@ class Quart(App):
                 asyncio.gather(*self.background_tasks),
                 timeout=self.config["BACKGROUND_TASK_SHUTDOWN_TIMEOUT"],
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await cancel_tasks(self.background_tasks)
 
         try:

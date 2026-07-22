@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 from datetime import datetime
-from datetime import timezone
+from datetime import UTC
 from io import BytesIO
 from pathlib import Path
 
@@ -249,7 +249,7 @@ async def test_send_file_last_modified(tmp_path: Path) -> None:
     file_.write_text("something")
     async with app.app_context():
         response = await send_file(str(file_))
-    mtime = datetime.fromtimestamp(file_.stat().st_mtime, tz=timezone.utc)
+    mtime = datetime.fromtimestamp(file_.stat().st_mtime, tz=UTC)
     mtime = mtime.replace(microsecond=0)
     assert response.last_modified == mtime
 
@@ -258,7 +258,7 @@ async def test_send_file_last_modified_override(tmp_path: Path) -> None:
     app = Quart(__name__)
     file_ = tmp_path / "send.img"
     file_.write_text("something")
-    last_modified = datetime(2015, 10, 10, tzinfo=timezone.utc)
+    last_modified = datetime(2015, 10, 10, tzinfo=UTC)
     async with app.app_context():
         response = await send_file(str(file_), last_modified=last_modified)
     assert response.last_modified == last_modified

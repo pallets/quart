@@ -7,6 +7,7 @@ import platform
 import sys
 from collections.abc import AsyncIterator
 from collections.abc import Awaitable
+from collections.abc import Callable
 from collections.abc import Coroutine
 from collections.abc import Iterable
 from collections.abc import Iterator
@@ -15,7 +16,6 @@ from functools import partial
 from functools import wraps
 from pathlib import Path
 from typing import Any
-from typing import Callable
 from typing import TYPE_CHECKING
 from typing import TypeVar
 

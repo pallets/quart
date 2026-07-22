@@ -4,16 +4,16 @@ import mimetypes
 import os
 import pkgutil
 import sys
+from collections.abc import Callable
 from collections.abc import Iterable
 from datetime import datetime
 from datetime import timedelta
-from datetime import timezone
+from datetime import UTC
 from functools import cache
 from functools import wraps
 from io import BytesIO
 from pathlib import Path
 from typing import Any
-from typing import Callable
 from typing import cast
 from typing import NoReturn
 from zlib import adler32
@@ -367,7 +367,7 @@ async def send_file(
     response.cache_control.public = True
     if cache_timeout is not None:
         response.cache_control.max_age = cache_timeout
-        response.expires = datetime.now(timezone.utc) + timedelta(seconds=cache_timeout)
+        response.expires = datetime.now(UTC) + timedelta(seconds=cache_timeout)
 
     if add_etags and etag is not None:
         response.set_etag(etag)

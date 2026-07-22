@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Callable
 from contextvars import Token
 from functools import wraps
 from types import TracebackType
 from typing import Any
-from typing import Callable
 from typing import cast
 from typing import TYPE_CHECKING
 

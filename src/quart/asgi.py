@@ -4,7 +4,6 @@ import asyncio
 import warnings
 from functools import partial
 from typing import cast
-from typing import Optional
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
@@ -109,12 +108,12 @@ class ASGIHTTPConnection:
             response = await _handle_exception(self.app, error)
 
         if isinstance(response, Response) and response.timeout != Ellipsis:
-            timeout = cast(Optional[float], response.timeout)
+            timeout = cast(float | None, response.timeout)
         else:
             timeout = self.app.config["RESPONSE_TIMEOUT"]
         try:
             await asyncio.wait_for(self._send_response(send, response), timeout=timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             pass
 
     async def _send_response(

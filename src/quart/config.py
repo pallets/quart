@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from typing import Any
-from typing import Callable
 
 from flask.config import Config as FlaskConfig  # noqa: F401
 from flask.config import ConfigAttribute as ConfigAttribute  # noqa: F401
