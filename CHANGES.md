@@ -1,10 +1,19 @@
-## Version 0.20.1
+## Version 0.21
 
-Unreleased
+Released 2026-07-23
 
+- Support 3.14 and drop 3.10 and 3.9
+- Fix non-port-needing URI schemes with app run.
+- Fix propagating exceptions.
+- Add --debug/--no-debug flag for quart run.
+- Base Quart's default_config on Flask's
+- Remove invalid uses of AnyStr.
+- Improve file type hints.
 - Flask backport: Fix signing key selection order when key rotation is enabled
   via ``SECRET_KEY_FALLBACKS``.
   <https://github.com/pallets/flask/security/advisories/GHSA-4grg-w6v8-c28g>
+- Support partitioned cookies
+- Don't apply max_form_parts to non-multipart forms
 
 ## Version 0.20.0
 
