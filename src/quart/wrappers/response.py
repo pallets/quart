@@ -321,14 +321,11 @@ class Response(SansIOResponse):
         """Return the body data."""
         if self.implicit_sequence_conversion:
             await self.make_sequence()
-        result = "" if as_text else b""
+        chunks = []
         async with self.response as body:
             async for data in body:
-                if as_text:
-                    result += data.decode()
-                else:
-                    result += data
-        return result
+                chunks.append(data.decode() if as_text else data)
+        return ("" if as_text else b"").join(chunks)
 
     def set_data(self, data: str | bytes) -> None:
         """Set the response data.

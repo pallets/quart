@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextvars import ContextVar
+from typing import cast
 from typing import TYPE_CHECKING
 
 from werkzeug.local import LocalProxy
@@ -47,13 +48,14 @@ websocket: Websocket = LocalProxy(  # type: ignore[assignment]
 
 
 def _session_lookup() -> RequestContext | WebsocketContext:
-    try:
-        return _cv_request.get()
-    except LookupError:
-        try:
-            return _cv_websocket.get()
-        except LookupError:
-            raise RuntimeError("Not within a request nor websocket context") from None
+    missing = object()
+    ctx = _cv_request.get(missing)
+    if ctx is not missing:
+        return cast("RequestContext", ctx)
+    ctx = _cv_websocket.get(missing)
+    if ctx is not missing:
+        return cast("WebsocketContext", ctx)
+    raise RuntimeError("Not within a request nor websocket context")
 
 
 session: SessionMixin = LocalProxy(_session_lookup, "session")  # type: ignore[assignment]
