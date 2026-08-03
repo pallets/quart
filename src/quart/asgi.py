@@ -81,11 +81,7 @@ class ASGIHTTPConnection:
         path = path if path[0] == "/" else urlparse(path).path
         root_path = self.scope.get("root_path", "")
         if root_path != "":
-            try:
-                path = path.split(root_path, 1)[1]
-                path = " " if path == "" else path
-            except IndexError:
-                path = " "  # Invalid in paths, hence will result in 404
+            path = _normalise_path(path, root_path)
 
         return self.app.request_class(
             self.scope["method"],
@@ -214,11 +210,7 @@ class ASGIWebsocketConnection:
         path = path if path[0] == "/" else urlparse(path).path
         root_path = self.scope.get("root_path", "")
         if root_path != "":
-            try:
-                path = path.split(root_path, 1)[1]
-                path = " " if path == "" else path
-            except IndexError:
-                path = " "  # Invalid in paths, hence will result in 404
+            path = _normalise_path(path, root_path)
 
         return self.app.websocket_class(
             path,
@@ -404,3 +396,10 @@ async def _handle_exception(app: Quart, error: Exception) -> Response:
         return await traceback_response(error)
     else:
         raise error
+
+
+def _normalise_path(path: str, root_path: str) -> str:
+    if path == root_path or not path.startswith(root_path):
+        return " "  # Invalid in paths, hence will result in 404
+
+    return path.removeprefix(root_path)

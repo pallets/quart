@@ -185,7 +185,7 @@ def test_http_path_from_absolute_target() -> None:
 
 @pytest.mark.parametrize(
     "path, expected",
-    [("/app", "/ "), ("/", "/ "), ("/app/", "/"), ("/app/2", "/2")],
+    [("/app", "/ "), ("/", "/ "), ("/app/", "/"), ("/app/2", "/2"), ("/x/app/2", "/ ")],
 )
 def test_http_path_with_root_path(path: str, expected: str) -> None:
     app = Quart(__name__)
@@ -235,7 +235,7 @@ def test_websocket_path_from_absolute_target() -> None:
 
 @pytest.mark.parametrize(
     "path, expected",
-    [("/app", "/ "), ("/", "/ "), ("/app/", "/"), ("/app/2", "/2")],
+    [("/app", "/ "), ("/", "/ "), ("/app/", "/"), ("/app/2", "/2"), ("/x/app/2", "/ ")],
 )
 def test_websocket_path_with_root_path(path: str, expected: str) -> None:
     app = Quart(__name__)
