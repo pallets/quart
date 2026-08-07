@@ -914,7 +914,8 @@ class Quart(App):
         """
         config = HyperConfig()
         config.access_log_format = "%(h)s %(r)s %(s)s %(b)s %(D)s"
-        config.accesslog = "-"
+        config.accesslog = self.logger
+        config.errorlog = self.logger
         if host.startswith("unix:") or host.startswith("fd:"):
             config.bind = [f"{host}"]
         else:
@@ -923,7 +924,6 @@ class Quart(App):
         config.certfile = certfile
         if debug is not None:
             self.debug = debug
-        config.errorlog = config.accesslog
         config.keyfile = keyfile
 
         return serve(self, config, shutdown_trigger=shutdown_trigger)
