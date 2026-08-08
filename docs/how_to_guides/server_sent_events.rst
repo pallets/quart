@@ -20,7 +20,7 @@ helper class:
         data: str
         event: str | None = None
         id: int | None = None
-        retry: int | None
+        retry: int | None = None
 
         def encode(self) -> bytes:
             message = f"data: {self.data}"
