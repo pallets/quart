@@ -54,6 +54,18 @@ To use this functionality simply do the following:
     async def create_db_pool():
         await app.db_pool.close()
 
+Invocation order
+----------------
+
+The before serving functions will be called first in the order they are
+registered. Each before serving coroutine will be awaited before the next
+is started. After the before serving functions have been awaited the while
+serving generators will be awaited in registration order.
+
+After serving the while serving generators will be awaited in reverse
+registration order. Then the after serving functions will be awaited in
+the order they were registered.
+
 Testing
 -------
 
