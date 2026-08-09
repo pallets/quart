@@ -22,6 +22,7 @@ from ..datastructures import FileStorage
 from ..formparser import FormDataParser
 from ..globals import current_app
 from .base import BaseRequestWebsocket
+from .base import ClientDisconnectedError
 
 SERVER_PUSH_HEADERS_TO_COPY = {
     "accept",
@@ -52,10 +53,11 @@ class Body:
     def __init__(
         self, expected_content_length: int | None, max_content_length: int | None
     ) -> None:
-        self._data = bytearray()
+        self._data: bytes | None = None
         self._complete: asyncio.Event = asyncio.Event()
-        self._has_data: asyncio.Event = asyncio.Event()
         self._max_content_length = max_content_length
+        self._queue = asyncio.Queue[bytes]()
+
         # Exceptions must be raised within application (not ASGI)
         # calls, this is achieved by having the ASGI methods set this
         # to an exception on error.
@@ -74,19 +76,10 @@ class Body:
         if self._must_raise is not None:
             raise self._must_raise
 
-        # if we got all of the data in the first shot, then self._complete is
-        # set and self._has_data will not get set again, so skip the await
-        # if we already have completed everything
-        if not self._complete.is_set():
-            await self._has_data.wait()
-
-        if self._complete.is_set() and len(self._data) == 0:
+        if self._queue.empty() and self._complete.is_set():
             raise StopAsyncIteration()
 
-        data = bytes(self._data)
-        self._data.clear()
-        self._has_data.clear()
-        return data
+        return await self.get()
 
     def __await__(self) -> Generator[Any, None, Any]:
         # Must check the _must_raise before and after waiting on the
@@ -95,35 +88,52 @@ class Body:
         if self._must_raise is not None:
             raise self._must_raise
 
+        if self._data is not None:
+            return self._data
+
         yield from self._complete.wait().__await__()
 
         if self._must_raise is not None:
             raise self._must_raise
-        return bytes(self._data)
 
-    def append(self, data: bytes) -> None:
-        if data == b"" or self._must_raise is not None:
-            return
-        self._data.extend(data)
-        self._has_data.set()
-        if (
-            self._max_content_length is not None
-            and len(self._data) > self._max_content_length
-        ):
-            self._must_raise = RequestEntityTooLarge()
-            self.set_complete()
+        data = bytearray()
+        while not self._queue.empty():
+            data.extend(self._queue.get_nowait())
+            print(data)
+            if (
+                self._max_content_length is not None
+                and len(data) > self._max_content_length
+            ):
+                raise RequestEntityTooLarge()
+        self._data = bytes(data)
+        return self._data
+
+    async def put(self, data: bytes) -> None:
+        await self._queue.put(data)
+
+    async def get(self) -> bytes:
+        try:
+            return await self._queue.get()
+        except asyncio.QueueShutDown:
+            if self._complete.is_set():
+                return b""
+            else:
+                raise ClientDisconnectedError() from None
+
+    def disconnect(self) -> None:
+        self._queue.shutdown()
 
     def set_complete(self) -> None:
         self._complete.set()
-        self._has_data.set()
+        self._queue.shutdown()
 
     def set_result(self, data: bytes) -> None:
         """Convenience method, mainly for testing."""
-        self.append(data)
+        self._queue.put_nowait(data)
         self.set_complete()
 
     def clear(self) -> None:
-        self._data.clear()
+        self._data = b""
 
 
 class Request(BaseRequestWebsocket):

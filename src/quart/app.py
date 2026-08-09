@@ -12,7 +12,7 @@ from collections.abc import Callable
 from collections.abc import Coroutine
 from datetime import timedelta
 from inspect import isasyncgen
-from inspect import iscoroutinefunction as _inspect_iscoroutinefunction
+from inspect import iscoroutinefunction
 from inspect import isgenerator
 from types import TracebackType
 from typing import Any
@@ -124,15 +124,6 @@ from .wrappers import BaseRequestWebsocket
 from .wrappers import Request
 from .wrappers import Response
 from .wrappers import Websocket
-
-# Python 3.14 deprecated asyncio.iscoroutinefunction, but suggested
-# inspect.iscoroutinefunction does not work correctly in some Python
-# versions before 3.12.
-# See https://github.com/python/cpython/issues/122858#issuecomment-2466239748
-if sys.version_info >= (3, 12):
-    iscoroutinefunction = _inspect_iscoroutinefunction
-else:
-    iscoroutinefunction = asyncio.iscoroutinefunction
 
 AppOrBlueprintKey = str | None  # The App key is None, whereas blueprints are named
 T_after_serving = TypeVar("T_after_serving", bound=AfterServingCallable)
@@ -336,7 +327,7 @@ class Quart(App):
         self.teardown_websocket_funcs: dict[
             AppOrBlueprintKey, list[TeardownCallable]
         ] = defaultdict(list)
-        self.while_serving_gens: list[AsyncGenerator[None, None]] = []
+        self.while_serving_gens: list[AsyncGenerator[None]] = []
 
         self.template_context_processors[None] = [_default_template_ctx_processor]
 

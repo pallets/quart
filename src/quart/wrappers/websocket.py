@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncGenerator
 from collections.abc import Callable
 from typing import Any
 
@@ -8,9 +9,43 @@ from hypercorn.typing import WebsocketScope
 from werkzeug.datastructures import Headers
 
 from .base import BaseRequestWebsocket
+from .base import ClientDisconnectedError
+
+
+class Buffer:
+    def __init__(self) -> None:
+        self._queue = asyncio.Queue[bytes | str]()
+
+    async def put(self, data: bytes | str) -> None:
+        await self._queue.put(data)
+
+    async def get(self) -> bytes | str:
+        try:
+            return await self._queue.get()
+        except asyncio.QueueShutDown:
+            raise ClientDisconnectedError() from None
+
+    def disconnect(self) -> None:
+        self._queue.shutdown()
+
+    async def __anext__(self) -> AsyncGenerator[bytes | str]:
+        while True:
+            yield await self.get()
 
 
 class Websocket(BaseRequestWebsocket):
+    """This class represents a websocket.
+
+    It can be subclassed and the subclassed used in preference by
+    replacing the :attr:`~quart.Quart.websocket_class` with your
+    subclass.
+
+    Attributes:
+        buffer_class: The class to process the incoming messages.
+    """
+
+    buffer_class = Buffer
+
     def __init__(
         self,
         path: str,
@@ -20,7 +55,6 @@ class Websocket(BaseRequestWebsocket):
         root_path: str,
         http_version: str,
         subprotocols: list[str],
-        receive: Callable,
         send: Callable,
         accept: Callable,
         close: Callable,
@@ -44,9 +78,9 @@ class Websocket(BaseRequestWebsocket):
         super().__init__(
             "GET", scheme, path, query_string, headers, root_path, http_version, scope
         )
+        self.buffer = self.buffer_class()
         self._accept = accept
         self._close = close
-        self._receive = receive
         self._send = send
         self._subprotocols = subprotocols
 
@@ -56,7 +90,7 @@ class Websocket(BaseRequestWebsocket):
 
     async def receive(self) -> str | bytes:
         await self.accept()
-        return await self._receive()
+        return await self.buffer.get()
 
     async def send(self, data: str | bytes) -> None:
         # Must allow for the event loop to act if the user has say
@@ -72,9 +106,7 @@ class Websocket(BaseRequestWebsocket):
 
     async def send_json(self, *args: Any, **kwargs: Any) -> None:
         if args and kwargs:
-            raise TypeError(
-                "jsonify() behavior undefined when passed both args and kwargs"
-            )
+            raise TypeError("Behavior undefined when passed both args and kwargs")
         elif len(args) == 1:
             data = args[0]
         else:

@@ -74,7 +74,7 @@ async def test_http_completion() -> None:
         return await queue.get()
 
     async def send(message: ASGISendEvent) -> None:
-        pass
+        queue.put_nowait({"type": "http.disconnect"})
 
     # This test fails if a timeout error is raised here
     await asyncio.wait_for(connection(receive, send), timeout=1)
@@ -116,11 +116,20 @@ async def test_http_request_without_body(request_message: dict) -> None:
         # This will block after returning the first and only entry
         return await queue.get()
 
+    body = None
+
+    async def _handle_request() -> None:
+        nonlocal body
+        body = await asyncio.wait_for(request.body, timeout=1)
+        await queue.put({"type": "http.disconnect"})
+
     # This test fails with a timeout error if the request body is not received
     # within 1 second
-    receiver_task = asyncio.ensure_future(connection.handle_messages(request, receive))
-    body = await asyncio.wait_for(request.body, timeout=1)
-    receiver_task.cancel()
+    async with asyncio.TaskGroup() as task_group:
+        request_task = task_group.create_task(_handle_request())
+        task_group.create_task(
+            connection.handle_messages(request, receive, request_task)
+        )
 
     assert body == b""
 
@@ -154,7 +163,7 @@ async def test_websocket_completion() -> None:
         return await queue.get()
 
     async def send(message: ASGISendEvent) -> None:
-        pass
+        queue.put_nowait({"type": "websocket.disconnect"})
 
     # This test fails if a timeout error is raised here
     await asyncio.wait_for(connection(receive, send), timeout=1)

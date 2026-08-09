@@ -10,7 +10,7 @@ class Broker:
         for connection in self.connections:
             await connection.put(message)
 
-    async def subscribe(self) -> AsyncGenerator[str, None]:
+    async def subscribe(self) -> AsyncGenerator[str]:
         connection = asyncio.Queue()
         self.connections.add(connection)
         try:

@@ -106,7 +106,7 @@ TemplateGlobalCallable = Callable[[Any], Any]
 TemplateTestCallable = Callable[[Any], bool]
 URLDefaultCallable = Callable[[str, dict], None]
 URLValuePreprocessorCallable = Callable[[str | None, dict | None], None]
-WhileServingCallable = Callable[[], AsyncGenerator[None, None]]
+WhileServingCallable = Callable[[], AsyncGenerator[None]]
 
 RouteCallable = (
     Callable[..., ResponseReturnValue] | Callable[..., Awaitable[ResponseReturnValue]]

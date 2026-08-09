@@ -58,7 +58,7 @@ def app() -> Quart:
 
     @app.route("/stream")
     async def stream() -> ResponseReturnValue:
-        async def _gen() -> AsyncGenerator[str, None]:
+        async def _gen() -> AsyncGenerator[str]:
             yield "Hello "
             yield "World"
 

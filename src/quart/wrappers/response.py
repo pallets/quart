@@ -464,7 +464,7 @@ class Response(SansIOResponse):
         data = b"".join([value async for value in self.iter_encode()])
         self.response = self.data_body_class(data)
 
-    async def iter_encode(self) -> AsyncGenerator[bytes, None]:
+    async def iter_encode(self) -> AsyncGenerator[bytes]:
         async with self.response as response_body:
             async for item in response_body:
                 if isinstance(item, str):

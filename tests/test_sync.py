@@ -20,7 +20,7 @@ def _app() -> Quart:
 
     @app.route("/gen")
     def gen() -> ResponseReturnValue:
-        def _gen() -> Generator[bytes, None, None]:
+        def _gen() -> Generator[bytes]:
             yield b"%d" % threading.current_thread().ident
             for _ in range(2):
                 yield b"b"

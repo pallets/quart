@@ -3,7 +3,7 @@
 Installation
 ============
 
-Quart is only compatible with Python 3.11 or higher and can be installed
+Quart is only compatible with Python 3.13 or higher and can be installed
 using pip or your favorite python package manager:
 
 .. code-block:: console

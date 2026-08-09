@@ -18,7 +18,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Application Frameworks",
     "Typing :: Typed",
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 dependencies = [
     "aiofiles",
     "blinker>=1.6",
@@ -114,7 +114,7 @@ exclude_also = [
 ]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.13"
 files = ["src", "tests"]
 show_error_codes = true
 pretty = true
@@ -129,7 +129,7 @@ strict_optional = false
 warn_return_any = false
 
 [tool.pyright]
-pythonVersion = "3.11"
+pythonVersion = "3.13"
 include = ["src", "tests"]
 typeCheckingMode = "basic"
 
@@ -160,7 +160,7 @@ order-by-type = false
 
 [tool.tox]
 env_list = [
-    "py3.14", "py3.13", "py3.12", "py3.11",
+    "py3.14", "py3.13",
     "style",
     "typing",
     "docs",

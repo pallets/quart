@@ -13,6 +13,10 @@ if TYPE_CHECKING:
     from ..routing import QuartRule  # noqa
 
 
+class ClientDisconnectedError(Exception):
+    pass
+
+
 class BaseRequestWebsocket(SansIORequest):
     """This class is the basis for Requests and websockets..
 

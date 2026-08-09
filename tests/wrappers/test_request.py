@@ -16,7 +16,7 @@ from quart.wrappers.request import Request
 
 async def _fill_body(body: Body, semaphore: asyncio.Semaphore, limit: int) -> None:
     for number in range(limit):
-        body.append(b"%d" % number)
+        await body.put(b"%d" % number)
         await semaphore.acquire()
     body.set_complete()
 
@@ -35,17 +35,18 @@ async def test_body_streaming() -> None:
     semaphore = asyncio.Semaphore(0)
     asyncio.ensure_future(_fill_body(body, semaphore, limit))
     index = 0
+    result = []
     async for data in body:
         semaphore.release()
-        assert data == b"%d" % index
+        result.append(data)
         index += 1
+    assert result == [b"0", b"1", b"2", b""]
     assert b"" == await body
 
 
 async def test_body_stream_single_chunk() -> None:
     body = Body(None, None)
-    body.append(b"data")
-    body.set_complete()
+    body.set_result(b"data")
 
     async def _check_data() -> None:
         async for data in body:
@@ -58,15 +59,16 @@ async def test_body_streaming_no_data() -> None:
     body = Body(None, None)
     semaphore = asyncio.Semaphore(0)
     asyncio.ensure_future(_fill_body(body, semaphore, 0))
-    async for _ in body:  # noqa: F841
-        raise AssertionError("Should not reach this line")
+    async for data in body:
+        assert data == b""
     assert b"" == await body
 
 
 async def test_body_exceeds_max_content_length() -> None:
     max_content_length = 5
     body = Body(None, max_content_length)
-    body.append(b" " * (max_content_length + 1))
+    semaphore = asyncio.Semaphore(max_content_length + 1)
+    asyncio.ensure_future(_fill_body(body, semaphore, max_content_length + 1))
     with pytest.raises(RequestEntityTooLarge):
         await body
 
@@ -128,8 +130,7 @@ async def test_request_values(
         http_scope,
         send_push_promise=no_op_push,
     )
-    request.body.append(urlencode({"a": "d"}).encode())
-    request.body.set_complete()
+    request.body.set_result(urlencode({"a": "d"}).encode())
     assert (await request.values).getlist("a") == expected
 
 

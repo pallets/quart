@@ -210,7 +210,6 @@ class MultiPartParser:
                 elif isinstance(event, Data):
                     if self.max_form_memory_size is not None and field_size is not None:
                         field_size += len(event.data)
-
                         if field_size > self.max_form_memory_size:
                             raise RequestEntityTooLarge()
 
