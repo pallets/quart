@@ -299,7 +299,6 @@ async def test_app_handle_websocket_asyncio_cancelled_error(
         None,
         None,
         None,
-        None,
         websocket_scope,
     )
     with pytest.raises(asyncio.CancelledError):
@@ -349,8 +348,8 @@ async def test_app_session_websocket(session_app: Quart) -> None:
 
 async def test_app_session_websocket_return(session_app: Quart) -> None:
     test_client = session_app.test_client()
-    async with test_client.websocket("/ws_return/") as test_websocket:
-        with pytest.raises(WebsocketResponseError):
+    with pytest.raises(WebsocketResponseError):
+        async with test_client.websocket("/ws_return/") as test_websocket:
             await test_websocket.receive()
     session_app.session_interface.open_session.assert_called()  # type: ignore
     session_app.session_interface.save_session.assert_called()  # type: ignore
@@ -416,7 +415,7 @@ async def test_test_app() -> None:
         shutdown = True
 
     @app.while_serving
-    async def lifespan() -> AsyncGenerator[None, None]:
+    async def lifespan() -> AsyncGenerator[None]:
         nonlocal serving
         serving.append(1)
         yield

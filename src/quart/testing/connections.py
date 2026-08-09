@@ -21,14 +21,6 @@ if TYPE_CHECKING:
     from ..app import Quart  # noqa
 
 
-class HTTPDisconnectError(Exception):
-    pass
-
-
-class WebsocketDisconnectError(Exception):
-    pass
-
-
 class WebsocketResponseError(Exception):
     def __init__(self, response: Response) -> None:
         super().__init__(response)
@@ -86,8 +78,10 @@ class TestHTTPConnection:
             data = await self._receive_queue.get()
             if isinstance(data, bytes):
                 self.response_data.extend(data)
-            elif not isinstance(data, HTTPDisconnectError):
+            elif isinstance(data, Exception):
                 raise data
+            else:
+                raise ValueError(f"Unexpected event {data}")
 
     async def as_response(self) -> Response:
         while not self._receive_queue.empty():
@@ -107,12 +101,12 @@ class TestHTTPConnection:
             self.status_code = message["status"]
         elif message["type"] == "http.response.body":
             await self._receive_queue.put(message["body"])
+            if not message["more_body"]:
+                await self.disconnect()
         elif message["type"] == "http.response.push":
             self.push_promises.append(
                 (message["path"], decode_headers(message["headers"]))
             )
-        elif message["type"] == "http.disconnect":
-            await self._receive_queue.put(HTTPDisconnectError())
 
 
 class TestWebsocketConnection:
@@ -140,9 +134,7 @@ class TestWebsocketConnection:
         await self._task
         while not self._receive_queue.empty():
             data = await self._receive_queue.get()
-            if isinstance(data, Exception) and not isinstance(
-                data, WebsocketDisconnectError
-            ):
+            if isinstance(data, Exception):
                 raise data
 
     async def receive(self) -> str | bytes:
@@ -194,6 +186,4 @@ class TestWebsocketConnection:
                     )
                 )
         elif message["type"] == "websocket.close":
-            await self._receive_queue.put(
-                WebsocketDisconnectError(message.get("code", 1000))
-            )
+            await self.disconnect()

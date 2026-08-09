@@ -333,7 +333,7 @@ class QuartClient:
         root_path: str = "",
         http_version: str = "1.1",
         auth: Authorization | tuple[str, str] | None = None,
-    ) -> AsyncGenerator[SessionMixin, None]:
+    ) -> AsyncGenerator[SessionMixin]:
         if self.cookie_jar is None:
             raise RuntimeError(
                 "Session transactions only make sense with cookies enabled."

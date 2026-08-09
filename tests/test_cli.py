@@ -50,7 +50,7 @@ def no_debug_env_patch(monkeypatch: MonkeyPatch) -> None:
 
 
 @pytest.fixture(name="empty_cwd")
-def empty_cwd() -> Generator[Path, None, None]:
+def empty_cwd() -> Generator[Path]:
     directory = tempfile.TemporaryDirectory()
     cwd = os.getcwd()
     os.chdir(directory.name)

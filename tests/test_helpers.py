@@ -169,9 +169,9 @@ async def test_stream_with_context() -> None:
     app = Quart(__name__)
 
     @app.route("/")
-    async def index() -> AsyncGenerator[bytes, None]:
+    async def index() -> AsyncGenerator[bytes]:
         @stream_with_context
-        async def generator() -> AsyncGenerator[bytes, None]:
+        async def generator() -> AsyncGenerator[bytes]:
             yield request.method.encode()
             yield b" "
             yield request.path.encode()

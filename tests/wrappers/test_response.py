@@ -33,7 +33,7 @@ async def test_data_wrapper() -> None:
     assert results == [b"abcdef"]
 
 
-async def _simple_async_generator() -> AsyncGenerator[bytes, None]:
+async def _simple_async_generator() -> AsyncGenerator[bytes]:
     yield b"abc"
     yield b"def"
 
