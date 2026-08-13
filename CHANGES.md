@@ -14,6 +14,7 @@ Released 2026-07-23
   <https://github.com/pallets/flask/security/advisories/GHSA-4grg-w6v8-c28g>
 - Support partitioned cookies
 - Don't apply max_form_parts to non-multipart forms
+- Allow assigning ASGI middleware to ``asgi_app`` without type errors.
 
 ## Version 0.20.0
 

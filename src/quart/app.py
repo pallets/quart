@@ -20,6 +20,7 @@ from typing import cast
 from typing import NoReturn
 from typing import overload
 from typing import ParamSpec
+from typing import TYPE_CHECKING
 from typing import TypeVar
 from urllib.parse import quote
 
@@ -94,6 +95,7 @@ from .testing import sentinel
 from .testing import TestApp
 from .typing import AfterServingCallable
 from .typing import AfterWebsocketCallable
+from .typing import ASGIApp
 from .typing import ASGIHTTPProtocol
 from .typing import ASGILifespanProtocol
 from .typing import ASGIWebsocketProtocol
@@ -1735,31 +1737,37 @@ class Quart(App):
         """
         await self.asgi_app(scope, receive, send)
 
-    async def asgi_app(
-        self, scope: Scope, receive: ASGIReceiveCallable, send: ASGISendCallable
-    ) -> None:
-        """This handles ASGI calls, it can be wrapped in middleware.
+    if TYPE_CHECKING:
+        asgi_app: ASGIApp
+    else:
 
-        When using middleware with Quart it is preferable to wrap this
-        method rather than the app itself. This is to ensure that the
-        app is an instance of this class - which allows the quart cli
-        to work correctly. To use this feature simply do,
+        async def asgi_app(
+            self, scope: Scope, receive: ASGIReceiveCallable, send: ASGISendCallable
+        ) -> None:
+            """This handles ASGI calls, it can be wrapped in middleware.
 
-        .. code-block:: python
+            When using middleware with Quart it is preferable to wrap this
+            method rather than the app itself. This is to ensure that the
+            app is an instance of this class - which allows the quart cli
+            to work correctly. To use this feature simply do,
 
-            app.asgi_app = middleware(app.asgi_app)
+            .. code-block:: python
 
-        """
-        asgi_handler: ASGIHTTPProtocol | ASGILifespanProtocol | ASGIWebsocketProtocol
-        if scope["type"] == "http":
-            asgi_handler = self.asgi_http_class(self, scope)
-        elif scope["type"] == "websocket":
-            asgi_handler = self.asgi_websocket_class(self, scope)
-        elif scope["type"] == "lifespan":
-            asgi_handler = self.asgi_lifespan_class(self, scope)
-        else:
-            raise RuntimeError("ASGI Scope type is unknown")
-        await asgi_handler(receive, send)
+                app.asgi_app = middleware(app.asgi_app)
+
+            """
+            asgi_handler: (
+                ASGIHTTPProtocol | ASGILifespanProtocol | ASGIWebsocketProtocol
+            )
+            if scope["type"] == "http":
+                asgi_handler = self.asgi_http_class(self, scope)
+            elif scope["type"] == "websocket":
+                asgi_handler = self.asgi_websocket_class(self, scope)
+            elif scope["type"] == "lifespan":
+                asgi_handler = self.asgi_lifespan_class(self, scope)
+            else:
+                raise RuntimeError("ASGI Scope type is unknown")
+            await asgi_handler(receive, send)
 
     async def startup(self) -> None:
         self.shutdown_event = self.event_class()

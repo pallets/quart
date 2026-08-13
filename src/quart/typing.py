@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from .wrappers.response import Response  # noqa: F401
 
 FilePath = bytes | str | os.PathLike
+ASGIApp = Callable[[Any, Any, Any], Awaitable[None]]
 
 # The possible types that are directly convertible or are a Response object.
 ResponseValue = Union[

@@ -458,7 +458,7 @@ async def test_middleware() -> None:
             else:
                 await self.app(scope, receive, send)
 
-    app.asgi_app = OddMiddleware(app.asgi_app)  # type: ignore
+    app.asgi_app = OddMiddleware(app.asgi_app)
 
     client = app.test_client()
     response = await client.get("/")
