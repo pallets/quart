@@ -1,3 +1,7 @@
+## Unreleased
+
+- Fix ``stream_with_context`` not propagating ``g`` into the generator.
+
 ## Version 0.21
 
 Released 2026-07-23

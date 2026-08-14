@@ -25,6 +25,7 @@ from werkzeug.utils import redirect as werkzeug_redirect
 from werkzeug.utils import safe_join
 from werkzeug.wrappers import Response as WerkzeugResponse
 
+from .globals import _cv_app
 from .globals import _cv_request
 from .globals import current_app
 from .globals import request
@@ -203,9 +204,9 @@ def url_for(
 
 
 def stream_with_context(func: Callable) -> Callable:
-    """Share the current request context with a generator.
+    """Share the current request and app context with a generator.
 
-    This allows the request context to be accessed within a streaming
+    This allows the request context and ``g`` to be accessed within a streaming
     generator, for example,
 
     .. code-block:: python
@@ -222,10 +223,11 @@ def stream_with_context(func: Callable) -> Callable:
 
     """
     request_context = _cv_request.get().copy()
+    app_context = _cv_app.get().copy()
 
     @wraps(func)
     async def generator(*args: Any, **kwargs: Any) -> Any:
-        async with request_context:
+        async with app_context, request_context:
             async for data in func(*args, **kwargs):
                 yield data
 

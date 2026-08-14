@@ -11,6 +11,7 @@ from werkzeug.exceptions import NotFound
 
 from quart import Blueprint
 from quart import Quart
+from quart import g
 from quart import request
 from quart.helpers import flash
 from quart.helpers import get_flashed_messages
@@ -182,6 +183,25 @@ async def test_stream_with_context() -> None:
     response = await test_client.get("/")
     result = await response.get_data(as_text=False)
     assert result == b"GET /"
+
+
+async def test_stream_with_context_propagates_g() -> None:
+    app = Quart(__name__)
+
+    @app.route("/")
+    async def index() -> AsyncGenerator[bytes, None]:
+        g.marker = b"from-g"
+
+        @stream_with_context
+        async def generator() -> AsyncGenerator[bytes, None]:
+            yield g.marker
+
+        return generator()
+
+    test_client = app.test_client()
+    response = await test_client.get("/")
+    result = await response.get_data(as_text=False)
+    assert result == b"from-g"
 
 
 async def test_send_from_directory_raises() -> None:
