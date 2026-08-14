@@ -10,8 +10,8 @@ import pytest
 from werkzeug.exceptions import NotFound
 
 from quart import Blueprint
-from quart import Quart
 from quart import g
+from quart import Quart
 from quart import request
 from quart.helpers import flash
 from quart.helpers import get_flashed_messages
