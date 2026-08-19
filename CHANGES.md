@@ -1,4 +1,13 @@
-## Version 0.21
+## Version 0.22.0
+
+Released 2026-08-19
+
+- Use Quart's logger rather than Hypercorn's in app.run
+- Document serving function call ordering
+- Bugfix ensure the path is correct when using root_path
+- Bugfix Correct traceback/error behaviour
+
+## Version 0.21.0
 
 Released 2026-07-23
 
