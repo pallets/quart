@@ -323,20 +323,18 @@ def test_http_asgi_scope_from_request() -> None:
 
 
 @pytest.mark.parametrize(
-    "propagate_exceptions, testing, raises",
+    "debug, testing, raises",
     [
-        (True, False, True),
-        (True, True, True),
-        (False, True, True),
-        (False, False, False),
+        (True, False, False),
+        (True, True, False),
+        (False, True, False),
+        (False, False, True),
     ],
 )
-async def test__handle_exception(
-    propagate_exceptions: bool, testing: bool, raises: bool
-) -> None:
+async def test__handle_exception(debug: bool, testing: bool, raises: bool) -> None:
     app = Mock()
     app.config = {}
-    app.config["PROPAGATE_EXCEPTIONS"] = propagate_exceptions
+    app.debug = debug
     app.testing = testing
 
     if raises:
