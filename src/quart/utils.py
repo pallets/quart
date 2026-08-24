@@ -139,34 +139,7 @@ async def observe_changes(
 def restart() -> None:
     # Restart  this process (only safe for dev/debug)
     executable = sys.executable
-    script_path = Path(sys.argv[0]).resolve()
-    args = sys.argv[1:]
-    main_package = sys.modules["__main__"].__package__
-
-    if main_package is None:
-        # Executed by filename
-        if platform.system() == "Windows":
-            if not script_path.exists() and script_path.with_suffix(".exe").exists():
-                # quart run
-                executable = str(script_path.with_suffix(".exe"))
-            else:
-                # python run.py
-                args = [str(script_path), *args]
-        else:
-            if script_path.is_file() and os.access(script_path, os.X_OK):
-                # hypercorn run:app --reload
-                executable = str(script_path)
-            else:
-                # python run.py
-                args = [str(script_path), *args]
-    else:
-        # Executed as a module e.g. python -m run
-        module = script_path.stem
-        import_name = main_package
-        if module != "__main__":
-            import_name = f"{main_package}.{module}"
-        args[:0] = ["-m", import_name.lstrip(".")]
-
+    args = sys.orig_argv[1:]
     os.execv(executable, [executable] + args)
 
 
