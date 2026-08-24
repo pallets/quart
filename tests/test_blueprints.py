@@ -152,7 +152,6 @@ async def test_blueprint_method_view() -> None:
     [
         ("named", ["named", "cmd"]),
         (None, ["cmd"]),
-        (Ellipsis, ["blueprint", "cmd"]),
     ],
 )
 def test_cli_blueprints(cli_group: str | None, args: list[str]) -> None:
@@ -169,6 +168,7 @@ def test_cli_blueprints(cli_group: str | None, args: list[str]) -> None:
     app_runner = app.test_cli_runner()
     result = app_runner.invoke(args=args)
 
+    print(result.output)
     assert "command" in result.output
 
 

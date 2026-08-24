@@ -1425,7 +1425,7 @@ class Quart(App):
                     headers), or (body, status, headers)"""
                 )
         else:
-            value = result  # type: ignore[assignment]
+            value = result
 
         if value is None:
             raise TypeError(
@@ -1434,7 +1434,7 @@ class Quart(App):
 
         response: ResponseTypes
         if isinstance(value, HTTPException):
-            response = value.get_response()  # type: ignore
+            response = value.get_response()
         elif not isinstance(value, (Response, WerkzeugResponse)):
             if (
                 isinstance(value, (str, bytes, bytearray))
@@ -1685,11 +1685,13 @@ class Quart(App):
         names = [*(request_context or request_ctx).request.blueprints, None]
 
         for function in (request_context or request_ctx)._after_request_functions:
-            response = await self.ensure_async(function)(response)  # type: ignore[assignment]
+            response = cast(ResponseTypes, await self.ensure_async(function)(response))
 
         for name in names:
             for function in reversed(self.after_request_funcs[name]):
-                response = await self.ensure_async(function)(response)
+                response = cast(
+                    ResponseTypes, await self.ensure_async(function)(response)
+                )
 
         session_ = (request_context or request_ctx).session
         if not self.session_interface.is_null_session(session_):
@@ -1713,11 +1715,13 @@ class Quart(App):
         names = [*(websocket_context or websocket_ctx).websocket.blueprints, None]
 
         for function in (websocket_context or websocket_ctx)._after_websocket_functions:
-            response = await self.ensure_async(function)(response)  # type: ignore[assignment]
+            response = cast(ResponseTypes, await self.ensure_async(function)(response))
 
         for name in names:
             for function in reversed(self.after_websocket_funcs[name]):
-                response = await self.ensure_async(function)(response)  # type: ignore[assignment]
+                response = cast(
+                    ResponseTypes, await self.ensure_async(function)(response)
+                )
 
         session_ = (websocket_context or websocket_ctx).session
         if not self.session_interface.is_null_session(session_):
