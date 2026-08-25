@@ -810,6 +810,10 @@ class Quart(App):
                 stacklevel=2,
             )
 
+        if use_reloader and os.environ.get("QUART_RUN_MAIN") != "true":
+            run_reloader()
+            return
+
         if loop is None:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -848,10 +852,6 @@ class Quart(App):
 
         if port is None:
             port = int(sn_port or "5000")
-
-        if use_reloader and os.environ.get("QUART_RUN_MAIN") != "true":
-            run_reloader()
-            return
 
         task = self.run_task(
             host,
