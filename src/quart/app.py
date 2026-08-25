@@ -118,7 +118,7 @@ from .utils import cancel_tasks
 from .utils import file_path_to_path
 from .utils import MustReloadError
 from .utils import observe_changes
-from .utils import restart
+from .utils import run_reloader
 from .utils import run_sync
 from .wrappers import BaseRequestWebsocket
 from .wrappers import Request
@@ -849,6 +849,10 @@ class Quart(App):
         if port is None:
             port = int(sn_port or "5000")
 
+        if use_reloader and os.environ.get("QUART_RUN_MAIN") != "true":
+            run_reloader()
+            return
+
         task = self.run_task(
             host,
             port,
@@ -858,34 +862,34 @@ class Quart(App):
             keyfile,
             shutdown_trigger=shutdown_event.wait,  # type: ignore
         )
+        tasks = [loop.create_task(task)]
+
+        if os.environ.get("QUART_RUN_MAIN") == "true":
+            tasks.append(
+                loop.create_task(observe_changes(asyncio.sleep, shutdown_event))
+            )
+
         print(f" * Serving Quart app '{self.name}'")  # noqa: T201
         print(f" * Debug mode: {self.debug or False}")  # noqa: T201
         print(" * Please use an ASGI server (e.g. Hypercorn) directly in production")  # noqa: T201
         scheme = "https" if certfile is not None and keyfile is not None else "http"
         print(f" * Running on {scheme}://{host}:{port} (CTRL + C to quit)")  # noqa: T201
 
-        tasks = [loop.create_task(task)]
-
-        if use_reloader:
-            tasks.append(
-                loop.create_task(observe_changes(asyncio.sleep, shutdown_event))
-            )
-
-        reload_ = False
         try:
             loop.run_until_complete(asyncio.gather(*tasks))
         except MustReloadError:
-            reload_ = True
+            pass
         finally:
             try:
                 _cancel_all_tasks(loop)
                 loop.run_until_complete(loop.shutdown_asyncgens())
+                loop.run_until_complete(loop.shutdown_default_executor())
             finally:
                 asyncio.set_event_loop(None)
                 loop.close()
 
-        if reload_:
-            restart()
+        if shutdown_event.is_set():
+            sys.exit(3)
 
     def run_task(
         self,
