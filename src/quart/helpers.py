@@ -13,6 +13,7 @@ from functools import cache
 from functools import wraps
 from io import BytesIO
 from pathlib import Path
+from types import TracebackType
 from typing import Any
 from typing import cast
 from typing import NoReturn
@@ -401,3 +402,30 @@ def redirect(location: str, code: int = 302) -> WerkzeugResponse:
         return current_app.redirect(location, code=code)
 
     return werkzeug_redirect(location, code=code)
+
+
+class _CollectErrors:
+    """A context manager that records and silences an error raised within it.
+    Used to run all teardown functions, then raise any errors afterward.
+    """
+
+    def __init__(self) -> None:
+        self.errors: list[BaseException] = []
+
+    def __enter__(self) -> None:
+        pass
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> bool:
+        if exc_val is not None:
+            self.errors.append(exc_val)
+
+        return True
+
+    def raise_any(self, message: str) -> None:
+        if self.errors:
+            raise BaseExceptionGroup(message, self.errors)

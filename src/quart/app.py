@@ -65,6 +65,7 @@ from .globals import request_ctx
 from .globals import session
 from .globals import websocket
 from .globals import websocket_ctx
+from .helpers import _CollectErrors
 from .helpers import get_debug_flag
 from .helpers import get_flashed_messages
 from .helpers import send_from_directory
@@ -1197,16 +1198,20 @@ class Quart(App):
             request_context: The request context, optional as Flask
                 omits this argument.
         """
+        collect_errors = _CollectErrors()
         names = [*(request_context or request_ctx).request.blueprints, None]
         for name in names:
             for function in reversed(self.teardown_request_funcs[name]):
-                await self.ensure_async(function)(exc)
+                with collect_errors:
+                    await self.ensure_async(function)(exc)
 
-        await request_tearing_down.send_async(
-            self,
-            _sync_wrapper=self.ensure_async,  # type: ignore[arg-type]
-            exc=exc,
-        )
+        with collect_errors:
+            await request_tearing_down.send_async(
+                self,
+                _sync_wrapper=self.ensure_async,  # type: ignore[arg-type]
+                exc=exc,
+            )
+        collect_errors.raise_any("Errors during request teardown")
 
     async def do_teardown_websocket(
         self,
@@ -1221,26 +1226,35 @@ class Quart(App):
             websocket_context: The websocket context, optional as Flask
                 omits this argument.
         """
+        collect_errors = _CollectErrors()
         names = [*(websocket_context or websocket_ctx).websocket.blueprints, None]
         for name in names:
             for function in reversed(self.teardown_websocket_funcs[name]):
-                await self.ensure_async(function)(exc)
+                with collect_errors:
+                    await self.ensure_async(function)(exc)
 
-        await websocket_tearing_down.send_async(
-            self,
-            _sync_wrapper=self.ensure_async,  # type: ignore[arg-type]
-            exc=exc,
-        )
+        with collect_errors:
+            await websocket_tearing_down.send_async(
+                self,
+                _sync_wrapper=self.ensure_async,  # type: ignore[arg-type]
+                exc=exc,
+            )
+        collect_errors.raise_any("Errors during websocket teardown")
 
     async def do_teardown_appcontext(self, exc: BaseException | None) -> None:
         """Teardown the app (context), calling the teardown functions."""
+        collect_errors = _CollectErrors()
         for function in self.teardown_appcontext_funcs:
-            await self.ensure_async(function)(exc)
-        await appcontext_tearing_down.send_async(
-            self,
-            _sync_wrapper=self.ensure_async,  # type: ignore[arg-type]
-            exc=exc,
-        )
+            with collect_errors:
+                await self.ensure_async(function)(exc)
+
+        with collect_errors:
+            await appcontext_tearing_down.send_async(
+                self,
+                _sync_wrapper=self.ensure_async,  # type: ignore[arg-type]
+                exc=exc,
+            )
+        collect_errors.raise_any("Errors during app teardown")
 
     def app_context(self) -> AppContext:
         """Create and return an app context.
