@@ -14,13 +14,15 @@ from .ctx import has_app_context
 from .ctx import has_request_context
 from .globals import app_ctx
 from .globals import current_app
-from .globals import request_ctx
 from .helpers import stream_with_context
 from .signals import before_render_template
 from .signals import template_rendered
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa
+    from .ctx import _AppCtxGlobals
+    from .sessions import SessionMixin
+    from .wrappers import Request
 
 
 class Environment(BaseEnvironment):
@@ -53,9 +55,10 @@ async def render_template(
             possible template names.
         context: The variables to pass to the template.
     """
-    await current_app.update_template_context(context)
+    ctx = app_ctx._get_current_object()
+    await current_app.update_template_context(ctx, context)
     template = current_app.jinja_env.get_or_select_template(template_name_or_list)  # type: ignore
-    return await _render(template, context, current_app._get_current_object())  # type: ignore
+    return await _render(template, context, current_app._get_current_object())
 
 
 async def render_template_string(source: str, **context: Any) -> str:
@@ -65,9 +68,10 @@ async def render_template_string(source: str, **context: Any) -> str:
         source: The template source code.
         context: The variables to pass to the template.
     """
-    await current_app.update_template_context(context)
+    ctx = app_ctx._get_current_object()
+    await current_app.update_template_context(ctx, context)
     template = current_app.jinja_env.from_string(source)
-    return await _render(template, context, current_app._get_current_object())  # type: ignore
+    return await _render(template, context, current_app._get_current_object())
 
 
 async def _render(template: Template, context: dict, app: Quart) -> str:
@@ -88,12 +92,13 @@ async def _render(template: Template, context: dict, app: Quart) -> str:
 
 
 async def _default_template_ctx_processor() -> dict[str, Any]:
-    context = {}
+    context: dict[str, _AppCtxGlobals | Request | SessionMixin] = {}
+    ctx = app_ctx._get_current_object()
     if has_app_context():
-        context["g"] = app_ctx.g
+        context["g"] = ctx.g
     if has_request_context():
-        context["request"] = request_ctx.request
-        context["session"] = request_ctx.session
+        context["request"] = ctx.request
+        context["session"] = ctx.session
     return context
 
 
@@ -110,9 +115,10 @@ async def stream_template(
             list is given, the first name to exist will be rendered.
         context: The variables to make available in the template.
     """
-    await current_app.update_template_context(context)
+    ctx = app_ctx._get_current_object()
+    await current_app.update_template_context(ctx, context)
     template = current_app.jinja_env.get_or_select_template(template_name_or_list)
-    return await _stream(current_app._get_current_object(), template, context)  # type: ignore
+    return await _stream(current_app._get_current_object(), template, context)
 
 
 async def stream_template_string(source: str, **context: Any) -> AsyncIterator[str]:
@@ -125,9 +131,10 @@ async def stream_template_string(source: str, **context: Any) -> AsyncIterator[s
         source: The source code of the template to render.
         context: The variables to make available in the template.
     """
-    await current_app.update_template_context(context)
+    ctx = app_ctx._get_current_object()
+    await current_app.update_template_context(ctx, context)
     template = current_app.jinja_env.from_string(source)
-    return await _stream(current_app._get_current_object(), template, context)  # type: ignore
+    return await _stream(current_app._get_current_object(), template, context)
 
 
 async def _stream(

@@ -26,10 +26,9 @@ from werkzeug.utils import redirect as werkzeug_redirect
 from werkzeug.utils import safe_join
 from werkzeug.wrappers import Response as WerkzeugResponse
 
-from .globals import _cv_request
+from .globals import app_ctx
 from .globals import current_app
 from .globals import request
-from .globals import request_ctx
 from .globals import session
 from .signals import message_flashed
 from .typing import FilePath
@@ -119,9 +118,12 @@ async def flash(message: str, category: str = "message") -> None:
     flashes = session.get("_flashes", [])
     flashes.append((category, message))
     session["_flashes"] = flashes
-    app = current_app._get_current_object()  # type: ignore
+    app = current_app._get_current_object()
     await message_flashed.send_async(
-        app, _sync_wrapper=app.ensure_async, message=message, category=category
+        app,
+        _sync_wrapper=app.ensure_async,  # type: ignore[arg-type]
+        message=message,
+        category=category,
     )
 
 
@@ -145,10 +147,10 @@ def get_flashed_messages(
     all messages will be popped, but only those matching the filter
     returned. See :func:`~quart.helpers.flash` for message creation.
     """
-    flashes: list[str] = request_ctx.flashes
+    flashes = app_ctx._flashes
     if flashes is None:
         flashes = session.pop("_flashes", [])
-        request_ctx.flashes = flashes  # type: ignore[assignment]
+        app_ctx._flashes = flashes
     if category_filter:
         flashes = [flash for flash in flashes if flash[0] in category_filter]
     if not with_categories:
@@ -222,11 +224,11 @@ def stream_with_context(func: Callable) -> Callable:
             return generator()
 
     """
-    request_context = _cv_request.get().copy()
+    ctx = app_ctx.copy()
 
     @wraps(func)
     async def generator(*args: Any, **kwargs: Any) -> Any:
-        async with request_context:
+        async with ctx:
             async for data in func(*args, **kwargs):
                 yield data
 

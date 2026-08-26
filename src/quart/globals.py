@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from contextvars import ContextVar
-from typing import cast
+from typing import Protocol
 from typing import TYPE_CHECKING
+from typing import TypeVar
 
 from werkzeug.local import LocalProxy
 
@@ -10,52 +11,48 @@ if TYPE_CHECKING:
     from .app import Quart
     from .ctx import _AppCtxGlobals
     from .ctx import AppContext
-    from .ctx import RequestContext
-    from .ctx import WebsocketContext
     from .sessions import SessionMixin
     from .wrappers import Request
     from .wrappers import Websocket
 
+    T = TypeVar("T", covariant=True)
+
+    class ProxyMixin(Protocol[T]):
+        def _get_current_object(self) -> T: ...
+
+    # These subclasses inform type checkers that the proxy objects look like the
+    # proxied type along with the _get_current_object method.
+    class QuartProxy(ProxyMixin[Quart], Quart): ...
+
+    class AppContextProxy(ProxyMixin[AppContext], AppContext): ...
+
+    class _AppCtxGlobalsProxy(ProxyMixin[_AppCtxGlobals], _AppCtxGlobals): ...
+
+    class RequestProxy(ProxyMixin[Request], Request): ...
+
+    class SessionMixinProxy(ProxyMixin[SessionMixin], SessionMixin): ...
+
+    class WebsocketProxy(ProxyMixin[Websocket], Websocket): ...
+
+
 _no_app_msg = "Not within an app context"
 _cv_app: ContextVar[AppContext] = ContextVar("quart.app_ctx")
-app_ctx: _AppCtxGlobals = LocalProxy(  # type: ignore[assignment]
+app_ctx: AppContextProxy = LocalProxy(  # type: ignore[assignment]
     _cv_app, unbound_message=_no_app_msg
 )
-current_app: Quart = LocalProxy(  # type: ignore[assignment]
+current_app: QuartProxy = LocalProxy(  # type: ignore[assignment]
     _cv_app, "app", unbound_message=_no_app_msg
 )
-g: _AppCtxGlobals = LocalProxy(  # type: ignore[assignment]
+g: _AppCtxGlobalsProxy = LocalProxy(  # type: ignore[assignment]
     _cv_app, "g", unbound_message=_no_app_msg
 )
 
-_no_req_msg = "Not within a request context"
-_cv_request: ContextVar[RequestContext] = ContextVar("quart.request_ctx")
-request_ctx: RequestContext = LocalProxy(  # type: ignore[assignment]
-    _cv_request, unbound_message=_no_req_msg
+request: RequestProxy = LocalProxy(  # type: ignore[assignment]
+    _cv_app, "request", unbound_message="Not within a request context"
 )
-request: Request = LocalProxy(  # type: ignore[assignment]
-    _cv_request, "request", unbound_message=_no_req_msg
+session: SessionMixinProxy = LocalProxy(  # type: ignore[assignment]
+    _cv_app, "session", unbound_message="Not within a request nor websocket context"
 )
-
-_no_websocket_msg = "Not within a websocket context"
-_cv_websocket: ContextVar[WebsocketContext] = ContextVar("quart.websocket_ctx")
-websocket_ctx: WebsocketContext = LocalProxy(  # type: ignore[assignment]
-    _cv_websocket, unbound_message=_no_websocket_msg
+websocket: WebsocketProxy = LocalProxy(  # type: ignore[assignment]
+    _cv_app, "websocket", unbound_message="Not within a websocket context"
 )
-websocket: Websocket = LocalProxy(  # type: ignore[assignment]
-    _cv_websocket, "websocket", unbound_message=_no_websocket_msg
-)
-
-
-def _session_lookup() -> RequestContext | WebsocketContext:
-    missing = object()
-    ctx = _cv_request.get(missing)
-    if ctx is not missing:
-        return cast("RequestContext", ctx)
-    ctx = _cv_websocket.get(missing)
-    if ctx is not missing:
-        return cast("WebsocketContext", ctx)
-    raise RuntimeError("Not within a request nor websocket context")
-
-
-session: SessionMixin = LocalProxy(_session_lookup, "session")  # type: ignore[assignment]

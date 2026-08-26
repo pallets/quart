@@ -1,298 +1,265 @@
 from __future__ import annotations
 
-import sys
 from collections.abc import Callable
 from contextvars import Token
-from functools import wraps
+from functools import update_wrapper
 from types import TracebackType
 from typing import Any
-from typing import cast
+from typing import Self
 from typing import TYPE_CHECKING
 
 from flask.ctx import _AppCtxGlobals as _AppCtxGlobals  # noqa: F401
 from werkzeug.exceptions import HTTPException
+from werkzeug.routing import MapAdapter
 
 from .globals import _cv_app
-from .globals import _cv_request
-from .globals import _cv_websocket
+from .helpers import _CollectErrors
 from .sessions import SessionMixin  # noqa
 from .signals import appcontext_popped
 from .signals import appcontext_pushed
 from .typing import AfterRequestCallable
 from .typing import AfterWebsocketCallable
-from .wrappers import BaseRequestWebsocket
 from .wrappers import Request
 from .wrappers import Websocket
 
 if TYPE_CHECKING:
     from .app import Quart  # noqa
 
-_sentinel = object()
 
-
-class _BaseRequestWebsocketContext:
-    """A base context relating to either request or websockets, bound to the
-    current task.
-
-    Attributes:
-        app: The app itself.
-        request_websocket: The request or websocket itself.
-        url_adapter: An adapter bound to this request.
-        session: The session information relating to this request.
-    """
-
+class AppContext:
     def __init__(
         self,
         app: Quart,
-        request_websocket: BaseRequestWebsocket,
+        *,
+        request: Request | None = None,
         session: SessionMixin | None = None,
+        websocket: Websocket | None = None,
     ) -> None:
         self.app = app
-        self.request_websocket = request_websocket
-        self.url_adapter = app.create_url_adapter(self.request_websocket)
-        self.request_websocket.routing_exception = None
-        self.request_websocket.json_module = app.json
-        self.session = session
-        self.preserved = False
-        self._cv_tokens: list[tuple[Token, AppContext | None]] = []
 
-    def copy(self) -> _BaseRequestWebsocketContext:
-        return self.__class__(self.app, self.request_websocket, self.session)
+        self.g: _AppCtxGlobals = app.app_ctx_globals_class()
 
-    def match_request(self) -> None:
-        """Match the request against the adapter.
+        self.url_adapter: MapAdapter | None = None
 
-        Override this method to configure request matching, it should
-        set the request url_rule and view_args and optionally a
-        routing_exception.
-        """
-        try:
-            (
-                self.request_websocket.url_rule,
-                self.request_websocket.view_args,
-            ) = self.url_adapter.match(  # type: ignore
-                return_rule=True
-            )  # noqa
-        except HTTPException as exception:
-            self.request_websocket.routing_exception = exception
-
-    async def push(self) -> None:
-        raise NotImplementedError()
-
-    async def pop(self, exc: BaseException | None) -> None:
-        raise NotImplementedError()
-
-    async def auto_pop(self, exc: BaseException | None) -> None:
-        if self.request_websocket.scope.get("_quart._preserve_context", False) or (
-            exc is not None and self.app.config["PRESERVE_CONTEXT_ON_EXCEPTION"]
-        ):
-            self.preserved = True
-        else:
-            await self.pop(exc)
-
-    async def __aenter__(self) -> _BaseRequestWebsocketContext:
-        await self.push()
-        return self
-
-    async def __aexit__(
-        self, exc_type: type, exc_value: BaseException, tb: TracebackType
-    ) -> None:
-        await self.auto_pop(exc_value)
-
-    async def _push_appctx(self, token: Token) -> None:
-        app_ctx = _cv_app.get(None)
-        if app_ctx is None or app_ctx.app is not self.app:
-            app_ctx = self.app.app_context()
-            await app_ctx.push()
-        else:
-            app_ctx = None
-
-        self._cv_tokens.append((token, app_ctx))
-
-    async def _push(self) -> None:
-        if self.session is None:
-            session_interface = self.app.session_interface
-            self.session = await self.app.ensure_async(session_interface.open_session)(
-                self.app, self.request_websocket
-            )
-
-            if self.session is None:
-                self.session = await session_interface.make_null_session(self.app)
-
-        if self.url_adapter is not None:
-            self.match_request()
-
-
-class RequestContext(_BaseRequestWebsocketContext):
-    """The context relating to the specific request, bound to the current task.
-
-    Do not use directly, prefer the
-    :func:`~quart.Quart.request_context` or
-    :func:`~quart.Quart.test_request_context` instead.
-
-    Attributes:
-        _after_request_functions: List of functions to execute after the current
-            request, see :func:`after_this_request`.
-    """
-
-    def __init__(
-        self,
-        app: Quart,
-        request: Request,
-        session: SessionMixin | None = None,
-    ) -> None:
-        super().__init__(app, request, session)
-        self.flashes = None
+        self._request: Request | None = request
+        self._session: SessionMixin | None = session
+        self._websocket: Websocket | None = websocket
+        self._flashes: list[tuple[str, str]] | None = None
         self._after_request_functions: list[AfterRequestCallable] = []
+        self._after_websocket_functions: list[AfterWebsocketCallable] = []
+
+        try:
+            self.url_adapter = app.create_url_adapter(self._request_websocket)
+        except HTTPException as error:
+            self._request_websocket.routing_exception = error
+
+        self._cv_token: Token[AppContext] | None = None
+
+        self._push_count: int = 0
+
+    @property
+    def has_request(self) -> bool:
+        """True if this context was created with request data."""
+        return self._request is not None
+
+    @property
+    def has_websocket(self) -> bool:
+        """True if this context was created with request data."""
+        return self._websocket is not None
+
+    def copy(self) -> Self:
+        """Create a new context with the same data objects as this context. See
+        :func:`.copy_current_request_context`.
+        """
+        return self.__class__(
+            self.app,
+            request=self._request,
+            session=self._session,
+            websocket=self._websocket,
+        )
 
     @property
     def request(self) -> Request:
-        return cast(Request, self.request_websocket)
+        """The request object associated with this context. Accessed through
+        :data:`.request`. Only available in request contexts, otherwise raises
+        :exc:`RuntimeError`.
+        """
+        if self._request is None:
+            raise RuntimeError("There is no request in this context.")
 
-    async def push(self) -> None:
-        await super()._push_appctx(_cv_request.set(self))
-        await super()._push()
-
-    async def pop(self, exc: BaseException | None = _sentinel) -> None:  # type: ignore
-        try:
-            if len(self._cv_tokens) == 1:
-                if exc is _sentinel:
-                    exc = sys.exc_info()[1]
-                await self.app.do_teardown_request(exc, self)
-
-                request_close = getattr(self.request_websocket, "close", None)
-                if request_close is not None:
-                    await request_close()
-        finally:
-            ctx = _cv_request.get()
-            token, app_ctx = self._cv_tokens.pop()
-            _cv_request.reset(token)
-
-            if app_ctx is not None:
-                await app_ctx.pop(exc)
-
-            if ctx is not self:
-                raise AssertionError(
-                    f"Popped wrong request context. ({ctx!r} instead of {self!r})"
-                )
-
-    async def __aenter__(self) -> RequestContext:
-        await self.push()
-        return self
-
-
-class WebsocketContext(_BaseRequestWebsocketContext):
-    """The context relating to the specific websocket, bound to the current task.
-
-    Do not use directly, prefer the
-    :func:`~quart.Quart.websocket_context` or
-    :func:`~quart.Quart.test_websocket_context` instead.
-
-    Attributes:
-        _after_websocket_functions: List of functions to execute after the current
-            websocket, see :func:`after_this_websocket`.
-    """
-
-    def __init__(
-        self,
-        app: Quart,
-        request: Websocket,
-        session: SessionMixin | None = None,
-    ) -> None:
-        super().__init__(app, request, session)
-        self._after_websocket_functions: list[AfterWebsocketCallable] = []
+        return self._request
 
     @property
     def websocket(self) -> Websocket:
-        return cast(Websocket, self.request_websocket)
+        """The websocket object associated with this context. Accessed through
+        :data:`.websocket`. Only available in websocket contexts, otherwise raises
+        :exc:`RuntimeError`.
+        """
+        if self._websocket is None:
+            raise RuntimeError("There is no websocket in this context.")
 
-    async def push(self) -> None:
-        await super()._push_appctx(_cv_websocket.set(self))
-        await super()._push()
+        return self._websocket
 
-    async def pop(self, exc: BaseException | None = _sentinel) -> None:  # type: ignore
+    @property
+    def _request_websocket(self) -> Request | Websocket:
+        if self._request is not None:
+            return self._request
+        elif self._websocket is not None:
+            return self._websocket
+        else:
+            return None
+
+    async def _open_session(self) -> None:
+        """Open the session if it is not already open for this request context."""
+        if self._request_websocket is None:
+            return
+
+        if self._session is None:
+            interface = self.app.session_interface
+            self._session = await self.app.ensure_async(interface.open_session)(
+                self.app, self._request_websocket
+            )
+
+            if self._session is None:
+                self._session = await interface.make_null_session(self.app)
+
+    @property
+    def session(self) -> SessionMixin:
+        """The session object associated with this context. Accessed through
+        :data:`.session`. Only available in request contexts, otherwise raises
+        :exc:`RuntimeError`. Accessing this sets :attr:`.SessionMixin.accessed`.
+        """
+        self._session.accessed = True
+        return self._session
+
+    def match_request(self) -> None:
+        """Apply routing to the current request, storing either the matched
+        endpoint and args, or a routing exception.
+        """
+        if self._request_websocket is None:
+            raise RuntimeError("There is no request nor websocket in this context.")
+
         try:
-            if len(self._cv_tokens) == 1:
-                if exc is _sentinel:
-                    exc = sys.exc_info()[1]
-                await self.app.do_teardown_websocket(exc, self)
-        finally:
-            ctx = _cv_websocket.get()
-            token, app_ctx = self._cv_tokens.pop()
-            _cv_websocket.reset(token)
-
-            if app_ctx is not None:
-                await app_ctx.pop(exc)
-
-            if ctx is not self:
-                raise AssertionError(
-                    f"Popped wrong request context. ({ctx!r} instead of {self!r})"
-                )
-
-    async def __aenter__(self) -> WebsocketContext:
-        await self.push()
-        return self
-
-
-class AppContext:
-    """The context relating to the app bound to the current task.
-
-    Do not use directly, prefer the
-    :func:`~quart.Quart.app_context` instead.
-
-    Attributes:
-        app: The app itself.
-        url_adapter: An adapter bound to the server, but not a
-            specific task, useful for route building.
-        g: An instance of the ctx globals class.
-    """
-
-    def __init__(self, app: Quart) -> None:
-        self.app = app
-        self.url_adapter = app.create_url_adapter(None)
-        self.g = app.app_ctx_globals_class()
-        self._cv_tokens: list[Token] = []
-
-    def copy(self) -> AppContext:
-        app_context = self.__class__(self.app)
-        app_context.g = self.g
-        return app_context
+            result = self.url_adapter.match(return_rule=True)
+        except HTTPException as error:
+            self._request_websocket.routing_exception = error
+        else:
+            self._request_websocket.url_rule, self._request_websocket.view_args = result  # type: ignore[assignment]
 
     async def push(self) -> None:
-        self._cv_tokens.append(_cv_app.set(self))
+        """Push this context so that it is the active context. If this is a
+        request context, calls :meth:`match_request` to perform routing with
+        the context active.
+
+        Typically, this is not used directly. Instead, use a ``with`` block
+        to manage the context.
+
+        In some situations, such as streaming or testing, the context may be
+        pushed multiple times. It will only trigger matching and signals if it
+        is not currently pushed.
+        """
+        self._push_count += 1
+
+        if self._cv_token is not None:
+            return
+
+        self._cv_token = _cv_app.set(self)
         await appcontext_pushed.send_async(
-            self.app,
-            _sync_wrapper=self.app.ensure_async,  # type: ignore[arg-type]
+            self.app, _async_wrapper=self.app.ensure_async
         )
 
-    async def pop(self, exc: BaseException | None = _sentinel) -> None:  # type: ignore
-        try:
-            if len(self._cv_tokens) == 1:
-                if exc is _sentinel:
-                    exc = sys.exc_info()[1]
-                await self.app.do_teardown_appcontext(exc)
-        finally:
-            ctx = _cv_app.get()
-            _cv_app.reset(self._cv_tokens.pop())
+        if self._request_websocket is not None:
+            await self._open_session()
 
-            if ctx is not self:
-                raise AssertionError(
-                    f"Popped wrong app context. ({ctx!r} instead of {self!r})"
-                )
+            if self.url_adapter is not None:
+                self.match_request()
 
-        await appcontext_popped.send_async(
-            self.app,
-            _sync_wrapper=self.app.ensure_async,  # type: ignore[arg-type]
-        )
+    async def pop(self, exc: BaseException | None = None) -> None:
+        """Pop this context so that it is no longer the active context. Then
+        call teardown functions and signals.
 
-    async def __aenter__(self) -> AppContext:
+        Typically, this is not used directly. Instead, use a ``with`` block
+        to manage the context.
+
+        This context must currently be the active context, otherwise a
+        :exc:`RuntimeError` is raised. In some situations, such as streaming or
+        testing, the context may have been pushed multiple times. It will only
+        trigger cleanup once it has been popped as many times as it was pushed.
+        Until then, it will remain the active context.
+
+        :param exc: An unhandled exception that was raised while the context was
+            active. Passed to teardown functions.
+
+        .. versionchanged:: 0.9
+            Added the ``exc`` argument.
+        """
+        if self._cv_token is None:
+            raise RuntimeError(f"Cannot pop this context ({self!r}), it is not pushed.")
+
+        ctx = _cv_app.get(None)
+
+        if ctx is None or self._cv_token is None:
+            raise RuntimeError(
+                f"Cannot pop this context ({self!r}), there is no active context."
+            )
+
+        if ctx is not self:
+            raise RuntimeError(
+                f"Cannot pop this context ({self!r}), it is not the active"
+                f" context ({ctx!r})."
+            )
+
+        self._push_count -= 1
+
+        if self._push_count > 0:
+            return
+
+        collect_errors = _CollectErrors()
+
+        if self._request is not None:
+            with collect_errors:
+                await self.app.do_teardown_request(self, exc)
+
+            with collect_errors:
+                await self._request.close()
+
+        if self._websocket is not None:
+            with collect_errors:
+                await self.app.do_teardown_websocket(self, exc)
+
+        with collect_errors:
+            await self.app.do_teardown_appcontext(self, exc)
+
+        _cv_app.reset(self._cv_token)
+        self._cv_token = None
+
+        with collect_errors:
+            await appcontext_popped.send_async(
+                self.app, _async_wrapper=self.app.ensure_async
+            )
+
+        collect_errors.raise_any("Errors during context teardown")
+
+    async def __aenter__(self) -> Self:
         await self.push()
         return self
 
     async def __aexit__(
-        self, exc_type: type, exc_value: BaseException, tb: TracebackType
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        tb: TracebackType | None,
     ) -> None:
         await self.pop(exc_value)
+
+    def __repr__(self) -> str:
+        if self._request is not None:
+            return (
+                f"<{type(self).__name__} {id(self)} of {self.app.name},"
+                f" {self.request.method} {self.request.url!r}>"
+            )
+
+        return f"<{type(self).__name__} {id(self)} of {self.app.name}>"
 
 
 def after_this_request(func: AfterRequestCallable) -> AfterRequestCallable:
@@ -311,7 +278,7 @@ def after_this_request(func: AfterRequestCallable) -> AfterRequestCallable:
 
             ...
     """
-    ctx = _cv_request.get(None)
+    ctx = _cv_app.get(None)
     if ctx is None:
         raise RuntimeError("Not within a request context")
     ctx._after_request_functions.append(func)
@@ -340,7 +307,7 @@ def after_this_websocket(func: AfterWebsocketCallable) -> AfterWebsocketCallable
             ...
 
     """
-    ctx = _cv_websocket.get(None)
+    ctx = _cv_app.get(None)
     if ctx is None:
         raise RuntimeError("Not within a websocket context")
     ctx._after_websocket_functions.append(func)
@@ -362,17 +329,20 @@ def copy_current_app_context(func: Callable) -> Callable:
             ...
 
     """
-    if not has_app_context():
-        raise RuntimeError("Attempt to copy app context outside of a app context")
+    original = _cv_app.get(None)
 
-    app_context = _cv_app.get().copy()
+    if original is None:
+        raise RuntimeError(
+            "'copy_current_app_context' can only be used when a"
+            " context is active, such as in a view function."
+        )
 
-    @wraps(func)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
-        async with app_context:
-            return await app_context.app.ensure_async(func)(*args, **kwargs)
+        # Copy the context before pushing, so each worker acts independently.
+        async with original.copy() as ctx:
+            return await ctx.app.ensure_async(func)(*args, **kwargs)
 
-    return wrapper
+    return update_wrapper(wrapper, func)
 
 
 def copy_current_request_context(func: Callable) -> Callable:
@@ -390,19 +360,20 @@ def copy_current_request_context(func: Callable) -> Callable:
             ...
 
     """
-    if not has_request_context():
+    original = _cv_app.get(None)
+
+    if original is None:
         raise RuntimeError(
-            "Attempt to copy request context outside of a request context"
+            "'copy_current_request_context' can only be used when a"
+            " request context is active, such as in a view function."
         )
 
-    request_context = _cv_request.get().copy()
-
-    @wraps(func)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
-        async with request_context:
-            return await request_context.app.ensure_async(func)(*args, **kwargs)
+        # Copy the context before pushing, so each worker acts independently.
+        async with original.copy() as ctx:
+            return await ctx.app.ensure_async(func)(*args, **kwargs)
 
-    return wrapper
+    return update_wrapper(wrapper, func)
 
 
 def copy_current_websocket_context(func: Callable) -> Callable:
@@ -420,19 +391,20 @@ def copy_current_websocket_context(func: Callable) -> Callable:
             ...
 
     """
-    if not has_websocket_context():
+    original = _cv_app.get(None)
+
+    if original is None:
         raise RuntimeError(
-            "Attempt to copy websocket context outside of a websocket context"
+            "'copy_current_websocket_context' can only be used when a"
+            " websocket context is active, such as in a view function."
         )
 
-    websocket_context = _cv_websocket.get().copy()
-
-    @wraps(func)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
-        async with websocket_context:
-            return await websocket_context.app.ensure_async(func)(*args, **kwargs)
+        # Copy the context before pushing, so each worker acts independently.
+        async with original.copy() as ctx:
+            return await ctx.app.ensure_async(func)(*args, **kwargs)
 
-    return wrapper
+    return update_wrapper(wrapper, func)
 
 
 def has_app_context() -> bool:
@@ -464,7 +436,7 @@ def has_request_context() -> bool:
 
     See also :func:`has_app_context`.
     """
-    return _cv_request.get(None) is not None
+    return (ctx := _cv_app.get(None)) is not None and ctx.has_request
 
 
 def has_websocket_context() -> bool:
@@ -480,4 +452,4 @@ def has_websocket_context() -> bool:
 
     See also :func:`has_app_context`.
     """
-    return _cv_websocket.get(None) is not None
+    return (ctx := _cv_app.get(None)) is not None and ctx.has_websocket

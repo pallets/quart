@@ -15,7 +15,7 @@ from werkzeug.datastructures import Headers
 from werkzeug.http import dump_cookie
 
 from ..datastructures import FileStorage
-from ..globals import _cv_request
+from ..globals import _cv_app
 from ..sessions import SessionMixin
 from ..typing import TestHTTPConnectionProtocol
 from ..typing import TestWebsocketConnectionProtocol
@@ -129,7 +129,7 @@ class QuartClient:
                     subdomain,
                 )
         if self.preserve_context:
-            _cv_request.set(self.app._preserved_context)  # type: ignore
+            _cv_app.set(self.app._preserved_context)
         return response
 
     def request(
@@ -348,7 +348,7 @@ class QuartClient:
         for cookie in self.cookie_jar:
             headers.add("cookie", f"{cookie.name}={cookie.value}")
 
-        original_request_ctx = _cv_request.get(None)
+        original_ctx = _cv_app.get(None)
         async with self.app.test_request_context(
             path,
             method=method,
@@ -367,11 +367,11 @@ class QuartClient:
             if session is None:
                 raise RuntimeError("Error opening the session. Check the secret_key?")
 
-            token = _cv_request.set(original_request_ctx)
+            token = _cv_app.set(original_ctx)
             try:
                 yield session
             finally:
-                _cv_request.reset(token)
+                _cv_app.reset(token)
 
             response = self.app.response_class(b"")
             if not session_interface.is_null_session(session):
@@ -391,14 +391,6 @@ class QuartClient:
         self, exc_type: type, exc_value: BaseException, tb: TracebackType
     ) -> None:
         self.preserve_context = False
-
-        while True:
-            top = _cv_request.get(None)
-
-            if top is not None and top.preserved:
-                await top.pop(None)
-            else:
-                break
 
     async def _make_request(
         self,
