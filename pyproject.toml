@@ -147,6 +147,7 @@ select = [
     "FA",  # flake8-future-annotations
     "I",  # isort
     "N",  # pep8-naming
+    "T20",  # flake8-print
     "UP",  # pyupgrade
     "W",  # pycodestyle warning
 ]

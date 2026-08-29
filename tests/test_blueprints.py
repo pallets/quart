@@ -168,7 +168,6 @@ def test_cli_blueprints(cli_group: str | None, args: list[str]) -> None:
     app_runner = app.test_cli_runner()
     result = app_runner.invoke(args=args)
 
-    print(result.output)
     assert "command" in result.output
 
 

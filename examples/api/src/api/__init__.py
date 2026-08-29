@@ -16,7 +16,6 @@ QuartSchema(app)
 
 @app.post("/echo")
 async def echo():
-    print(request.is_json, request.mimetype)
     data = await request.get_json()
     return {"input": data, "extra": True}
 

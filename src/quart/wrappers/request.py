@@ -99,7 +99,6 @@ class Body:
         data = bytearray()
         while not self._queue.empty():
             data.extend(self._queue.get_nowait())
-            print(data)
             if (
                 self._max_content_length is not None
                 and len(data) > self._max_content_length
