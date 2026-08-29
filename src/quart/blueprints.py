@@ -413,3 +413,4 @@ class Blueprint(SansioBlueprint):
 
         extend(self.before_websocket_funcs, app.before_websocket_funcs)  # type: ignore
         extend(self.after_websocket_funcs, app.after_websocket_funcs)  # type: ignore
+        extend(self.teardown_websocket_funcs, app.teardown_websocket_funcs)  # type: ignore
