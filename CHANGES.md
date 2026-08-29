@@ -1,6 +1,10 @@
+## Version 0.23.1
+
+Released 2026-08-29
+
 ## Version 0.23.0
 
-Release 2026-08-29
+Released 2026-08-29
 
 - Improve the development reloader - it now works in a similar
   way to Flask's with the app run in a subprocess such that it
