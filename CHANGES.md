@@ -1,3 +1,19 @@
+## Version 0.23.0
+
+Release 2026-08-29
+
+- Improve the development reloader - it now works in a similar
+  way to Flask's with the app run in a subprocess such that it
+  reloads after syntax errors etc... are fixed rather than
+  crashing as now.
+- Provide backpressure to the ASGI server and clean up the
+  request/websocket ASGI handling.
+- Ensure all teardown functions are called as per Flask.
+- Merge contexts into a single AppContext as per Flask. This
+  could be a breaking change if the other contexts where used
+  directly.
+- Drop support for Python versions less than 3.13.
+
 ## Version 0.22.0
 
 Released 2026-08-19
