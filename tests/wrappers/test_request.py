@@ -9,6 +9,8 @@ from werkzeug.datastructures import Headers
 from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.exceptions import RequestTimeout
 
+from quart import Quart
+from quart import request
 from quart.testing import no_op_push
 from quart.wrappers.request import Body
 from quart.wrappers.request import Request
@@ -91,6 +93,120 @@ async def test_request_exceeds_max_content_length(http_scope: HTTPScope) -> None
     )
     with pytest.raises(RequestEntityTooLarge):
         await request.get_data()
+
+
+@pytest.mark.parametrize("read_mode", ["body", "get_data", "stream", "form"])
+@pytest.mark.parametrize("with_content_length", [False, True])
+@pytest.mark.parametrize(
+    "limit, payload, expected_status",
+    [
+        (None, b"a=1234", 200),
+        (0, b"a=1", 413),
+        (2, b"a=1", 413),
+        (6, b"a=1234", 200),
+        (8, b"a=1234", 200),
+    ],
+)
+async def test_request_max_content_length_override(
+    read_mode: str,
+    with_content_length: bool,
+    limit: int | None,
+    payload: bytes,
+    expected_status: int,
+) -> None:
+    app = Quart(__name__)
+    app.config["MAX_CONTENT_LENGTH"] = 4
+
+    @app.put("/")
+    async def upload() -> dict:
+        request.max_content_length = limit
+        if read_mode == "stream":
+            data = b"".join([chunk async for chunk in request.body])
+        elif read_mode == "form":
+            data = f"a={(await request.form)['a']}".encode()
+        elif read_mode == "get_data":
+            data = await request.get_data(
+                cache=True, as_text=False, parse_form_data=False
+            )
+        else:
+            data = await request.body
+        return {"data": data.decode(), "limit": request.max_content_length}
+
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    if with_content_length:
+        headers["Content-Length"] = str(len(payload))
+
+    async with app.test_client().request(
+        "/", method="PUT", headers=headers
+    ) as connection:
+        for byte in payload:
+            await connection.send(bytes([byte]))
+        await connection.send_complete()
+
+    response = await connection.as_response()
+    if read_mode == "stream" and not with_content_length:
+        expected_status = 200
+    assert response.status_code == expected_status
+    if expected_status == 200:
+        assert await response.get_json() == {"data": payload.decode(), "limit": limit}
+    assert app.config["MAX_CONTENT_LENGTH"] == 4
+
+
+@pytest.mark.parametrize("limit", [None, 1024])
+@pytest.mark.parametrize("with_content_length", [False, True])
+async def test_request_max_content_length_multipart(
+    limit: int | None, with_content_length: bool
+) -> None:
+    app = Quart(__name__)
+    app.config["MAX_CONTENT_LENGTH"] = 4
+
+    @app.put("/")
+    async def upload() -> dict:
+        request.max_content_length = limit
+        return dict(await request.form)
+
+    payload = (
+        b'--boundary\r\nContent-Disposition: form-data; name="a"\r\n'
+        b"\r\n1234\r\n--boundary--\r\n"
+    )
+    headers = {"Content-Type": "multipart/form-data; boundary=boundary"}
+    if with_content_length:
+        headers["Content-Length"] = str(len(payload))
+
+    response = await app.test_client().put("/", data=payload, headers=headers)
+    assert response.status_code == 200
+    assert await response.get_json() == {"a": "1234"}
+
+
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.parametrize("with_content_length", [False, True])
+async def test_request_global_max_content_length(
+    stream: bool, with_content_length: bool
+) -> None:
+    app = Quart(__name__)
+    app.config["MAX_CONTENT_LENGTH"] = 4
+
+    @app.put("/")
+    async def upload() -> bytes:
+        assert request.max_content_length == 4
+        if stream:
+            return b"".join([chunk async for chunk in request.body])
+        return await request.get_data(cache=True, as_text=False, parse_form_data=False)
+
+    headers = {"Content-Length": "6"} if with_content_length else {}
+    async with app.test_client().request(
+        "/", method="PUT", headers=headers
+    ) as connection:
+        await connection.send(b"abc")
+        await connection.send(b"def")
+        await connection.send_complete()
+
+    response = await connection.as_response()
+    if stream and not with_content_length:
+        assert response.status_code == 200
+        assert await response.get_data() == b"abcdef"
+    else:
+        assert response.status_code == 413
 
 
 async def test_request_get_data_timeout(http_scope: HTTPScope) -> None:

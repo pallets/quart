@@ -4,6 +4,7 @@ import asyncio
 from collections.abc import Awaitable
 from collections.abc import Callable
 from collections.abc import Generator
+from types import EllipsisType
 from typing import Any
 from typing import Literal
 from typing import NoReturn
@@ -55,26 +56,15 @@ class Body:
     ) -> None:
         self._data: bytes | None = None
         self._complete: asyncio.Event = asyncio.Event()
-        self._max_content_length = max_content_length
+        self.max_content_length = max_content_length
+        self._expected_content_length = expected_content_length
         self._queue = asyncio.Queue[bytes]()
-
-        # Exceptions must be raised within application (not ASGI)
-        # calls, this is achieved by having the ASGI methods set this
-        # to an exception on error.
-        self._must_raise: Exception | None = None
-        if (
-            expected_content_length is not None
-            and max_content_length is not None
-            and expected_content_length > max_content_length
-        ):
-            self._must_raise = RequestEntityTooLarge()
 
     def __aiter__(self) -> Body:
         return self
 
     async def __anext__(self) -> bytes:
-        if self._must_raise is not None:
-            raise self._must_raise
+        self._check_content_length()
 
         if self._queue.empty() and self._complete.is_set():
             raise StopAsyncIteration()
@@ -82,30 +72,34 @@ class Body:
         return await self.get()
 
     def __await__(self) -> Generator[Any, None, Any]:
-        # Must check the _must_raise before and after waiting on the
-        # completion event as it may change whilst waiting and the
-        # event may not be set if there is already an issue.
-        if self._must_raise is not None:
-            raise self._must_raise
+        self._check_content_length()
 
         if self._data is not None:
             return self._data
 
         yield from self._complete.wait().__await__()
 
-        if self._must_raise is not None:
-            raise self._must_raise
+        self._check_content_length()
 
         data = bytearray()
         while not self._queue.empty():
             data.extend(self._queue.get_nowait())
             if (
-                self._max_content_length is not None
-                and len(data) > self._max_content_length
+                self.max_content_length is not None
+                and len(data) > self.max_content_length
             ):
                 raise RequestEntityTooLarge()
         self._data = bytes(data)
         return self._data
+
+    def _check_content_length(self) -> None:
+        # The application may change the limit before consuming the body.
+        if (
+            self._expected_content_length is not None
+            and self.max_content_length is not None
+            and self._expected_content_length > self.max_content_length
+        ):
+            raise RequestEntityTooLarge()
 
     async def put(self, data: bytes) -> None:
         await self._queue.put(data)
@@ -151,7 +145,7 @@ class Request(BaseRequestWebsocket):
     body_class = Body
     form_data_parser_class = FormDataParser
     lock_class = asyncio.Lock
-    _max_content_length: int | None = None
+    _max_content_length: int | None | EllipsisType = Ellipsis
     _max_form_memory_size: int | None = None
     _max_form_parts: int | None = None
 
@@ -204,7 +198,7 @@ class Request(BaseRequestWebsocket):
 
     @property
     def max_content_length(self) -> int | None:
-        if self._max_content_length is not None:
+        if self._max_content_length is not Ellipsis:
             return self._max_content_length
 
         if current_app:
@@ -215,6 +209,7 @@ class Request(BaseRequestWebsocket):
     @max_content_length.setter
     def max_content_length(self, value: int | None) -> None:
         self._max_content_length = value
+        self.body.max_content_length = value
 
     @property
     def max_form_memory_size(self) -> int | None:
