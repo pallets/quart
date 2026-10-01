@@ -1690,8 +1690,13 @@ class Quart(App):
                     ResponseTypes, await self.ensure_async(function)(response)
                 )
 
-        session_ = ctx.session
-        if not self.session_interface.is_null_session(session_):
+        # Use _session, not the session property: the property sets
+        # session.accessed = True, which would force Vary: Cookie on every
+        # response (including views that never touched the session).
+        session_ = ctx._session
+        if session_ is not None and not self.session_interface.is_null_session(
+            session_
+        ):
             await self.ensure_async(self.session_interface.save_session)(
                 self, session_, response
             )
@@ -1720,8 +1725,10 @@ class Quart(App):
                     ResponseTypes, await self.ensure_async(function)(response)
                 )
 
-        session_ = ctx.session
-        if not self.session_interface.is_null_session(session_):
+        session_ = ctx._session
+        if session_ is not None and not self.session_interface.is_null_session(
+            session_
+        ):
             await self.session_interface.save_session(self, session_, response)
         return response
 

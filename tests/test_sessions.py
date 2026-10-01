@@ -5,6 +5,7 @@ from http.cookies import SimpleCookie
 from hypercorn.typing import HTTPScope
 from werkzeug.datastructures import Headers
 
+from quart import session
 from quart.app import Quart
 from quart.sessions import SecureCookieSession
 from quart.sessions import SecureCookieSessionInterface
@@ -84,3 +85,25 @@ async def test_secure_cookie_session_interface_save_session_no_access() -> None:
     response = await _save_session(session)
     assert response.headers.get("Set-Cookie") is None
     assert response.headers.get("Vary") is None
+
+
+async def test_process_response_does_not_mark_session_accessed() -> None:
+    """Views that never touch the session must not get Vary: Cookie (#480)."""
+    app = Quart(__name__)
+    app.secret_key = "secret"
+
+    @app.route("/")
+    async def index() -> str:
+        return "ok"
+
+    @app.route("/touch")
+    async def touch() -> str:
+        session["x"] = 1
+        return "ok"
+
+    test_client = app.test_client()
+    response = await test_client.get("/")
+    assert response.headers.get("Vary") is None
+
+    response = await test_client.get("/touch")
+    assert response.headers.get("Vary") == "Cookie"
